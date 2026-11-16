@@ -372,9 +372,17 @@ test_that("an active use_scenario line fails under Rscript and fails check_proje
   expect_identical(res$status, 1L)
   expect_match(res$stdout, use_scenario_msg, fixed = TRUE)
   expect_false(dir.exists(file.path(p$home, "v01_results")))
+  # The active line is no longer a comment, so use_scenario_lines misses the
+  # line of known.
+  found <- project_findings(p$home)
   expect_identical(
-    failed_rules(project_findings(p$home)),
-    "no_active_use_scenario"
+    failed_rules(found),
+    c("no_active_use_scenario", "use_scenario_lines")
+  )
+  expect_match(
+    found$detail[found$rule == "use_scenario_lines"],
+    "no line # pbn::use_scenario(\"known\", sim = 1) above",
+    fixed = TRUE
   )
   check <- callr::rscript(
     file.path(p$home, "check_project.R"),

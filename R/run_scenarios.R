@@ -33,10 +33,13 @@
 #'    `<version>_results/<scenario>/sim_<kkkk>/results.qs2` into
 #'    `<version>_results/<scenario>/results.qs2`. It stops when the files are
 #'    not exactly the simulations 1 to `sims`. `estimates`, `exclusions` and
-#'    each data.frame in `tables` get a first column `sim`. `extra` is an
-#'    empty list. The `manifest` is that of simulation 1. In it, `sim` and
-#'    `n_rows_data` are `NA`, `sims` is the number of simulations, and
-#'    `stacked` is `TRUE`.
+#'    each data.frame in `tables` get a first column `sim`. Each keeps the
+#'    class of its object in simulation 1, so a data.table stays a
+#'    data.table. `extra` is an empty list. The `manifest` is that of
+#'    simulation 1. In it, `sim` and `n_rows_data` are `NA`, `sims` is the
+#'    number of simulations, and `stacked` is `TRUE`. For a fake scenario, it
+#'    stops when a simulation has no valid `manifest$fake_md5`, or when the
+#'    simulations do not have one value of it.
 #' 4. For each scenario that has a function `expect_<scenario>()` in
 #'    `<version>_functions/`, it calls that function on the results of the
 #'    scenario in a new R session. `expect_real()` is optional. The function
@@ -360,6 +363,32 @@ stack_results <- function(runs, scenario) {
       )
     }
   }
+  # The stacked manifest is that of simulation 1, so its fake_md5 MUST be the
+  # fake_md5 of each simulation.
+  fake <- lapply(runs, function(r) return(r[["manifest"]][["fake_md5"]]))
+  bad <- which(!vapply(fake, is_md5, logical(1)))
+  if (scenario != "real" && length(bad) > 0) {
+    stop(
+      "The simulations ",
+      paste(bad, collapse = ", "),
+      " of the scenario \"",
+      scenario,
+      "\" have no valid manifest$fake_md5, so pbn cannot stack them. ",
+      "Run the scenario again.",
+      call. = FALSE
+    )
+  }
+  if (!all(vapply(fake, identical, logical(1), fake[[1]]))) {
+    stop(
+      "The simulations of the scenario \"",
+      scenario,
+      "\" have different values of manifest$fake_md5, so a different ",
+      "fake_",
+      scenario,
+      "() wrote their data. pbn cannot stack them. Run the scenario again.",
+      call. = FALSE
+    )
+  }
   part <- function(name) {
     return(stack_frames(lapply(runs, function(r) return(r[[name]]))))
   }
@@ -381,6 +410,8 @@ stack_results <- function(runs, scenario) {
   ))
 }
 
+# The frames with a first column sim, in one object of the class of
+# frames[[1]]. A data.table stays a data.table.
 stack_frames <- function(frames) {
   parts <- lapply(seq_along(frames), function(k) {
     f <- as.data.frame(frames[[k]])
@@ -388,6 +419,15 @@ stack_frames <- function(frames) {
   })
   out <- do.call(rbind, parts)
   rownames(out) <- NULL
+  cls <- class(frames[[1]])
+  if (data.table::is.data.table(frames[[1]])) {
+    # setDT() gives the data.table its internal self-reference, which a
+    # class set by hand does not.
+    data.table::setDT(out)
+  }
+  if (!identical(class(out), cls)) {
+    class(out) <- cls
+  }
   return(out)
 }
 

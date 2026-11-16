@@ -19,7 +19,7 @@ and \code{detail}. \code{status} is \code{"PASS"} or \code{"FAIL"}.
 nothing.
 }
 \details{
-The five rules:
+The six rules:
 \itemize{
 \item \code{top_level_names}: the names are \code{manifest}, \code{exclusions}, \code{estimates},
 \code{tables} and \code{extra}, each once, and there are no others.
@@ -34,11 +34,24 @@ row, \code{n_before - n_excluded == n_after}.
 nothing.
 \item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
 \code{sims}, and \code{scenario} is one string.
+\item \code{manifest_data}: \code{manifest} has exactly one of \code{data_md5} and
+\code{fake_md5}. It has \code{data_md5} when \code{scenario} is \code{"real"}, and
+\code{fake_md5} when \code{scenario} is another string. \code{fake_md5} MUST be one
+string of 32 lower-case hex digits. \code{data_md5} MUST be a character
+vector of such strings, named by file. It has length 0 when the data
+folder has no file. A results file that pbn 2026.11.18 or older wrote
+has \code{data_md5} for a fake scenario, so it fails this rule.
 }
 }
 \examples{
 x <- list(
-  manifest = list(scenario = "real", sim = 1L, sims = 1L, n_rows_data = 100L),
+  manifest = list(
+    scenario = "real",
+    sim = 1L,
+    sims = 1L,
+    data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    n_rows_data = 100L
+  ),
   exclusions = data.frame(
     step = "age 18 or more",
     n_before = 100,

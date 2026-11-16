@@ -74,9 +74,17 @@ data folder is \verb{data/} in the results folder. \code{initialize_project()}
 deletes it, creates it empty, and calls \verb{fake_<scenario>(dir)} with its
 path. The project MUST define \verb{fake_<scenario>()} in
 \verb{<version>_functions/}.
-\item It computes the md5 of each file directly in the data folder.
-\code{\link[=save_results]{save_results()}} stores these values as \code{manifest$data_md5}, so a file
-that the run writes later is not in the list.
+\item It computes an md5 that identifies the data, and \code{\link[=save_results]{save_results()}}
+stores it in the manifest:
+\itemize{
+\item For \code{"real"}, the md5 of each file directly in the data folder, as
+\code{manifest$data_md5}. A file that the run writes later is not in the
+list.
+\item For a fake scenario, the md5 of the code of \verb{fake_<scenario>()}, as
+\code{manifest$fake_md5}. A writer such as \code{haven::write_sav()} stamps the
+time into the file. The md5 of the files would then change on every
+run, and the data would not.
+}
 }
 
 \code{initialize_project()} stops in these cases:

@@ -95,7 +95,9 @@ the `#`. Then run the script line by line. `initialize_project()` prints
 which scenario it uses. For a fake scenario,
 `end_if_fake_scenario()` stops with an error, and the R session stays open.
 The lines MUST stay commented in the file: `use_scenario()` stops under
-`Rscript`, and `check_project()` fails an active call.
+`Rscript`, and `check_project()` fails an active call. `check_project()` also
+fails a missing line, and a line for a scenario that is not in
+`CFG$scenarios`.
 
 To run every simulation of every scenario, each in a new R session:
 

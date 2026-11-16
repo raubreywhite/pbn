@@ -90,10 +90,10 @@ test_that("a fake scenario writes its data into the results folder and does not 
     normalizePath(org::project$results_today),
     normalizePath(folder)
   )
-  expect_identical(
-    state$data_md5,
-    c(d.csv = md5_of(file.path(folder, "data", "d.csv")))
-  )
+  # A fake scenario records the md5 of the code of fake_known(), not of its
+  # files.
+  expect_null(state$data_md5)
+  expect_match(state$fake_md5, "^[0-9a-f]{32}$")
 
   # A file in the data folder from an earlier run is deleted.
   writeLines("x", file.path(folder, "data", "old.txt"))
@@ -292,7 +292,7 @@ test_that("each scenario writes only to its own folder, and the real results sta
   real <- read_results("v01", home = p$home)
   known <- read_results("v01", scenario = "known", home = p$home)
   null2 <- read_results("v01", scenario = "null", sim = 2, home = p$home)
-  expect_identical(check_results(null2)$status, rep("PASS", 5))
+  expect_identical(check_results(null2)$status, rep("PASS", 6))
   expect_identical(
     real$manifest[c("scenario", "sim", "sims", "data_raw")],
     list(scenario = "real", sim = 1L, sims = 1L, data_raw = p$data_default)
@@ -309,7 +309,29 @@ test_that("each scenario writes only to its own folder, and the real results sta
     )
   )
   expect_false("data_raw_source" %in% names(real$manifest))
-  expect_identical(names(null2$manifest$data_md5), "d.csv")
+  expect_identical(
+    real$manifest$data_md5,
+    c(d.csv = md5_of(file.path(p$data_default, "d.csv")))
+  )
+  expect_false("fake_md5" %in% names(real$manifest))
+  expect_false("data_md5" %in% names(null2$manifest))
+  expect_match(null2$manifest$fake_md5, "^[0-9a-f]{32}$")
+  expect_identical(
+    names(null2$manifest),
+    c(
+      "pbn_version",
+      "r_version",
+      "packages",
+      "run_date",
+      "version",
+      "scenario",
+      "sim",
+      "sims",
+      "data_raw",
+      "fake_md5",
+      "n_rows_data"
+    )
+  )
   # Planted: 3 ones of x in group a of the real data, 4 in known.
   expect_equal(real$estimates$estimate, 0.4)
   expect_equal(known$estimates$estimate, 0.5)
@@ -385,7 +407,7 @@ test_that("the run script stops on a bad scenario or simulation and names the pr
   expect_false(dir.exists(file.path(p$home, "v01_results")))
 })
 
-test_that("data_md5 lists only the files that existed at initialize_project()", {
+test_that("data_md5 of real lists only the files that existed at initialize_project()", {
   skip_if_pbn_not_installed()
   p <- local_project()
   # The run writes into the results folder and into the data folder before
@@ -400,16 +422,16 @@ test_that("data_md5 lists only the files that existed at initialize_project()", 
     after = init_line(lines)
   )
   writeLines(lines, file.path(p$home, "v01_run.R"))
-  run_script(p$home, "scenario=known")
-  folder <- file.path(p$home, "v01_results", "known")
-  r <- read_results("v01", scenario = "known", home = p$home)
+  res <- run_script(p$home)
+  expect_identical(res$status, 0L, info = res$stdout)
+  r <- read_results("v01", home = p$home)
   expect_identical(names(r$manifest$data_md5), "d.csv")
   expect_identical(
     unname(r$manifest$data_md5),
-    md5_of(file.path(folder, "data", "d.csv"))
+    md5_of(file.path(p$data_default, "d.csv"))
   )
-  expect_true(file.exists(file.path(folder, "data", "made_by_run.txt")))
-  expect_true(file.exists(file.path(folder, "fig.txt")))
+  expect_true(file.exists(file.path(p$data_default, "made_by_run.txt")))
+  expect_true(file.exists(file.path(p$home, "v01_results", "real", "fig.txt")))
 })
 
 test_that("the manifest packages name qs2, and run_date is the date only", {
@@ -430,4 +452,120 @@ test_that("the manifest packages name qs2, and run_date is the date only", {
   )
   expect_false("stats" %in% names(r$manifest$packages))
   expect_match(r$manifest$run_date, "^[0-9]{4}-[0-9]{2}-[0-9]{2}$")
+})
+
+test_that("a simulation run twice gives the same bytes when fake_<scenario>() stamps the time into a file", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  write_lines(p$home, "v01_functions/fake_null.R", fake_with_time_lines("null"))
+  folder <- file.path(p$home, "v01_results", "null", "sim_0002")
+  res <- run_script(p$home, c("scenario=null", "sim=2"))
+  expect_identical(res$status, 0L, info = res$stdout)
+  first <- md5_of(file.path(folder, "results.qs2"))
+  first_data <- md5_of(file.path(folder, "data", c("d.csv", "header.txt")))
+
+  res <- run_script(p$home, c("scenario=null", "sim=2"))
+  expect_identical(res$status, 0L, info = res$stdout)
+  data <- md5_of(file.path(folder, "data", c("d.csv", "header.txt")))
+  # The data that the run reads is the same, and the time stamp is not.
+  expect_identical(data[1], first_data[1])
+  expect_false(identical(data[2], first_data[2]))
+  expect_identical(md5_of(file.path(folder, "results.qs2")), first)
+})
+
+test_that("fake_md5 is the same with keep.source TRUE and FALSE, and changes with the code", {
+  p <- local_project()
+  # The comment and the spacing are in the source reference only.
+  write_lines(p$home, "v01_functions/fake_null.R", fake_with_time_lines("null"))
+  start <- function(keep_source) {
+    withr::local_options(keep.source = keep_source)
+    env <- new.env()
+    local_clean_session()
+    testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
+    utils::capture.output(use_scenario("null", sim = 1))
+    utils::capture.output(suppressMessages(
+      initialize_project("v01", p$home, p$data_default, env = env)
+    ))
+    return(list(md5 = state$fake_md5, fn = env$fake_null))
+  }
+  with_source <- start(TRUE)
+  without_source <- start(FALSE)
+  # The planted difference: one function has a source reference.
+  expect_false(is.null(attr(with_source$fn, "srcref")))
+  expect_null(attr(without_source$fn, "srcref"))
+  expect_match(with_source$md5, "^[0-9a-f]{32}$")
+  expect_identical(with_source$md5, without_source$md5)
+  expect_identical(function_md5(with_source$fn), with_source$md5)
+
+  # Another body gives another value.
+  write_lines(
+    p$home,
+    "v01_functions/fake_null.R",
+    sub("0.5", "0.6", fake_with_time_lines("null"), fixed = TRUE)
+  )
+  expect_false(identical(start(FALSE)$md5, with_source$md5))
+})
+
+# save_results() with the smallest valid object, and the manifest it wrote.
+save_and_read_manifest <- function(out) {
+  utils::capture.output(save_results(
+    exclusions = data.frame(
+      step = character(0),
+      n_before = numeric(0),
+      n_excluded = numeric(0),
+      n_after = numeric(0)
+    ),
+    estimates = data.frame(term = "x", estimate = 1),
+    tables = list()
+  ))
+  return(qs2::qs_read(file.path(out$results, "results.qs2"))$manifest)
+}
+
+test_that("a fake run and a real run in one R session each write only their own md5 element", {
+  for (order in list(c("known", "real"), c("real", "known"))) {
+    p <- local_project()
+    info <- paste(order, collapse = " then ")
+    manifests <- list()
+    # One session for both runs: the state is emptied once, before the first.
+    local_clean_session()
+    testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
+    for (scenario in order) {
+      utils::capture.output(use_scenario(scenario, sim = 1))
+      out <- NULL
+      utils::capture.output(
+        out <- suppressMessages(initialize_project(
+          "v01",
+          p$home,
+          p$data_default,
+          env = new.env()
+        ))
+      )
+      manifests[[scenario]] <- save_and_read_manifest(out)
+    }
+    real <- manifests[["real"]]
+    known <- manifests[["known"]]
+    expect_identical(real$scenario, "real", info = info)
+    expect_identical(
+      real$data_md5,
+      c(d.csv = md5_of(file.path(p$data_default, "d.csv"))),
+      info = info
+    )
+    expect_false("fake_md5" %in% names(real), info = info)
+    expect_identical(known$scenario, "known", info = info)
+    expect_match(known$fake_md5, "^[0-9a-f]{32}$", info = info)
+    expect_false("data_md5" %in% names(known), info = info)
+  }
+})
+
+test_that("a real data folder with no file writes a named data_md5 of length 0, and it passes", {
+  p <- local_project()
+  empty <- file.path(p$root, "empty_data")
+  dir.create(empty)
+  out <- init(p, "real", data_raw = empty)
+  m <- save_and_read_manifest(out)
+  expect_identical(m$data_md5, stats::setNames(character(0), character(0)))
+  expect_identical(
+    check_results(read_results("v01", home = p$home))$status,
+    rep("PASS", 6)
+  )
 })

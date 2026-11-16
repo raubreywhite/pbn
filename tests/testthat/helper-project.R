@@ -130,6 +130,25 @@ expect_null_lines <- function() {
   ))
 }
 
+# A fake_<scenario>() that also writes the time of the call into a file,
+# like the header that haven::write_sav() writes. The data that the run reads
+# is the same on each call with one seed.
+fake_with_time_lines <- function(scenario) {
+  return(c(
+    paste0("fake_", scenario, " <- function(dir) {"),
+    "  # The time stamp, as in the header of an SPSS file.",
+    "  stamp <- format(Sys.time(), \"%Y-%m-%d %H:%M:%OS6\")",
+    "  writeLines(stamp, file.path(dir, \"header.txt\"))",
+    "  d <- data.frame(",
+    "    g = rep(c(\"a\", \"b\"), each = 20),",
+    "    x = stats::rbinom(40, 1, 0.5),",
+    "    y = stats::rnorm(40)",
+    "  )",
+    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
+    "}"
+  ))
+}
+
 write_data <- function(folder, x, y) {
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
   d <- data.frame(g = rep(c("a", "b"), each = 5), x = x, y = y)
@@ -233,6 +252,7 @@ valid_results <- function() {
       scenario = "real",
       sim = 1L,
       sims = 1L,
+      data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
       n_rows_data = 40L
     ),
     exclusions = data.frame(

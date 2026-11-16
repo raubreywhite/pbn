@@ -28,9 +28,16 @@
 #'   runs on one day with the same inputs and packages write the same bytes.
 #' - `version`, `scenario`, `sim`, `sims` and `data_raw`, from
 #'   [initialize_project()]. `data_raw` is the data folder of the run.
-#' - `data_md5`, a named character vector with the md5 of each file directly
-#'   in `data_raw`. [initialize_project()] computes it, so a file that the run
-#'   writes after that call is not in the list.
+#' - For the scenario `"real"` only, `data_md5`, a named character vector
+#'   with the md5 of each file directly in `data_raw`. [initialize_project()]
+#'   computes it, so a file that the run writes after that call is not in the
+#'   list.
+#' - For a fake scenario only, `fake_md5`, one string: the md5 of the code of
+#'   `fake_<scenario>()`, without its source references. Two runs of one
+#'   simulation on one day with the same code and packages then write the
+#'   same bytes. This holds also when `fake_<scenario>()` stamps the time
+#'   into a file. A change in a function that `fake_<scenario>()` calls does
+#'   not change `fake_md5`.
 #' - `n_rows_data`, the number of rows of `d`, or `NA` when `d` is `NULL`.
 #' @return Invisibly, the path of the results file.
 #' @examples
@@ -126,18 +133,28 @@ is_named_list_of_data_frames <- function(x) {
 build_manifest <- function(d) {
   # qs2 writes the file, so it MUST be in the package list.
   loadNamespace("qs2")
-  return(list(
-    pbn_version = as.character(getNamespaceVersion("pbn")),
-    r_version = R.version.string,
-    packages = loaded_packages(),
-    run_date = format(Sys.Date(), "%Y-%m-%d"),
-    version = state$version,
-    scenario = state$scenario,
-    sim = state$sim,
-    sims = state$sims,
-    data_raw = state$data_raw,
-    data_md5 = state$data_md5,
-    n_rows_data = if (is.null(d)) NA_integer_ else nrow(d)
+  # initialize_project() empties the state before it records data_md5
+  # (real) or fake_md5 (fake), so only the element of this run is there. An
+  # element left from an earlier call would reach the manifest, and
+  # check_results() would then refuse to save it.
+  fingerprint <- Filter(
+    Negate(is.null),
+    list(data_md5 = state$data_md5, fake_md5 = state$fake_md5)
+  )
+  return(c(
+    list(
+      pbn_version = as.character(getNamespaceVersion("pbn")),
+      r_version = R.version.string,
+      packages = loaded_packages(),
+      run_date = format(Sys.Date(), "%Y-%m-%d"),
+      version = state$version,
+      scenario = state$scenario,
+      sim = state$sim,
+      sims = state$sims,
+      data_raw = state$data_raw
+    ),
+    fingerprint,
+    list(n_rows_data = if (is.null(d)) NA_integer_ else nrow(d))
   ))
 }
 

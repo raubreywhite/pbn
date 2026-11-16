@@ -49,10 +49,13 @@ the scenarios that it does not run stay as they are.
 \verb{<version>_results/<scenario>/sim_<kkkk>/results.qs2} into
 \verb{<version>_results/<scenario>/results.qs2}. It stops when the files are
 not exactly the simulations 1 to \code{sims}. \code{estimates}, \code{exclusions} and
-each data.frame in \code{tables} get a first column \code{sim}. \code{extra} is an
-empty list. The \code{manifest} is that of simulation 1. In it, \code{sim} and
-\code{n_rows_data} are \code{NA}, \code{sims} is the number of simulations, and
-\code{stacked} is \code{TRUE}.
+each data.frame in \code{tables} get a first column \code{sim}. Each keeps the
+class of its object in simulation 1, so a data.table stays a
+data.table. \code{extra} is an empty list. The \code{manifest} is that of
+simulation 1. In it, \code{sim} and \code{n_rows_data} are \code{NA}, \code{sims} is the
+number of simulations, and \code{stacked} is \code{TRUE}. For a fake scenario, it
+stops when a simulation has no valid \code{manifest$fake_md5}, or when the
+simulations do not have one value of it.
 \item For each scenario that has a function \verb{expect_<scenario>()} in
 \verb{<version>_functions/}, it calls that function on the results of the
 scenario in a new R session. \code{expect_real()} is optional. The function

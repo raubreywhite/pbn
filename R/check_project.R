@@ -33,6 +33,21 @@
 #'   `pbn::use_scenario`, that is not in a comment. A call inside a function
 #'   body or an `if` counts. [use_scenario()] is for stepping through the
 #'   script by hand.
+#' - `use_scenario_lines` (FAIL): a `vNN_run.R` at the top level does not have
+#'   exactly one comment `# pbn::use_scenario("<name>", sim = 1)` for each
+#'   scenario of `CFG$scenarios`. A comment for another scenario fails too.
+#'   The detail names each such scenario, with the number of lines when there is
+#'   more than one. The rule does not check the order.
+#'
+#'   A comment counts only when all of these hold:
+#'   - It is above the first call `pbn::initialize_project()`.
+#'   - It is at the top level of the script, not in a function body or a
+#'     braced block such as an `if`.
+#'   - It is the only thing on its line.
+#'   - It has `sim = 1`. Any whitespace between its parts is allowed.
+#'
+#'   The rule is a WARN with the reason when the script has no call
+#'   `pbn::initialize_project()`, or when pbn cannot read `CFG$scenarios`.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
@@ -62,6 +77,12 @@
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.
+#'
+#' `check_project()` runs project code. To read `CFG$scenarios` for the rule
+#' `use_scenario_lines`, it sources the `vNN_functions/` folder of each
+#' `vNN_run.R` with [org::initialize_project()] in a new R session, as
+#' [run_scenarios()] does. Each top-level call in those files runs then, for
+#' example a call that writes a file.
 #'
 #' The file `pbn_allow.txt` in the project folder MAY list exceptions. Write
 #' one `rule<TAB>path` per line, with the path relative to the project folder.

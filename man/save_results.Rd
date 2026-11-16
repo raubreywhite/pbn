@@ -45,9 +45,16 @@ versions. \code{qs2} is always in the list, because it writes the file.
 runs on one day with the same inputs and packages write the same bytes.
 \item \code{version}, \code{scenario}, \code{sim}, \code{sims} and \code{data_raw}, from
 \code{\link[=initialize_project]{initialize_project()}}. \code{data_raw} is the data folder of the run.
-\item \code{data_md5}, a named character vector with the md5 of each file directly
-in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}} computes it, so a file that the run
-writes after that call is not in the list.
+\item For the scenario \code{"real"} only, \code{data_md5}, a named character vector
+with the md5 of each file directly in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}}
+computes it, so a file that the run writes after that call is not in the
+list.
+\item For a fake scenario only, \code{fake_md5}, one string: the md5 of the code of
+\verb{fake_<scenario>()}, without its source references. Two runs of one
+simulation on one day with the same code and packages then write the
+same bytes. This holds also when \verb{fake_<scenario>()} stamps the time
+into a file. A change in a function that \verb{fake_<scenario>()} calls does
+not change \code{fake_md5}.
 \item \code{n_rows_data}, the number of rows of \code{d}, or \code{NA} when \code{d} is \code{NULL}.
 }
 }

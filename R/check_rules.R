@@ -188,6 +188,83 @@ rule_manifest_scenario <- function(x) {
   ))
 }
 
+rule_manifest_data <- function(x) {
+  rule <- "manifest_data"
+  m <- if (is.list(x)) x[["manifest"]] else NULL
+  if (!is.list(m)) {
+    return(result_row(rule, "manifest is not a list", ""))
+  }
+  return(result_row(
+    rule,
+    manifest_data_failure(m),
+    "the manifest has data_md5 for \"real\" or fake_md5 for a fake scenario"
+  ))
+}
+
+# The failure of the rule manifest_data for the manifest `m`, or
+# character(0). When the scenario is not one string, manifest_scenario fails,
+# and this rule checks only that one of the two elements is there.
+manifest_data_failure <- function(m) {
+  has <- c(
+    data_md5 = !is.null(m[["data_md5"]]),
+    fake_md5 = !is.null(m[["fake_md5"]])
+  )
+  if (all(has)) {
+    return("manifest has both data_md5 and fake_md5")
+  }
+  if (!any(has)) {
+    return("manifest has neither data_md5 nor fake_md5")
+  }
+  scenario <- m[["scenario"]]
+  real <- is_one_string(scenario) && scenario == "real"
+  if (is_one_string(scenario) && !has[[if (real) "data_md5" else "fake_md5"]]) {
+    if (real) {
+      return("manifest has fake_md5, but the scenario \"real\" needs data_md5")
+    }
+    return(paste0(
+      "manifest has data_md5, but the fake scenario \"",
+      scenario,
+      "\" needs fake_md5"
+    ))
+  }
+  return(md5_failure(m, has))
+}
+
+# The failure when the fingerprint element of the manifest `m` is not in
+# the form that pbn writes, or character(0).
+md5_failure <- function(m, has) {
+  if (has[["fake_md5"]] && !is_md5(m[["fake_md5"]])) {
+    return(
+      "manifest$fake_md5 is not one md5: a string of 32 lower-case hex digits"
+    )
+  }
+  if (has[["data_md5"]] && !is_data_md5(m[["data_md5"]])) {
+    return(paste(
+      "manifest$data_md5 is not a named character vector of md5 values,",
+      "each a string of 32 lower-case hex digits"
+    ))
+  }
+  return(character(0))
+}
+
+# One md5 as tools::md5sum() writes it.
+is_md5 <- function(x) {
+  return(is_one_string(x) && grepl("^[0-9a-f]{32}$", x))
+}
+
+# The md5 of each file of a data folder, named by the file. A folder with no
+# file gives a named character vector of length 0.
+is_data_md5 <- function(x) {
+  nm <- names(x)
+  return(
+    is.character(x) &&
+      !is.null(nm) &&
+      !anyNA(nm) &&
+      all(nzchar(nm)) &&
+      all(grepl("^[0-9a-f]{32}$", x))
+  )
+}
+
 is_one_string <- function(x) {
   return(is.character(x) && length(x) == 1 && !is.na(x))
 }
@@ -749,6 +826,13 @@ project_rules <- function() {
     no_active_use_scenario = list(
       rule_no_active_use_scenario,
       "no vNN_run.R has an active call pbn::use_scenario()"
+    ),
+    use_scenario_lines = list(
+      rule_use_scenario_lines,
+      paste(
+        "every vNN_run.R has one line # pbn::use_scenario(\"<name>\", sim = 1)",
+        "for each scenario in CFG$scenarios, above pbn::initialize_project()"
+      )
     ),
     version_items_complete = list(
       rule_version_items_complete,

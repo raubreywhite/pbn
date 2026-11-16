@@ -56,9 +56,15 @@ state <- new.env(parent = emptyenv())
 #'    deletes it, creates it empty, and calls `fake_<scenario>(dir)` with its
 #'    path. The project MUST define `fake_<scenario>()` in
 #'    `<version>_functions/`.
-#' 5. It computes the md5 of each file directly in the data folder.
-#'    [save_results()] stores these values as `manifest$data_md5`, so a file
-#'    that the run writes later is not in the list.
+#' 5. It computes an md5 that identifies the data, and [save_results()]
+#'    stores it in the manifest:
+#'    - For `"real"`, the md5 of each file directly in the data folder, as
+#'      `manifest$data_md5`. A file that the run writes later is not in the
+#'      list.
+#'    - For a fake scenario, the md5 of the code of `fake_<scenario>()`, as
+#'      `manifest$fake_md5`. A writer such as `haven::write_sav()` stamps the
+#'      time into the file. The md5 of the files would then change on every
+#'      run, and the data would not.
 #'
 #' `initialize_project()` stops in these cases:
 #' - `scenario=` or `sim=` is given more than once.
@@ -147,7 +153,7 @@ initialize_project <- function(
       stop(e)
     }
   )
-  md5 <- data_md5(out$data_raw)
+  fingerprint <- data_fingerprint(out, env)
   if (is_interactive()) {
     cat(
       "pbn: scenario ",
@@ -162,8 +168,41 @@ initialize_project <- function(
     )
   }
   # Every step that can stop is above this line.
-  list2env(c(out, list(data_md5 = md5)), envir = state)
+  list2env(c(out, fingerprint), envir = state)
   return(invisible(out))
+}
+
+# What determines the data of the run. For "real", the md5 of each file in
+# the data folder. For a fake scenario, the md5 of the code of
+# fake_<scenario>(): a writer can stamp the time into a file, so the md5 of
+# the files would change on every run.
+data_fingerprint <- function(out, env) {
+  if (out$scenario == "real") {
+    return(list(data_md5 = data_md5(out$data_raw)))
+  }
+  fn <- get(
+    paste0("fake_", out$scenario),
+    envir = env,
+    mode = "function",
+    inherits = FALSE
+  )
+  return(list(fake_md5 = function_md5(fn)))
+}
+
+# The md5 of the deparsed code of `fn`. removeSource() and a fixed deparse
+# control leave out the source references, so the value is the same with
+# keep.source TRUE or FALSE, for example under RStudio and under Rscript.
+function_md5 <- function(fn) {
+  text <- deparse(
+    utils::removeSource(fn),
+    width.cutoff = 500L,
+    control = c("keepNA", "keepInteger", "niceNames", "showAttributes")
+  )
+  file <- tempfile()
+  on.exit(unlink(file), add = TRUE)
+  # writeBin(), not writeLines(), so the bytes are the same on each OS.
+  writeBin(charToRaw(enc2utf8(paste(text, collapse = "\n"))), file)
+  return(unname(tools::md5sum(file)))
 }
 
 # The steps of initialize_project() that can leave a folder behind.

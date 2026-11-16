@@ -32,6 +32,10 @@ Write one commented line for each scenario directly above the
 p <- pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
 }\if{html}{\out{</div>}}
 
+The rule \code{use_scenario_lines} of \code{\link[=check_project]{check_project()}} fails a run script
+that does not have exactly one such line for each scenario of
+\code{CFG$scenarios}, or that has a line for another scenario.
+
 To step through a scenario, run one of these lines without the \verb{#}, then
 run the script line by line. The lines MUST stay commented in the file.
 \code{use_scenario()} stops in a non-interactive R session, for example under

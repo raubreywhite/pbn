@@ -33,8 +33,12 @@ test_that("run_scenarios runs every scenario, stacks null and writes check.csv; 
   )
 
   stacked <- read_results("v01", scenario = "null", home = p$home)
-  expect_identical(check_results(stacked)$status, rep("PASS", 5))
+  expect_identical(check_results(stacked)$status, rep("PASS", 6))
   expect_identical(stacked$estimates$sim, 1:3)
+  # Each stacked table keeps the class that the run saved: table1() gives a
+  # data.table, and the run script gives estimates as a data.frame.
+  expect_identical(class(stacked$tables$table1), c("data.table", "data.frame"))
+  expect_identical(class(stacked$estimates), "data.frame")
   expect_identical(names(stacked$estimates), c("sim", "term", "estimate"))
   expect_identical(names(stacked$exclusions)[1], "sim")
   expect_identical(unique(stacked$tables$table1$sim), 1:3)
@@ -51,7 +55,9 @@ test_that("run_scenarios runs every scenario, stacks null and writes check.csv; 
   expect_identical(m$n_rows_data, NA_integer_)
   expect_true(m$stacked)
   expect_identical(m$scenario, "null")
-  expect_identical(m$data_md5, sim1$manifest$data_md5)
+  expect_false("data_md5" %in% names(m))
+  expect_match(sim1$manifest$fake_md5, "^[0-9a-f]{32}$")
+  expect_identical(m$fake_md5, sim1$manifest$fake_md5)
 
   expect_identical(
     names(out),
@@ -411,4 +417,141 @@ test_that("an older results file that cannot be deleted stops the run", {
     run_scenarios("v01", scenario = "known", home = p$home),
     "could not delete an older file"
   )
+})
+
+# Three simulation results objects of the fake scenario null, with the class
+# `as_class` for each table.
+three_runs <- function(as_class) {
+  return(lapply(1:3, function(k) {
+    x <- valid_results()
+    x$manifest$scenario <- "null"
+    x$manifest$data_md5 <- NULL
+    x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
+    x$manifest$sim <- k
+    x$manifest$sims <- 3L
+    x$exclusions <- as_class(x$exclusions)
+    x$estimates <- as_class(data.frame(term = "a", estimate = k / 10))
+    x$tables <- list(counts = as_class(x$tables$counts))
+    return(x)
+  }))
+}
+
+test_that("stack_results keeps the class of each table of simulation 1", {
+  classes <- list(
+    data.table = list(
+      as_class = data.table::as.data.table,
+      class = c("data.table", "data.frame")
+    ),
+    data.frame = list(as_class = as.data.frame, class = "data.frame"),
+    subclass = list(
+      as_class = function(x) {
+        return(structure(as.data.frame(x), class = c("my_frame", "data.frame")))
+      },
+      class = c("my_frame", "data.frame")
+    )
+  )
+  for (nm in names(classes)) {
+    x <- stack_results(three_runs(classes[[nm]]$as_class), "null")
+    for (part in list(x$estimates, x$exclusions, x$tables$counts)) {
+      expect_identical(class(part), classes[[nm]]$class, info = nm)
+      expect_identical(names(part)[1], "sim", info = nm)
+    }
+    expect_identical(x$estimates$sim, 1:3, info = nm)
+    expect_identical(x$estimates$estimate, c(0.1, 0.2, 0.3), info = nm)
+    expect_identical(x$tables$counts$sim, rep(1:3, each = 2), info = nm)
+    expect_identical(check_results(x)$status, rep("PASS", 6), info = nm)
+  }
+})
+
+test_that("stack_results stops when the simulations have different fake_md5", {
+  runs <- three_runs(as.data.frame)
+  expect_identical(
+    stack_results(runs, "null")$manifest$fake_md5,
+    "fedcba9876543210fedcba9876543210"
+  )
+  runs[[3]]$manifest$fake_md5 <- "0123456789abcdef0123456789abcdef"
+  expect_error(
+    stack_results(runs, "null"),
+    "The simulations of the scenario \"null\" have different values of manifest$fake_md5",
+    fixed = TRUE
+  )
+})
+
+test_that("stack_results stops when a simulation of a fake scenario has no valid fake_md5", {
+  for (bad in list(NULL, NA_character_, "x", 1)) {
+    runs <- three_runs(as.data.frame)
+    runs[[2]]$manifest["fake_md5"] <- list(bad)
+    expect_error(
+      stack_results(runs, "null"),
+      paste0(
+        "The simulations 2 of the scenario \"null\" have no valid ",
+        "manifest$fake_md5, so pbn cannot stack them."
+      ),
+      fixed = TRUE,
+      info = paste(format(bad), collapse = "")
+    )
+  }
+  # A real scenario with simulations has data_md5 and no fake_md5.
+  runs <- lapply(1:2, function(k) {
+    x <- valid_results()
+    x$manifest$sim <- k
+    x$manifest$sims <- 2L
+    return(x)
+  })
+  x <- stack_results(runs, "real")
+  expect_identical(x$manifest$data_md5, runs[[1]]$manifest$data_md5)
+  expect_false("fake_md5" %in% names(x$manifest))
+})
+
+test_that("run_scenarios run twice writes the same bytes when fake_<scenario>() stamps the time into a file", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  write_lines(p$home, "v01_functions/fake_null.R", fake_with_time_lines("null"))
+  write_lines(
+    p$home,
+    "v01_functions/fake_known.R",
+    append(
+      fake_known_lines(),
+      "  writeLines(format(Sys.time(), \"%OS6\"), file.path(dir, \"header.txt\"))",
+      after = 1
+    )
+  )
+  results <- file.path(p$home, "v01_results")
+  outputs <- function() {
+    files <- sort(list.files(results, recursive = TRUE))
+    files <- files[grepl("(results\\.qs2|check\\.csv)$", files)]
+    return(stats::setNames(md5_of(file.path(results, files)), files))
+  }
+  headers <- function() {
+    files <- sort(list.files(results, "^header\\.txt$", recursive = TRUE))
+    return(stats::setNames(md5_of(file.path(results, files)), files))
+  }
+  suppressMessages(utils::capture.output(run_scenarios("v01", home = p$home)))
+  first <- outputs()
+  first_headers <- headers()
+  suppressMessages(utils::capture.output(run_scenarios("v01", home = p$home)))
+
+  # The planted time stamps differ, so the data files differ.
+  expect_identical(
+    names(first_headers),
+    c(
+      "known/data/header.txt",
+      paste0("null/sim_000", 1:3, "/data/header.txt")
+    )
+  )
+  expect_identical(names(headers()), names(first_headers))
+  expect_true(all(headers() != first_headers))
+  # The stacked file, every simulation file and every check.csv are the same.
+  expect_identical(
+    names(first),
+    c(
+      "known/check.csv",
+      "known/results.qs2",
+      "null/check.csv",
+      "null/results.qs2",
+      paste0("null/sim_000", 1:3, "/results.qs2"),
+      "real/results.qs2"
+    )
+  )
+  expect_identical(outputs(), first)
 })

@@ -49,6 +49,23 @@ call \code{pbn::use_scenario()} or \code{use_scenario()}, or the reference
 \code{pbn::use_scenario}, that is not in a comment. A call inside a function
 body or an \code{if} counts. \code{\link[=use_scenario]{use_scenario()}} is for stepping through the
 script by hand.
+\item \code{use_scenario_lines} (FAIL): a \code{vNN_run.R} at the top level does not have
+exactly one comment \verb{# pbn::use_scenario("<name>", sim = 1)} for each
+scenario of \code{CFG$scenarios}. A comment for another scenario fails too.
+The detail names each such scenario, with the number of lines when there is
+more than one. The rule does not check the order.
+
+A comment counts only when all of these hold:
+\itemize{
+\item It is above the first call \code{pbn::initialize_project()}.
+\item It is at the top level of the script, not in a function body or a
+braced block such as an \code{if}.
+\item It is the only thing on its line.
+\item It has \code{sim = 1}. Any whitespace between its parts is allowed.
+}
+
+The rule is a WARN with the reason when the script has no call
+\code{pbn::initialize_project()}, or when pbn cannot read \code{CFG$scenarios}.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
@@ -79,6 +96,12 @@ folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_resu
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
+
+\code{check_project()} runs project code. To read \code{CFG$scenarios} for the rule
+\code{use_scenario_lines}, it sources the \verb{vNN_functions/} folder of each
+\code{vNN_run.R} with \code{\link[org:initialize_project]{org::initialize_project()}} in a new R session, as
+\code{\link[=run_scenarios]{run_scenarios()}} does. Each top-level call in those files runs then, for
+example a call that writes a file.
 
 The file \code{pbn_allow.txt} in the project folder MAY list exceptions. Write
 one \verb{rule<TAB>path} per line, with the path relative to the project folder.

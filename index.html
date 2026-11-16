@@ -13,8 +13,8 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="House Layout and Checks for Analysis Projects">
-<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each made-up scenario in new R sessions.">
-<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each made-up scenario in new R sessions.">
+<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each fake scenario in new R sessions.">
+<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each fake scenario in new R sessions.">
 <meta property="og:image" content="https://www.rwhite.no/pbn/logo.png">
 </head>
 <body>
@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -91,13 +91,13 @@
 <h2 id="the-house-layout">The house layout<a class="anchor" aria-label="anchor" href="#the-house-layout"></a>
 </h2>
 <p>All names are lower case. The version is a prefix.</p>
-<pre><code>v01_run.R                 data -&gt; results; first call is pbn::initialize_project(version = "v01", ...)
-v01_output.R              optional: results -&gt; figures and tables
+<pre><code>v01_run.R                 data -&gt; results -&gt; figures and tables; calls pbn::initialize_project(version = "v01", ...)
 v01_functions/            sourced folder; holds _cfg.R (top-level `CFG &lt;- list(...)`) and project functions
 v01_results/&lt;scenario&gt;/   the results of each scenario
 v01_test/                 optional testthat files for project functions
 v01_check_functions.R     optional checks of the functions
 check_project.R           one line: pbn::check_project()
+run_scenarios.R           one line: pbn::run_scenarios("v01")
 pbn_allow.txt             optional exceptions to check_project()
 manuscript/manual/vNN_&lt;initials&gt;.docx   hand-edited Word files (initials upper case, e.g. v16_SA.docx)
 manuscript/built/vNN/     pipeline output
@@ -107,7 +107,7 @@ README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 <div class="section level2">
 <h2 id="scenarios">Scenarios<a class="anchor" aria-label="anchor" href="#scenarios"></a>
 </h2>
-<p>The real data is one scenario among made-up ones. The same run script runs on each scenario, and only the data changes. <code>CFG$scenarios</code> in <code>_cfg.R</code> names the scenarios and the number of simulations of each:</p>
+<p>The real data is one scenario among fake ones. The same run script runs on each scenario, and only the data changes. <code>CFG$scenarios</code> in <code>_cfg.R</code> names the scenarios and the number of simulations of each:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">CFG</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  scenarios <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real"</span>, <span class="st">"known"</span>, <span class="st">"null"</span><span class="op">)</span>, sims <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
@@ -129,17 +129,26 @@ v01_results/null/check.csv                   the assertions on the stacked resul
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p><code>v01_run.R</code>:</p>
+<p><code>v01_run.R</code>, with one commented <code><a href="reference/use_scenario.html">use_scenario()</a></code> line for each scenario in <code>CFG$scenarios</code>:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"/data/raw"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="co"># Run one of these lines to step through a scenario by hand. The choice lasts for the R session.</span></span>
+<span><span class="co"># pbn::use_scenario("real", sim = 1)</span></span>
+<span><span class="co"># pbn::use_scenario("known", sim = 1)</span></span>
+<span><span class="co"># pbn::use_scenario("null", sim = 1)</span></span>
+<span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"/data/raw"</span><span class="op">)</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">data_raw</span>, <span class="st">"d.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span></span>
 <span>  exclusions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>step <span class="op">=</span> <span class="st">"all"</span>, n_before <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, n_excluded <span class="op">=</span> <span class="fl">0</span>, n_after <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"n"</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>table1 <span class="op">=</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/table1.html">table1</a></span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="st">"group"</span>, vars <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">vars</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  d <span class="op">=</span> <span class="va">d</span></span>
-<span><span class="op">)</span></span></code></pre></div>
-<p>To step through one made-up scenario by hand, add <code>scenario = "null"</code> to the <code><a href="reference/initialize_project.html">initialize_project()</a></code> call and run the script line by line. Remove it again when you are done.</p>
+<span><span class="op">)</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/end_if_fake_scenario.html">end_if_fake_scenario</a></span><span class="op">(</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># PART 3 -- OUTPUT ====</span></span>
+<span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span>
+<span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/write.table.html" class="external-link">write.csv</a></span><span class="op">(</span><span class="va">r</span><span class="op">$</span><span class="va">estimates</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">results</span>, <span class="st">"estimates.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>To step through a scenario by hand, run one of the commented lines without the <code>#</code>. Then run the script line by line. <code><a href="reference/initialize_project.html">initialize_project()</a></code> prints which scenario it uses. For a fake scenario, <code><a href="reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code> stops with an error, and the R session stays open. The lines MUST stay commented in the file: <code><a href="reference/use_scenario.html">use_scenario()</a></code> stops under <code>Rscript</code>, and <code><a href="reference/check_project.html">check_project()</a></code> fails an active call.</p>
 <p>To run every simulation of every scenario, each in a new R session:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_scenarios.html">run_scenarios</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span>
@@ -147,7 +156,7 @@ v01_results/null/check.csv                   the assertions on the stacked resul
 <p><code><a href="reference/run_scenarios.html">run_scenarios()</a></code> stops when an assertion fails. <code><a href="reference/check_project.html">check_project()</a></code> fails a <code><a href="reference/read_results.html">read_results()</a></code> call in <code>manuscript/built/</code> that reads a scenario other than <code>"real"</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="the-seven-functions">The seven functions<a class="anchor" aria-label="anchor" href="#the-seven-functions"></a>
+<h2 id="the-nine-functions">The nine functions<a class="anchor" aria-label="anchor" href="#the-nine-functions"></a>
 </h2>
 <table class="table">
 <colgroup>
@@ -162,6 +171,14 @@ v01_results/null/check.csv                   the assertions on the stacked resul
 <tr>
 <td><code><a href="reference/initialize_project.html">initialize_project()</a></code></td>
 <td>Starts one simulation of one scenario with the house defaults of <code>org</code>, and sources <code>vNN_functions/</code>.</td>
+</tr>
+<tr>
+<td><code><a href="reference/use_scenario.html">use_scenario()</a></code></td>
+<td>Chooses the scenario of the next <code><a href="reference/initialize_project.html">initialize_project()</a></code> when a person steps through a run script by hand.</td>
+</tr>
+<tr>
+<td><code><a href="reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code></td>
+<td>Ends a run script after <code><a href="reference/save_results.html">save_results()</a></code> when the scenario is fake.</td>
 </tr>
 <tr>
 <td><code><a href="reference/run_scenarios.html">run_scenarios()</a></code></td>

@@ -4,6 +4,10 @@
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   : Start one scenario of an analysis project version
+- [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+  : Choose the scenario for stepping through a run script by hand
+- [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+  : End the run script here when the scenario is fake
 - [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
   : Run every scenario of a project version in new R sessions
 

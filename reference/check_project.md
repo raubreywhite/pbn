@@ -50,7 +50,22 @@ The rules:
 - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
   call
   [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  whose `version` argument is the string `"vNN"`.
+  whose `version` argument is the string `"vNN"`. The detail names each
+  argument of the call that
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  does not have.
+
+- `no_active_use_scenario` (FAIL): a `vNN_run.R` at the top level has a
+  call
+  [`pbn::use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+  or
+  [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md),
+  or the reference
+  [`pbn::use_scenario`](https://www.rwhite.no/pbn/reference/use_scenario.md),
+  that is not in a comment. A call inside a function body or an `if`
+  counts.
+  [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+  is for stepping through the script by hand.
 
 - `version_items_complete` (FAIL): a `vNN_run.R` has no
   `vNN_functions/`, or the reverse.
@@ -91,10 +106,10 @@ The rules:
   functions folder uses `Sys.getenv` or `Sys.setenv`.
 
 - `unknown_path` (WARN): the house layout does not name a top-level file
-  or folder. The layout names `vNN_run.R`, `vNN_output.R`,
-  `vNN_functions/`, `vNN_results/`, `vNN_test/` and
-  `vNN_check_functions.R`, among others. A top-level dotfile and a
-  top-level `*.Rproj` file are never unknown.
+  or folder. The layout names `vNN_run.R`, `vNN_functions/`,
+  `vNN_results/`, `vNN_test/`, `vNN_check_functions.R`,
+  `check_project.R` and `run_scenarios.R`, among others. A top-level
+  dotfile and a top-level `*.Rproj` file are never unknown.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -117,6 +132,7 @@ writeLines(
 pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
+#> PASS  no_active_use_scenario  no vNN_run.R has an active call pbn::use_scenario()
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -126,7 +142,7 @@ pbn::check_project(home)
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 11 PASS, 0 WARN, 0 FAIL
+#> 12 PASS, 0 WARN, 0 FAIL
 
 unlink(home, recursive = TRUE)
 ```

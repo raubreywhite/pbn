@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,14 +41,24 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="2026.11.17" id="pbn-20261117">pbn 2026.11.17<a class="anchor" aria-label="anchor" href="#pbn-20261117"></a></h2>
-<ul><li>Scenarios: <code>CFG$scenarios</code> names the real data and the made-up scenarios, with the number of simulations of each. The same run script runs on each.</li>
+<h2 class="pkg-version" data-toc-text="2026.11.18" id="pbn-20261118">pbn 2026.11.18<a class="anchor" aria-label="anchor" href="#pbn-20261118"></a></h2>
+<ul><li>Removed the <code>scenario</code> argument of <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. A call that still passes it stops with R’s unused-argument error. The command line <code>scenario=&lt;name&gt; sim=&lt;k&gt;</code> gives the scenario, or else the new <code><a href="../reference/use_scenario.html">use_scenario()</a></code>, or else <code>"real"</code>.</li>
+<li>New <code>use_scenario(scenario, sim = 1)</code> chooses the scenario for the rest of the R session when a person steps through a run script by hand. It stops in a non-interactive R session.</li>
+<li>In an interactive R session, <code><a href="../reference/initialize_project.html">initialize_project()</a></code> prints one line with the scenario and the simulation, and <code>(fake)</code> for a fake scenario. A call that stops leaves no run for <code><a href="../reference/save_results.html">save_results()</a></code> or <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code>.</li>
+<li>New <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code> ends a run script after <code><a href="../reference/save_results.html">save_results()</a></code> for a fake scenario, so the output part runs for the real data only. It quits with status 0 under <code>Rscript</code>, and <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> counts that as a success.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>no_active_use_scenario</code>. It fails an active call or the reference <code><a href="../reference/use_scenario.html">pbn::use_scenario</a></code>, also in a function body or an <code>if</code>. <code>run_script_initialises</code> names each argument that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> does not have.</li>
 <li>
-<code><a href="../reference/initialize_project.html">initialize_project()</a></code> takes <code>scenario</code>, and reads <code>scenario=&lt;name&gt;</code> and <code>sim=&lt;k&gt;</code> from the command line. It sets the seed to the simulation before org sources the functions and again before it calls <code>fake_&lt;scenario&gt;(dir)</code> for made-up data.</li>
+<code>unknown_path</code> knows <code>run_scenarios.R</code>. It no longer knows <code>vNN_output.R</code>: the output part goes in <code>vNN_run.R</code>, after <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code>.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.17" id="pbn-20261117">pbn 2026.11.17<a class="anchor" aria-label="anchor" href="#pbn-20261117"></a></h2>
+<ul><li>Scenarios: <code>CFG$scenarios</code> names the real data and the fake scenarios, with the number of simulations of each. The same run script runs on each.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> takes <code>scenario</code>, and reads <code>scenario=&lt;name&gt;</code> and <code>sim=&lt;k&gt;</code> from the command line. It sets the seed to the simulation before org sources the functions and again before it calls <code>fake_&lt;scenario&gt;(dir)</code> for fake data.</li>
 <li>Results go to <code>vNN_results/&lt;scenario&gt;/results.qs2</code>, or to <code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> for a scenario with more than 1 simulation. pbn needs <code>org</code> 2026.11.16 for this.</li>
 <li>New <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> runs every simulation of every scenario in a new R session with a <code>plnr</code> plan, stacks the simulations, and checks them with <code>expect_&lt;scenario&gt;()</code>.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> needs <code>expect_&lt;scenario&gt;()</code> for every made-up scenario, and stops before any run when one is missing. An <code>expect_</code> function that errors or returns no assertions counts as a failed assertion.</li>
+<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> needs <code>expect_&lt;scenario&gt;()</code> for every fake scenario, and stops before any run when one is missing. An <code>expect_</code> function that errors or returns no assertions counts as a failed assertion.</li>
 <li>
 <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> deletes the results of a simulation before it runs it, and stops when the run writes no <code>results.qs2</code>. An older file is never stacked or checked.</li>
 <li>
@@ -73,7 +83,8 @@
 <li>
 <code><a href="../reference/check_project.html">check_project()</a></code> checks the <code>results.qs2</code> of every scenario folder, and <code>unknown_path</code> knows <code>vNN_check_functions.R</code>, <code>vNN_check_scenarios.R</code>, top-level dotfiles and <code>*.Rproj</code>.</li>
 </ul></div>
-  </main></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

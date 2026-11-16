@@ -20,13 +20,13 @@ pak::pak("raubreywhite/pbn")
 
 All names are lower case. The version is a prefix.
 
-    v01_run.R                 data -> results; first call is pbn::initialize_project(version = "v01", ...)
-    v01_output.R              optional: results -> figures and tables
+    v01_run.R                 data -> results -> figures and tables; calls pbn::initialize_project(version = "v01", ...)
     v01_functions/            sourced folder; holds _cfg.R (top-level `CFG <- list(...)`) and project functions
     v01_results/<scenario>/   the results of each scenario
     v01_test/                 optional testthat files for project functions
     v01_check_functions.R     optional checks of the functions
     check_project.R           one line: pbn::check_project()
+    run_scenarios.R           one line: pbn::run_scenarios("v01")
     pbn_allow.txt             optional exceptions to check_project()
     manuscript/manual/vNN_<initials>.docx   hand-edited Word files (initials upper case, e.g. v16_SA.docx)
     manuscript/built/vNN/     pipeline output
@@ -35,9 +35,9 @@ All names are lower case. The version is a prefix.
 
 ## Scenarios
 
-The real data is one scenario among made-up ones. The same run script
-runs on each scenario, and only the data changes. `CFG$scenarios` in
-`_cfg.R` names the scenarios and the number of simulations of each:
+The real data is one scenario among fake ones. The same run script runs
+on each scenario, and only the data changes. `CFG$scenarios` in `_cfg.R`
+names the scenarios and the number of simulations of each:
 
 ``` r
 CFG <- list(
@@ -65,9 +65,15 @@ project MUST define two functions:
 
 ## Quick start
 
-`v01_run.R`:
+`v01_run.R`, with one commented
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+line for each scenario in `CFG$scenarios`:
 
 ``` r
+# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.
+# pbn::use_scenario("real", sim = 1)
+# pbn::use_scenario("known", sim = 1)
+# pbn::use_scenario("null", sim = 1)
 p <- pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
 d <- data.table::fread(file.path(p$data_raw, "d.csv"))
 pbn::save_results(
@@ -76,12 +82,24 @@ pbn::save_results(
   tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
   d = d
 )
+pbn::end_if_fake_scenario()
+
+# PART 3 -- OUTPUT ====
+r <- pbn::read_results("v01")
+utils::write.csv(r$estimates, file.path(p$results, "estimates.csv"))
 ```
 
-To step through one made-up scenario by hand, add `scenario = "null"` to
-the
+To step through a scenario by hand, run one of the commented lines
+without the `#`. Then run the script line by line.
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-call and run the script line by line. Remove it again when you are done.
+prints which scenario it uses. For a fake scenario,
+[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+stops with an error, and the R session stays open. The lines MUST stay
+commented in the file:
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+stops under `Rscript`, and
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+fails an active call.
 
 To run every simulation of every scenario, each in a new R session:
 
@@ -97,11 +115,13 @@ fails a
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
 call in `manuscript/built/` that reads a scenario other than `"real"`.
 
-## The seven functions
+## The nine functions
 
 | Function | What it does |
 |----|----|
 | [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md) | Starts one simulation of one scenario with the house defaults of `org`, and sources `vNN_functions/`. |
+| [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md) | Chooses the scenario of the next [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md) when a person steps through a run script by hand. |
+| [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md) | Ends a run script after [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md) when the scenario is fake. |
 | [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md) | Runs `vNN_run.R` for each scenario and simulation in a new R session, stacks the simulations and checks the assertions. |
 | [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md) | Writes `results.qs2` with a manifest, and stops when the object fails the contract. |
 | [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md) | Reads the `results.qs2` of one scenario. The default is `"real"`. |
@@ -120,6 +140,10 @@ and
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   : Start one scenario of an analysis project version
+- [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+  : Choose the scenario for stepping through a run script by hand
+- [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+  : End the run script here when the scenario is fake
 - [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
   : Run every scenario of a project version in new R sessions
 

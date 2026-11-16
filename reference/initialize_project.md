@@ -7,13 +7,7 @@ MUST be the first call in every `vNN_run.R`.
 ## Usage
 
 ``` r
-initialize_project(
-  version,
-  home,
-  data_raw,
-  scenario = "real",
-  env = .GlobalEnv
-)
+initialize_project(version, home, data_raw, env = .GlobalEnv)
 ```
 
 ## Arguments
@@ -31,11 +25,6 @@ initialize_project(
 
   The folder of the real raw data. It MUST exist when the scenario is
   `"real"`. pbn does not read it for any other scenario.
-
-- scenario:
-
-  The scenario, one name in `CFG$scenarios$scenario`. The default
-  `"real"` is the real data.
 
 - env:
 
@@ -58,13 +47,27 @@ data.frame with these columns:
 - `sims`: the number of simulations of the scenario, a whole number of 1
   or more.
 
-Two trailing command-line arguments replace the defaults. pbn reads no
-environment variables.
+The scenario and the simulation come from the first of these that gives
+them. pbn reads no environment variables.
 
-- `scenario=<name>` replaces `scenario`.
+1.  The trailing command-line arguments `scenario=<name>` and `sim=<k>`.
+    [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+    gives both. When only one of them is there, the other one is
+    `"real"` or 1.
 
-- `sim=<k>` gives the simulation, a whole number of 1 or more. Without
-  it, the simulation is 1.
+2.  The choice of
+    [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md),
+    for a person who steps through the script by hand.
+
+3.  The scenario `"real"` and the simulation 1.
+
+The choice of
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+lasts for the R session.
+
+In an interactive R session, `initialize_project()` prints one line, for
+example `pbn: scenario null, simulation 2 of 3 (fake)`. `(fake)` is
+there for each scenario other than `"real"`.
 
 `initialize_project()` does these steps in this order:
 
@@ -107,12 +110,20 @@ environment variables.
 - `fake_<scenario>()` is missing.
 
 When it stops, it deletes each empty results folder that the call
-created. It never creates a folder with today's date.
+created. The state of the run is then empty, so
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+and
+[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+stop until a call succeeds. The choice of
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
+stays. It never creates a folder with today's date.
 
 ## See also
 
 Other project setup:
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md),
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md),
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
 
 ## Examples
 
@@ -132,18 +143,21 @@ writeLines(
   file.path(home, "v01_functions", "_cfg.R")
 )
 
+utils::write.csv(data.frame(x = 1:5), file.path(home, "data", "d.csv"))
+
 env <- new.env()
 p <- pbn::initialize_project(
   version = "v01",
   home = home,
   data_raw = file.path(home, "data"),
-  scenario = "null",
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmpcg63Uf/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpoLbHrA/pbn_initialize_example/v01_functions into 
+p$scenario
+#> [1] "real"
 p$results
-#> [1] "/tmp/Rtmpcg63Uf/pbn_initialize_example/v01_results/null/sim_0001"
+#> [1] "/tmp/RtmpoLbHrA/pbn_initialize_example/v01_results/real"
 list.files(p$data_raw)
 #> [1] "d.csv"
 

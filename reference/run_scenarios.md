@@ -53,8 +53,11 @@ Invisibly, a data.frame of every assertion, with the columns `scenario`,
     Before each run, `run_scenarios()` deletes the `results.qs2` of that
     simulation. Before simulation 1, it also deletes the `results.qs2`
     and the `check.csv` in `<version>_results/<scenario>/`. A run that
-    writes no `results.qs2` stops `run_scenarios()`. Files of the
-    scenarios that it does not run stay as they are.
+    writes no `results.qs2` stops `run_scenarios()`. A run that quits
+    with status 0 after it writes `results.qs2` succeeds, so
+    [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+    can end the run of a fake scenario. Files of the scenarios that it
+    does not run stay as they are.
 
 3.  For each scenario with more than 1 simulation, it stacks the files
     `<version>_results/<scenario>/sim_<kkkk>/results.qs2` into
@@ -90,7 +93,9 @@ After every scenario is done, `run_scenarios()` stops when a value of
 ## See also
 
 Other project setup:
-[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md),
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
 
 ## Examples
 

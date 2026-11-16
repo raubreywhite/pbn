@@ -1,15 +1,55 @@
 # Changelog
 
+## pbn 2026.11.18
+
+- Removed the `scenario` argument of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  A call that still passes it stops with R’s unused-argument error. The
+  command line `scenario=<name> sim=<k>` gives the scenario, or else the
+  new
+  [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md),
+  or else `"real"`.
+- New `use_scenario(scenario, sim = 1)` chooses the scenario for the
+  rest of the R session when a person steps through a run script by
+  hand. It stops in a non-interactive R session.
+- In an interactive R session,
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  prints one line with the scenario and the simulation, and `(fake)` for
+  a fake scenario. A call that stops leaves no run for
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  or
+  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md).
+- New
+  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+  ends a run script after
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  for a fake scenario, so the output part runs for the real data only.
+  It quits with status 0 under `Rscript`, and
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  counts that as a success.
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `no_active_use_scenario`. It fails an active call or the
+  reference
+  [`pbn::use_scenario`](https://www.rwhite.no/pbn/reference/use_scenario.md),
+  also in a function body or an `if`. `run_script_initialises` names
+  each argument that
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  does not have.
+- `unknown_path` knows `run_scenarios.R`. It no longer knows
+  `vNN_output.R`: the output part goes in `vNN_run.R`, after
+  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md).
+
 ## pbn 2026.11.17
 
-- Scenarios: `CFG$scenarios` names the real data and the made-up
-  scenarios, with the number of simulations of each. The same run script
-  runs on each.
+- Scenarios: `CFG$scenarios` names the real data and the fake scenarios,
+  with the number of simulations of each. The same run script runs on
+  each.
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   takes `scenario`, and reads `scenario=<name>` and `sim=<k>` from the
   command line. It sets the seed to the simulation before org sources
   the functions and again before it calls `fake_<scenario>(dir)` for
-  made-up data.
+  fake data.
 - Results go to `vNN_results/<scenario>/results.qs2`, or to
   `vNN_results/<scenario>/sim_NNNN/results.qs2` for a scenario with more
   than 1 simulation. pbn needs `org` 2026.11.16 for this.
@@ -19,9 +59,9 @@
   `plnr` plan, stacks the simulations, and checks them with
   `expect_<scenario>()`.
 - [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  needs `expect_<scenario>()` for every made-up scenario, and stops
-  before any run when one is missing. An `expect_` function that errors
-  or returns no assertions counts as a failed assertion.
+  needs `expect_<scenario>()` for every fake scenario, and stops before
+  any run when one is missing. An `expect_` function that errors or
+  returns no assertions counts as a failed assertion.
 - [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
   deletes the results of a simulation before it runs it, and stops when
   the run writes no `results.qs2`. An older file is never stacked or

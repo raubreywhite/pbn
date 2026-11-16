@@ -11,7 +11,7 @@ simulations of each scenario and checks the assertions of the project."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -94,8 +94,10 @@ the run.</p>
 <p>Before each run, <code>run_scenarios()</code> deletes the <code>results.qs2</code> of that
 simulation. Before simulation 1, it also deletes the <code>results.qs2</code> and
 the <code>check.csv</code> in <code>&lt;version&gt;_results/&lt;scenario&gt;/</code>. A run that writes
-no <code>results.qs2</code> stops <code>run_scenarios()</code>. Files of the scenarios that
-it does not run stay as they are.</p></li>
+no <code>results.qs2</code> stops <code>run_scenarios()</code>. A run that quits with
+status 0 after it writes <code>results.qs2</code> succeeds, so
+<code><a href="end_if_fake_scenario.html">end_if_fake_scenario()</a></code> can end the run of a fake scenario. Files of
+the scenarios that it does not run stay as they are.</p></li>
 <li><p>For each scenario with more than 1 simulation, it stacks the files
 <code>&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/results.qs2</code> into
 <code>&lt;version&gt;_results/&lt;scenario&gt;/results.qs2</code>. It stops when the files are
@@ -122,7 +124,9 @@ four columns.</p></li>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other project setup:
-<code><a href="initialize_project.html">initialize_project()</a></code></p></div>
+<code><a href="end_if_fake_scenario.html">end_if_fake_scenario()</a></code>,
+<code><a href="initialize_project.html">initialize_project()</a></code>,
+<code><a href="use_scenario.html">use_scenario()</a></code></p></div>
     </div>
 
     <div class="section level2">

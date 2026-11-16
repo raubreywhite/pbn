@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,29 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>
+<ul><li>
+<code>save_results(..., d)</code> saves each named argument as one result under its name. A call with the names <code>exclusions</code>, <code>estimates</code>, <code>tables</code> and <code>extra</code> works as before.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> stops on a result named <code>manifest</code>, an unnamed result, a repeated or non-syntactic name, and a call with no result.</li>
+<li>
+<code>d</code> is required, so a call of <code><a href="../reference/save_results.html">save_results()</a></code> without <code>d</code> stops. Pass <code>d = d</code>, or <code>d = NULL</code> when the run has no single data table. Before, <code>d</code> was <code>NULL</code> by default.</li>
+<li>
+<code>exclusions</code> is optional. When it is there, the rule <code>exclusions_table</code> checks it as before. <code>estimates</code> no longer has to be a data.frame, and <code>tables</code> no longer has to be a list of data.frames.</li>
+<li>A result MAY be a data.frame, an atomic vector, <code>NULL</code>, or a list of these to any depth. The new rule <code>allowed_objects</code> replaces <code>no_fitted_models</code>. It also fails a function, an environment, an S4 or R6 object, a formula and a list with a class outside a fixed set. The detail names the path and the class.</li>
+<li>The new rule <code>element_names</code> replaces <code>top_level_names</code>. The rules <code>exclusions_table</code>, <code>no_row_per_person</code>, <code>manifest_scenario</code>, <code>manifest_data</code> and <code>manifest_source</code> keep their names.</li>
+<li>
+<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> stacks every element of the results. Before, it dropped <code>extra</code>. A data.frame gets a first column <code>sim</code>, and a list is stacked element by element. Each other value becomes a list with one entry for each simulation.</li>
+<li>Stacking stops when two simulations differ in the structure at one path, and the error names the path and the two simulations.</li>
+<li>
+<code>no_row_per_person</code> also fails an atomic vector of length <code>n_rows_data</code> and a matrix or an array with a dimension <code>n_rows_data</code>, for example <code>fitted(fit)</code>. It does not look in <code>manifest</code>, and it checks nothing when <code>n_rows_data</code> is 0 or 1. Before, a 1-row table failed when the data had 1 row.</li>
+<li>
+<code>allowed_objects</code> and <code>no_row_per_person</code> also walk the attributes of each object, so the <code>terms</code> attribute of a model frame fails. They skip the attributes that R and data.table set, for example <code>names</code> and <code>.internal.selfref</code>.</li>
+<li>The detail of <code>allowed_objects</code> gives a fix for a model, a formula, an <code>htest</code>, a <code>POSIXlt</code>, a <code>package_version</code> and an <code>sf</code> geometry.</li>
+<li>Stacking stops on a nested list that is unnamed or partly named, and on <code>NULL</code> in the place of a value. It also stops on a data.frame column of another class, a factor column with other levels, and a data.frame with a column <code>sim</code>.</li>
+<li>A results file that pbn 2026.11.21 wrote passes the new rules, unless it holds an object that <code>allowed_objects</code> or <code>no_row_per_person</code> fails.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.21" id="pbn-20261121">pbn 2026.11.21<a class="anchor" aria-label="anchor" href="#pbn-20261121"></a></h2>
 <ul><li>

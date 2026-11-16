@@ -33,6 +33,17 @@ pbn::check_project()
 writes the run artefacts `run.log` and `run.ok` into each results
 folder. List both in the `.gitignore` of the project.
 
+## The results
+
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+saves each result under the name that the run script gives it, for
+example `estimates = e` or `p_interaction = p`. pbn adds the element
+`manifest`. A result is a data.frame, an atomic vector, `NULL`, or a
+list of these to any depth. A fitted model is an error. Pass the
+analysis data as `d = d`, so pbn can refuse a result with one value for
+each row of the data. Pass `d = NULL` when the run has no single data
+table.
+
 The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html)
 builds a small fake project file by file, and runs it. Read it first.
 

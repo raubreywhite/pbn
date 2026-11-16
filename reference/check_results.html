@@ -11,7 +11,7 @@ nothing."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.png"
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -72,17 +72,50 @@ and <code>detail</code>. <code>status</code> is <code>"PASS"</code> or <code>"FA
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The seven rules:</p><ul><li><p><code>top_level_names</code>: the names are <code>manifest</code>, <code>exclusions</code>, <code>estimates</code>,
-<code>tables</code> and <code>extra</code>, each once, and there are no others.</p></li>
-<li><p><code>exclusions_table</code>: <code>exclusions</code> is a data.frame with the columns <code>step</code>,
-<code>n_before</code>, <code>n_excluded</code> and <code>n_after</code>. When <code>manifest$stacked</code> is
-<code>TRUE</code>, it also has the column <code>sim</code> that <code><a href="run_scenarios.html">run_scenarios()</a></code> adds. On every
-row, <code>n_before - n_excluded == n_after</code>.</p></li>
-<li><p><code>no_fitted_models</code>: no element anywhere in <code>x</code> inherits from <code>lm</code>, <code>glm</code>,
-<code>gam</code>, <code>merMod</code>, <code>brmsfit</code>, <code>coxph</code> or <code>lavaan</code>.</p></li>
-<li><p><code>no_row_per_person</code>: no data.frame anywhere in <code>x</code> has
-<code>manifest$n_rows_data</code> rows. When <code>n_rows_data</code> is <code>NA</code>, this rule checks
-nothing.</p></li>
+    <p>The rule <code>element_names</code> checks that the manifest is there. The rules
+<code>manifest_scenario</code>, <code>manifest_data</code> and <code>manifest_source</code> check that it
+is valid. The seven rules:</p><ul><li><p><code>element_names</code>: <code>x</code> is a list with the element <code>manifest</code> exactly once
+and at least one other element. Each element has a name. Each name is
+syntactic, so <code><a href="https://rdrr.io/r/base/make.names.html" class="external-link">make.names()</a></code> does not change it, and no name is there
+twice.</p></li>
+<li><p><code>exclusions_table</code>: when <code>x</code> has an element <code>exclusions</code>, it is a
+data.frame with the columns <code>step</code>, <code>n_before</code>, <code>n_excluded</code> and
+<code>n_after</code>. When <code>manifest$stacked</code> is <code>TRUE</code>, it also has the column
+<code>sim</code> that <code><a href="run_scenarios.html">run_scenarios()</a></code> adds. On every row,
+<code>n_before - n_excluded == n_after</code>. Without an element <code>exclusions</code>, the
+rule passes and says so.</p></li>
+<li><p><code>allowed_objects</code>: each element at each depth is one of these:</p><ul><li><p>a data.frame, of any class that inherits from data.frame. This
+includes a data.table and a tibble.</p></li>
+<li><p>an atomic vector of any length and of any class, including a matrix,
+an array, a factor, a <code>Date</code> and a <code>POSIXct</code>.</p></li>
+<li><p><code>NULL</code>.</p></li>
+<li><p>a list of such elements, named or not. The list has no class, or
+only classes from this set: <code>list</code>, <code>AsIs</code>, <code>table</code>, <code>noquote</code>,
+<code>difftime</code>, <code>Date</code>, <code>POSIXct</code>, <code>factor</code> and <code>integer64</code>.</p></li>
+</ul><p>Each other element fails, and the detail names its path, its class and
+a fix. This includes a function, an environment, an S4 object, an R6
+object, a formula and each other list with a class. A fitted model of
+the class <code>lm</code>, <code>glm</code>, <code>gam</code>, <code>merMod</code>, <code>brmsfit</code>, <code>coxph</code> or <code>lavaan</code>
+fails too. The detail has a fix for a model, a formula, an <code>htest</code>, a
+<code>POSIXlt</code>, a <code>package_version</code> and an <code>sf</code> geometry. For each other
+object, convert it to a data.frame or a plain list.</p>
+<p>The walk goes into the columns of a data.frame, so a model in a list
+column fails too. It also goes into the attributes of each object, and
+it writes the path of an attribute as <code>attr(x$a, "terms")</code>. So the
+<code>terms</code> attribute of a model frame fails. The walk skips the attributes
+that R and data.table set: <code>names</code>, <code>dim</code>, <code>dimnames</code>, <code>row.names</code>,
+<code>class</code>, <code>levels</code>, <code>tzone</code>, <code>units</code>, <code>comment</code>, <code>sorted</code>, <code>index</code> and
+<code>.internal.selfref</code>.</p></li>
+<li><p><code>no_row_per_person</code>: no element at any depth of the results has one
+value for each row of the data. When <code>n</code> is <code>manifest$n_rows_data</code>, the
+rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
+<li><p>an atomic vector of length <code>n</code>, also a factor, a <code>Date</code> or a
+<code>POSIXct</code>.</p></li>
+<li><p>a matrix or an array with a dimension <code>n</code>.</p></li>
+</ul><p>The walk goes into lists, the columns and list columns of data.frames,
+and attributes. It does not go into <code>manifest</code>. When <code>n_rows_data</code> is
+<code>NA</code>, 0 or 1, this rule checks nothing. A table with fewer rows than the
+data passes, and so does a vector with one value for each group.</p></li>
 <li><p><code>manifest_scenario</code>: <code>manifest</code> has the elements <code>scenario</code>, <code>sim</code> and
 <code>sims</code>, and <code>scenario</code> is one string.</p></li>
 <li><p><code>manifest_data</code>: <code>manifest</code> has exactly one of <code>data_md5</code> and
@@ -123,26 +156,25 @@ or older wrote has no <code>source_md5</code>, so it fails this rule.</p></li>
 <span class="r-in"><span>    n_after <span class="op">=</span> <span class="fl">97</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"x"</span>, estimate <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  extra <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  p_interaction <span class="op">=</span> <span class="fl">0.04</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_results</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                rule status</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   top_level_names   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1     element_names   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2  exclusions_table   FAIL</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  no_fitted_models   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3   allowed_objects   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4 no_row_per_person   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5 manifest_scenario   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6     manifest_data   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7   manifest_source   PASS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                 detail</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                              the five top-level names, and no others</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                    n_before - n_excluded != n_after on these rows: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3                                        no fitted model in the object</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4                                           no data.frame has 100 rows</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5  the manifest names the scenario, the simulation and the simulations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6 the manifest has data_md5 for "real" or fake_md5 for a fake scenario</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7          the manifest has source_md5, with the md5 of the run script</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                detail</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                       manifest, and each other element with a unique syntactic name</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                                   n_before - n_excluded != n_after on these rows: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3       each element is a data.frame, an atomic vector, NULL or a plain list of these</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 the manifest names the scenario, the simulation and the simulations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6                the manifest has data_md5 for "real" or fake_md5 for a fake scenario</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7                         the manifest has source_md5, with the md5 of the run script</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

@@ -8,31 +8,30 @@ finds a failure.
 ## Usage
 
 ``` r
-save_results(exclusions, estimates, tables, extra = list(), d = NULL)
+save_results(..., d)
 ```
 
 ## Arguments
 
-- exclusions:
+- ...:
 
-  A data.frame with the columns `step`, `n_before`, `n_excluded` and
-  `n_after`, one row per exclusion step. Zero rows are allowed.
-
-- estimates:
-
-  A data.frame of estimates.
-
-- tables:
-
-  A named list of data.frames.
-
-- extra:
-
-  A list of other results.
+  The results, each as a named argument, for example `estimates = e` or
+  `p_interaction = 0.04`. Give at least one. Each name MUST be syntactic
+  and MUST be there once. A result named `manifest` is an error, because
+  pbn writes that element. An element MAY be a data.frame, an atomic
+  vector, a factor, a date, `NULL`, or a list of these to any depth.
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  lists every allowed object. An element named `exclusions` MUST be the
+  table of the exclusion steps, with the columns `step`, `n_before`,
+  `n_excluded` and `n_after`. It MAY have zero rows.
 
 - d:
 
-  The analysis data, or `NULL`. pbn stores only its number of rows.
+  The analysis data, or `NULL`. You MUST give `d`. pbn stores only its
+  number of rows. It then refuses a data.frame with that number of rows
+  at any depth of the results. It also refuses a vector or a matrix with
+  that number of values in one dimension. Give `d = NULL` when the run
+  has no one table of the data.
 
 ## Value
 
@@ -48,9 +47,9 @@ returns. It is `<home>/<version>_results/<scenario>/` for a scenario
 with 1 simulation, and `<home>/<version>_results/<scenario>/sim_<kkkk>/`
 otherwise.
 
-The object is a named list with exactly these top-level names:
-`manifest`, `exclusions`, `estimates`, `tables` and `extra`. pbn builds
-the `manifest`, a list with these elements:
+The object is a named list. Its first element is `manifest`, and the
+results follow in the order of the call. pbn builds the `manifest`, a
+list with these elements:
 
 - `pbn_version` and `r_version`.
 
@@ -114,7 +113,7 @@ writeLines(
 )
 pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpeJQORh/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpOG2SVD/pbn_save_example/v01_functions into 
 
 pbn::save_results(
   exclusions = data.frame(
@@ -124,10 +123,13 @@ pbn::save_results(
     n_after = 96
   ),
   estimates = data.frame(term = "x", estimate = 1.2),
-  tables = list(counts = data.frame(grp = c("a", "b"), n = c(50, 46)))
+  counts = list(by_group = data.frame(grp = c("a", "b"), n = c(50, 46))),
+  p_interaction = 0.04,
+  d = NULL
 )
 names(pbn::read_results("v01", home = home))
-#> [1] "manifest"   "exclusions" "estimates"  "tables"     "extra"     
+#> [1] "manifest"      "exclusions"    "estimates"     "counts"       
+#> [5] "p_interaction"
 
 unlink(home, recursive = TRUE)
 ```

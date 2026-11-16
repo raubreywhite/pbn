@@ -11,7 +11,7 @@ finds a failure."><meta property="og:image" content="https://www.rwhite.no/pbn/l
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -54,33 +54,30 @@ finds a failure.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">save_results</span><span class="op">(</span><span class="va">exclusions</span>, <span class="va">estimates</span>, <span class="va">tables</span>, extra <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>, d <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">save_results</span><span class="op">(</span><span class="va">...</span>, <span class="va">d</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-exclusions">exclusions<a class="anchor" aria-label="anchor" href="#arg-exclusions"></a></dt>
-<dd><p>A data.frame with the columns <code>step</code>, <code>n_before</code>,
-<code>n_excluded</code> and <code>n_after</code>, one row per exclusion step. Zero rows are
-allowed.</p></dd>
-
-
-<dt id="arg-estimates">estimates<a class="anchor" aria-label="anchor" href="#arg-estimates"></a></dt>
-<dd><p>A data.frame of estimates.</p></dd>
-
-
-<dt id="arg-tables">tables<a class="anchor" aria-label="anchor" href="#arg-tables"></a></dt>
-<dd><p>A named list of data.frames.</p></dd>
-
-
-<dt id="arg-extra">extra<a class="anchor" aria-label="anchor" href="#arg-extra"></a></dt>
-<dd><p>A list of other results.</p></dd>
+<dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>The results, each as a named argument, for example
+<code>estimates = e</code> or <code>p_interaction = 0.04</code>. Give at least one. Each name
+MUST be syntactic and MUST be there once. A result named <code>manifest</code> is
+an error, because pbn writes that element. An element MAY be a data.frame, an atomic vector, a factor, a date,
+<code>NULL</code>, or a list of these to any depth. <code><a href="check_results.html">check_results()</a></code> lists every
+allowed object. An element named <code>exclusions</code> MUST be the table of the
+exclusion steps, with the columns <code>step</code>, <code>n_before</code>, <code>n_excluded</code> and
+<code>n_after</code>. It MAY have zero rows.</p></dd>
 
 
 <dt id="arg-d">d<a class="anchor" aria-label="anchor" href="#arg-d"></a></dt>
-<dd><p>The analysis data, or <code>NULL</code>. pbn stores only its number of rows.</p></dd>
+<dd><p>The analysis data, or <code>NULL</code>. You MUST give <code>d</code>. pbn stores only
+its number of rows. It then refuses a data.frame with that number of
+rows at any depth of the results. It also refuses a vector or a matrix
+with that number of values in one dimension. Give <code>d = NULL</code> when the
+run has no one table of the data.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -93,9 +90,9 @@ allowed.</p></dd>
 element that <code><a href="initialize_project.html">initialize_project()</a></code> returns. It is
 <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/</code> for a scenario with 1 simulation,
 and <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/</code> otherwise.</p>
-<p>The object is a named list with exactly these top-level names:
-<code>manifest</code>, <code>exclusions</code>, <code>estimates</code>, <code>tables</code> and <code>extra</code>. pbn builds the
-<code>manifest</code>, a list with these elements:</p><ul><li><p><code>pbn_version</code> and <code>r_version</code>.</p></li>
+<p>The object is a named list. Its first element is <code>manifest</code>, and the
+results follow in the order of the call. pbn builds the <code>manifest</code>, a
+list with these elements:</p><ul><li><p><code>pbn_version</code> and <code>r_version</code>.</p></li>
 <li><p><code>packages</code>, a named character vector. The names are the attached and
 loaded packages that are not base packages, and the values are their
 versions. <code>qs2</code> is always in the list, because it writes the file.</p></li>
@@ -143,7 +140,7 @@ not change <code>fake_md5</code>.</p></li>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span>, env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpeJQORh/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpOG2SVD/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">save_results</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  exclusions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
@@ -153,10 +150,13 @@ not change <code>fake_md5</code>.</p></li>
 <span class="r-in"><span>    n_after <span class="op">=</span> <span class="fl">96</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  estimates <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"x"</span>, estimate <span class="op">=</span> <span class="fl">1.2</span><span class="op">)</span>,</span></span>
-<span class="r-in"><span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">46</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span>  counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>by_group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>grp <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, n <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">50</span>, <span class="fl">46</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  p_interaction <span class="op">=</span> <span class="fl">0.04</span>,</span></span>
+<span class="r-in"><span>  d <span class="op">=</span> <span class="cn">NULL</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "manifest"   "exclusions" "estimates"  "tables"     "extra"     </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "manifest"      "exclusions"    "estimates"     "counts"       </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [5] "p_interaction"</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

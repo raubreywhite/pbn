@@ -11,7 +11,7 @@ simulations of each scenario and checks the assertions of the project."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -139,15 +139,7 @@ of each failed run. It stacks and checks no scenario.</p></li>
 not exactly the simulations 1 to <code>sims</code>. After <code>sims</code> in
 <code>CFG$scenarios</code> becomes smaller, the folders of the higher simulations
 stay. Stacking then stops, and the error names their files. Delete
-those folders to stack again. <code>estimates</code>, <code>exclusions</code> and
-each data.frame in <code>tables</code> get a first column <code>sim</code>. Each keeps the
-class of its object in simulation 1, so a data.table stays a
-data.table. <code>extra</code> is an empty list. The <code>manifest</code> is that of
-simulation 1. In it, <code>sim</code> and <code>n_rows_data</code> are <code>NA</code>, <code>sims</code> is the
-number of simulations, and <code>stacked</code> is <code>TRUE</code>. For a fake scenario, it
-stops when a simulation has no valid <code>manifest$fake_md5</code>, or when the
-simulations do not have one value of it. It also stops when the
-simulations do not have one value of <code>manifest$settings</code>.</p></li>
+those folders to stack again. The section Stacking gives the rules.</p></li>
 <li><p>For each scenario that has a function <code>expect_&lt;scenario&gt;()</code> in
 <code>&lt;version&gt;_functions/</code>, it calls that function on the results of the
 scenario in a new R session. <code>expect_real()</code> is optional. The function
@@ -162,6 +154,37 @@ message.</p></li>
 four columns.</p></li>
 </ul><p>After every scenario is done, <code>run_scenarios()</code> stops when a value of
 <code>pass</code> is not <code>TRUE</code>. The error lists the failed assertions.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="stacking">Stacking<a class="anchor" aria-label="anchor" href="#stacking"></a></h2>
+
+
+<p>The stacked results hold every element of the results of simulation 1,
+in the same order. These rules apply at each depth:</p><ul><li><p>A data.frame gets a first column <code>sim</code>, and the rows of the simulations
+in order. It keeps the class of simulation 1, so a data.table stays a
+data.table.</p></li>
+<li><p>A list is stacked element by element, and pbn matches the elements by
+name. So each element of a list MUST have its own name. An unnamed or
+partly named list stops stacking. A scenario with 1 simulation MAY hold
+such a list.</p></li>
+<li><p>Each other element becomes a list with one entry for each simulation,
+named <code>sim_0001</code>, <code>sim_0002</code> and so on. This includes an atomic vector,
+a matrix, a factor, a date and <code>NULL</code>.</p></li>
+</ul><p>Stacking stops when two simulations differ in the structure at one path.
+The error names the path and the two simulations. Examples:</p><ul><li><p>a list with other names or another length.</p></li>
+<li><p>a data.frame with other columns, a column of another class, or a factor
+column with other levels.</p></li>
+<li><p>a list in the place of a data.frame, or <code>NULL</code> in the place of a value.</p></li>
+</ul><p>Stacking also stops on a data.frame with a column <code>sim</code>, because pbn adds
+that column.</p>
+<p>The <code>manifest</code> is that of simulation 1. In it, <code>sim</code> and <code>n_rows_data</code>
+are <code>NA</code>, <code>sims</code> is the number of simulations, and <code>stacked</code> is <code>TRUE</code>.
+For a fake scenario, stacking stops when a simulation has no valid
+<code>manifest$fake_md5</code>, or when the simulations do not have one value of it.
+It also stops when the simulations do not have one value of
+<code>manifest$settings</code>.</p>
+<p>A scenario with 1 simulation is not stacked. Its <code>results.qs2</code> is the file
+that the run wrote.</p>
     </div>
     <div class="section level2">
     <h2 id="workers">Workers<a class="anchor" aria-label="anchor" href="#workers"></a></h2>
@@ -229,10 +252,9 @@ of a package. It also does not find a change in a file outside
 <span class="r-in"><span>    <span class="st">'p &lt;- pbn::initialize_project("v01", home = ".", data_raw = "data")'</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"d &lt;- utils::read.csv(file.path(p$data_raw, 'd.csv'))"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"pbn::save_results("</span>,</span></span>
-<span class="r-in"><span>    <span class="st">"  exclusions = data.frame(step = character(0), n_before = numeric(0),"</span>,</span></span>
-<span class="r-in"><span>    <span class="st">"    n_excluded = numeric(0), n_after = numeric(0)),"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">"  estimates = data.frame(term = 'mean_x', estimate = mean(d$x)),"</span>,</span></span>
-<span class="r-in"><span>    <span class="st">"  tables = list()"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"  n_rows = nrow(d),"</span>,</span></span>
+<span class="r-in"><span>    <span class="st">"  d = d"</span>,</span></span>
 <span class="r-in"><span>    <span class="st">")"</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span></span>
@@ -247,10 +269,18 @@ of a package. It also does not find a change in a file outside
 <span class="r-out co"><span class="r-pr">#&gt;</span> Assertions of the scenario "null":</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        assertion expected observed pass</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  two simulations        2        2 TRUE</span>
-<span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span></span>
+<span class="r-in"><span><span class="va">stacked</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">stacked</span><span class="op">$</span><span class="va">estimates</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   sim   term    estimate</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1   1 mean_x  0.07921043</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2   2 mean_x -0.06364893</span>
+<span class="r-in"><span><span class="va">stacked</span><span class="op">$</span><span class="va">n_rows</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_0001</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> $sim_0002</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] 4</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>

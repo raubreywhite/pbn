@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -219,24 +219,28 @@ different data, and a second run gives the same data again.</p>
 <span>  <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">dir</span>, <span class="st">"d.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
-<span><span class="co"># results holds the 3 simulations stacked, with a first column sim.</span></span>
+<span><span class="co"># results holds the 3 simulations stacked. Each data.frame has a first</span></span>
+<span><span class="co"># column sim. The named vector counts is a list with one entry for each</span></span>
+<span><span class="co"># simulation.</span></span>
 <span><span class="va">expect_null</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">e</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">$</span><span class="va">estimates</span></span>
 <span>  <span class="va">sims_n</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">e</span><span class="op">$</span><span class="va">sim</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="va">log_or</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">log</a></span><span class="op">(</span><span class="va">e</span><span class="op">$</span><span class="va">estimate</span><span class="op">[</span><span class="va">e</span><span class="op">$</span><span class="va">term</span> <span class="op">==</span> <span class="st">"or_group_b"</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">rows</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/unlist.html" class="external-link">unlist</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">results</span><span class="op">$</span><span class="va">counts</span>, <span class="kw">function</span><span class="op">(</span><span class="va">n</span><span class="op">)</span> <span class="va">n</span><span class="op">[[</span><span class="st">"rows"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
-<span>    assertion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"simulations"</span>, <span class="st">"mean log odds ratio of b against a"</span><span class="op">)</span>,</span>
-<span>    expected <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"3"</span>, <span class="st">"-0.5 to 0.5"</span><span class="op">)</span>,</span>
-<span>    observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sims_n</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">log_or</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>    pass <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sims_n</span> <span class="op">==</span> <span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">log_or</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">0.5</span><span class="op">)</span></span>
+<span>    assertion <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"simulations"</span>, <span class="st">"mean log odds ratio of b against a"</span>, <span class="st">"rows of each simulation"</span><span class="op">)</span>,</span>
+<span>    expected <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"3"</span>, <span class="st">"-0.5 to 0.5"</span>, <span class="st">"400 400 400"</span><span class="op">)</span>,</span>
+<span>    observed <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sims_n</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">log_or</span>, <span class="fl">3</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="va">rows</span>, collapse <span class="op">=</span> <span class="st">" "</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>    pass <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="va">sims_n</span> <span class="op">==</span> <span class="fl">3</span>, <span class="fu"><a href="https://rdrr.io/r/base/MathFun.html" class="external-link">abs</a></span><span class="op">(</span><span class="va">log_or</span><span class="op">)</span> <span class="op">&lt;</span> <span class="fl">0.5</span>, <span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">as.numeric</a></span><span class="op">(</span><span class="va">rows</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">400</span>, <span class="fl">400</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>The scenario <code>null</code> tests that the mean log odds ratio
 over 3 simulations is within 0.5 of zero when the data has no difference
-between the groups. It does not test that the analysis finds a
-difference that is there. With 400 rows, one log odds ratio has a
-standard error of about 0.22, so the mean of 3 has about 0.13. The bound
-0.5 is thus about 4 standard errors.</p>
+between the groups. It also tests that each simulation analyses all 400
+rows. It does not test that the analysis finds a difference that is
+there. With 400 rows, one log odds ratio has a standard error of about
+0.22, so the mean of 3 has about 0.13. The bound 0.5 is thus about 4
+standard errors.</p>
 </div>
 <div class="section level2">
 <h2 id="the-run-script">The run script<a class="anchor" aria-label="anchor" href="#the-run-script"></a>
@@ -299,6 +303,7 @@ scenario.</li>
 <span>    estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">100</span> <span class="op">*</span> <span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">outcome</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"groupb"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span>, <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">boot</span><span class="op">)</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>table1 <span class="op">=</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/table1.html">table1</a></span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="st">"group"</span>, vars <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">vars</span><span class="op">)</span><span class="op">)</span>,</span>
+<span>  counts <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>rows <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span>, events <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sum.html" class="external-link">sum</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">outcome</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  d <span class="op">=</span> <span class="va">d</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario</a></span><span class="op">(</span><span class="op">)</span></span>
@@ -309,11 +314,41 @@ scenario.</li>
 <p><code>data_raw</code> is relative to the project folder, because
 <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> runs the script there. pbn reads
 <code>data_raw</code> for the real data only.</p>
+</div>
+<div class="section level2">
+<h2 id="the-results-contract">The results contract<a class="anchor" aria-label="anchor" href="#the-results-contract"></a>
+</h2>
+<p><code><a href="../reference/save_results.html">save_results()</a></code> saves each result under the name that the
+run script gives it, here <code>exclusions</code>,
+<code>estimates</code>, <code>tables</code> and <code>counts</code>. pbn
+adds the element <code>manifest</code>, so a result with that name is an
+error. A result MAY be one of these, and <code><a href="../reference/check_results.html">?check_results</a></code>
+gives the full list:</p>
+<ul>
+<li>a data.frame, also a data.table.</li>
+<li>an atomic vector of any length, such as the named vector
+<code>counts</code>. A matrix, a factor and a date are atomic vectors
+too.</li>
+<li>
+<code>NULL</code>.</li>
+<li>a list of these, to any depth.</li>
+</ul>
 <p><code><a href="../reference/save_results.html">save_results()</a></code> checks the results object before it
-writes <code>results.qs2</code>. It stops on a fitted model of a class
-that <code><a href="../reference/check_results.html">?check_results</a></code> lists. It also stops on a table with as
-many rows as the data. <code>d = d</code> gives pbn that number of rows.
-Without <code>d</code>, pbn does not make the second check.</p>
+writes <code>results.qs2</code>. It stops on each other object, for
+example a fitted model or a function, and names its path. It stops when
+an element named <code>exclusions</code> does not have the columns
+<code>step</code>, <code>n_before</code>, <code>n_excluded</code> and
+<code>n_after</code>, or when its counts do not add up.</p>
+<p>The argument <code>d</code> is required. <code>d = d</code> gives pbn
+the number of rows of the analysis data. <code><a href="../reference/save_results.html">save_results()</a></code>
+then stops on a result with one value for each row, for example
+<code>fitted(fit)</code>. That is a data.frame with that number of rows,
+or a vector or a matrix with that number of values in one dimension. Use
+<code>d = NULL</code> when the run has no single data table.</p>
+<p>The check compares sizes only. A table with fewer rows than the data
+passes, and so does a vector with one value for each group. Such a
+result can still hold values of single persons, so check the small
+groups by hand.</p>
 </div>
 <div class="section level2">
 <h2 id="running-everything">Running everything<a class="anchor" aria-label="anchor" href="#running-everything"></a>
@@ -349,9 +384,10 @@ and only the order of the lines on the console can change.</p>
 <span><span class="co">#&gt;  percentage with the outcome       40       40 TRUE</span></span>
 <span><span class="co">#&gt;    odds ratio of b against a        6        6 TRUE</span></span>
 <span><span class="co">#&gt; Assertions of the scenario "null":</span></span>
-<span><span class="co">#&gt;                           assertion    expected observed pass</span></span>
-<span><span class="co">#&gt;                         simulations           3    3.000 TRUE</span></span>
-<span><span class="co">#&gt;  mean log odds ratio of b against a -0.5 to 0.5    0.133 TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;                           assertion    expected    observed pass</span></span>
+<span><span class="co">#&gt;                         simulations           3           3 TRUE</span></span>
+<span><span class="co">#&gt;  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE</span></span>
+<span><span class="co">#&gt;             rows of each simulation 400 400 400 400 400 400 TRUE</span></span></code></pre></div>
 <p>Each scenario has a folder in <code>v01_results/</code>. The scenario
 <code>null</code> has one folder for each simulation, and its stacked
 <code>results.qs2</code>. A fake run keeps its data in
@@ -415,9 +451,10 @@ again with <code>resume = TRUE</code>:</p>
 <span><span class="co">#&gt;  percentage with the outcome       40       40 TRUE</span></span>
 <span><span class="co">#&gt;    odds ratio of b against a        6        6 TRUE</span></span>
 <span><span class="co">#&gt; Assertions of the scenario "null":</span></span>
-<span><span class="co">#&gt;                           assertion    expected observed pass</span></span>
-<span><span class="co">#&gt;                         simulations           3    3.000 TRUE</span></span>
-<span><span class="co">#&gt;  mean log odds ratio of b against a -0.5 to 0.5    0.133 TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt;                           assertion    expected    observed pass</span></span>
+<span><span class="co">#&gt;                         simulations           3           3 TRUE</span></span>
+<span><span class="co">#&gt;  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE</span></span>
+<span><span class="co">#&gt;             rows of each simulation 400 400 400 400 400 400 TRUE</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="reading-results">Reading results<a class="anchor" aria-label="anchor" href="#reading-results"></a>
@@ -451,15 +488,20 @@ scenario. The default scenario is <code>real</code>.</p>
 <p>With <code>sim</code>, it reads the results of that one simulation.
 Without <code>sim</code>, it reads the results file of the scenario. For
 a scenario with one simulation, that file is the results of the run. For
-a scenario with more, it is the stacked results of all simulations, with
-a first column <code>sim</code>.</p>
+a scenario with more, it is the stacked results of all simulations.
+Stacking keeps every element. Each data.frame gets a first column
+<code>sim</code>. A list keeps its elements, and each of them is stacked
+by the same rules. To be stacked, each element of a list MUST have its
+own name. Each other element, such as <code>counts</code>, becomes a
+list with one entry for each simulation.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, sim <span class="op">=</span> <span class="fl">2</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt;             term  estimate</span></span>
 <span><span class="co">#&gt; 1    pct_outcome 30.250000</span></span>
 <span><span class="co">#&gt; 2     or_group_b  1.323457</span></span>
 <span><span class="co">#&gt; 3 se_pct_outcome  2.346996</span></span>
-<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">estimates</span></span>
+<span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
+<span><span class="va">null</span><span class="op">$</span><span class="va">estimates</span></span>
 <span><span class="co">#&gt;   sim           term  estimate</span></span>
 <span><span class="co">#&gt; 1   1    pct_outcome 31.750000</span></span>
 <span><span class="co">#&gt; 2   1     or_group_b  1.087506</span></span>
@@ -469,7 +511,19 @@ a first column <code>sim</code>.</p>
 <span><span class="co">#&gt; 6   2 se_pct_outcome  2.346996</span></span>
 <span><span class="co">#&gt; 7   3    pct_outcome 27.250000</span></span>
 <span><span class="co">#&gt; 8   3     or_group_b  1.035040</span></span>
-<span><span class="co">#&gt; 9   3 se_pct_outcome  2.320390</span></span></code></pre></div>
+<span><span class="co">#&gt; 9   3 se_pct_outcome  2.320390</span></span>
+<span><span class="va">null</span><span class="op">$</span><span class="va">counts</span></span>
+<span><span class="co">#&gt; $sim_0001</span></span>
+<span><span class="co">#&gt;   rows events </span></span>
+<span><span class="co">#&gt;    400    127 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sim_0002</span></span>
+<span><span class="co">#&gt;   rows events </span></span>
+<span><span class="co">#&gt;    400    121 </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; $sim_0003</span></span>
+<span><span class="co">#&gt;   rows events </span></span>
+<span><span class="co">#&gt;    400    109</span></span></code></pre></div>
 <p>The manifest records where the results come from. It holds the
 versions of R, pbn and the loaded packages, the date, the scenario, the
 simulation and the settings of the scenario. <code>source_md5</code>
@@ -481,7 +535,7 @@ holds the md5 of each data file. For a fake scenario,
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">r</span><span class="op">$</span><span class="va">manifest</span><span class="op">)</span></span>
 <span><span class="co">#&gt; List of 13</span></span>
-<span><span class="co">#&gt;  $ pbn_version: chr "2026.11.21"</span></span>
+<span><span class="co">#&gt;  $ pbn_version: chr "2026.11.22"</span></span>
 <span><span class="co">#&gt;  $ r_version  : chr "R version 4.6.2 (2026-10-29)"</span></span>
 <span><span class="co">#&gt;  $ packages   : Named chr [1:8] "0.2.0" "1.18.6.1" "1.8.1" "2026.11.18" ...</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:8] "charport" "data.table" "glue" "org" ...</span></span>
@@ -490,10 +544,10 @@ holds the md5 of each data file. For a fake scenario,
 <span><span class="co">#&gt;  $ scenario   : chr "real"</span></span>
 <span><span class="co">#&gt;  $ sim        : int 1</span></span>
 <span><span class="co">#&gt;  $ sims       : int 1</span></span>
-<span><span class="co">#&gt;  $ data_raw   : chr "/tmp/RtmpfFSrZ6/pbn_get_started/data_raw"</span></span>
+<span><span class="co">#&gt;  $ data_raw   : chr "/tmp/RtmpHPJyXw/pbn_get_started/data_raw"</span></span>
 <span><span class="co">#&gt;  $ settings   :List of 1</span></span>
 <span><span class="co">#&gt;   ..$ n_boot: num 200</span></span>
-<span><span class="co">#&gt;  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "7f906a9381c789e76e363f51d46748b1" "d2b4c6343bc9270dce126a778bcb42a0"</span></span>
+<span><span class="co">#&gt;  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "f89b576e4da8dbd6535ac65651519831" "ac8708b48789fa0fe6367514a62caaeb"</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr [1:4] "v01_functions/_cfg.R" "v01_functions/scenario_known.R" "v01_functions/scenario_null.R" "v01_run.R"</span></span>
 <span><span class="co">#&gt;  $ data_md5   : Named chr "396527785293e765115178711b7aab75"</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr "d.csv"</span></span>
@@ -599,7 +653,7 @@ rows before the exclusion. Keep a copy of the script first.</p>
 <span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span></span>
 <span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"100 * mean(d$outcome)"</span>, <span class="st">"100 * sum(d$outcome) / nrow(d0)"</span>, <span class="va">script</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">script</span>, <span class="va">run</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"sum(d$outcome)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"sum(d$outcome) / nrow(d0)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "    estimate = c(100 * sum(d$outcome) / nrow(d0), exp(stats::coef(fit)[[\"groupb\"]]), stats::sd(boot))"</span></span></code></pre></div>
 <p>Run the scenario <code>known</code> only:</p>
 <div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
@@ -673,6 +727,9 @@ it calls does not change <code>fake_md5</code>.</li>
 <code><a href="../reference/check_project.html">check_project()</a></code> runs project code when it sources
 <code>v01_functions/</code>. Its rule <code>use_scenario_lines</code>
 does not check the order of the lines.</li>
+<li>The check of the rows of the data compares sizes with
+<code>nrow(d)</code> only. A copy of the data with one row less
+passes.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

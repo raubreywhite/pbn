@@ -24,23 +24,69 @@ A data.frame with one row per rule and the columns `rule`, `status` and
 
 ## Details
 
-The seven rules:
+The rule `element_names` checks that the manifest is there. The rules
+`manifest_scenario`, `manifest_data` and `manifest_source` check that it
+is valid. The seven rules:
 
-- `top_level_names`: the names are `manifest`, `exclusions`,
-  `estimates`, `tables` and `extra`, each once, and there are no others.
+- `element_names`: `x` is a list with the element `manifest` exactly
+  once and at least one other element. Each element has a name. Each
+  name is syntactic, so
+  [`make.names()`](https://rdrr.io/r/base/make.names.html) does not
+  change it, and no name is there twice.
 
-- `exclusions_table`: `exclusions` is a data.frame with the columns
-  `step`, `n_before`, `n_excluded` and `n_after`. When
-  `manifest$stacked` is `TRUE`, it also has the column `sim` that
+- `exclusions_table`: when `x` has an element `exclusions`, it is a
+  data.frame with the columns `step`, `n_before`, `n_excluded` and
+  `n_after`. When `manifest$stacked` is `TRUE`, it also has the column
+  `sim` that
   [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  adds. On every row, `n_before - n_excluded == n_after`.
+  adds. On every row, `n_before - n_excluded == n_after`. Without an
+  element `exclusions`, the rule passes and says so.
 
-- `no_fitted_models`: no element anywhere in `x` inherits from `lm`,
-  `glm`, `gam`, `merMod`, `brmsfit`, `coxph` or `lavaan`.
+- `allowed_objects`: each element at each depth is one of these:
 
-- `no_row_per_person`: no data.frame anywhere in `x` has
-  `manifest$n_rows_data` rows. When `n_rows_data` is `NA`, this rule
-  checks nothing.
+  - a data.frame, of any class that inherits from data.frame. This
+    includes a data.table and a tibble.
+
+  - an atomic vector of any length and of any class, including a matrix,
+    an array, a factor, a `Date` and a `POSIXct`.
+
+  - `NULL`.
+
+  - a list of such elements, named or not. The list has no class, or
+    only classes from this set: `list`, `AsIs`, `table`, `noquote`,
+    `difftime`, `Date`, `POSIXct`, `factor` and `integer64`.
+
+  Each other element fails, and the detail names its path, its class and
+  a fix. This includes a function, an environment, an S4 object, an R6
+  object, a formula and each other list with a class. A fitted model of
+  the class `lm`, `glm`, `gam`, `merMod`, `brmsfit`, `coxph` or `lavaan`
+  fails too. The detail has a fix for a model, a formula, an `htest`, a
+  `POSIXlt`, a `package_version` and an `sf` geometry. For each other
+  object, convert it to a data.frame or a plain list.
+
+  The walk goes into the columns of a data.frame, so a model in a list
+  column fails too. It also goes into the attributes of each object, and
+  it writes the path of an attribute as `attr(x$a, "terms")`. So the
+  `terms` attribute of a model frame fails. The walk skips the
+  attributes that R and data.table set: `names`, `dim`, `dimnames`,
+  `row.names`, `class`, `levels`, `tzone`, `units`, `comment`, `sorted`,
+  `index` and `.internal.selfref`.
+
+- `no_row_per_person`: no element at any depth of the results has one
+  value for each row of the data. When `n` is `manifest$n_rows_data`,
+  the rule fails each of these:
+
+  - a data.frame with `n` rows.
+
+  - an atomic vector of length `n`, also a factor, a `Date` or a
+    `POSIXct`.
+
+  - a matrix or an array with a dimension `n`.
+
+  The walk goes into lists, the columns and list columns of data.frames,
+  and attributes. It does not go into `manifest`. When `n_rows_data` is
+  `NA`, 0 or 1, this rule checks nothing. A table with fewer rows than
+  the data passes, and so does a vector with one value for each group.
 
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.
@@ -84,24 +130,23 @@ x <- list(
     n_after = 97
   ),
   estimates = data.frame(term = "x", estimate = 1.2),
-  tables = list(),
-  extra = list()
+  p_interaction = 0.04
 )
 pbn::check_results(x)
 #>                rule status
-#> 1   top_level_names   PASS
+#> 1     element_names   PASS
 #> 2  exclusions_table   FAIL
-#> 3  no_fitted_models   PASS
+#> 3   allowed_objects   PASS
 #> 4 no_row_per_person   PASS
 #> 5 manifest_scenario   PASS
 #> 6     manifest_data   PASS
 #> 7   manifest_source   PASS
-#>                                                                 detail
-#> 1                              the five top-level names, and no others
-#> 2                    n_before - n_excluded != n_after on these rows: 1
-#> 3                                        no fitted model in the object
-#> 4                                           no data.frame has 100 rows
-#> 5  the manifest names the scenario, the simulation and the simulations
-#> 6 the manifest has data_md5 for "real" or fake_md5 for a fake scenario
-#> 7          the manifest has source_md5, with the md5 of the run script
+#>                                                                                detail
+#> 1                       manifest, and each other element with a unique syntactic name
+#> 2                                   n_before - n_excluded != n_after on these rows: 1
+#> 3       each element is a data.frame, an atomic vector, NULL or a plain list of these
+#> 4 no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension
+#> 5                 the manifest names the scenario, the simulation and the simulations
+#> 6                the manifest has data_md5 for "real" or fake_md5 for a fake scenario
+#> 7                         the manifest has source_md5, with the md5 of the run script
 ```

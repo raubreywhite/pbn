@@ -183,11 +183,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpeJQORh/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpOG2SVD/pbn_initialize_example/v01_functions into 
 p$scenario
 #> [1] "real"
 p$results
-#> [1] "/tmp/RtmpeJQORh/pbn_initialize_example/v01_results/real"
+#> [1] "/tmp/RtmpOG2SVD/pbn_initialize_example/v01_results/real"
 list.files(p$data_raw)
 #> [1] "d.csv"
 

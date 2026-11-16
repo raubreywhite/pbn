@@ -157,26 +157,30 @@ fake_null <- function(dir) {
   data.table::fwrite(d, file.path(dir, "d.csv"))
 }
 
-# results holds the 3 simulations stacked, with a first column sim.
+# results holds the 3 simulations stacked. Each data.frame has a first
+# column sim. The named vector counts is a list with one entry for each
+# simulation.
 expect_null <- function(results) {
   e <- results$estimates
   sims_n <- length(unique(e$sim))
   log_or <- mean(log(e$estimate[e$term == "or_group_b"]))
+  rows <- unlist(lapply(results$counts, function(n) n[["rows"]]))
   data.frame(
-    assertion = c("simulations", "mean log odds ratio of b against a"),
-    expected = c("3", "-0.5 to 0.5"),
-    observed = c(sims_n, round(log_or, 3)),
-    pass = c(sims_n == 3, abs(log_or) < 0.5)
+    assertion = c("simulations", "mean log odds ratio of b against a", "rows of each simulation"),
+    expected = c("3", "-0.5 to 0.5", "400 400 400"),
+    observed = c(sims_n, round(log_or, 3), paste(rows, collapse = " ")),
+    pass = c(sims_n == 3, abs(log_or) < 0.5, identical(as.numeric(rows), c(400, 400, 400)))
   )
 }
 ```
 
 The scenario `null` tests that the mean log odds ratio over 3
 simulations is within 0.5 of zero when the data has no difference
-between the groups. It does not test that the analysis finds a
-difference that is there. With 400 rows, one log odds ratio has a
-standard error of about 0.22, so the mean of 3 has about 0.13. The bound
-0.5 is thus about 4 standard errors.
+between the groups. It also tests that each simulation analyses all 400
+rows. It does not test that the analysis finds a difference that is
+there. With 400 rows, one log odds ratio has a standard error of about
+0.22, so the mean of 3 has about 0.13. The bound 0.5 is thus about 4
+standard errors.
 
 ## The run script
 
@@ -240,6 +244,7 @@ pbn::save_results(
     estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]), stats::sd(boot))
   ),
   tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
+  counts = c(rows = nrow(d), events = sum(d$outcome)),
   d = d
 )
 pbn::end_if_fake_scenario()
@@ -253,13 +258,41 @@ data.table::fwrite(r$tables$table1, file.path(p$results, "table1.csv"))
 [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
 runs the script there. pbn reads `data_raw` for the real data only.
 
+## The results contract
+
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-checks the results object before it writes `results.qs2`. It stops on a
-fitted model of a class that
+saves each result under the name that the run script gives it, here
+`exclusions`, `estimates`, `tables` and `counts`. pbn adds the element
+`manifest`, so a result with that name is an error. A result MAY be one
+of these, and
 [`?check_results`](https://www.rwhite.no/pbn/reference/check_results.md)
-lists. It also stops on a table with as many rows as the data. `d = d`
-gives pbn that number of rows. Without `d`, pbn does not make the second
-check.
+gives the full list:
+
+- a data.frame, also a data.table.
+- an atomic vector of any length, such as the named vector `counts`. A
+  matrix, a factor and a date are atomic vectors too.
+- `NULL`.
+- a list of these, to any depth.
+
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+checks the results object before it writes `results.qs2`. It stops on
+each other object, for example a fitted model or a function, and names
+its path. It stops when an element named `exclusions` does not have the
+columns `step`, `n_before`, `n_excluded` and `n_after`, or when its
+counts do not add up.
+
+The argument `d` is required. `d = d` gives pbn the number of rows of
+the analysis data.
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+then stops on a result with one value for each row, for example
+`fitted(fit)`. That is a data.frame with that number of rows, or a
+vector or a matrix with that number of values in one dimension. Use
+`d = NULL` when the run has no single data table.
+
+The check compares sizes only. A table with fewer rows than the data
+passes, and so does a vector with one value for each group. Such a
+result can still hold values of single persons, so check the small
+groups by hand.
 
 ## Running everything
 
@@ -299,9 +332,10 @@ pbn::run_scenarios("v01", home = home, workers = 2)
 #>  percentage with the outcome       40       40 TRUE
 #>    odds ratio of b against a        6        6 TRUE
 #> Assertions of the scenario "null":
-#>                           assertion    expected observed pass
-#>                         simulations           3    3.000 TRUE
-#>  mean log odds ratio of b against a -0.5 to 0.5    0.133 TRUE
+#>                           assertion    expected    observed pass
+#>                         simulations           3           3 TRUE
+#>  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE
+#>             rows of each simulation 400 400 400 400 400 400 TRUE
 ```
 
 Each scenario has a folder in `v01_results/`. The scenario `null` has
@@ -374,9 +408,10 @@ pbn::run_scenarios("v01", home = home, resume = TRUE)
 #>  percentage with the outcome       40       40 TRUE
 #>    odds ratio of b against a        6        6 TRUE
 #> Assertions of the scenario "null":
-#>                           assertion    expected observed pass
-#>                         simulations           3    3.000 TRUE
-#>  mean log odds ratio of b against a -0.5 to 0.5    0.133 TRUE
+#>                           assertion    expected    observed pass
+#>                         simulations           3           3 TRUE
+#>  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE
+#>             rows of each simulation 400 400 400 400 400 400 TRUE
 ```
 
 ## Reading results
@@ -413,8 +448,11 @@ r$tables$table1
 With `sim`, it reads the results of that one simulation. Without `sim`,
 it reads the results file of the scenario. For a scenario with one
 simulation, that file is the results of the run. For a scenario with
-more, it is the stacked results of all simulations, with a first column
-`sim`.
+more, it is the stacked results of all simulations. Stacking keeps every
+element. Each data.frame gets a first column `sim`. A list keeps its
+elements, and each of them is stacked by the same rules. To be stacked,
+each element of a list MUST have its own name. Each other element, such
+as `counts`, becomes a list with one entry for each simulation.
 
 ``` r
 pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
@@ -422,7 +460,8 @@ pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
 #> 1    pct_outcome 30.250000
 #> 2     or_group_b  1.323457
 #> 3 se_pct_outcome  2.346996
-pbn::read_results("v01", scenario = "null", home = home)$estimates
+null <- pbn::read_results("v01", scenario = "null", home = home)
+null$estimates
 #>   sim           term  estimate
 #> 1   1    pct_outcome 31.750000
 #> 2   1     or_group_b  1.087506
@@ -433,6 +472,18 @@ pbn::read_results("v01", scenario = "null", home = home)$estimates
 #> 7   3    pct_outcome 27.250000
 #> 8   3     or_group_b  1.035040
 #> 9   3 se_pct_outcome  2.320390
+null$counts
+#> $sim_0001
+#>   rows events 
+#>    400    127 
+#> 
+#> $sim_0002
+#>   rows events 
+#>    400    121 
+#> 
+#> $sim_0003
+#>   rows events 
+#>    400    109
 ```
 
 The manifest records where the results come from. It holds the versions
@@ -445,7 +496,7 @@ of `v01_run.R` and of each file in `v01_functions/`. For the real data,
 ``` r
 str(r$manifest)
 #> List of 13
-#>  $ pbn_version: chr "2026.11.21"
+#>  $ pbn_version: chr "2026.11.22"
 #>  $ r_version  : chr "R version 4.6.2 (2026-10-29)"
 #>  $ packages   : Named chr [1:8] "0.2.0" "1.18.6.1" "1.8.1" "2026.11.18" ...
 #>   ..- attr(*, "names")= chr [1:8] "charport" "data.table" "glue" "org" ...
@@ -454,10 +505,10 @@ str(r$manifest)
 #>  $ scenario   : chr "real"
 #>  $ sim        : int 1
 #>  $ sims       : int 1
-#>  $ data_raw   : chr "/tmp/RtmpfFSrZ6/pbn_get_started/data_raw"
+#>  $ data_raw   : chr "/tmp/RtmpHPJyXw/pbn_get_started/data_raw"
 #>  $ settings   :List of 1
 #>   ..$ n_boot: num 200
-#>  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "7f906a9381c789e76e363f51d46748b1" "d2b4c6343bc9270dce126a778bcb42a0"
+#>  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "f89b576e4da8dbd6535ac65651519831" "ac8708b48789fa0fe6367514a62caaeb"
 #>   ..- attr(*, "names")= chr [1:4] "v01_functions/_cfg.R" "v01_functions/scenario_known.R" "v01_functions/scenario_null.R" "v01_run.R"
 #>  $ data_md5   : Named chr "396527785293e765115178711b7aab75"
 #>   ..- attr(*, "names")= chr "d.csv"
@@ -586,7 +637,7 @@ file.copy(run, file.path(root, "v01_run_copy.R"))
 script <- readLines(run)
 script <- sub("100 * mean(d$outcome)", "100 * sum(d$outcome) / nrow(d0)", script, fixed = TRUE)
 writeLines(script, run)
-grep("sum(d$outcome)", readLines(run), value = TRUE, fixed = TRUE)
+grep("sum(d$outcome) / nrow(d0)", readLines(run), value = TRUE, fixed = TRUE)
 #> [1] "    estimate = c(100 * sum(d$outcome) / nrow(d0), exp(stats::coef(fit)[[\"groupb\"]]), stats::sd(boot))"
 ```
 
@@ -663,3 +714,5 @@ with the project folder as the working directory.
 - [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
   runs project code when it sources `v01_functions/`. Its rule
   `use_scenario_lines` does not check the order of the lines.
+- The check of the rows of the data compares sizes with `nrow(d)` only.
+  A copy of the data with one row less passes.

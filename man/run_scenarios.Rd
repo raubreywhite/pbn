@@ -41,8 +41,10 @@ the run.
 Before each run, \code{run_scenarios()} deletes the \code{results.qs2} of that
 simulation. Before simulation 1, it also deletes the \code{results.qs2} and
 the \code{check.csv} in \verb{<version>_results/<scenario>/}. A run that writes
-no \code{results.qs2} stops \code{run_scenarios()}. Files of the scenarios that
-it does not run stay as they are.
+no \code{results.qs2} stops \code{run_scenarios()}. A run that quits with
+status 0 after it writes \code{results.qs2} succeeds, so
+\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}} can end the run of a fake scenario. Files of
+the scenarios that it does not run stay as they are.
 \item For each scenario with more than 1 simulation, it stacks the files
 \verb{<version>_results/<scenario>/sim_<kkkk>/results.qs2} into
 \verb{<version>_results/<scenario>/results.qs2}. It stops when the files are
@@ -115,6 +117,8 @@ unlink(home, recursive = TRUE)
 }
 \seealso{
 Other project setup:
-\code{\link[=initialize_project]{initialize_project()}}
+\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}},
+\code{\link[=initialize_project]{initialize_project()}},
+\code{\link[=use_scenario]{use_scenario()}}
 }
 \concept{project setup}

@@ -1,10 +1,19 @@
+# pbn 2026.11.18
+
+- Removed the `scenario` argument of `initialize_project()`. A call that still passes it stops with R's unused-argument error. The command line `scenario=<name> sim=<k>` gives the scenario, or else the new `use_scenario()`, or else `"real"`.
+- New `use_scenario(scenario, sim = 1)` chooses the scenario for the rest of the R session when a person steps through a run script by hand. It stops in a non-interactive R session.
+- In an interactive R session, `initialize_project()` prints one line with the scenario and the simulation, and `(fake)` for a fake scenario. A call that stops leaves no run for `save_results()` or `end_if_fake_scenario()`.
+- New `end_if_fake_scenario()` ends a run script after `save_results()` for a fake scenario, so the output part runs for the real data only. It quits with status 0 under `Rscript`, and `run_scenarios()` counts that as a success.
+- New `check_project()` rule `no_active_use_scenario`. It fails an active call or the reference `pbn::use_scenario`, also in a function body or an `if`. `run_script_initialises` names each argument that `initialize_project()` does not have.
+- `unknown_path` knows `run_scenarios.R`. It no longer knows `vNN_output.R`: the output part goes in `vNN_run.R`, after `end_if_fake_scenario()`.
+
 # pbn 2026.11.17
 
-- Scenarios: `CFG$scenarios` names the real data and the made-up scenarios, with the number of simulations of each. The same run script runs on each.
-- `initialize_project()` takes `scenario`, and reads `scenario=<name>` and `sim=<k>` from the command line. It sets the seed to the simulation before org sources the functions and again before it calls `fake_<scenario>(dir)` for made-up data.
+- Scenarios: `CFG$scenarios` names the real data and the fake scenarios, with the number of simulations of each. The same run script runs on each.
+- `initialize_project()` takes `scenario`, and reads `scenario=<name>` and `sim=<k>` from the command line. It sets the seed to the simulation before org sources the functions and again before it calls `fake_<scenario>(dir)` for fake data.
 - Results go to `vNN_results/<scenario>/results.qs2`, or to `vNN_results/<scenario>/sim_NNNN/results.qs2` for a scenario with more than 1 simulation. pbn needs `org` 2026.11.16 for this.
 - New `run_scenarios()` runs every simulation of every scenario in a new R session with a `plnr` plan, stacks the simulations, and checks them with `expect_<scenario>()`.
-- `run_scenarios()` needs `expect_<scenario>()` for every made-up scenario, and stops before any run when one is missing. An `expect_` function that errors or returns no assertions counts as a failed assertion.
+- `run_scenarios()` needs `expect_<scenario>()` for every fake scenario, and stops before any run when one is missing. An `expect_` function that errors or returns no assertions counts as a failed assertion.
 - `run_scenarios()` deletes the results of a simulation before it runs it, and stops when the run writes no `results.qs2`. An older file is never stacked or checked.
 - `read_results()` takes `scenario` (default `"real"`) and `sim`.
 - The manifest gains `scenario`, `sim` and `sims`. New `check_results()` rule `manifest_scenario`.

@@ -42,7 +42,13 @@ Everything under \verb{background/} is not checked. These are exempt:
 extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}.
 \item \code{run_script_initialises} (FAIL): a \code{vNN_run.R} at the top level has no
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
-\code{"vNN"}.
+\code{"vNN"}. The detail names each argument of the call that
+\code{\link[=initialize_project]{initialize_project()}} does not have.
+\item \code{no_active_use_scenario} (FAIL): a \code{vNN_run.R} at the top level has a
+call \code{pbn::use_scenario()} or \code{use_scenario()}, or the reference
+\code{pbn::use_scenario}, that is not in a comment. A call inside a function
+body or an \code{if} counts. \code{\link[=use_scenario]{use_scenario()}} is for stepping through the
+script by hand.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
@@ -65,9 +71,10 @@ counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
-folder. The layout names \code{vNN_run.R}, \code{vNN_output.R}, \verb{vNN_functions/},
-\verb{vNN_results/}, \verb{vNN_test/} and \code{vNN_check_functions.R}, among others. A
-top-level dotfile and a top-level \verb{*.Rproj} file are never unknown.
+folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
+\verb{vNN_test/}, \code{vNN_check_functions.R}, \code{check_project.R} and
+\code{run_scenarios.R}, among others. A top-level dotfile and a top-level
+\verb{*.Rproj} file are never unknown.
 }
 
 The R parser, not a regular expression, finds the calls, the assignments

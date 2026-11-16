@@ -1,4 +1,4 @@
-test_that("run_scenarios runs every scenario, stacks null and writes check.csv", {
+test_that("run_scenarios runs every scenario, stacks null and writes check.csv; only real/ holds the output part's file", {
   skip_if_pbn_not_installed()
   p <- local_project()
   out <- NULL
@@ -21,8 +21,15 @@ test_that("run_scenarios runs every scenario, stacks null and writes check.csv",
       "null/sim_0002/results.qs2",
       "null/sim_0003/data/d.csv",
       "null/sim_0003/results.qs2",
+      "real/output.txt",
       "real/results.qs2"
     )
+  )
+  # end_if_fake_scenario() ends each fake run after save_results(), so the
+  # output part runs for the real data only.
+  expect_identical(
+    grep("output\\.txt$", files, value = TRUE),
+    "real/output.txt"
   )
 
   stacked <- read_results("v01", scenario = "null", home = p$home)
@@ -113,8 +120,9 @@ test_that("stack_scenario stops when a simulation file is missing", {
 # A run script that quits with status 0 before save_results() for one
 # scenario and simulation.
 quit_before_save <- function(p, scenario, sim) {
+  lines <- run_script_lines("v01", p$data_default)
   lines <- append(
-    run_script_lines("v01", p$data_default),
+    lines,
     paste0(
       "if (p$scenario == \"",
       scenario,
@@ -122,7 +130,7 @@ quit_before_save <- function(p, scenario, sim) {
       sim,
       ") quit(save = \"no\", status = 0)"
     ),
-    after = 1
+    after = init_line(lines)
   )
   writeLines(lines, file.path(p$home, "v01_run.R"))
   return(invisible(NULL))
@@ -185,7 +193,7 @@ test_that("a run that writes no results file stops run_scenarios, and no older f
   ))
 })
 
-test_that("run_scenarios stops before any run when a made-up scenario has no expect_ function", {
+test_that("run_scenarios stops before any run when a fake scenario has no expect_ function", {
   skip_if_pbn_not_installed()
   p <- local_project()
   unlink(file.path(p$home, "v01_functions", "expect_null.R"))
@@ -354,13 +362,14 @@ test_that("run_scenarios stops on an unknown scenario before it runs anything", 
 test_that("a failing run stops run_scenarios with its output and names the scenario and simulation", {
   skip_if_pbn_not_installed()
   p <- local_project()
+  lines <- run_script_lines("v01", p$data_default)
   lines <- append(
-    run_script_lines("v01", p$data_default),
+    lines,
     c(
       "cat(\"before the stop\\n\")",
       "if (p$scenario == \"null\" && p$sim == 2) stop(\"planted failure\")"
     ),
-    after = 1
+    after = init_line(lines)
   )
   writeLines(lines, file.path(p$home, "v01_run.R"))
   err <- tryCatch(

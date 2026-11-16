@@ -1,11 +1,27 @@
-init <- function(p, scenario = "real", data_raw = p$data_default) {
-  return(suppressMessages(initialize_project(
-    "v01",
-    p$home,
-    data_raw,
-    scenario = scenario,
-    env = new.env()
-  )))
+# Starts a scenario in this R session as a person who steps through the run
+# script by hand: use_scenario(), then initialize_project().
+# The choice lasts for the R session, so init() empties it when the calling
+# test ends.
+init <- function(
+  p,
+  scenario = "real",
+  data_raw = p$data_default,
+  sim = 1,
+  env = parent.frame()
+) {
+  local_clean_session(env)
+  testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
+  utils::capture.output(use_scenario(scenario, sim))
+  out <- NULL
+  utils::capture.output(
+    out <- suppressMessages(initialize_project(
+      "v01",
+      p$home,
+      data_raw,
+      env = new.env()
+    ))
+  )
+  return(out)
 }
 
 results_files <- function(p) {
@@ -19,17 +35,18 @@ results_files <- function(p) {
 test_that("run_arg, choose_scenario and choose_sim read the trailing arguments", {
   expect_identical(choose_scenario("real", character(0)), "real")
   expect_identical(choose_scenario("real", c("--x", "scenario=null")), "null")
-  expect_identical(choose_sim(character(0)), 1L)
-  expect_identical(choose_sim(c("scenario=null", "sim=2")), 2L)
-  expect_error(choose_sim(c("sim=1", "sim=2")), "sim= more than once")
+  expect_identical(choose_sim(1L, character(0)), 1L)
+  expect_identical(choose_sim(3L, character(0)), 3L)
+  expect_identical(choose_sim(1L, c("scenario=null", "sim=2")), 2L)
+  expect_error(choose_sim(1L, c("sim=1", "sim=2")), "sim= more than once")
   expect_error(
     choose_scenario("real", c("scenario=a", "scenario=b")),
     "scenario= more than once"
   )
   for (bad in c("sim=0", "sim=1.5", "sim=x", "sim=-1", "sim=")) {
-    expect_error(choose_sim(bad), "sim=", info = bad)
+    expect_error(choose_sim(1L, bad), "sim=", info = bad)
   }
-  expect_error(choose_sim("sim=0"), "whole number of 1 or more")
+  expect_error(choose_sim(1L, "sim=0"), "whole number of 1 or more")
   expect_error(choose_scenario("Real", character(0)), "lower-case")
 })
 
@@ -62,7 +79,7 @@ test_that("initialize_project starts the real scenario in v01_results/real/", {
   expect_identical(results_files(p), character(0))
 })
 
-test_that("a made-up scenario writes its data into the results folder and does not read data_raw", {
+test_that("a fake scenario writes its data into the results folder and does not read data_raw", {
   p <- local_project()
   out <- init(p, "known", data_raw = file.path(p$root, "absent"))
   folder <- file.path(out$home, "v01_results", "known")
@@ -114,12 +131,11 @@ test_that("initialize_project sets the seed before org sources the functions fol
   )
   env <- new.env()
   set.seed(99)
-  suppressMessages(initialize_project(
-    "v01",
-    p$home,
-    p$data_default,
-    scenario = "known",
-    env = env
+  local_clean_session()
+  testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
+  utils::capture.output(use_scenario("known"))
+  utils::capture.output(suppressMessages(
+    initialize_project("v01", p$home, p$data_default, env = env)
   ))
   set.seed(1)
   expect_identical(env$source_draw, stats::runif(1))
@@ -248,14 +264,19 @@ test_that("each scenario writes only to its own folder, and the real results sta
 
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
-  expect_identical(results_files(p), "real/results.qs2")
+  expect_identical(results_files(p), c("real/output.txt", "real/results.qs2"))
   real_before <- file_states(file.path(results, "real"))
 
   res <- run_script(p$home, "scenario=known")
   expect_identical(res$status, 0L, info = res$stdout)
   expect_identical(
     results_files(p),
-    c("known/data/d.csv", "known/results.qs2", "real/results.qs2")
+    c(
+      "known/data/d.csv",
+      "known/results.qs2",
+      "real/output.txt",
+      "real/results.qs2"
+    )
   )
   expect_identical(file_states(file.path(results, "real")), real_before)
 
@@ -369,13 +390,14 @@ test_that("data_md5 lists only the files that existed at initialize_project()", 
   p <- local_project()
   # The run writes into the results folder and into the data folder before
   # save_results().
+  lines <- run_script_lines("v01", p$data_default)
   lines <- append(
-    run_script_lines("v01", p$data_default),
+    lines,
     c(
       "writeLines(\"x\", file.path(p$results, \"fig.txt\"))",
       "writeLines(\"x\", file.path(p$data_raw, \"made_by_run.txt\"))"
     ),
-    after = 1
+    after = init_line(lines)
   )
   writeLines(lines, file.path(p$home, "v01_run.R"))
   run_script(p$home, "scenario=known")

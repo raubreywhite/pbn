@@ -4,13 +4,7 @@
 \alias{initialize_project}
 \title{Start one scenario of an analysis project version}
 \usage{
-initialize_project(
-  version,
-  home,
-  data_raw,
-  scenario = "real",
-  env = .GlobalEnv
-)
+initialize_project(version, home, data_raw, env = .GlobalEnv)
 }
 \arguments{
 \item{version}{The version, written as \code{"v"} and two digits, for example
@@ -21,9 +15,6 @@ initialize_project(
 
 \item{data_raw}{The folder of the real raw data. It MUST exist when the
 scenario is \code{"real"}. pbn does not read it for any other scenario.}
-
-\item{scenario}{The scenario, one name in \code{CFG$scenarios$scenario}. The
-default \code{"real"} is the real data.}
 
 \item{env}{The environment that the functions folder is sourced into.}
 }
@@ -47,13 +38,22 @@ with these columns:
 more.
 }
 
-Two trailing command-line arguments replace the defaults. pbn reads no
-environment variables.
-\itemize{
-\item \verb{scenario=<name>} replaces \code{scenario}.
-\item \verb{sim=<k>} gives the simulation, a whole number of 1 or more. Without it,
-the simulation is 1.
+The scenario and the simulation come from the first of these that gives
+them. pbn reads no environment variables.
+\enumerate{
+\item The trailing command-line arguments \verb{scenario=<name>} and \verb{sim=<k>}.
+\code{\link[=run_scenarios]{run_scenarios()}} gives both. When only one of them is there, the other
+one is \code{"real"} or 1.
+\item The choice of \code{\link[=use_scenario]{use_scenario()}}, for a person who steps through the
+script by hand.
+\item The scenario \code{"real"} and the simulation 1.
 }
+
+The choice of \code{\link[=use_scenario]{use_scenario()}} lasts for the R session.
+
+In an interactive R session, \code{initialize_project()} prints one line, for
+example \verb{pbn: scenario null, simulation 2 of 3 (fake)}. \code{(fake)} is there
+for each scenario other than \code{"real"}.
 
 \code{initialize_project()} does these steps in this order:
 \enumerate{
@@ -89,7 +89,9 @@ that the run writes later is not in the list.
 }
 
 When it stops, it deletes each empty results folder that the call created.
-It never creates a folder with today's date.
+The state of the run is then empty, so \code{\link[=save_results]{save_results()}} and
+\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}} stop until a call succeeds. The choice of
+\code{\link[=use_scenario]{use_scenario()}} stays. It never creates a folder with today's date.
 }
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
@@ -107,14 +109,16 @@ writeLines(
   file.path(home, "v01_functions", "_cfg.R")
 )
 
+utils::write.csv(data.frame(x = 1:5), file.path(home, "data", "d.csv"))
+
 env <- new.env()
 p <- pbn::initialize_project(
   version = "v01",
   home = home,
   data_raw = file.path(home, "data"),
-  scenario = "null",
   env = env
 )
+p$scenario
 p$results
 list.files(p$data_raw)
 
@@ -122,6 +126,8 @@ unlink(home, recursive = TRUE)
 }
 \seealso{
 Other project setup:
-\code{\link[=run_scenarios]{run_scenarios()}}
+\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}},
+\code{\link[=run_scenarios]{run_scenarios()}},
+\code{\link[=use_scenario]{use_scenario()}}
 }
 \concept{project setup}

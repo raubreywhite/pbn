@@ -4,7 +4,7 @@ Rules for agents that work in this repository.
 
 ## This repository is public
 
-- Use made-up data only, in tests, examples, documentation and commit messages.
+- Use fake data only, in tests, examples, documentation and commit messages.
 - Do not write the name of a study, a coauthor, a data file or a variable from a real project.
 
 ## Behaviour of an exported function does not change

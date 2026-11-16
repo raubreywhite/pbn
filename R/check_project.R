@@ -26,7 +26,13 @@
 #'   extensions, and the initials in `manuscript/manual/vNN_<INITIALS>.docx`.
 #' - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
 #'   call `pbn::initialize_project()` whose `version` argument is the string
-#'   `"vNN"`.
+#'   `"vNN"`. The detail names each argument of the call that
+#'   [initialize_project()] does not have.
+#' - `no_active_use_scenario` (FAIL): a `vNN_run.R` at the top level has a
+#'   call `pbn::use_scenario()` or `use_scenario()`, or the reference
+#'   `pbn::use_scenario`, that is not in a comment. A call inside a function
+#'   body or an `if` counts. [use_scenario()] is for stepping through the
+#'   script by hand.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
@@ -49,9 +55,10 @@
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
-#'   folder. The layout names `vNN_run.R`, `vNN_output.R`, `vNN_functions/`,
-#'   `vNN_results/`, `vNN_test/` and `vNN_check_functions.R`, among others. A
-#'   top-level dotfile and a top-level `*.Rproj` file are never unknown.
+#'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
+#'   `vNN_test/`, `vNN_check_functions.R`, `check_project.R` and
+#'   `run_scenarios.R`, among others. A top-level dotfile and a top-level
+#'   `*.Rproj` file are never unknown.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.

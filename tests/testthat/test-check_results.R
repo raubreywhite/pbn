@@ -106,7 +106,7 @@ test_that("manifest_scenario fails when scenario is not one string", {
   }
 })
 
-test_that("manifest_scenario passes a made-up scenario and a stacked manifest", {
+test_that("manifest_scenario passes a fake scenario and a stacked manifest", {
   x <- valid_results()
   x$manifest$scenario <- "null"
   x$manifest$sim <- NA_integer_

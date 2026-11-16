@@ -8,11 +8,13 @@
 pbn_exports <- c(
   "check_project",
   "check_results",
+  "end_if_fake_scenario",
   "initialize_project",
   "read_results",
   "run_scenarios",
   "save_results",
-  "table1"
+  "table1",
+  "use_scenario"
 )
 
 results_names <- c("manifest", "exclusions", "estimates", "tables", "extra")
@@ -421,18 +423,22 @@ rule_run_script_initialises <- function(path) {
       return(identical(cl[[1]], quote(pbn::initialize_project)))
     })
     versions <- vapply(calls, init_version, character(1))
+    unknown <- unlist(lapply(calls, init_unknown_args))
     if (!version %in% versions) {
-      out[[s]] <- project_row(
-        rule,
-        "FAIL",
+      detail <- paste0(
         s,
-        paste0(
-          s,
-          ": no call pbn::initialize_project(version = \"",
-          version,
-          "\")"
-        )
+        ": no call pbn::initialize_project(version = \"",
+        version,
+        "\")"
       )
+      if (length(unknown) > 0) {
+        detail <- paste0(
+          detail,
+          ". pbn::initialize_project() has no argument ",
+          paste(unique(unknown), collapse = ", ")
+        )
+      }
+      out[[s]] <- project_row(rule, "FAIL", s, detail)
     }
   }
   return(bind_rows(out))
@@ -468,6 +474,14 @@ init_version <- function(cl) {
     return(v)
   }
   return(NA_character_)
+}
+
+# The names of the arguments of one pbn::initialize_project() call that the
+# function does not have.
+init_unknown_args <- function(cl) {
+  given <- names(as.list(cl))[-1]
+  given <- given[!is.na(given) & nzchar(given)]
+  return(setdiff(given, names(formals(initialize_project))))
 }
 
 rule_version_items_complete <- function(path) {
@@ -684,7 +698,7 @@ rule_unknown_path <- function(path) {
     "^v[0-9]{2}_results$",
     "^v[0-9]{2}_test$",
     "^check_project\\.R$",
-    "^v[0-9]{2}_output\\.R$",
+    "^run_scenarios\\.R$",
     "^v[0-9]{2}_check_functions\\.R$",
     "^manuscript$",
     "^background$",
@@ -731,6 +745,10 @@ project_rules <- function() {
     run_script_initialises = list(
       rule_run_script_initialises,
       "every vNN_run.R calls pbn::initialize_project() with its own version"
+    ),
+    no_active_use_scenario = list(
+      rule_no_active_use_scenario,
+      "no vNN_run.R has an active call pbn::use_scenario()"
     ),
     version_items_complete = list(
       rule_version_items_complete,

@@ -8,8 +8,15 @@ write_lines <- function(home, rel, lines) {
   return(invisible(file))
 }
 
+# The run script of the house skeleton: one commented use_scenario() line
+# per scenario, in the order of CFG$scenarios, and an output part after
+# end_if_fake_scenario() that writes output.txt for the real data only.
 run_script_lines <- function(version, data_raw) {
   return(c(
+    "# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.",
+    "# pbn::use_scenario(\"real\", sim = 1)",
+    "# pbn::use_scenario(\"known\", sim = 1)",
+    "# pbn::use_scenario(\"null\", sim = 1)",
     paste0(
       "p <- pbn::initialize_project(version = \"",
       version,
@@ -29,8 +36,17 @@ run_script_lines <- function(version, data_raw) {
     "  estimates = data.frame(term = \"mean_x\", estimate = mean(d$x)),",
     "  tables = list(table1 = t1),",
     "  d = d",
-    ")"
+    ")",
+    "pbn::end_if_fake_scenario()",
+    "",
+    "# PART 3 -- OUTPUT ====",
+    "writeLines(\"output\", file.path(p$results, \"output.txt\"))"
   ))
+}
+
+# The position of the initialize_project() call in run_script_lines().
+init_line <- function(lines) {
+  return(which(startsWith(lines, "p <- pbn::initialize_project(")))
 }
 
 # The scenarios real (1 simulation), known (1) and null (3).
@@ -153,6 +169,7 @@ local_project <- function(env = parent.frame()) {
     "testthat::expect_equal(double_it(2), 4)"
   )
   write_lines(home, "check_project.R", "pbn::check_project()")
+  write_lines(home, "run_scenarios.R", "pbn::run_scenarios(\"v01\")")
   write_lines(home, "manuscript/manual/v01_AB.docx", "")
   dir.create(file.path(home, "manuscript", "built", "v01"), recursive = TRUE)
   write_lines(home, "background/Received Protocol.PDF", "")
@@ -228,4 +245,18 @@ valid_results <- function() {
     tables = list(counts = data.frame(grp = c("a", "b"), n = c(20, 20))),
     extra = list(note = "synthetic")
   ))
+}
+
+# Empties the run state and the session choice of use_scenario() now, and
+# again when the calling test ends. The choice lasts for the R session, so a
+# test that sets it MUST NOT leave it for the next test.
+local_clean_session <- function(env = parent.frame()) {
+  clean <- function() {
+    rm(list = ls(state, all.names = TRUE), envir = state)
+    rm(list = ls(choice, all.names = TRUE), envir = choice)
+    return(invisible(NULL))
+  }
+  clean()
+  withr::defer(clean(), envir = env)
+  return(invisible(NULL))
 }

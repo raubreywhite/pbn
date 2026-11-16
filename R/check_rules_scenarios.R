@@ -1,5 +1,58 @@
-# The project rules about scenarios: the assertions that run_scenarios()
-# writes, and the manuscript that MUST read the real results only.
+# The project rules about scenarios: the run script that MUST NOT choose a
+# scenario, the assertions that run_scenarios() writes, and the manuscript
+# that MUST read the real results only.
+
+rule_no_active_use_scenario <- function(path) {
+  rule <- "no_active_use_scenario"
+  out <- list()
+  for (s in run_scripts(path)) {
+    exprs <- parse_or_null(file.path(path, s), keep_source = TRUE)
+    if (is.null(exprs)) {
+      out[[s]] <- project_row(rule, "FAIL", s, paste0(s, ": R cannot parse it"))
+      next
+    }
+    refs <- attr(exprs, "srcref")
+    lines <- integer(0)
+    for (k in seq_along(exprs)) {
+      if (length(find_calls(exprs[[k]], is_use_scenario_call)) > 0) {
+        lines <- c(lines, refs[[k]][[1]])
+      }
+    }
+    if (length(lines) > 0) {
+      out[[s]] <- project_row(
+        rule,
+        "FAIL",
+        s,
+        paste0(
+          s,
+          ": an active pbn::use_scenario() in the expression on line ",
+          paste(lines, collapse = ", "),
+          ". It is for stepping through the script by hand: comment it out"
+        )
+      )
+    }
+  }
+  return(bind_rows(out))
+}
+
+# use_scenario(), pbn::use_scenario() or the same with three colons. The
+# reference pbn::use_scenario without a call matches too.
+is_use_scenario_call <- function(cl) {
+  if (identical(cl[[1]], quote(use_scenario))) {
+    return(TRUE)
+  }
+  # pbn::use_scenario and pbn:::use_scenario. call() builds them, because R
+  # CMD check notes a written ::: to the package itself.
+  refs <- lapply(c("::", ":::"), function(op) {
+    return(call(op, quote(pbn), quote(use_scenario)))
+  })
+  hit <- vapply(
+    refs,
+    function(r) return(identical(cl, r) || identical(cl[[1]], r)),
+    logical(1)
+  )
+  return(any(hit))
+}
 
 rule_scenario_checks <- function(path) {
   rule <- "scenario_checks"

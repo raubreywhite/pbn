@@ -14,8 +14,6 @@ state <- new.env(parent = emptyenv())
 #'   `<version>_functions/`.
 #' @param data_raw The folder of the real raw data. It MUST exist when the
 #'   scenario is `"real"`. pbn does not read it for any other scenario.
-#' @param scenario The scenario, one name in `CFG$scenarios$scenario`. The
-#'   default `"real"` is the real data.
 #' @param env The environment that the functions folder is sourced into.
 #' @details
 #' `_cfg.R` in `<version>_functions/` MUST set `CFG$scenarios`, a data.frame
@@ -25,11 +23,20 @@ state <- new.env(parent = emptyenv())
 #' - `sims`: the number of simulations of the scenario, a whole number of 1 or
 #'   more.
 #'
-#' Two trailing command-line arguments replace the defaults. pbn reads no
-#' environment variables.
-#' - `scenario=<name>` replaces `scenario`.
-#' - `sim=<k>` gives the simulation, a whole number of 1 or more. Without it,
-#'   the simulation is 1.
+#' The scenario and the simulation come from the first of these that gives
+#' them. pbn reads no environment variables.
+#' 1. The trailing command-line arguments `scenario=<name>` and `sim=<k>`.
+#'    [run_scenarios()] gives both. When only one of them is there, the other
+#'    one is `"real"` or 1.
+#' 2. The choice of [use_scenario()], for a person who steps through the
+#'    script by hand.
+#' 3. The scenario `"real"` and the simulation 1.
+#'
+#' The choice of [use_scenario()] lasts for the R session.
+#'
+#' In an interactive R session, `initialize_project()` prints one line, for
+#' example `pbn: scenario null, simulation 2 of 3 (fake)`. `(fake)` is there
+#' for each scenario other than `"real"`.
 #'
 #' `initialize_project()` does these steps in this order:
 #' 1. It calls [org::initialize_project()] with `results` set to
@@ -61,7 +68,9 @@ state <- new.env(parent = emptyenv())
 #' - `fake_<scenario>()` is missing.
 #'
 #' When it stops, it deletes each empty results folder that the call created.
-#' It never creates a folder with today's date.
+#' The state of the run is then empty, so [save_results()] and
+#' [end_if_fake_scenario()] stop until a call succeeds. The choice of
+#' [use_scenario()] stays. It never creates a folder with today's date.
 #' @return Invisibly, a list with `version`, `home`, `scenario`, `sim`,
 #'   `sims`, `results` and `data_raw`. `results` is the results folder and
 #'   `data_raw` is the data folder of the run.
@@ -81,14 +90,16 @@ state <- new.env(parent = emptyenv())
 #'   file.path(home, "v01_functions", "_cfg.R")
 #' )
 #'
+#' utils::write.csv(data.frame(x = 1:5), file.path(home, "data", "d.csv"))
+#'
 #' env <- new.env()
 #' p <- pbn::initialize_project(
 #'   version = "v01",
 #'   home = home,
 #'   data_raw = file.path(home, "data"),
-#'   scenario = "null",
 #'   env = env
 #' )
+#' p$scenario
 #' p$results
 #' list.files(p$data_raw)
 #'
@@ -99,20 +110,24 @@ initialize_project <- function(
   version,
   home,
   data_raw,
-  scenario = "real",
   env = .GlobalEnv
 ) {
-  # A failed call MUST NOT leave the folder of an earlier call for
-  # save_results().
+  chosen <- session_choice()
+  # The state of the run stays empty until the last step sets it. A call that
+  # stops leaves no run for save_results() or end_if_fake_scenario().
   rm(list = ls(state, all.names = TRUE), envir = state)
   check_version(version)
   if (!is.character(home) || length(home) != 1 || !dir.exists(home)) {
     stop("`home` must be the path of one existing folder.", call. = FALSE)
   }
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
-  args <- commandArgs(trailingOnly = TRUE)
-  scenario <- choose_scenario(scenario, args)
-  sim <- choose_sim(args)
+  args <- command_args()
+  # The command line replaces the choice of use_scenario() as a whole.
+  if (is.null(chosen) || any(grepl("^(scenario|sim)=", args))) {
+    chosen <- list(scenario = "real", sim = 1L)
+  }
+  scenario <- choose_scenario(chosen$scenario, args)
+  sim <- choose_sim(chosen$sim, args)
   if (scenario == "real") {
     data_raw <- check_data_raw(data_raw)
   }
@@ -132,10 +147,22 @@ initialize_project <- function(
       stop(e)
     }
   )
-  for (i in names(out)) {
-    state[[i]] <- out[[i]]
+  md5 <- data_md5(out$data_raw)
+  if (is_interactive()) {
+    cat(
+      "pbn: scenario ",
+      out$scenario,
+      ", simulation ",
+      out$sim,
+      " of ",
+      out$sims,
+      if (out$scenario != "real") " (fake)",
+      "\n",
+      sep = ""
+    )
   }
-  state$data_md5 <- data_md5(out$data_raw)
+  # Every step that can stop is above this line.
+  list2env(c(out, list(data_md5 = md5)), envir = state)
   return(invisible(out))
 }
 
@@ -206,6 +233,12 @@ is_scenario_name <- function(x) {
   )
 }
 
+# The trailing command-line arguments, in one place, so that the tests can
+# mock them.
+command_args <- function() {
+  return(commandArgs(trailingOnly = TRUE))
+}
+
 # The value of a trailing argument <key>=<value>, or NULL when it is absent.
 run_arg <- function(args, key) {
   prefix <- paste0(key, "=")
@@ -248,10 +281,10 @@ choose_scenario <- function(default, args) {
   return(scenario)
 }
 
-choose_sim <- function(args) {
+choose_sim <- function(default, args) {
   value <- run_arg(args, "sim")
   if (is.null(value)) {
-    return(1L)
+    return(as.integer(default))
   }
   sim <- if (grepl("^[0-9]+$", value)) {
     suppressWarnings(as.integer(value))
@@ -352,7 +385,7 @@ sims_of <- function(table, scenario, sim) {
   return(sims)
 }
 
-# Writes the made-up data of one simulation into <results>/data/, and returns
+# Writes the fake data of one simulation into <results>/data/, and returns
 # the normalised path of that folder.
 make_data <- function(env, version, scenario, results) {
   fn_name <- paste0("fake_", scenario)

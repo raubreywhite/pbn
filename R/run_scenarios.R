@@ -25,8 +25,10 @@
 #'    Before each run, `run_scenarios()` deletes the `results.qs2` of that
 #'    simulation. Before simulation 1, it also deletes the `results.qs2` and
 #'    the `check.csv` in `<version>_results/<scenario>/`. A run that writes
-#'    no `results.qs2` stops `run_scenarios()`. Files of the scenarios that
-#'    it does not run stay as they are.
+#'    no `results.qs2` stops `run_scenarios()`. A run that quits with
+#'    status 0 after it writes `results.qs2` succeeds, so
+#'    [end_if_fake_scenario()] can end the run of a fake scenario. Files of
+#'    the scenarios that it does not run stay as they are.
 #' 3. For each scenario with more than 1 simulation, it stacks the files
 #'    `<version>_results/<scenario>/sim_<kkkk>/results.qs2` into
 #'    `<version>_results/<scenario>/results.qs2`. It stops when the files are
@@ -108,7 +110,7 @@ run_scenarios <- function(version, scenario = NULL, home = ".") {
   no_expect <- setdiff(table$scenario[table$scenario != "real"], info$expect)
   if (length(no_expect) > 0) {
     stop(
-      "Each made-up scenario needs a function expect_<scenario>(results) in ",
+      "Each fake scenario needs a function expect_<scenario>(results) in ",
       version,
       "_functions/. These are missing: ",
       paste0("expect_", no_expect, "()", collapse = ", "),

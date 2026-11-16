@@ -2,8 +2,10 @@
 
 export(check_project)
 export(check_results)
+export(end_if_fake_scenario)
 export(initialize_project)
 export(read_results)
 export(run_scenarios)
 export(save_results)
 export(table1)
+export(use_scenario)

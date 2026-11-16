@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.11.17
+Version: 2026.11.18
 Authors@R:
     c(
       person(
@@ -15,7 +15,7 @@ Description: Holds the house layout of a versioned analysis project and
     the checks of that layout. It starts one scenario of a project version
     with the house defaults of 'org', computes the numbers of a descriptive
     table, writes and reads one results object with a fixed contract, and
-    runs the real data and each made-up scenario in new R sessions.
+    runs the real data and each fake scenario in new R sessions.
 License: MIT + file LICENSE
 URL: https://www.rwhite.no/pbn/, https://github.com/raubreywhite/pbn
 BugReports: https://github.com/raubreywhite/pbn/issues

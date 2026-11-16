@@ -1,6 +1,7 @@
 project_rule_names <- c(
   "lower_case_names",
   "run_script_initialises",
+  "no_active_use_scenario",
   "version_items_complete",
   "results_contract",
   "scenario_checks",
@@ -27,7 +28,7 @@ test_that("check_project prints one line per rule and a count line", {
     out[1],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "11 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "12 PASS, 0 WARN, 0 FAIL")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -60,7 +61,8 @@ test_that("lower_case_names fails on a capital letter in a folder name", {
 test_that("run_script_initialises fails on the wrong version", {
   p <- local_project()
   lines <- readLines(file.path(p$home, "v01_run.R"))
-  lines[1] <- sub("\"v01\"", "\"v02\"", lines[1], fixed = TRUE)
+  i <- init_line(lines)
+  lines[i] <- sub("\"v01\"", "\"v02\"", lines[i], fixed = TRUE)
   writeLines(lines, file.path(p$home, "v01_run.R"))
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), "run_script_initialises")
@@ -69,8 +71,9 @@ test_that("run_script_initialises fails on the wrong version", {
 test_that("run_script_initialises fails when the call is only in a comment", {
   p <- local_project()
   lines <- readLines(file.path(p$home, "v01_run.R"))
-  lines[1] <- paste("#", lines[1])
-  lines <- c(lines[1], "p <- list(data_raw = \".\")", lines[-1])
+  i <- init_line(lines)
+  lines[i] <- paste("#", lines[i])
+  lines <- append(lines, "p <- list(data_raw = \".\")", after = i)
   writeLines(lines, file.path(p$home, "v01_run.R"))
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), "run_script_initialises")
@@ -287,7 +290,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "11 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(ok$stdout, "12 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -303,7 +306,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "10 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "11 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {
@@ -349,10 +352,10 @@ test_that("check_project leaves out OS and editor files outside git", {
   expect_identical(found$status, rep("PASS", length(project_rule_names)))
 })
 
-test_that("unknown_path knows the output script, the check script and pbn_allow.txt", {
+test_that("unknown_path knows run_scenarios.R, the check scripts and pbn_allow.txt", {
   p <- local_project()
+  expect_true(file.exists(file.path(p$home, "run_scenarios.R")))
   write_lines(p$home, "v01_check_functions.R", "x <- 1")
-  write_lines(p$home, "v01_output.R", "x <- 1")
   write_lines(p$home, "pbn_allow.txt", character(0))
 
   found <- project_findings(p$home)
@@ -552,4 +555,136 @@ test_that("manuscript_reads_real fails on an .R file that R cannot parse", {
     found$path[found$status == "FAIL"],
     "manuscript/built/v01/paper.qmd"
   )
+})
+
+test_that("no_active_use_scenario passes the commented lines of the skeleton", {
+  p <- local_project()
+  lines <- readLines(file.path(p$home, "v01_run.R"))
+  expect_identical(
+    lines[2:4],
+    c(
+      "# pbn::use_scenario(\"real\", sim = 1)",
+      "# pbn::use_scenario(\"known\", sim = 1)",
+      "# pbn::use_scenario(\"null\", sim = 1)"
+    )
+  )
+  found <- project_findings(p$home)
+  row <- found[found$rule == "no_active_use_scenario", ]
+  expect_identical(row$status, "PASS")
+})
+
+test_that("no_active_use_scenario fails on an active call, with or without pbn::", {
+  for (call in c(
+    "pbn::use_scenario(\"known\", sim = 1)",
+    "use_scenario(\"known\")",
+    "pbn:::use_scenario(\"null\", sim = 2)"
+  )) {
+    p <- local_project()
+    lines <- readLines(file.path(p$home, "v01_run.R"))
+    lines[3] <- call
+    writeLines(lines, file.path(p$home, "v01_run.R"))
+    found <- project_findings(p$home)
+    expect_identical(failed_rules(found), "no_active_use_scenario", info = call)
+    expect_identical(
+      found$detail[found$status == "FAIL"],
+      paste0(
+        "v01_run.R: an active pbn::use_scenario() in the expression on ",
+        "line 3. It is for stepping through the script by hand: comment it out"
+      ),
+      info = call
+    )
+  }
+})
+
+test_that("run_script_initialises fails on a call with an argument initialize_project does not have", {
+  p <- local_project()
+  lines <- readLines(file.path(p$home, "v01_run.R"))
+  i <- init_line(lines)
+  lines[i] <- sub("home = ", "scenario = \"real\", home = ", lines[i])
+  writeLines(lines, file.path(p$home, "v01_run.R"))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "run_script_initialises")
+  expect_identical(
+    found$detail[found$status == "FAIL"],
+    paste0(
+      "v01_run.R: no call pbn::initialize_project(version = \"v01\"). ",
+      "pbn::initialize_project() has no argument scenario"
+    )
+  )
+})
+
+test_that("unknown_path warns on vNN_output.R", {
+  p <- local_project()
+  write_lines(p$home, "v01_output.R", "x <- 1")
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  expect_identical(found$status[found$rule == "unknown_path"], "WARN")
+  expect_identical(found$path[found$rule == "unknown_path"], "v01_output.R")
+})
+
+# The run script with `lines` in place of the commented line of known.
+with_use_scenario_lines <- function(p, lines) {
+  file <- file.path(p$home, "v01_run.R")
+  old <- readLines(file)
+  writeLines(c(old[1:2], lines, old[-(1:3)]), file)
+  return(invisible(file))
+}
+
+test_that("no_active_use_scenario fails in a function body, in an if, and on the reference pbn::use_scenario", {
+  cases <- list(
+    function_body = c(
+      "step <- function() {",
+      "  pbn::use_scenario(\"known\", sim = 1)",
+      "}"
+    ),
+    lambda = "step <- function() use_scenario(\"known\")",
+    if_interactive = c(
+      "if (interactive()) {",
+      "  pbn::use_scenario(\"known\", sim = 1)",
+      "}"
+    ),
+    reference = "f <- pbn::use_scenario",
+    reference_three_colons = "f <- pbn:::use_scenario"
+  )
+  for (nm in names(cases)) {
+    p <- local_project()
+    with_use_scenario_lines(p, cases[[nm]])
+    found <- project_findings(p$home)
+    expect_identical(failed_rules(found), "no_active_use_scenario", info = nm)
+    expect_match(
+      found$detail[found$status == "FAIL"],
+      "v01_run.R: an active pbn::use_scenario() in the expression on line 3.",
+      fixed = TRUE,
+      info = nm
+    )
+  }
+})
+
+test_that("no_active_use_scenario passes a comment in a function body, a string and another use_scenario", {
+  cases <- list(
+    comment_in_body = c(
+      "step <- function() {",
+      "  # pbn::use_scenario(\"known\", sim = 1)",
+      "  return(1)",
+      "}"
+    ),
+    comment_in_if = c(
+      "if (interactive()) {",
+      "  # pbn::use_scenario(\"known\", sim = 1)",
+      "}"
+    ),
+    string = "note <- \"pbn::use_scenario(\\\"known\\\")\"",
+    other_package = "f <- other::use_scenario"
+  )
+  for (nm in names(cases)) {
+    p <- local_project()
+    with_use_scenario_lines(p, cases[[nm]])
+    found <- project_findings(p$home)
+    expect_identical(failed_rules(found), character(0), info = nm)
+    expect_identical(
+      found$status[found$rule == "no_active_use_scenario"],
+      "PASS",
+      info = nm
+    )
+  }
 })

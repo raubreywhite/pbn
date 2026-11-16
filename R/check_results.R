@@ -6,7 +6,7 @@
 #'
 #' @param x The results object, normally from [read_results()].
 #' @details
-#' The six rules:
+#' The seven rules:
 #' - `top_level_names`: the names are `manifest`, `exclusions`, `estimates`,
 #'   `tables` and `extra`, each once, and there are no others.
 #' - `exclusions_table`: `exclusions` is a data.frame with the columns `step`,
@@ -27,6 +27,11 @@
 #'   vector of such strings, named by file. It has length 0 when the data
 #'   folder has no file. A results file that pbn 2026.11.18 or older wrote
 #'   has `data_md5` for a fake scenario, so it fails this rule.
+#' - `manifest_source`: `manifest$source_md5` is a named character vector of
+#'   md5 values, each a string of 32 lower-case hex digits. It names the run
+#'   script `<version>_run.R` of `manifest$version`, or a `vNN_run.R` when
+#'   the manifest has no valid version. A results file that pbn 2026.11.20
+#'   or older wrote has no `source_md5`, so it fails this rule.
 #' @return A data.frame with one row per rule and the columns `rule`, `status`
 #'   and `detail`. `status` is `"PASS"` or `"FAIL"`.
 #' @examples
@@ -36,6 +41,7 @@
 #'     sim = 1L,
 #'     sims = 1L,
 #'     data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+#'     source_md5 = c(v01_run.R = "fedcba9876543210fedcba9876543210"),
 #'     n_rows_data = 100L
 #'   ),
 #'   exclusions = data.frame(
@@ -58,6 +64,7 @@ check_results <- function(x) {
     rule_no_fitted_models(x),
     rule_no_row_per_person(x),
     rule_manifest_scenario(x),
-    rule_manifest_data(x)
+    rule_manifest_data(x),
+    rule_manifest_source(x)
   ))
 }

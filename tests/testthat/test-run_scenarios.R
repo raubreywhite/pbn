@@ -13,16 +13,26 @@ test_that("run_scenarios runs every scenario, stacks null and writes check.csv; 
       "known/check.csv",
       "known/data/d.csv",
       "known/results.qs2",
+      "known/run.log",
+      "known/run.ok",
       "null/check.csv",
       "null/results.qs2",
       "null/sim_0001/data/d.csv",
       "null/sim_0001/results.qs2",
+      "null/sim_0001/run.log",
+      "null/sim_0001/run.ok",
       "null/sim_0002/data/d.csv",
       "null/sim_0002/results.qs2",
+      "null/sim_0002/run.log",
+      "null/sim_0002/run.ok",
       "null/sim_0003/data/d.csv",
       "null/sim_0003/results.qs2",
+      "null/sim_0003/run.log",
+      "null/sim_0003/run.ok",
       "real/output.txt",
-      "real/results.qs2"
+      "real/results.qs2",
+      "real/run.log",
+      "real/run.ok"
     )
   )
   # end_if_fake_scenario() ends each fake run after save_results(), so the
@@ -33,7 +43,7 @@ test_that("run_scenarios runs every scenario, stacks null and writes check.csv; 
   )
 
   stacked <- read_results("v01", scenario = "null", home = p$home)
-  expect_identical(check_results(stacked)$status, rep("PASS", 6))
+  expect_identical(check_results(stacked)$status, rep("PASS", 7))
   expect_identical(stacked$estimates$sim, 1:3)
   # Each stacked table keeps the class that the run saved: table1() gives a
   # data.table, and the run script gives estimates as a data.frame.
@@ -151,9 +161,12 @@ test_that("a run that writes no results file stops run_scenarios, and no older f
   known_before <- file_states(file.path(results, "known"))
 
   quit_before_save(p, "null", 2)
-  err <- tryCatch(
-    suppressMessages(run_scenarios("v01", scenario = "null", home = p$home)),
-    error = function(e) return(e)
+  err <- NULL
+  utils::capture.output(
+    err <- tryCatch(
+      suppressMessages(run_scenarios("v01", scenario = "null", home = p$home)),
+      error = function(e) return(e)
+    )
   )
   msg <- if (inherits(err, "error")) conditionMessage(err) else ""
   expect_match(
@@ -180,9 +193,12 @@ test_that("a run that writes no results file stops run_scenarios, and no older f
 
   # A scenario with 1 simulation.
   quit_before_save(p, "known", 1)
-  err <- tryCatch(
-    suppressMessages(run_scenarios("v01", scenario = "known", home = p$home)),
-    error = function(e) return(e)
+  err <- NULL
+  utils::capture.output(
+    err <- tryCatch(
+      suppressMessages(run_scenarios("v01", scenario = "known", home = p$home)),
+      error = function(e) return(e)
+    )
   )
   msg <- if (inherits(err, "error")) conditionMessage(err) else ""
   expect_match(
@@ -365,27 +381,72 @@ test_that("run_scenarios stops on an unknown scenario before it runs anything", 
   expect_false(dir.exists(file.path(p$home, "v01_results")))
 })
 
-test_that("a failing run stops run_scenarios with its output and names the scenario and simulation", {
+test_that("a failing run prints its whole run.log and stops with a short error that names the run and the log", {
   skip_if_pbn_not_installed()
   p <- local_project()
   lines <- run_script_lines("v01", p$data_default)
+  # 25 lines of 1000 characters, more than the 8170 bytes that R prints of
+  # an error message at most.
   lines <- append(
     lines,
     c(
-      "cat(\"before the stop\\n\")",
-      "if (p$scenario == \"null\" && p$sim == 2) stop(\"planted failure\")"
+      "if (p$scenario == \"null\" && p$sim == 2) {",
+      "  for (i in 1:25) cat(\"line \", i, \" \", strrep(\"x\", 990), \"\\n\", sep = \"\")",
+      "  stop(\"planted failure at the end of the output\")",
+      "}"
     ),
     after = init_line(lines)
   )
   writeLines(lines, file.path(p$home, "v01_run.R"))
-  err <- tryCatch(
-    suppressMessages(run_scenarios("v01", scenario = "null", home = p$home)),
-    error = function(e) return(e)
+  err <- NULL
+  printed <- utils::capture.output(
+    err <- tryCatch(
+      suppressMessages(run_scenarios("v01", scenario = "null", home = p$home)),
+      error = function(e) return(e)
+    )
   )
+  printed <- paste(printed, collapse = "\n")
   msg <- if (inherits(err, "error")) conditionMessage(err) else ""
-  expect_match(msg, "The run of scenario \"null\", simulation 2,", fixed = TRUE)
-  expect_match(msg, "planted failure", fixed = TRUE)
-  expect_match(msg, "before the stop", fixed = TRUE)
+  null <- file.path(p$home, "v01_results", "null")
+  log <- file.path(normalizePath(null, winslash = "/"), "sim_0002", "run.log")
+  expect_true(file.exists(log))
+  text <- readChar(log, file.size(log), useBytes = TRUE)
+  expect_gt(nchar(text, type = "bytes"), 20000)
+  # The whole printed text and the last line of the error are in run.log
+  # and on the console.
+  planted <- paste0(
+    "line ",
+    1:25,
+    " ",
+    strrep("x", 990),
+    collapse = "\n"
+  )
+  for (where in list(text, printed)) {
+    expect_true(grepl(planted, where, fixed = TRUE))
+    expect_match(
+      where,
+      "planted failure at the end of the output",
+      fixed = TRUE
+    )
+    expect_match(where, "Execution halted", fixed = TRUE)
+  }
+  # The error is short, names the run and the log, and holds no output.
+  expect_lt(nchar(msg, type = "bytes"), 1000)
+  expect_match(
+    msg,
+    paste0(
+      "The run of scenario \"null\", simulation 2, stopped with status 1. ",
+      "Its log: ",
+      log
+    ),
+    fixed = TRUE
+  )
+  expect_no_match(msg, "planted failure", fixed = TRUE)
+  # Each successful run writes its run.log too. Simulation 3 did not start.
+  expect_true(file.exists(file.path(null, "sim_0001", "run.log")))
+  expect_false(file.exists(file.path(null, "sim_0003", "run.log")))
+  expect_false(file.exists(file.path(null, "results.qs2")))
+  expect_false(file.exists(file.path(null, "check.csv")))
 })
 
 test_that("read_project_functions does not change the session of the caller", {
@@ -459,7 +520,7 @@ test_that("stack_results keeps the class of each table of simulation 1", {
     expect_identical(x$estimates$sim, 1:3, info = nm)
     expect_identical(x$estimates$estimate, c(0.1, 0.2, 0.3), info = nm)
     expect_identical(x$tables$counts$sim, rep(1:3, each = 2), info = nm)
-    expect_identical(check_results(x)$status, rep("PASS", 6), info = nm)
+    expect_identical(check_results(x)$status, rep("PASS", 7), info = nm)
   }
 })
 
@@ -554,4 +615,21 @@ test_that("run_scenarios run twice writes the same bytes when fake_<scenario>() 
     )
   )
   expect_identical(outputs(), first)
+})
+
+test_that("stack_results keeps the settings of simulation 1 and stops when the simulations have different settings", {
+  runs <- three_runs(as.data.frame)
+  for (k in 1:3) {
+    runs[[k]]$manifest$settings <- list(n_boot = 20, label = "fake")
+  }
+  expect_identical(
+    stack_results(runs, "null")$manifest$settings,
+    list(n_boot = 20, label = "fake")
+  )
+  runs[[2]]$manifest$settings$n_boot <- 21
+  expect_error(
+    stack_results(runs, "null"),
+    "The simulations of the scenario \"null\" have different values of manifest$settings",
+    fixed = TRUE
+  )
 })

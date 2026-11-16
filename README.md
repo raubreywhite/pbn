@@ -27,6 +27,8 @@ pbn::run_scenarios("v01")
 pbn::check_project()
 ```
 
+`run_scenarios()` writes the run artefacts `run.log` and `run.ok` into each results folder. List both in the `.gitignore` of the project.
+
 The article
 [Get started](https://www.rwhite.no/pbn/articles/pbn.html) builds a small
 fake project file by file, and runs it. Read it first.
@@ -38,7 +40,7 @@ fake project file by file, and runs it. Read it first.
 | `initialize_project()` | Starts one simulation of one scenario with the house defaults of `org`, and sources `vNN_functions/`. |
 | `use_scenario()` | Chooses the scenario of the next `initialize_project()` when a person steps through a run script by hand. |
 | `end_if_fake_scenario()` | Ends a run script after `save_results()` when the scenario is fake. |
-| `run_scenarios()` | Runs `vNN_run.R` for each scenario and simulation in a new R session, stacks the simulations and checks the assertions. |
+| `run_scenarios()` | Runs `vNN_run.R` for each scenario and simulation in a new R session, `workers` of them at the same time. It stacks the simulations and checks the assertions. With `resume = TRUE`, it keeps each simulation with results from the same code. |
 | `save_results()` | Writes `results.qs2` with a manifest, and stops when the object fails the contract. |
 | `read_results()` | Reads the `results.qs2` of one scenario. The default is `"real"`. |
 | `check_results()` | Checks a results object against the contract. |

@@ -8,6 +8,11 @@
 #' @param scenario `NULL` for every scenario, or a character vector of the
 #'   scenarios to run.
 #' @param home The project folder.
+#' @param workers The number of simulations that run at the same time, one
+#'   whole number of 1 or more. Each simulation runs in its own new R session.
+#' @param resume `FALSE` runs every simulation of the chosen scenarios. `TRUE`
+#'   keeps each simulation with results from the same code, and runs the
+#'   others. See the section Resume.
 #' @details
 #' `run_scenarios()` does these steps in this order:
 #' 1. It reads `CFG$scenarios` in a new R session that sources
@@ -16,31 +21,57 @@
 #'    It stops when a scenario other than `"real"` has no function
 #'    `expect_<scenario>()`. It checks every chosen scenario before it runs
 #'    any of them.
-#' 2. It makes a [plnr::Plan] with one analysis for each scenario and
-#'    simulation. Each analysis runs the script with [callr::rscript()] and
-#'    the arguments `scenario=<name> sim=<k>`, with `home` as the working
-#'    directory. A run that fails stops `run_scenarios()` with the output of
-#'    the run.
+#' 2. With `resume = TRUE`, it chooses the simulations to keep, and prints
+#'    one line for each of them.
+#' 3. It deletes these files, and it stops before any run when one of them
+#'    stays:
+#'    - the `check.csv` of each chosen scenario.
+#'    - the stacked `results.qs2` of each chosen scenario with more than 1
+#'      simulation.
+#'    - the `results.qs2` and the `run.ok` of each simulation that it runs.
 #'
-#'    Before each run, `run_scenarios()` deletes the `results.qs2` of that
-#'    simulation. Before simulation 1, it also deletes the `results.qs2` and
-#'    the `check.csv` in `<version>_results/<scenario>/`. A run that writes
-#'    no `results.qs2` stops `run_scenarios()`. A run that quits with
-#'    status 0 after it writes `results.qs2` succeeds, so
-#'    [end_if_fake_scenario()] can end the run of a fake scenario. Files of
-#'    the scenarios that it does not run stay as they are.
-#' 3. For each scenario with more than 1 simulation, it stacks the files
+#'    Files of the scenarios that it does not run stay as they are.
+#' 4. It runs the script once for each simulation that it does not keep. Each
+#'    run is a new R session with the arguments `scenario=<name> sim=<k>`,
+#'    and with `home` as the working directory. At most `workers` runs go at
+#'    the same time. The stdout and the stderr of each run go to `run.log` in
+#'    the results folder of the simulation. Each run writes `run.log` again,
+#'    also a run that succeeds.
+#'
+#'    A run succeeds when all of these hold:
+#'    - It quits with status 0, so [end_if_fake_scenario()] can end the run
+#'      of a fake scenario.
+#'    - Its `results.qs2` exists and passes [check_results()].
+#'    - `manifest$scenario`, `manifest$sim` and `manifest$sims` are those of
+#'      the simulation.
+#'
+#'    After a run that succeeds, `run_scenarios()` writes `run.ok` beside
+#'    `run.log`. `run.ok` holds one line, the md5 of `results.qs2`. A run
+#'    that stops after it writes `results.qs2` thus has no `run.ok`. This is
+#'    also the case when the caller is interrupted. `run.log` and `run.ok`
+#'    are run artefacts. List both in the `.gitignore` of the project.
+#'
+#'    Each other run fails. For a run that fails, `run_scenarios()` prints
+#'    the whole `run.log` with `cat()`. After the first failure, it starts no
+#'    new run, and the runs that started go on to their end. It then stops
+#'    with an error that names the scenario, the simulation and the `run.log`
+#'    of each failed run. It stacks and checks no scenario.
+#' 5. For each scenario with more than 1 simulation, it stacks the files
 #'    `<version>_results/<scenario>/sim_<kkkk>/results.qs2` into
 #'    `<version>_results/<scenario>/results.qs2`. It stops when the files are
-#'    not exactly the simulations 1 to `sims`. `estimates`, `exclusions` and
+#'    not exactly the simulations 1 to `sims`. After `sims` in
+#'    `CFG$scenarios` becomes smaller, the folders of the higher simulations
+#'    stay. Stacking then stops, and the error names their files. Delete
+#'    those folders to stack again. `estimates`, `exclusions` and
 #'    each data.frame in `tables` get a first column `sim`. Each keeps the
 #'    class of its object in simulation 1, so a data.table stays a
 #'    data.table. `extra` is an empty list. The `manifest` is that of
 #'    simulation 1. In it, `sim` and `n_rows_data` are `NA`, `sims` is the
 #'    number of simulations, and `stacked` is `TRUE`. For a fake scenario, it
 #'    stops when a simulation has no valid `manifest$fake_md5`, or when the
-#'    simulations do not have one value of it.
-#' 4. For each scenario that has a function `expect_<scenario>()` in
+#'    simulations do not have one value of it. It also stops when the
+#'    simulations do not have one value of `manifest$settings`.
+#' 6. For each scenario that has a function `expect_<scenario>()` in
 #'    `<version>_functions/`, it calls that function on the results of the
 #'    scenario in a new R session. `expect_real()` is optional. The function
 #'    MUST return a data.frame with at least one row and the columns
@@ -57,6 +88,31 @@
 #'
 #' After every scenario is done, `run_scenarios()` stops when a value of
 #' `pass` is not `TRUE`. The error lists the failed assertions.
+#' @section Workers:
+#' Each simulation depends only on its scenario and its number, so `workers`
+#' does not change the results files or `check.csv`. Only the order of the
+#' lines on the console can change. pbn does not limit the threads that R or
+#' the BLAS library starts in each R session.
+#' @section Resume:
+#' With `resume = TRUE`, `run_scenarios()` keeps a simulation when all of
+#' these hold:
+#' - Its `results.qs2` exists and passes [check_results()].
+#' - Its `run.ok` exists and holds the md5 of `results.qs2` now. So the run
+#'   completed, and nothing changed `results.qs2` after it.
+#' - `manifest$scenario`, `manifest$sim` and `manifest$sims` are those of the
+#'   simulation.
+#' - `manifest$source_md5` is the md5 of the files of `<version>_run.R` and
+#'   `<version>_functions/` now.
+#' - For a fake scenario, `manifest$fake_md5` is the md5 of the code of
+#'   `fake_<scenario>()` now.
+#'
+#' Each other simulation runs again, and the console line of its start gives
+#' the reason. The stacking and the `expect_` assertions always run again.
+#'
+#' Resume does not find a change in the real data, or in the version of R or
+#' of a package. It also does not find a change in a file outside
+#' `<version>_run.R` and `<version>_functions/`. After such a change, use
+#' `resume = FALSE`.
 #' @return Invisibly, a data.frame of every assertion, with the columns
 #'   `scenario`, `assertion`, `expected`, `observed` and `pass`.
 #' @examples
@@ -101,8 +157,18 @@
 #' }
 #' @family project setup
 #' @export
-run_scenarios <- function(version, scenario = NULL, home = ".") {
+run_scenarios <- function(
+  version,
+  scenario = NULL,
+  home = ".",
+  workers = 1,
+  resume = FALSE
+) {
   check_version(version)
+  check_workers(workers)
+  if (!isTRUE(resume) && !isFALSE(resume)) {
+    stop("`resume` must be TRUE or FALSE.", call. = FALSE)
+  }
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
   script <- file.path(home, paste0(version, "_run.R"))
   if (!file.exists(script)) {
@@ -122,13 +188,14 @@ run_scenarios <- function(version, scenario = NULL, home = ".") {
     )
   }
 
-  plan <- scenario_plan(
-    table,
-    script,
-    home,
-    file.path(home, paste0(version, "_results"))
-  )
-  plan$run_all()
+  jobs <- simulation_jobs(table, home, version)
+  jobs$reason <- if (resume) {
+    keep_reasons(jobs, source_md5(home, version), info$fake_md5)
+  } else {
+    rep("", nrow(jobs))
+  }
+  delete_stale(jobs, table, home, version)
+  run_pool(jobs[!is.na(jobs$reason), , drop = FALSE], script, home, workers)
 
   for (i in which(table$sims > 1)) {
     stack_scenario(home, version, table$scenario[i], table$sims[i])
@@ -178,15 +245,25 @@ read_project_functions <- function(home, version) {
       ))
       cfg <- get0("CFG", envir = env, inherits = FALSE)
       fns <- ls(env)
-      fns <- fns[startsWith(fns, "expect_")]
-      is_fn <- vapply(
+      fns <- fns[startsWith(fns, "expect_") | startsWith(fns, "fake_")]
+      fns <- fns[vapply(
         fns,
         function(f) return(is.function(get(f, envir = env))),
         logical(1)
-      )
+      )]
+      # Each fake_<scenario>() without its source references and with the
+      # global environment, so that the closure does not carry the sourced
+      # environment back to the caller.
+      fakes <- lapply(fns[startsWith(fns, "fake_")], function(f) {
+        fn <- utils::removeSource(get(f, envir = env))
+        environment(fn) <- globalenv()
+        return(fn)
+      })
+      names(fakes) <- sub("^fake_", "", fns[startsWith(fns, "fake_")])
       return(list(
         scenarios = if (is.list(cfg)) cfg[["scenarios"]] else NULL,
-        expect = sub("^expect_", "", fns[is_fn])
+        expect = sub("^expect_", "", fns[startsWith(fns, "expect_")]),
+        fakes = fakes
       ))
     },
     args = list(home = home, folder = paste0(version, "_functions")),
@@ -194,7 +271,8 @@ read_project_functions <- function(home, version) {
   )
   return(list(
     scenarios = check_scenario_table(found$scenarios, version),
-    expect = found$expect
+    expect = found$expect,
+    fake_md5 = vapply(found$fakes, function_md5, character(1))
   ))
 }
 
@@ -219,91 +297,6 @@ select_scenarios <- function(table, scenario) {
     )
   }
   return(table[table$scenario %in% scenario, , drop = FALSE])
-}
-
-scenario_plan <- function(table, script, home, results) {
-  plan <- plnr::Plan$new(verbose = FALSE, use_foreach = FALSE)
-  for (i in seq_len(nrow(table))) {
-    for (k in seq_len(table$sims[i])) {
-      plan$add_argset(
-        name = paste0(table$scenario[i], "/", sim_folder(k)),
-        scenario = table$scenario[i],
-        sim = k,
-        sims = table$sims[i],
-        script = script,
-        home = home,
-        results = results
-      )
-    }
-  }
-  plan$apply_action_fn_to_all_argsets(fn = run_one_simulation)
-  return(plan)
-}
-
-# The action of one analysis in the plan of run_scenarios().
-run_one_simulation <- function(data, argset) {
-  scenario <- argset[["scenario"]]
-  sim <- argset[["sim"]]
-  folder <- file.path(argset[["results"]], scenario)
-  file <- if (argset[["sims"]] > 1) {
-    file.path(folder, sim_folder(sim), "results.qs2")
-  } else {
-    file.path(folder, "results.qs2")
-  }
-  # A run that writes nothing MUST NOT leave an older file to be read.
-  stale <- file
-  if (sim == 1) {
-    stale <- unique(c(stale, file.path(folder, c("results.qs2", "check.csv"))))
-  }
-  unlink(stale)
-  left <- stale[file.exists(stale)]
-  if (length(left) > 0) {
-    stop(
-      "pbn could not delete an older file before the run of scenario \"",
-      scenario,
-      "\", simulation ",
-      sim,
-      ": ",
-      paste(left, collapse = ", "),
-      call. = FALSE
-    )
-  }
-  message("pbn: scenario ", scenario, ", simulation ", sim)
-  res <- callr::rscript(
-    argset[["script"]],
-    cmdargs = c(paste0("scenario=", scenario), paste0("sim=", sim)),
-    wd = argset[["home"]],
-    show = FALSE,
-    stderr = "2>&1",
-    fail_on_status = FALSE
-  )
-  if (res$status != 0) {
-    stop(
-      "The run of scenario \"",
-      scenario,
-      "\", simulation ",
-      sim,
-      ", stopped with status ",
-      res$status,
-      ". Its output:\n",
-      res$stdout,
-      call. = FALSE
-    )
-  }
-  if (!file.exists(file)) {
-    stop(
-      "The run of scenario \"",
-      scenario,
-      "\", simulation ",
-      sim,
-      ", stopped with status 0 but wrote no results file ",
-      file,
-      ". Its output:\n",
-      res$stdout,
-      call. = FALSE
-    )
-  }
-  return(invisible(NULL))
 }
 
 # Stacks the simulation files of one scenario into
@@ -386,6 +379,16 @@ stack_results <- function(runs, scenario) {
       "fake_",
       scenario,
       "() wrote their data. pbn cannot stack them. Run the scenario again.",
+      call. = FALSE
+    )
+  }
+  settings <- lapply(runs, function(r) return(r[["manifest"]][["settings"]]))
+  if (!all(vapply(settings, identical, logical(1), settings[[1]]))) {
+    stop(
+      "The simulations of the scenario \"",
+      scenario,
+      "\" have different values of manifest$settings, so pbn cannot stack ",
+      "them. Run the scenario again.",
       call. = FALSE
     )
   }

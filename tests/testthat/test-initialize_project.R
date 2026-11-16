@@ -58,8 +58,18 @@ test_that("initialize_project starts the real scenario in v01_results/real/", {
   )
   expect_identical(
     names(out),
-    c("version", "home", "scenario", "sim", "sims", "results", "data_raw")
+    c(
+      "version",
+      "home",
+      "scenario",
+      "sim",
+      "sims",
+      "results",
+      "data_raw",
+      "settings"
+    )
   )
+  expect_identical(out$settings, list())
   expect_identical(out$scenario, "real")
   expect_identical(out$sim, 1L)
   expect_identical(out$sims, 1L)
@@ -292,7 +302,7 @@ test_that("each scenario writes only to its own folder, and the real results sta
   real <- read_results("v01", home = p$home)
   known <- read_results("v01", scenario = "known", home = p$home)
   null2 <- read_results("v01", scenario = "null", sim = 2, home = p$home)
-  expect_identical(check_results(null2)$status, rep("PASS", 6))
+  expect_identical(check_results(null2)$status, rep("PASS", 7))
   expect_identical(
     real$manifest[c("scenario", "sim", "sims", "data_raw")],
     list(scenario = "real", sim = 1L, sims = 1L, data_raw = p$data_default)
@@ -315,6 +325,20 @@ test_that("each scenario writes only to its own folder, and the real results sta
   )
   expect_false("fake_md5" %in% names(real$manifest))
   expect_false("data_md5" %in% names(null2$manifest))
+  # source_md5: the run script and each file of the functions folder, named
+  # relative to home and sorted, for the real and for a fake scenario.
+  code <- c(
+    "v01_functions/_cfg.R",
+    "v01_functions/double_it.R",
+    "v01_functions/expect_known.R",
+    "v01_functions/expect_null.R",
+    "v01_functions/fake_known.R",
+    "v01_functions/fake_null.R",
+    "v01_run.R"
+  )
+  want <- stats::setNames(md5_of(file.path(p$home, code)), code)
+  expect_identical(real$manifest$source_md5, want)
+  expect_identical(null2$manifest$source_md5, want)
   expect_match(null2$manifest$fake_md5, "^[0-9a-f]{32}$")
   expect_identical(
     names(null2$manifest),
@@ -328,6 +352,8 @@ test_that("each scenario writes only to its own folder, and the real results sta
       "sim",
       "sims",
       "data_raw",
+      "settings",
+      "source_md5",
       "fake_md5",
       "n_rows_data"
     )
@@ -566,6 +592,73 @@ test_that("a real data folder with no file writes a named data_md5 of length 0, 
   expect_identical(m$data_md5, stats::setNames(character(0), character(0)))
   expect_identical(
     check_results(read_results("v01", home = p$home))$status,
-    rep("PASS", 6)
+    rep("PASS", 7)
   )
+})
+
+# cfg_lines() with the setting columns `extra` in CFG$scenarios.
+cfg_with_settings <- function(extra) {
+  lines <- cfg_lines()
+  at <- which(lines == "    sims = c(1, 1, 3)")
+  lines[at] <- "    sims = c(1, 1, 3),"
+  return(append(lines, extra, after = at))
+}
+
+test_that("the setting columns of CFG$scenarios reach p$settings and the manifest for real and for a fake scenario", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/_cfg.R",
+    cfg_with_settings(c(
+      "    n_boot = c(500, 20, 10),",
+      "    label = c(\"r\", \"k\", \"n\")"
+    ))
+  )
+  want <- list(
+    real = list(n_boot = 500, label = "r"),
+    known = list(n_boot = 20, label = "k")
+  )
+  for (scenario in names(want)) {
+    out <- init(p, scenario)
+    expect_identical(out$settings, want[[scenario]], info = scenario)
+    m <- save_and_read_manifest(out)
+    expect_identical(m$settings, want[[scenario]], info = scenario)
+    expect_identical(
+      check_results(qs2::qs_read(file.path(out$results, "results.qs2")))$status,
+      rep("PASS", 7),
+      info = scenario
+    )
+  }
+  # With no setting column, the settings are an empty list.
+  write_lines(p$home, "v01_functions/_cfg.R", cfg_lines())
+  out <- init(p, "known")
+  expect_identical(out$settings, list())
+  expect_identical(save_and_read_manifest(out)$settings, list())
+})
+
+test_that("a setting column that is a list or has NA stops initialize_project and names the column", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/_cfg.R",
+    c(cfg_lines(), "CFG$scenarios$extra <- list(1, 2, 3)")
+  )
+  expect_error(
+    init(p, "known"),
+    "the setting column extra must be an atomic vector",
+    fixed = TRUE
+  )
+  expect_false(dir.exists(file.path(p$home, "v01_results")))
+
+  write_lines(
+    p$home,
+    "v01_functions/_cfg.R",
+    cfg_with_settings("    n_boot = c(500, NA, 10)")
+  )
+  expect_error(
+    init(p, "real"),
+    "the setting column n_boot has NA",
+    fixed = TRUE
+  )
+  expect_false(dir.exists(file.path(p$home, "v01_results")))
 })

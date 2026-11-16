@@ -23,6 +23,15 @@ state <- new.env(parent = emptyenv())
 #' - `sims`: the number of simulations of the scenario, a whole number of 1 or
 #'   more.
 #'
+#' Each other column is a setting of the scenario, for example `n_boot` for a
+#' number of bootstrap replicates that is smaller in the fake scenarios. A
+#' setting column MUST be an atomic vector with no `NA`. A list column or an
+#' `NA` stops `initialize_project()` and [run_scenarios()], and the error
+#' names the column. `p$settings` holds the value of each setting column for
+#' the scenario of the run. [save_results()] stores the settings as
+#' `CFG$scenarios` gives them in `manifest$settings`. A change that the run
+#' script makes to `p$settings` does not reach the manifest.
+#'
 #' The scenario and the simulation come from the first of these that gives
 #' them. pbn reads no environment variables.
 #' 1. The trailing command-line arguments `scenario=<name>` and `sim=<k>`.
@@ -39,24 +48,28 @@ state <- new.env(parent = emptyenv())
 #' for each scenario other than `"real"`.
 #'
 #' `initialize_project()` does these steps in this order:
-#' 1. It calls [org::initialize_project()] with `results` set to
+#' 1. It computes the md5 of `<version>_run.R` and of each file in
+#'    `<version>_functions/`, before it sources them. [save_results()] stores
+#'    them in `manifest$source_md5`, and `run_scenarios(resume = TRUE)` reads
+#'    them.
+#' 2. It calls [org::initialize_project()] with `results` set to
 #'    `<home>/<version>_results`, `results_subfolder` set to the scenario,
 #'    `folders_to_be_sourced` set to `<version>_functions`, and
 #'    `max_loc_per_file` set to 1000.
-#' 2. It reads `CFG$scenarios`. The results folder is
+#' 3. It reads `CFG$scenarios`. The results folder is
 #'    `<version>_results/<scenario>/` when the scenario has 1 simulation, and
 #'    `<version>_results/<scenario>/sim_<kkkk>/` otherwise. `<kkkk>` is the
 #'    simulation with four digits. `org::project$results_today` is set to
 #'    this folder.
-#' 3. It calls `set.seed(sim)`. It also calls `set.seed(sim)` before step 1,
+#' 4. It calls `set.seed(sim)`. It also calls `set.seed(sim)` before step 2,
 #'    so random work while org sources the functions folder depends on `sim`
 #'    only.
-#' 4. For `"real"`, the data folder is `data_raw`. For any other scenario, the
+#' 5. For `"real"`, the data folder is `data_raw`. For any other scenario, the
 #'    data folder is `data/` in the results folder. `initialize_project()`
 #'    deletes it, creates it empty, and calls `fake_<scenario>(dir)` with its
 #'    path. The project MUST define `fake_<scenario>()` in
 #'    `<version>_functions/`.
-#' 5. It computes an md5 that identifies the data, and [save_results()]
+#' 6. It computes an md5 that identifies the data, and [save_results()]
 #'    stores it in the manifest:
 #'    - For `"real"`, the md5 of each file directly in the data folder, as
 #'      `manifest$data_md5`. A file that the run writes later is not in the
@@ -72,14 +85,17 @@ state <- new.env(parent = emptyenv())
 #' - The scenario is not in `CFG$scenarios`, or `sim` is more than its
 #'   `sims`.
 #' - `fake_<scenario>()` is missing.
+#' - A setting column of `CFG$scenarios` is a list or has `NA`.
 #'
 #' When it stops, it deletes each empty results folder that the call created.
 #' The state of the run is then empty, so [save_results()] and
 #' [end_if_fake_scenario()] stop until a call succeeds. The choice of
 #' [use_scenario()] stays. It never creates a folder with today's date.
 #' @return Invisibly, a list with `version`, `home`, `scenario`, `sim`,
-#'   `sims`, `results` and `data_raw`. `results` is the results folder and
-#'   `data_raw` is the data folder of the run.
+#'   `sims`, `results`, `data_raw` and `settings`. `results` is the results
+#'   folder and `data_raw` is the data folder of the run. `settings` is a
+#'   named list of the settings of the scenario, or an empty list when
+#'   `CFG$scenarios` has no setting column.
 #' @examples
 #' home <- file.path(tempdir(), "pbn_initialize_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
@@ -127,6 +143,9 @@ initialize_project <- function(
     stop("`home` must be the path of one existing folder.", call. = FALSE)
   }
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
+  # Before org sources the functions folder, so the md5 is of the files as
+  # the run found them.
+  code_md5 <- source_md5(home, version)
   args <- command_args()
   # The command line replaces the choice of use_scenario() as a whole.
   if (is.null(chosen) || any(grepl("^(scenario|sim)=", args))) {
@@ -168,7 +187,7 @@ initialize_project <- function(
     )
   }
   # Every step that can stop is above this line.
-  list2env(c(out, fingerprint), envir = state)
+  list2env(c(out, fingerprint, list(source_md5 = code_md5)), envir = state)
   return(invisible(out))
 }
 
@@ -203,6 +222,24 @@ function_md5 <- function(fn) {
   # writeBin(), not writeLines(), so the bytes are the same on each OS.
   writeBin(charToRaw(enc2utf8(paste(text, collapse = "\n"))), file)
   return(unname(tools::md5sum(file)))
+}
+
+# The md5 of the run script and of each file in the functions folder of
+# `version`, named by the path relative to `home` and sorted in the C locale.
+# A file that does not exist is not in the vector.
+source_md5 <- function(home, version) {
+  folder <- paste0(version, "_functions")
+  inner <- list.files(
+    file.path(home, folder),
+    recursive = TRUE,
+    all.files = TRUE,
+    no.. = TRUE
+  )
+  rel <- c(paste0(version, "_run.R"), file.path(folder, inner, fsep = "/"))
+  rel <- sort(rel[file.exists(file.path(home, rel))], method = "radix")
+  md5 <- unname(tools::md5sum(file.path(home, rel)))
+  names(md5) <- rel
+  return(md5)
 }
 
 # The steps of initialize_project() that can leave a folder behind.
@@ -245,7 +282,8 @@ start_scenario <- function(version, home, root, scenario, sim, data_raw, env) {
     sim = sim,
     sims = sims,
     results = results,
-    data_raw = data
+    data_raw = data,
+    settings = settings_of(table, scenario)
   ))
 }
 
@@ -395,7 +433,59 @@ check_scenario_table <- function(table, version) {
   if (!"real" %in% table$scenario) {
     stop(where, " must have a scenario named \"real\".", call. = FALSE)
   }
-  return(data.frame(scenario = table$scenario, sims = as.integer(sims)))
+  out <- data.frame(scenario = table$scenario, sims = as.integer(sims))
+  return(add_settings(out, table, where))
+}
+
+# `out` with each setting column of `table`, checked.
+add_settings <- function(out, table, where) {
+  for (col in setting_columns(table)) {
+    out[[col]] <- check_setting(table[[col]], col, where)
+  }
+  return(out)
+}
+
+# Each column of CFG$scenarios other than scenario and sims is a setting.
+setting_columns <- function(table) {
+  return(setdiff(names(table), c("scenario", "sims")))
+}
+
+check_setting <- function(x, col, where) {
+  if (!is.atomic(x) || !is.null(dim(x))) {
+    stop(
+      where,
+      ": the setting column ",
+      col,
+      " must be an atomic vector, for example numbers or strings. ",
+      "It is of class ",
+      paste(class(x), collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  if (anyNA(x)) {
+    stop(
+      where,
+      ": the setting column ",
+      col,
+      " has NA. Each scenario needs a value.",
+      call. = FALSE
+    )
+  }
+  return(x)
+}
+
+# The settings of one scenario: a named list with one element for each
+# setting column, or an empty list when there are none.
+settings_of <- function(table, scenario) {
+  cols <- setting_columns(table)
+  if (length(cols) == 0) {
+    return(list())
+  }
+  row <- which(table$scenario == scenario)
+  out <- lapply(cols, function(col) return(table[[col]][row]))
+  names(out) <- cols
+  return(out)
 }
 
 sims_of <- function(table, scenario, sim) {

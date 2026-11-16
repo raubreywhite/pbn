@@ -201,6 +201,48 @@ rule_manifest_data <- function(x) {
   ))
 }
 
+rule_manifest_source <- function(x) {
+  rule <- "manifest_source"
+  m <- if (is.list(x)) x[["manifest"]] else NULL
+  if (!is.list(m)) {
+    return(result_row(rule, "manifest is not a list", ""))
+  }
+  return(result_row(
+    rule,
+    source_md5_failure(m),
+    "the manifest has source_md5, with the md5 of the run script"
+  ))
+}
+
+# The failure of the rule manifest_source for the manifest `m`, or
+# character(0). The run script is <version>_run.R when the manifest names one
+# version, and any vNN_run.R otherwise.
+source_md5_failure <- function(m) {
+  s <- m[["source_md5"]]
+  if (is.null(s)) {
+    return(paste(
+      "manifest has no source_md5. An older pbn wrote this file:",
+      "run the scenarios again"
+    ))
+  }
+  if (!is_data_md5(s) || length(s) == 0) {
+    return(paste(
+      "manifest$source_md5 is not a named character vector of md5 values,",
+      "each a string of 32 lower-case hex digits"
+    ))
+  }
+  version <- m[["version"]]
+  named <- if (is_one_string(version) && grepl("^v[0-9]{2}$", version)) {
+    paste0(version, "_run.R") %in% names(s)
+  } else {
+    any(grepl(run_script_pattern, names(s)))
+  }
+  if (!named) {
+    return("manifest$source_md5 does not name the run script vNN_run.R")
+  }
+  return(character(0))
+}
+
 # The failure of the rule manifest_data for the manifest `m`, or
 # character(0). When the scenario is not one string, manifest_scenario fails,
 # and this rule checks only that one of the two elements is there.

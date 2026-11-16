@@ -45,6 +45,15 @@ versions. \code{qs2} is always in the list, because it writes the file.
 runs on one day with the same inputs and packages write the same bytes.
 \item \code{version}, \code{scenario}, \code{sim}, \code{sims} and \code{data_raw}, from
 \code{\link[=initialize_project]{initialize_project()}}. \code{data_raw} is the data folder of the run.
+\item \code{settings}, the named list of the settings of the scenario from the
+setting columns of \code{CFG$scenarios}. It is an empty list when there are
+none.
+\item \code{source_md5}, a named character vector for every scenario. It holds the
+md5 of \verb{<version>_run.R} and of each file in \verb{<version>_functions/},
+named by the path relative to \code{home} and sorted.
+\code{\link[=initialize_project]{initialize_project()}} computes it before it sources the files. The
+\code{check_results()} rule \code{manifest_source} needs the run script in it, so
+\code{save_results()} stops when \verb{<version>_run.R} does not exist.
 \item For the scenario \code{"real"} only, \code{data_md5}, a named character vector
 with the md5 of each file directly in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}}
 computes it, so a file that the run writes after that call is not in the
@@ -62,6 +71,7 @@ not change \code{fake_md5}.
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
+writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
   file.path(home, "v01_functions", "_cfg.R")

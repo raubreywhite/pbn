@@ -28,6 +28,15 @@
 #'   runs on one day with the same inputs and packages write the same bytes.
 #' - `version`, `scenario`, `sim`, `sims` and `data_raw`, from
 #'   [initialize_project()]. `data_raw` is the data folder of the run.
+#' - `settings`, the named list of the settings of the scenario from the
+#'   setting columns of `CFG$scenarios`. It is an empty list when there are
+#'   none.
+#' - `source_md5`, a named character vector for every scenario. It holds the
+#'   md5 of `<version>_run.R` and of each file in `<version>_functions/`,
+#'   named by the path relative to `home` and sorted.
+#'   [initialize_project()] computes it before it sources the files. The
+#'   `check_results()` rule `manifest_source` needs the run script in it, so
+#'   `save_results()` stops when `<version>_run.R` does not exist.
 #' - For the scenario `"real"` only, `data_md5`, a named character vector
 #'   with the md5 of each file directly in `data_raw`. [initialize_project()]
 #'   computes it, so a file that the run writes after that call is not in the
@@ -44,6 +53,7 @@
 #' home <- file.path(tempdir(), "pbn_save_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 #' dir.create(file.path(home, "data"))
+#' writeLines("# The run script.", file.path(home, "v01_run.R"))
 #' writeLines(
 #'   "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
 #'   file.path(home, "v01_functions", "_cfg.R")
@@ -151,7 +161,9 @@ build_manifest <- function(d) {
       scenario = state$scenario,
       sim = state$sim,
       sims = state$sims,
-      data_raw = state$data_raw
+      data_raw = state$data_raw,
+      settings = state$settings,
+      source_md5 = state$source_md5
     ),
     fingerprint,
     list(n_rows_data = if (is.null(d)) NA_integer_ else nrow(d))

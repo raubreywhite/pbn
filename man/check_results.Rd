@@ -19,7 +19,7 @@ and \code{detail}. \code{status} is \code{"PASS"} or \code{"FAIL"}.
 nothing.
 }
 \details{
-The six rules:
+The seven rules:
 \itemize{
 \item \code{top_level_names}: the names are \code{manifest}, \code{exclusions}, \code{estimates},
 \code{tables} and \code{extra}, each once, and there are no others.
@@ -41,6 +41,11 @@ string of 32 lower-case hex digits. \code{data_md5} MUST be a character
 vector of such strings, named by file. It has length 0 when the data
 folder has no file. A results file that pbn 2026.11.18 or older wrote
 has \code{data_md5} for a fake scenario, so it fails this rule.
+\item \code{manifest_source}: \code{manifest$source_md5} is a named character vector of
+md5 values, each a string of 32 lower-case hex digits. It names the run
+script \verb{<version>_run.R} of \code{manifest$version}, or a \code{vNN_run.R} when
+the manifest has no valid version. A results file that pbn 2026.11.20
+or older wrote has no \code{source_md5}, so it fails this rule.
 }
 }
 \examples{
@@ -50,6 +55,7 @@ x <- list(
     sim = 1L,
     sims = 1L,
     data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    source_md5 = c(v01_run.R = "fedcba9876543210fedcba9876543210"),
     n_rows_data = 100L
   ),
   exclusions = data.frame(

@@ -13,10 +13,11 @@ test_that("check_results passes a valid object on every rule", {
       "no_fitted_models",
       "no_row_per_person",
       "manifest_scenario",
-      "manifest_data"
+      "manifest_data",
+      "manifest_source"
     )
   )
-  expect_identical(found$status, rep("PASS", 6))
+  expect_identical(found$status, rep("PASS", 7))
   expect_identical(names(found), c("rule", "status", "detail"))
 })
 
@@ -271,4 +272,62 @@ test_that("manifest_data fails a data_md5 that is not a named vector of md5 valu
     b.sav = "fedcba9876543210fedcba9876543210"
   )
   expect_identical(failing(x), character(0))
+})
+
+test_that("manifest_source passes a named source_md5 that names the run script", {
+  expect_identical(failing(valid_results()), character(0))
+  expect_identical(failing(fake_results()), character(0))
+  x <- valid_results()
+  x$manifest$source_md5 <- c(v01_run.R = "0123456789abcdef0123456789abcdef")
+  expect_identical(failing(x), character(0))
+  # Without a valid version, any vNN_run.R names the run script.
+  x$manifest$version <- NULL
+  expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[7],
+    "the manifest has source_md5, with the md5 of the run script"
+  )
+})
+
+test_that("manifest_source fails a missing, malformed or incomplete source_md5", {
+  run <- c(v01_run.R = "0123456789abcdef0123456789abcdef")
+  cases <- list(
+    missing = list(
+      value = NULL,
+      detail = paste(
+        "manifest has no source_md5. An older pbn wrote this file:",
+        "run the scenarios again"
+      )
+    ),
+    unnamed = list(value = unname(run)),
+    empty = list(value = stats::setNames(character(0), character(0))),
+    upper_case = list(
+      value = c(v01_run.R = "0123456789ABCDEF0123456789ABCDEF")
+    ),
+    short = list(value = c(v01_run.R = "0123")),
+    not_character = list(value = c(v01_run.R = 1)),
+    na_name = list(value = stats::setNames(unname(run), NA)),
+    no_run_script = list(
+      value = c("v01_functions/_cfg.R" = "0123456789abcdef0123456789abcdef"),
+      detail = "manifest$source_md5 does not name the run script vNN_run.R"
+    ),
+    other_version = list(
+      value = c(v02_run.R = "0123456789abcdef0123456789abcdef"),
+      detail = "manifest$source_md5 does not name the run script vNN_run.R"
+    )
+  )
+  malformed <- paste(
+    "manifest$source_md5 is not a named character vector of md5 values,",
+    "each a string of 32 lower-case hex digits"
+  )
+  for (nm in names(cases)) {
+    x <- valid_results()
+    x$manifest["source_md5"] <- list(cases[[nm]]$value)
+    if (is.null(cases[[nm]]$value)) {
+      x$manifest$source_md5 <- NULL
+    }
+    expect_identical(failing(x), "manifest_source", info = nm)
+    detail <- if (is.null(cases[[nm]]$detail)) malformed else cases[[nm]]$detail
+    expect_identical(check_results(x)$detail[7], detail, info = nm)
+  }
 })

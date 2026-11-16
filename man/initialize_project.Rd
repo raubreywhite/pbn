@@ -20,8 +20,10 @@ scenario is \code{"real"}. pbn does not read it for any other scenario.}
 }
 \value{
 Invisibly, a list with \code{version}, \code{home}, \code{scenario}, \code{sim},
-\code{sims}, \code{results} and \code{data_raw}. \code{results} is the results folder and
-\code{data_raw} is the data folder of the run.
+\code{sims}, \code{results}, \code{data_raw} and \code{settings}. \code{results} is the results
+folder and \code{data_raw} is the data folder of the run. \code{settings} is a
+named list of the settings of the scenario, or an empty list when
+\code{CFG$scenarios} has no setting column.
 }
 \description{
 \code{initialize_project()} sets up one simulation of one scenario of a project
@@ -37,6 +39,15 @@ with these columns:
 \item \code{sims}: the number of simulations of the scenario, a whole number of 1 or
 more.
 }
+
+Each other column is a setting of the scenario, for example \code{n_boot} for a
+number of bootstrap replicates that is smaller in the fake scenarios. A
+setting column MUST be an atomic vector with no \code{NA}. A list column or an
+\code{NA} stops \code{initialize_project()} and \code{\link[=run_scenarios]{run_scenarios()}}, and the error
+names the column. \code{p$settings} holds the value of each setting column for
+the scenario of the run. \code{\link[=save_results]{save_results()}} stores the settings as
+\code{CFG$scenarios} gives them in \code{manifest$settings}. A change that the run
+script makes to \code{p$settings} does not reach the manifest.
 
 The scenario and the simulation come from the first of these that gives
 them. pbn reads no environment variables.
@@ -57,6 +68,10 @@ for each scenario other than \code{"real"}.
 
 \code{initialize_project()} does these steps in this order:
 \enumerate{
+\item It computes the md5 of \verb{<version>_run.R} and of each file in
+\verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
+them in \code{manifest$source_md5}, and \code{run_scenarios(resume = TRUE)} reads
+them.
 \item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{results} set to
 \verb{<home>/<version>_results}, \code{results_subfolder} set to the scenario,
 \code{folders_to_be_sourced} set to \verb{<version>_functions}, and
@@ -66,7 +81,7 @@ for each scenario other than \code{"real"}.
 \verb{<version>_results/<scenario>/sim_<kkkk>/} otherwise. \verb{<kkkk>} is the
 simulation with four digits. \code{org::project$results_today} is set to
 this folder.
-\item It calls \code{set.seed(sim)}. It also calls \code{set.seed(sim)} before step 1,
+\item It calls \code{set.seed(sim)}. It also calls \code{set.seed(sim)} before step 2,
 so random work while org sources the functions folder depends on \code{sim}
 only.
 \item For \code{"real"}, the data folder is \code{data_raw}. For any other scenario, the
@@ -94,6 +109,7 @@ run, and the data would not.
 \item The scenario is not in \code{CFG$scenarios}, or \code{sim} is more than its
 \code{sims}.
 \item \verb{fake_<scenario>()} is missing.
+\item A setting column of \code{CFG$scenarios} is a list or has \code{NA}.
 }
 
 When it stops, it deletes each empty results folder that the call created.

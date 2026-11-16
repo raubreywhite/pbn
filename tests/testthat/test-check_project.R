@@ -405,6 +405,29 @@ test_that("results_contract checks the file of each simulation", {
   )
 })
 
+test_that("results_contract and unknown_path pass the run artefacts run.log and run.ok, also in a git repository", {
+  p <- local_project()
+  folder <- file.path(p$home, "v01_results", "real")
+  dir.create(folder, recursive = TRUE)
+  qs2::qs_save(valid_results(), file.path(folder, "results.qs2"))
+  # Text that is not a results object, as run_scenarios() writes it.
+  writeLines("Error: planted\nExecution halted", file.path(folder, "run.log"))
+  writeLines("0123456789abcdef0123456789abcdef", file.path(folder, "run.ok"))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  expect_identical(found$status[found$rule == "results_contract"], "PASS")
+  expect_identical(found$status[found$rule == "unknown_path"], "PASS")
+
+  # In a git repository that tracks v01_results/ and ignores the artefacts
+  # with the lines of the helper .gitignore.
+  skip_if(!nzchar(Sys.which("git")), "git is not installed")
+  writeLines(c("run.log", "run.ok"), file.path(p$home, ".gitignore"))
+  system2("git", c("-C", shQuote(p$home), "init", "-q"))
+  expect_false(any(grepl("run\\.(log|ok)$", git_files(p$home))))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+})
+
 write_check_csv <- function(home, scenario, pass) {
   folder <- file.path(home, "v01_results", scenario)
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)

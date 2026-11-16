@@ -51,11 +51,14 @@ dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 
 `v01_functions/_cfg.R` holds the config of version v01. `CFG$scenarios` names each scenario and its number of simulations. The scenario `real` MUST be there, and it uses the real data. Here the fake scenario `known` has 1 simulation and the fake scenario `null` has 3. `CFG$vars` names the variables of the descriptive table.
 
+Each other column of `CFG$scenarios` is a setting of the scenario. Here `n_boot` is the number of bootstrap replicates: 200 for the real data and 20 for each fake scenario, so the fake runs are fast. The run script reads it as `p$settings$n_boot`. A setting column MUST be an atomic vector with no `NA`.
+
 ```{cat, engine.opts = list(file = file.path(home, "v01_functions", "_cfg.R"), lang = "r")}
 CFG <- list(
   scenarios = data.frame(
     scenario = c("real", "known", "null"),
-    sims = c(1, 1, 3)
+    sims = c(1, 1, 3),
+    n_boot = c(200, 20, 20)
   ),
   vars = data.table::data.table(
     var = c("outcome", "x"),
@@ -182,6 +185,8 @@ d <- d0[!is.na(outcome)]
 
 # PART 2 -- ANALYSIS ====
 fit <- stats::glm(outcome ~ group, family = "binomial", data = d)
+# A small bootstrap of the percentage, with the replicates of the scenario.
+boot <- replicate(p$settings$n_boot, 100 * mean(sample(d$outcome, replace = TRUE)))
 pbn::save_results(
   exclusions = data.frame(
     step = "outcome not missing",
@@ -190,8 +195,8 @@ pbn::save_results(
     n_after = nrow(d)
   ),
   estimates = data.frame(
-    term = c("pct_outcome", "or_group_b"),
-    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]))
+    term = c("pct_outcome", "or_group_b", "se_pct_outcome"),
+    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]), stats::sd(boot))
   ),
   tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
   d = d
@@ -217,11 +222,13 @@ pbn::run_scenarios("v01")
 
 Here the call gives the project folder as `home`. `run_scenarios()` runs `v01_run.R` once for each simulation of each scenario, each time in a new R session. It then stacks the 3 simulations of `null`, and it calls `expect_known()` and `expect_null()`.
 
+`workers = 2` runs 2 simulations at the same time. The results files are the same as with the default `workers = 1`, and only the order of the lines on the console can change.
+
 ```{r}
-pbn::run_scenarios("v01", home = home)
+pbn::run_scenarios("v01", home = home, workers = 2)
 ```
 
-Each scenario has a folder in `v01_results/`. The scenario `null` has one folder for each simulation, and its stacked `results.qs2`. A fake run keeps its data in `data/`.
+Each scenario has a folder in `v01_results/`. The scenario `null` has one folder for each simulation, and its stacked `results.qs2`. A fake run keeps its data in `data/`. `run.log` holds the stdout and the stderr of the run. When a run fails, `run_scenarios()` prints its whole `run.log`, and the error names the file. After a run that succeeds, `run_scenarios()` writes `run.ok` with the md5 of `results.qs2`. A run that stops after `save_results()` has no `run.ok`. List `run.log` and `run.ok` in the `.gitignore` of the project.
 
 ```{r}
 list.files(file.path(home, "v01_results"), recursive = TRUE)
@@ -231,6 +238,21 @@ list.files(file.path(home, "v01_results"), recursive = TRUE)
 
 ```{r}
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
+```
+
+## Running again after a failure
+
+A run of some hours can fail late. With `resume = TRUE`, `run_scenarios()` keeps each simulation with a `results.qs2` that passes `check_results()` and that has a `run.ok` with its md5. The results MUST also come from the same `v01_run.R` and `v01_functions/`. It runs the other simulations, and it stacks and checks every scenario again.
+
+Delete the results of simulation 2 of `null`, and run again with `resume = TRUE`:
+
+```{r}
+unlink(file.path(home, "v01_results", "null", "sim_0002", "results.qs2"))
+pbn::run_scenarios("v01", home = home, resume = TRUE)
+```
+
+```{r, include = FALSE}
+stopifnot(file.exists(file.path(home, "v01_results", "null", "sim_0002", "results.qs2")))
 ```
 
 ## Reading results
@@ -250,7 +272,7 @@ pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
 pbn::read_results("v01", scenario = "null", home = home)$estimates
 ```
 
-The manifest records where the results come from. It holds the versions of R, pbn and the loaded packages, the date, the scenario and the simulation. For the real data, `data_md5` holds the md5 of each data file. For a fake scenario, `fake_md5` holds the md5 of the code of `fake_<scenario>()`.
+The manifest records where the results come from. It holds the versions of R, pbn and the loaded packages, the date, the scenario, the simulation and the settings of the scenario. `source_md5` holds the md5 of `v01_run.R` and of each file in `v01_functions/`. For the real data, `data_md5` holds the md5 of each data file. For a fake scenario, `fake_md5` holds the md5 of the code of `fake_<scenario>()`.
 
 ```{r}
 str(r$manifest)
@@ -382,7 +404,8 @@ The default `home = "."` is the working directory, so this file MUST run with th
 - No function creates the folders and the files of a new project.
 - No tool shows the tracked changes between two Word manuscripts.
 - No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
-- `run_scenarios()` runs the simulations one after another. A run that fails stops it, and the later runs do not start.
+- `workers` limits the number of R sessions. It does not limit the threads that R or the BLAS library starts in each of them.
+- `resume = TRUE` does not find a change in the real data, or in the version of R or of a package. It also does not find a change in a file outside `v01_run.R` and `v01_functions/`.
 - When `run_scenarios()` runs some scenarios only, the results of the other scenarios stay as they are, also when they are out of date.
 - `fake_md5` is the md5 of the code of `fake_<scenario>()` only. A change in a function that it calls does not change `fake_md5`.
 - `check_project()` runs project code when it sources `v01_functions/`. Its rule `use_scenario_lines` does not check the order of the lines.

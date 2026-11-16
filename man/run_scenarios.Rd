@@ -4,7 +4,13 @@
 \alias{run_scenarios}
 \title{Run every scenario of a project version in new R sessions}
 \usage{
-run_scenarios(version, scenario = NULL, home = ".")
+run_scenarios(
+  version,
+  scenario = NULL,
+  home = ".",
+  workers = 1,
+  resume = FALSE
+)
 }
 \arguments{
 \item{version}{The version, for example \code{"v01"}.}
@@ -13,6 +19,13 @@ run_scenarios(version, scenario = NULL, home = ".")
 scenarios to run.}
 
 \item{home}{The project folder.}
+
+\item{workers}{The number of simulations that run at the same time, one
+whole number of 1 or more. Each simulation runs in its own new R session.}
+
+\item{resume}{\code{FALSE} runs every simulation of the chosen scenarios. \code{TRUE}
+keeps each simulation with results from the same code, and runs the
+others. See the section Resume.}
 }
 \value{
 Invisibly, a data.frame of every assertion, with the columns
@@ -32,30 +45,60 @@ of the caller does not change.
 It stops when a scenario other than \code{"real"} has no function
 \verb{expect_<scenario>()}. It checks every chosen scenario before it runs
 any of them.
-\item It makes a \link[plnr:Plan]{plnr::Plan} with one analysis for each scenario and
-simulation. Each analysis runs the script with \code{\link[callr:rscript]{callr::rscript()}} and
-the arguments \verb{scenario=<name> sim=<k>}, with \code{home} as the working
-directory. A run that fails stops \code{run_scenarios()} with the output of
-the run.
+\item With \code{resume = TRUE}, it chooses the simulations to keep, and prints
+one line for each of them.
+\item It deletes these files, and it stops before any run when one of them
+stays:
+\itemize{
+\item the \code{check.csv} of each chosen scenario.
+\item the stacked \code{results.qs2} of each chosen scenario with more than 1
+simulation.
+\item the \code{results.qs2} and the \code{run.ok} of each simulation that it runs.
+}
 
-Before each run, \code{run_scenarios()} deletes the \code{results.qs2} of that
-simulation. Before simulation 1, it also deletes the \code{results.qs2} and
-the \code{check.csv} in \verb{<version>_results/<scenario>/}. A run that writes
-no \code{results.qs2} stops \code{run_scenarios()}. A run that quits with
-status 0 after it writes \code{results.qs2} succeeds, so
-\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}} can end the run of a fake scenario. Files of
-the scenarios that it does not run stay as they are.
+Files of the scenarios that it does not run stay as they are.
+\item It runs the script once for each simulation that it does not keep. Each
+run is a new R session with the arguments \verb{scenario=<name> sim=<k>},
+and with \code{home} as the working directory. At most \code{workers} runs go at
+the same time. The stdout and the stderr of each run go to \code{run.log} in
+the results folder of the simulation. Each run writes \code{run.log} again,
+also a run that succeeds.
+
+A run succeeds when all of these hold:
+\itemize{
+\item It quits with status 0, so \code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}} can end the run
+of a fake scenario.
+\item Its \code{results.qs2} exists and passes \code{\link[=check_results]{check_results()}}.
+\item \code{manifest$scenario}, \code{manifest$sim} and \code{manifest$sims} are those of
+the simulation.
+}
+
+After a run that succeeds, \code{run_scenarios()} writes \code{run.ok} beside
+\code{run.log}. \code{run.ok} holds one line, the md5 of \code{results.qs2}. A run
+that stops after it writes \code{results.qs2} thus has no \code{run.ok}. This is
+also the case when the caller is interrupted. \code{run.log} and \code{run.ok}
+are run artefacts. List both in the \code{.gitignore} of the project.
+
+Each other run fails. For a run that fails, \code{run_scenarios()} prints
+the whole \code{run.log} with \code{cat()}. After the first failure, it starts no
+new run, and the runs that started go on to their end. It then stops
+with an error that names the scenario, the simulation and the \code{run.log}
+of each failed run. It stacks and checks no scenario.
 \item For each scenario with more than 1 simulation, it stacks the files
 \verb{<version>_results/<scenario>/sim_<kkkk>/results.qs2} into
 \verb{<version>_results/<scenario>/results.qs2}. It stops when the files are
-not exactly the simulations 1 to \code{sims}. \code{estimates}, \code{exclusions} and
+not exactly the simulations 1 to \code{sims}. After \code{sims} in
+\code{CFG$scenarios} becomes smaller, the folders of the higher simulations
+stay. Stacking then stops, and the error names their files. Delete
+those folders to stack again. \code{estimates}, \code{exclusions} and
 each data.frame in \code{tables} get a first column \code{sim}. Each keeps the
 class of its object in simulation 1, so a data.table stays a
 data.table. \code{extra} is an empty list. The \code{manifest} is that of
 simulation 1. In it, \code{sim} and \code{n_rows_data} are \code{NA}, \code{sims} is the
 number of simulations, and \code{stacked} is \code{TRUE}. For a fake scenario, it
 stops when a simulation has no valid \code{manifest$fake_md5}, or when the
-simulations do not have one value of it.
+simulations do not have one value of it. It also stops when the
+simulations do not have one value of \code{manifest$settings}.
 \item For each scenario that has a function \verb{expect_<scenario>()} in
 \verb{<version>_functions/}, it calls that function on the results of the
 scenario in a new R session. \code{expect_real()} is optional. The function
@@ -77,6 +120,39 @@ four columns.
 After every scenario is done, \code{run_scenarios()} stops when a value of
 \code{pass} is not \code{TRUE}. The error lists the failed assertions.
 }
+\section{Workers}{
+
+Each simulation depends only on its scenario and its number, so \code{workers}
+does not change the results files or \code{check.csv}. Only the order of the
+lines on the console can change. pbn does not limit the threads that R or
+the BLAS library starts in each R session.
+}
+
+\section{Resume}{
+
+With \code{resume = TRUE}, \code{run_scenarios()} keeps a simulation when all of
+these hold:
+\itemize{
+\item Its \code{results.qs2} exists and passes \code{\link[=check_results]{check_results()}}.
+\item Its \code{run.ok} exists and holds the md5 of \code{results.qs2} now. So the run
+completed, and nothing changed \code{results.qs2} after it.
+\item \code{manifest$scenario}, \code{manifest$sim} and \code{manifest$sims} are those of the
+simulation.
+\item \code{manifest$source_md5} is the md5 of the files of \verb{<version>_run.R} and
+\verb{<version>_functions/} now.
+\item For a fake scenario, \code{manifest$fake_md5} is the md5 of the code of
+\verb{fake_<scenario>()} now.
+}
+
+Each other simulation runs again, and the console line of its start gives
+the reason. The stacking and the \code{expect_} assertions always run again.
+
+Resume does not find a change in the real data, or in the version of R or
+of a package. It also does not find a change in a file outside
+\verb{<version>_run.R} and \verb{<version>_functions/}. After such a change, use
+\code{resume = FALSE}.
+}
+
 \examples{
 \donttest{
 home <- file.path(tempdir(), "pbn_run_scenarios_example")

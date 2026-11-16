@@ -197,7 +197,7 @@ local_project <- function(env = parent.frame()) {
   write_lines(home, "README.md", "# A synthetic project")
   write_lines(home, "CHANGELOG.md", "# Changelog")
   write_lines(home, "AGENTS.md", "# Agents")
-  write_lines(home, ".gitignore", "v01_results/")
+  write_lines(home, ".gitignore", c("v01_results/", "run.log", "run.ok"))
 
   return(list(home = home, root = root, data_default = data_default))
 }
@@ -253,6 +253,10 @@ valid_results <- function() {
       sim = 1L,
       sims = 1L,
       data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+      source_md5 = c(
+        "v01_functions/_cfg.R" = "00112233445566778899aabbccddeeff",
+        v01_run.R = "ffeeddccbbaa99887766554433221100"
+      ),
       n_rows_data = 40L
     ),
     exclusions = data.frame(

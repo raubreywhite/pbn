@@ -1,5 +1,12 @@
 # Changelog
 
+## pbn 2026.11.20
+
+- New article
+  [`vignette("pbn")`](https://www.rwhite.no/pbn/articles/pbn.md), Get
+  started. It builds a small fake project file by file and runs it. The
+  README links to it and no longer holds the walk-through.
+
 ## pbn 2026.11.19
 
 - For a fake scenario, the manifest has `fake_md5`, the md5 of the code

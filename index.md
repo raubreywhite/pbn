@@ -16,107 +16,21 @@ real project can use.
 pak::pak("raubreywhite/pbn")
 ```
 
-## The house layout
-
-All names are lower case. The version is a prefix.
-
-    v01_run.R                 data -> results -> figures and tables; calls pbn::initialize_project(version = "v01", ...)
-    v01_functions/            sourced folder; holds _cfg.R (top-level `CFG <- list(...)`) and project functions
-    v01_results/<scenario>/   the results of each scenario
-    v01_test/                 optional testthat files for project functions
-    v01_check_functions.R     optional checks of the functions
-    check_project.R           one line: pbn::check_project()
-    run_scenarios.R           one line: pbn::run_scenarios("v01")
-    pbn_allow.txt             optional exceptions to check_project()
-    manuscript/manual/vNN_<initials>.docx   hand-edited Word files (initials upper case, e.g. v16_SA.docx)
-    manuscript/built/vNN/     pipeline output
-    background/  adhoc/  data_describe/
-    README.md  CHANGELOG.md  AGENTS.md  .gitignore
-
-## Scenarios
-
-The real data is one scenario among fake ones. The same run script runs
-on each scenario, and only the data changes. `CFG$scenarios` in `_cfg.R`
-names the scenarios and the number of simulations of each:
-
-``` r
-CFG <- list(
-  scenarios = data.frame(scenario = c("real", "known", "null"), sims = c(1, 1, 3))
-)
-```
-
-A scenario named `"real"` MUST be there. For each other scenario, the
-project MUST define two functions:
-
-- `fake_<scenario>(dir)` writes data files into `dir`. pbn sets the seed
-  to the simulation number before it sources the functions and before it
-  calls this function.
-- `expect_<scenario>(results)` returns a data.frame with at least one
-  row and the columns `assertion`, `expected`, `observed` and `pass`. An
-  error, zero rows or another shape counts as a failed assertion.
-
-`expect_real(results)` is optional.
-
-    v01_results/real/results.qs2                 a scenario with 1 simulation writes here directly
-    v01_results/null/sim_0001/results.qs2        a scenario with more than 1 simulation
-    v01_results/null/sim_0002/results.qs2
-    v01_results/null/results.qs2                 all simulations stacked
-    v01_results/null/check.csv                   the assertions on the stacked results
-
 ## Quick start
 
-`v01_run.R`, with one commented
-[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
-line for each scenario in `CFG$scenarios`:
-
-``` r
-# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.
-# pbn::use_scenario("real", sim = 1)
-# pbn::use_scenario("known", sim = 1)
-# pbn::use_scenario("null", sim = 1)
-p <- pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
-d <- data.table::fread(file.path(p$data_raw, "d.csv"))
-pbn::save_results(
-  exclusions = data.frame(step = "all", n_before = nrow(d), n_excluded = 0, n_after = nrow(d)),
-  estimates = data.frame(term = "n", estimate = nrow(d)),
-  tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
-  d = d
-)
-pbn::end_if_fake_scenario()
-
-# PART 3 -- OUTPUT ====
-r <- pbn::read_results("v01")
-utils::write.csv(r$estimates, file.path(p$results, "estimates.csv"))
-```
-
-To step through a scenario by hand, run one of the commented lines
-without the `#`. Then run the script line by line.
-[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-prints which scenario it uses. For a fake scenario,
-[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-stops with an error, and the R session stays open. The lines MUST stay
-commented in the file:
-[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
-stops under `Rscript`, and
-[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-fails an active call.
-[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-also fails a missing line, and a line for a scenario that is not in
-`CFG$scenarios`.
-
-To run every simulation of every scenario, each in a new R session:
+A project version has a run script `v01_run.R` and a folder
+`v01_functions/`. `v01_functions/_cfg.R` names the scenarios: the real
+data, and fake data that the project writes itself. The same run script
+runs on each scenario. From the project folder, run every scenario and
+check the layout:
 
 ``` r
 pbn::run_scenarios("v01")
-pbn::run_scenarios("v01", scenario = "known")
+pbn::check_project()
 ```
 
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-stops when an assertion fails.
-[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-fails a
-[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-call in `manuscript/built/` that reads a scenario other than `"real"`.
+The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html)
+builds a small fake project file by file, and runs it. Read it first.
 
 ## The nine functions
 
@@ -132,7 +46,5 @@ call in `manuscript/built/` that reads a scenario other than `"real"`.
 | [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md) | Checks a project folder against the house layout, and quits with status 1 on a failure when R is not interactive. |
 | [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) | Computes the numbers of a descriptive table, with chi-square or Fisher’s exact p-values. |
 
-The help page of each function holds its rules. Start with
-[`?initialize_project`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-and
-[`?run_scenarios`](https://www.rwhite.no/pbn/reference/run_scenarios.md).
+The help page of each function holds its rules. The
+[reference](https://www.rwhite.no/pbn/reference/index.html) lists them.

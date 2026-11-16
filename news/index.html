@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.20</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -15,7 +15,8 @@
     </button>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
-      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
+      <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/pbn.html">Get started</a></li>
+<li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-packages" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">packages</button>
@@ -40,6 +41,10 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.20" id="pbn-20261120">pbn 2026.11.20<a class="anchor" aria-label="anchor" href="#pbn-20261120"></a></h2>
+<ul><li>New article <code><a href="../articles/pbn.html">vignette("pbn")</a></code>, Get started. It builds a small fake project file by file and runs it. The README links to it and no longer holds the walk-through.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.19" id="pbn-20261119">pbn 2026.11.19<a class="anchor" aria-label="anchor" href="#pbn-20261119"></a></h2>
 <ul><li>For a fake scenario, the manifest has <code>fake_md5</code>, the md5 of the code of <code>fake_&lt;scenario&gt;()</code>, in the place of <code>data_md5</code>. A writer such as <code>haven::write_sav()</code> stamps the time into a file, so <code>data_md5</code> changed on every run. This changes the format of <code>results.qs2</code>. The new <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_data</code> fails the results file of a fake scenario that an older pbn wrote: run the scenarios again to write it. The rule also fails a <code>data_md5</code> or <code>fake_md5</code> that is not in the form of an md5.</li>

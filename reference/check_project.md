@@ -55,12 +55,29 @@ The rules:
 - `version_items_complete` (FAIL): a `vNN_run.R` has no
   `vNN_functions/`, or the reverse.
 
-- `results_contract` (FAIL): a `vNN_results/results.qs2` or a
-  `vNN_results/scenario/<name>/results.qs2` fails
-  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+- `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
+  `vNN_results/<scenario>/sim_NNNN/results.qs2` fails
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md),
+  or a `results.qs2` is directly in `vNN_results/`.
+
+- `scenario_checks` (FAIL): a `vNN_results/<scenario>/check.csv` has a
+  value of `pass` that is not `TRUE`.
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  writes these files.
 
 - `manual_manuscript_names` (FAIL): a file in `manuscript/manual/` does
   not match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$`.
+
+- `manuscript_reads_real` (FAIL): an `.R`, `.qmd` or `.Rmd` file in
+  `manuscript/built/` calls
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  or
+  [`pbn::read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  with a `scenario` argument that is not the string `"real"`. A call
+  without `scenario` passes. In `.qmd` and `.Rmd` files, the rule reads
+  the R chunks that
+  [`knitr::purl()`](https://rdrr.io/pkg/knitr/man/knit.html) extracts
+  and the inline R code.
 
 - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
   `vNN_functions/*.R` file defines a function with the name of a pbn
@@ -74,8 +91,10 @@ The rules:
   functions folder uses `Sys.getenv` or `Sys.setenv`.
 
 - `unknown_path` (WARN): the house layout does not name a top-level file
-  or folder. A top-level dotfile and a top-level `*.Rproj` file are
-  never unknown.
+  or folder. The layout names `vNN_run.R`, `vNN_output.R`,
+  `vNN_functions/`, `vNN_results/`, `vNN_test/` and
+  `vNN_check_functions.R`, among others. A top-level dotfile and a
+  top-level `*.Rproj` file are never unknown.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -99,13 +118,15 @@ pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
-#> PASS  results_contract  every vNN_results/results.qs2 and vNN_results/scenario/*/results.qs2 passes check_results()
+#> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
+#> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
+#> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 9 PASS, 0 WARN, 0 FAIL
+#> 11 PASS, 0 WARN, 0 FAIL
 
 unlink(home, recursive = TRUE)
 ```

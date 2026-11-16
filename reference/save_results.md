@@ -44,9 +44,9 @@ Call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
 first. The results folder is the `results` element that
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-returns, never the dated subfolder of org. It is
-`<home>/<version>_results` in a real run, and
-`<home>/<version>_results/scenario/<name>` in a scenario run.
+returns. It is `<home>/<version>_results/<scenario>/` for a scenario
+with 1 simulation, and `<home>/<version>_results/<scenario>/sim_<kkkk>/`
+otherwise.
 
 The object is a named list with exactly these top-level names:
 `manifest`, `exclusions`, `estimates`, `tables` and `extra`. pbn builds
@@ -62,8 +62,9 @@ the `manifest`, a list with these elements:
   two runs on one day with the same inputs and packages write the same
   bytes.
 
-- `version`, `data_raw` and `data_raw_source`, from
+- `version`, `scenario`, `sim`, `sims` and `data_raw`, from
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  `data_raw` is the data folder of the run.
 
 - `data_md5`, a named character vector with the md5 of each file
   directly in `data_raw`.
@@ -85,9 +86,13 @@ Other results:
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
+writeLines(
+  "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
+  file.path(home, "v01_functions", "_cfg.R")
+)
 pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpzsUfWf/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmpcg63Uf/pbn_save_example/v01_functions into 
 
 pbn::save_results(
   exclusions = data.frame(

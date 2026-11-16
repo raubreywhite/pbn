@@ -3,7 +3,7 @@
 save_results(). It reports each rule as PASS or FAIL, and it stops on
 nothing."><meta property="og:description" content="check_results() checks a results object against the contract of
 save_results(). It reports each rule as PASS or FAIL, and it stops on
-nothing."></head><body>
+nothing."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -11,7 +11,7 @@ nothing."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -26,6 +26,7 @@ nothing."></head><body>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-packages"><li><a class="external-link dropdown-item" href="https://www.rwhite.no/cohort/">cohort — cohort construction with provenance</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/plnr/">plnr — plan &amp; fan out analyses</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/org/">org — project paths &amp; structure</a></li>
+    <li><a class="dropdown-item" href="https://www.rwhite.no/pbn/">pbn — analysis layout</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/">rwhite.no</a></li>
   </ul></li>
@@ -39,8 +40,7 @@ nothing."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Check a results object against the contract</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Check a results object against the contract</h1>
       <small class="dont-index">Source: <a href="https://github.com/raubreywhite/pbn/blob/main/R/check_results.R" class="external-link"><code>R/check_results.R</code></a></small>
       <div class="d-none name"><code>check_results.Rd</code></div>
     </div>
@@ -71,16 +71,19 @@ and <code>detail</code>. <code>status</code> is <code>"PASS"</code> or <code>"FA
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The four rules:</p><ul><li><p><code>top_level_names</code>: the names are <code>manifest</code>, <code>exclusions</code>, <code>estimates</code>,
+    <p>The five rules:</p><ul><li><p><code>top_level_names</code>: the names are <code>manifest</code>, <code>exclusions</code>, <code>estimates</code>,
 <code>tables</code> and <code>extra</code>, each once, and there are no others.</p></li>
 <li><p><code>exclusions_table</code>: <code>exclusions</code> is a data.frame with the columns <code>step</code>,
-<code>n_before</code>, <code>n_excluded</code> and <code>n_after</code>. On every row,
-<code>n_before - n_excluded == n_after</code>.</p></li>
+<code>n_before</code>, <code>n_excluded</code> and <code>n_after</code>. When <code>manifest$stacked</code> is
+<code>TRUE</code>, it also has the column <code>sim</code> that <code><a href="run_scenarios.html">run_scenarios()</a></code> adds. On every
+row, <code>n_before - n_excluded == n_after</code>.</p></li>
 <li><p><code>no_fitted_models</code>: no element anywhere in <code>x</code> inherits from <code>lm</code>, <code>glm</code>,
 <code>gam</code>, <code>merMod</code>, <code>brmsfit</code>, <code>coxph</code> or <code>lavaan</code>.</p></li>
 <li><p><code>no_row_per_person</code>: no data.frame anywhere in <code>x</code> has
 <code>manifest$n_rows_data</code> rows. When <code>n_rows_data</code> is <code>NA</code>, this rule checks
 nothing.</p></li>
+<li><p><code>manifest_scenario</code>: <code>manifest</code> has the elements <code>scenario</code>, <code>sim</code> and
+<code>sims</code>, and <code>scenario</code> is one string.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -92,7 +95,7 @@ nothing.</p></li>
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span></span>
-<span class="r-in"><span>  manifest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_rows_data <span class="op">=</span> <span class="fl">100L</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>  manifest <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>scenario <span class="op">=</span> <span class="st">"real"</span>, sim <span class="op">=</span> <span class="fl">1L</span>, sims <span class="op">=</span> <span class="fl">1L</span>, n_rows_data <span class="op">=</span> <span class="fl">100L</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>  exclusions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>    step <span class="op">=</span> <span class="st">"age 18 or more"</span>,</span></span>
 <span class="r-in"><span>    n_before <span class="op">=</span> <span class="fl">100</span>,</span></span>
@@ -104,11 +107,18 @@ nothing.</p></li>
 <span class="r-in"><span>  extra <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_results</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                rule status                                            detail</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1   top_level_names   PASS           the five top-level names, and no others</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2  exclusions_table   FAIL n_before - n_excluded != n_after on these rows: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3  no_fitted_models   PASS                     no fitted model in the object</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 no_row_per_person   PASS                        no data.frame has 100 rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                rule status</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1   top_level_names   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2  exclusions_table   FAIL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3  no_fitted_models   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4 no_row_per_person   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 manifest_scenario   PASS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                detail</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                             the five top-level names, and no others</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                   n_before - n_excluded != n_after on these rows: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3                                       no fitted model in the object</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4                                          no data.frame has 100 rows</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5 the manifest names the scenario, the simulation and the simulations</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
@@ -116,7 +126,7 @@ nothing.</p></li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a>
+  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a> <a href="https://www.rwhite.no/pbn/">pbn</a>
 </nav></div>
 
 <div class="pkgdown-footer-right">

@@ -1,13 +1,19 @@
-# Start one version of an analysis project
+# Start one scenario of an analysis project version
 
-`initialize_project()` sets up one version of a project with the house
-defaults, and sources the functions folder of that version. It MUST be
-the first call in every `vNN_run.R`.
+`initialize_project()` sets up one simulation of one scenario of a
+project version, and sources the functions folder of that version. It
+MUST be the first call in every `vNN_run.R`.
 
 ## Usage
 
 ``` r
-initialize_project(version, home, data_raw, env = .GlobalEnv)
+initialize_project(
+  version,
+  home,
+  data_raw,
+  scenario = "real",
+  env = .GlobalEnv
+)
 ```
 
 ## Arguments
@@ -23,7 +29,13 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 
 - data_raw:
 
-  The default folder of the raw data. It MUST exist.
+  The folder of the real raw data. It MUST exist when the scenario is
+  `"real"`. pbn does not read it for any other scenario.
+
+- scenario:
+
+  The scenario, one name in `CFG$scenarios$scenario`. The default
+  `"real"` is the real data.
 
 - env:
 
@@ -31,57 +43,76 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 
 ## Value
 
-Invisibly, a list with `version`, `home`, `results`, `data_raw` and
-`data_raw_source`. `data_raw_source` is `"default"` or `"argument"`.
+Invisibly, a list with `version`, `home`, `scenario`, `sim`, `sims`,
+`results` and `data_raw`. `results` is the results folder and `data_raw`
+is the data folder of the run.
 
 ## Details
 
-`initialize_project()` calls
-[`org::initialize_project()`](https://www.rwhite.no/org/reference/initialize_project.html)
-with these arguments:
+`_cfg.R` in `<version>_functions/` MUST set `CFG$scenarios`, a
+data.frame with these columns:
 
-- `results` is `<home>/<version>_results`. In a scenario run with
-  `data_raw=<path>`, it is `<home>/<version>_results/scenario/<name>`.
-  `<name>` is the basename of the normalised path, so `~`, `..` and a
-  trailing slash are resolved first.
+- `scenario`: unique names that match `^[a-z0-9_]+$`. One name MUST be
+  `"real"`.
 
-- `folders_to_be_sourced` is `<version>_functions`.
+- `sims`: the number of simulations of the scenario, a whole number of 1
+  or more.
 
-- `max_loc_per_file` is 1000.
+Two trailing command-line arguments replace the defaults. pbn reads no
+environment variables.
 
-A trailing command-line argument `data_raw=<path>` replaces `data_raw`.
-[`run_version()`](https://www.rwhite.no/pbn/reference/run_version.md)
-gives this argument. pbn reads no environment variables. A run with this
-argument is a scenario run. A scenario run never writes to the results
-folder of the real run.
+- `scenario=<name>` replaces `scenario`.
 
-A scenario run stops before it writes anything in these cases:
+- `sim=<k>` gives the simulation, a whole number of 1 or more. Without
+  it, the simulation is 1.
 
-- The scenario results folder, normalised, is the real results folder.
+`initialize_project()` does these steps in this order:
 
-- The data folder is the default `data_raw`. That is the real run.
+1.  It calls
+    [`org::initialize_project()`](https://www.rwhite.no/org/reference/initialize_project.html)
+    with `results` set to `<home>/<version>_results`,
+    `results_subfolder` set to the scenario, `folders_to_be_sourced` set
+    to `<version>_functions`, and `max_loc_per_file` set to 1000.
 
-- The data folder is the real results folder, or holds it.
+2.  It reads `CFG$scenarios`. The results folder is
+    `<version>_results/<scenario>/` when the scenario has 1 simulation,
+    and `<version>_results/<scenario>/sim_<kkkk>/` otherwise. `<kkkk>`
+    is the simulation with four digits. `org::project$results_today` is
+    set to this folder.
 
-- The scenario folder holds a `results.qs2` with a different
-  `manifest$data_raw`. Two data folders with the same basename share one
-  scenario folder.
+3.  It calls `set.seed(sim)`. It also calls `set.seed(sim)` before step
+    1, so random work while org sources the functions folder depends on
+    `sim` only.
 
-The data folder MAY be the scenario results folder itself.
-`initialize_project()` computes the md5 of each file directly in the
-data folder.
-[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-stores these values as `manifest$data_md5`, so a file that the run
-writes later is not in the list.
+4.  For `"real"`, the data folder is `data_raw`. For any other scenario,
+    the data folder is `data/` in the results folder.
+    `initialize_project()` deletes it, creates it empty, and calls
+    `fake_<scenario>(dir)` with its path. The project MUST define
+    `fake_<scenario>()` in `<version>_functions/`.
 
-org creates a dated subfolder in the results folder. pbn writes to the
-results folder itself. Thus `initialize_project()` deletes each dated
-subfolder that the call created and that is empty.
+5.  It computes the md5 of each file directly in the data folder.
+    [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+    stores these values as `manifest$data_md5`, so a file that the run
+    writes later is not in the list.
+
+`initialize_project()` stops in these cases:
+
+- `scenario=` or `sim=` is given more than once.
+
+- `sim=` is not a whole number of 1 or more.
+
+- The scenario is not in `CFG$scenarios`, or `sim` is more than its
+  `sims`.
+
+- `fake_<scenario>()` is missing.
+
+When it stops, it deletes each empty results folder that the call
+created. It never creates a folder with today's date.
 
 ## See also
 
 Other project setup:
-[`run_version()`](https://www.rwhite.no/pbn/reference/run_version.md)
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
 
 ## Examples
 
@@ -89,21 +120,32 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
-writeLines("CFG <- list(alpha = 0.05)", file.path(home, "v01_functions", "_cfg.R"))
+writeLines(
+  c(
+    "CFG <- list(",
+    "  scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3))",
+    ")",
+    "fake_null <- function(dir) {",
+    "  utils::write.csv(data.frame(x = rnorm(5)), file.path(dir, 'd.csv'))",
+    "}"
+  ),
+  file.path(home, "v01_functions", "_cfg.R")
+)
 
 env <- new.env()
 p <- pbn::initialize_project(
   version = "v01",
   home = home,
   data_raw = file.path(home, "data"),
+  scenario = "null",
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpzsUfWf/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmpcg63Uf/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpzsUfWf/pbn_initialize_example/v01_results"
-env$CFG$alpha
-#> [1] 0.05
+#> [1] "/tmp/Rtmpcg63Uf/pbn_initialize_example/v01_results/null/sim_0001"
+list.files(p$data_raw)
+#> [1] "d.csv"
 
 unlink(home, recursive = TRUE)
 ```

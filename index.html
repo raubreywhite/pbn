@@ -13,8 +13,9 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="House Layout and Checks for Analysis Projects">
-<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs a project version in a new R session.">
-<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs a project version in a new R session.">
+<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each made-up scenario in new R sessions.">
+<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It starts one scenario of a project version with the house defaults of org, computes the numbers of a descriptive table, writes and reads one results object with a fixed contract, and runs the real data and each made-up scenario in new R sessions.">
+<meta property="og:image" content="https://www.rwhite.no/pbn/logo.png">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -24,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -43,6 +44,7 @@
 <li><a class="external-link dropdown-item" href="https://www.rwhite.no/cohort/">cohort — cohort construction with provenance</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/plnr/">plnr — plan &amp; fan out analyses</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/org/">org — project paths &amp; structure</a></li>
+    <li><a class="dropdown-item" href="https://www.rwhite.no/pbn/">pbn — analysis layout</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/">rwhite.no</a></li>
   </ul>
@@ -61,18 +63,21 @@
 <div class="rw-hero">
   <div class="rw-hero-body">
     <p class="overline">R package - Project policy</p>
-    <div class="page-header"><h1>One layout for every analysis project.</h1></div>
+    <div class="page-header">
+<img src="logo.png" class="logo" alt=""><h1>One layout for every analysis project.</h1>
+</div>
     <div class="rw-rule"></div>
     <p class="rw-lede">The house layout of a versioned analysis project, the checks of that layout, and one results object with a fixed contract.
 </p>
     <p class="rw-cta"><a class="rw-btn" href="reference/index.html">Browse the reference</a> <a class="rw-btn-link" href="news/index.html">Read the changelog</a></p>
   </div>
-
+  <div class="rw-hero-art"><img src="logo.png" alt="pbn logo"></div>
 </div>
 
 <div class="rw-home">
   <main id="main" class="rw-home-main"><div class="section level1">
-<h1 id="pbn">pbn<a class="anchor" aria-label="anchor" href="#pbn"></a>
+<h1 id="pbn-">pbn 
+<a class="anchor" aria-label="anchor" href="#pbn-"></a>
 </h1>
 <p>pbn (“paint by numbers”) holds the house layout of an analysis project, the checks of that layout, and a few shared helpers. It is the one policy package of the family. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) are mechanism packages without opinions.</p>
 <p>This is a trial version. It holds the smallest set of functions that one real project can use.</p>
@@ -86,12 +91,12 @@
 <h2 id="the-house-layout">The house layout<a class="anchor" aria-label="anchor" href="#the-house-layout"></a>
 </h2>
 <p>All names are lower case. The version is a prefix.</p>
-<pre><code>v01_run.R                 the run script; first call is pbn::initialize_project(version = "v01", ...)
+<pre><code>v01_run.R                 data -&gt; results; first call is pbn::initialize_project(version = "v01", ...)
+v01_output.R              optional: results -&gt; figures and tables
 v01_functions/            sourced folder; holds _cfg.R (top-level `CFG &lt;- list(...)`) and project functions
-v01_results/results.qs2   the results object
-v01_results/scenario/&lt;name&gt;/  the results of a run with data_raw=&lt;path&gt;; &lt;name&gt; is the basename of the normalised path
+v01_results/&lt;scenario&gt;/   the results of each scenario
 v01_test/                 optional testthat files for project functions
-v01_check_functions.R  v01_check_scenarios.R   optional checks of the functions and of scenario runs
+v01_check_functions.R     optional checks of the functions
 check_project.R           one line: pbn::check_project()
 pbn_allow.txt             optional exceptions to check_project()
 manuscript/manual/vNN_&lt;initials&gt;.docx   hand-edited Word files (initials upper case, e.g. v16_SA.docx)
@@ -100,10 +105,32 @@ background/  adhoc/  data_describe/
 README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 </div>
 <div class="section level2">
+<h2 id="scenarios">Scenarios<a class="anchor" aria-label="anchor" href="#scenarios"></a>
+</h2>
+<p>The real data is one scenario among made-up ones. The same run script runs on each scenario, and only the data changes. <code>CFG$scenarios</code> in <code>_cfg.R</code> names the scenarios and the number of simulations of each:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">CFG</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
+<span>  scenarios <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real"</span>, <span class="st">"known"</span>, <span class="st">"null"</span><span class="op">)</span>, sims <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>A scenario named <code>"real"</code> MUST be there. For each other scenario, the project MUST define two functions:</p>
+<ul>
+<li>
+<code>fake_&lt;scenario&gt;(dir)</code> writes data files into <code>dir</code>. pbn sets the seed to the simulation number before it sources the functions and before it calls this function.</li>
+<li>
+<code>expect_&lt;scenario&gt;(results)</code> returns a data.frame with at least one row and the columns <code>assertion</code>, <code>expected</code>, <code>observed</code> and <code>pass</code>. An error, zero rows or another shape counts as a failed assertion.</li>
+</ul>
+<p><code>expect_real(results)</code> is optional.</p>
+<pre><code>v01_results/real/results.qs2                 a scenario with 1 simulation writes here directly
+v01_results/null/sim_0001/results.qs2        a scenario with more than 1 simulation
+v01_results/null/sim_0002/results.qs2
+v01_results/null/results.qs2                 all simulations stacked
+v01_results/null/check.csv                   the assertions on the stacked results</code></pre>
+</div>
+<div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
 <p><code>v01_run.R</code>:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"/data/raw"</span><span class="op">)</span></span>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">data_raw</span>, <span class="st">"d.csv"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span></span>
@@ -112,11 +139,12 @@ README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 <span>  tables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>table1 <span class="op">=</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/table1.html">table1</a></span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="st">"group"</span>, vars <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">vars</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>  d <span class="op">=</span> <span class="va">d</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Run it in a new R session, once with a different data folder:</p>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_version.html">run_version</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span>
-<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_version.html">run_version</a></span><span class="op">(</span><span class="st">"v01"</span>, data_raw <span class="op">=</span> <span class="st">"/data/test"</span><span class="op">)</span></span></code></pre></div>
-<p>The second run writes to <code>v01_results/scenario/test/</code>. It does not change <code>v01_results/results.qs2</code>. A scenario run stops when its data folder is the default data folder, or is or holds <code>v01_results/</code>. It also stops when the scenario folder holds the results of another data folder with the same basename. <code><a href="reference/initialize_project.html">?initialize_project</a></code> lists every stop.</p>
+<p>To step through one made-up scenario by hand, add <code>scenario = "null"</code> to the <code><a href="reference/initialize_project.html">initialize_project()</a></code> call and run the script line by line. Remove it again when you are done.</p>
+<p>To run every simulation of every scenario, each in a new R session:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_scenarios.html">run_scenarios</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_scenarios.html">run_scenarios</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"known"</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/run_scenarios.html">run_scenarios()</a></code> stops when an assertion fails. <code><a href="reference/check_project.html">check_project()</a></code> fails a <code><a href="reference/read_results.html">read_results()</a></code> call in <code>manuscript/built/</code> that reads a scenario other than <code>"real"</code>.</p>
 </div>
 <div class="section level2">
 <h2 id="the-seven-functions">The seven functions<a class="anchor" aria-label="anchor" href="#the-seven-functions"></a>
@@ -133,19 +161,19 @@ README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 <tbody>
 <tr>
 <td><code><a href="reference/initialize_project.html">initialize_project()</a></code></td>
-<td>Starts one version with the house defaults of <code>org</code>, and sources <code>vNN_functions/</code>.</td>
+<td>Starts one simulation of one scenario with the house defaults of <code>org</code>, and sources <code>vNN_functions/</code>.</td>
 </tr>
 <tr>
-<td><code><a href="reference/run_version.html">run_version()</a></code></td>
-<td>Runs <code>vNN_run.R</code> in a new R session, optionally with <code>data_raw=&lt;path&gt;</code>.</td>
+<td><code><a href="reference/run_scenarios.html">run_scenarios()</a></code></td>
+<td>Runs <code>vNN_run.R</code> for each scenario and simulation in a new R session, stacks the simulations and checks the assertions.</td>
 </tr>
 <tr>
 <td><code><a href="reference/save_results.html">save_results()</a></code></td>
-<td>Writes <code>vNN_results/results.qs2</code> with a manifest, and stops when the object fails the contract.</td>
+<td>Writes <code>results.qs2</code> with a manifest, and stops when the object fails the contract.</td>
 </tr>
 <tr>
 <td><code><a href="reference/read_results.html">read_results()</a></code></td>
-<td>Reads <code>vNN_results/results.qs2</code>.</td>
+<td>Reads the <code>results.qs2</code> of one scenario. The default is <code>"real"</code>.</td>
 </tr>
 <tr>
 <td><code><a href="reference/check_results.html">check_results()</a></code></td>
@@ -161,7 +189,7 @@ README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 </tr>
 </tbody>
 </table>
-<p>The help page of each function holds its rules. Start with <code><a href="reference/check_project.html">?check_project</a></code> and <code><a href="reference/save_results.html">?save_results</a></code>.</p>
+<p>The help page of each function holds its rules. Start with <code><a href="reference/initialize_project.html">?initialize_project</a></code> and <code><a href="reference/run_scenarios.html">?run_scenarios</a></code>.</p>
 </div>
 </div>
   </main><aside class="rw-home-aside"><div class="links">
@@ -204,7 +232,7 @@ README.md  CHANGELOG.md  AGENTS.md  .gitignore</code></pre>
 
 
     <footer><div class="pkgdown-footer-left">
-  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a>
+  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a> <a href="https://www.rwhite.no/pbn/">pbn</a>
 </nav>
 </div>
 

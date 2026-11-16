@@ -24,14 +24,16 @@ A data.frame with one row per rule and the columns `rule`, `status` and
 
 ## Details
 
-The four rules:
+The five rules:
 
 - `top_level_names`: the names are `manifest`, `exclusions`,
   `estimates`, `tables` and `extra`, each once, and there are no others.
 
 - `exclusions_table`: `exclusions` is a data.frame with the columns
-  `step`, `n_before`, `n_excluded` and `n_after`. On every row,
-  `n_before - n_excluded == n_after`.
+  `step`, `n_before`, `n_excluded` and `n_after`. When
+  `manifest$stacked` is `TRUE`, it also has the column `sim` that
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  adds. On every row, `n_before - n_excluded == n_after`.
 
 - `no_fitted_models`: no element anywhere in `x` inherits from `lm`,
   `glm`, `gam`, `merMod`, `brmsfit`, `coxph` or `lavaan`.
@@ -39,6 +41,9 @@ The four rules:
 - `no_row_per_person`: no data.frame anywhere in `x` has
   `manifest$n_rows_data` rows. When `n_rows_data` is `NA`, this rule
   checks nothing.
+
+- `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
+  `sims`, and `scenario` is one string.
 
 ## See also
 
@@ -50,7 +55,7 @@ Other results:
 
 ``` r
 x <- list(
-  manifest = list(n_rows_data = 100L),
+  manifest = list(scenario = "real", sim = 1L, sims = 1L, n_rows_data = 100L),
   exclusions = data.frame(
     step = "age 18 or more",
     n_before = 100,
@@ -62,9 +67,16 @@ x <- list(
   extra = list()
 )
 pbn::check_results(x)
-#>                rule status                                            detail
-#> 1   top_level_names   PASS           the five top-level names, and no others
-#> 2  exclusions_table   FAIL n_before - n_excluded != n_after on these rows: 1
-#> 3  no_fitted_models   PASS                     no fitted model in the object
-#> 4 no_row_per_person   PASS                        no data.frame has 100 rows
+#>                rule status
+#> 1   top_level_names   PASS
+#> 2  exclusions_table   FAIL
+#> 3  no_fitted_models   PASS
+#> 4 no_row_per_person   PASS
+#> 5 manifest_scenario   PASS
+#>                                                                detail
+#> 1                             the five top-level names, and no others
+#> 2                   n_before - n_excluded != n_after on these rows: 1
+#> 3                                       no fitted model in the object
+#> 4                                          no data.frame has 100 rows
+#> 5 the manifest names the scenario, the simulation and the simulations
 ```

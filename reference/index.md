@@ -3,9 +3,9 @@
 ## Run a project version
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  : Start one version of an analysis project
-- [`run_version()`](https://www.rwhite.no/pbn/reference/run_version.md)
-  : Run one version of a project in a new R session
+  : Start one scenario of an analysis project version
+- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  : Run every scenario of a project version in new R sessions
 
 ## Results
 

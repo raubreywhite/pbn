@@ -3,7 +3,7 @@
 the project version. It stops before it writes when check_results()
 finds a failure."><meta property="og:description" content="save_results() writes &amp;lt;results&amp;gt;/results.qs2, the one results object of
 the project version. It stops before it writes when check_results()
-finds a failure."></head><body>
+finds a failure."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.png"></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -11,7 +11,7 @@ finds a failure."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.16</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.17</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -26,6 +26,7 @@ finds a failure."></head><body>
   <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdown-packages"><li><a class="external-link dropdown-item" href="https://www.rwhite.no/cohort/">cohort — cohort construction with provenance</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/plnr/">plnr — plan &amp; fan out analyses</a></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/org/">org — project paths &amp; structure</a></li>
+    <li><a class="dropdown-item" href="https://www.rwhite.no/pbn/">pbn — analysis layout</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><a class="external-link dropdown-item" href="https://www.rwhite.no/">rwhite.no</a></li>
   </ul></li>
@@ -39,8 +40,7 @@ finds a failure."></head><body>
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-
-      <h1>Save the results object of a project version</h1>
+      <img src="../logo.png" class="logo" alt=""><h1>Save the results object of a project version</h1>
       <small class="dont-index">Source: <a href="https://github.com/raubreywhite/pbn/blob/main/R/save_results.R" class="external-link"><code>R/save_results.R</code></a></small>
       <div class="d-none name"><code>save_results.Rd</code></div>
     </div>
@@ -89,9 +89,9 @@ allowed.</p></dd>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Call <code><a href="initialize_project.html">initialize_project()</a></code> first. The results folder is the <code>results</code>
-element that <code><a href="initialize_project.html">initialize_project()</a></code> returns, never the dated subfolder of
-org. It is <code>&lt;home&gt;/&lt;version&gt;_results</code> in a real run, and
-<code>&lt;home&gt;/&lt;version&gt;_results/scenario/&lt;name&gt;</code> in a scenario run.</p>
+element that <code><a href="initialize_project.html">initialize_project()</a></code> returns. It is
+<code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/</code> for a scenario with 1 simulation,
+and <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/</code> otherwise.</p>
 <p>The object is a named list with exactly these top-level names:
 <code>manifest</code>, <code>exclusions</code>, <code>estimates</code>, <code>tables</code> and <code>extra</code>. pbn builds the
 <code>manifest</code>, a list with these elements:</p><ul><li><p><code>pbn_version</code> and <code>r_version</code>.</p></li>
@@ -100,7 +100,8 @@ loaded packages that are not base packages, and the values are their
 versions. <code>qs2</code> is always in the list, because it writes the file.</p></li>
 <li><p><code>run_date</code>, the date of the call as <code>YYYY-MM-DD</code>. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.</p></li>
-<li><p><code>version</code>, <code>data_raw</code> and <code>data_raw_source</code>, from <code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
+<li><p><code>version</code>, <code>scenario</code>, <code>sim</code>, <code>sims</code> and <code>data_raw</code>, from
+<code><a href="initialize_project.html">initialize_project()</a></code>. <code>data_raw</code> is the data folder of the run.</p></li>
 <li><p><code>data_md5</code>, a named character vector with the md5 of each file directly
 in <code>data_raw</code>. <code><a href="initialize_project.html">initialize_project()</a></code> computes it, so a file that the run
 writes after that call is not in the list.</p></li>
@@ -118,9 +119,13 @@ writes after that call is not in the list.</p></li>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_save_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
+<span class="r-in"><span>  <span class="st">"CFG &lt;- list(scenarios = data.frame(scenario = 'real', sims = 1))"</span>,</span></span>
+<span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"_cfg.R"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span>, env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpzsUfWf/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmpcg63Uf/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">save_results</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  exclusions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>
@@ -143,7 +148,7 @@ writes after that call is not in the list.</p></li>
 
 
     <footer><div class="pkgdown-footer-left">
-  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a>
+  <a href="https://www.rwhite.no" class="external-link">Richard Aubrey White</a><nav class="rw-family" aria-label="rwhite.no packages"><a class="external-link rw-family-label" href="https://www.rwhite.no/">rwhite.no ↗</a> <a href="https://www.rwhite.no/cohort/" class="external-link">cohort</a> <a href="https://www.rwhite.no/plnr/" class="external-link">plnr</a> <a href="https://www.rwhite.no/org/" class="external-link">org</a> <a href="https://www.rwhite.no/pbn/">pbn</a>
 </nav></div>
 
 <div class="pkgdown-footer-right">

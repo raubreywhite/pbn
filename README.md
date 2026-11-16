@@ -22,9 +22,11 @@ All names are lower case. The version is a prefix.
 v01_run.R                 the run script; first call is pbn::initialize_project(version = "v01", ...)
 v01_functions/            sourced folder; holds _cfg.R (top-level `CFG <- list(...)`) and project functions
 v01_results/results.qs2   the results object
-v01_results/scenario/<name>/  the results of a run with data_raw=<path>; <name> is the basename of the path
+v01_results/scenario/<name>/  the results of a run with data_raw=<path>; <name> is the basename of the normalised path
 v01_test/                 optional testthat files for project functions
+v01_check_functions.R  v01_check_scenarios.R   optional checks of the functions and of scenario runs
 check_project.R           one line: pbn::check_project()
+pbn_allow.txt             optional exceptions to check_project()
 manuscript/manual/vNN_<initials>.docx   hand-edited Word files (initials upper case, e.g. v16_SA.docx)
 manuscript/built/vNN/     pipeline output
 background/  adhoc/  data_describe/
@@ -54,6 +56,9 @@ pbn::run_version("v01", data_raw = "/data/test")
 ```
 
 The second run writes to `v01_results/scenario/test/`. It does not change `v01_results/results.qs2`.
+A scenario run stops when its data folder is the default data folder, or is or holds `v01_results/`.
+It also stops when the scenario folder holds the results of another data folder with the same basename.
+`?initialize_project` lists every stop.
 
 ## The seven functions
 

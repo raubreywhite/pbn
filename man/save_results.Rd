@@ -28,8 +28,10 @@ the project version. It stops before it writes when \code{\link[=check_results]{
 finds a failure.
 }
 \details{
-Call \code{\link[=initialize_project]{initialize_project()}} first. The results folder is
-\verb{<home>/<version>_results}, never the dated subfolder of org.
+Call \code{\link[=initialize_project]{initialize_project()}} first. The results folder is the \code{results}
+element that \code{\link[=initialize_project]{initialize_project()}} returns, never the dated subfolder of
+org. It is \verb{<home>/<version>_results} in a real run, and
+\verb{<home>/<version>_results/scenario/<name>} in a scenario run.
 
 The object is a named list with exactly these top-level names:
 \code{manifest}, \code{exclusions}, \code{estimates}, \code{tables} and \code{extra}. pbn builds the
@@ -38,11 +40,13 @@ The object is a named list with exactly these top-level names:
 \item \code{pbn_version} and \code{r_version}.
 \item \code{packages}, a named character vector. The names are the attached and
 loaded packages that are not base packages, and the values are their
-versions.
-\item \code{run_date}, the date and time of the call.
+versions. \code{qs2} is always in the list, because it writes the file.
+\item \code{run_date}, the date of the call as \code{YYYY-MM-DD}. It has no time, so two
+runs on one day with the same inputs and packages write the same bytes.
 \item \code{version}, \code{data_raw} and \code{data_raw_source}, from \code{\link[=initialize_project]{initialize_project()}}.
 \item \code{data_md5}, a named character vector with the md5 of each file directly
-in \code{data_raw}.
+in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}} computes it, so a file that the run
+writes after that call is not in the list.
 \item \code{n_rows_data}, the number of rows of \code{d}, or \code{NA} when \code{d} is \code{NULL}.
 }
 }

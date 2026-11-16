@@ -18,8 +18,8 @@ the script as the trailing command-line argument \verb{data_raw=<path>}, which
 \value{
 The path of the results file. It is
 \verb{<home>/<version>_results/results.qs2} when \code{data_raw} is \code{NULL}, and
-\verb{<home>/<version>_results/scenario/<basename of data_raw>/results.qs2}
-otherwise.
+\verb{<home>/<version>_results/scenario/<name>/results.qs2} otherwise.
+\verb{<name>} is the basename of the normalised \code{data_raw}.
 }
 \description{
 \code{run_version()} runs \verb{<home>/<version>_run.R} with \code{\link[callr:rscript]{callr::rscript()}} in a

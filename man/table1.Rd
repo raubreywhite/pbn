@@ -28,16 +28,18 @@ all rows. It does no formatting.
 \details{
 The groups are the levels of \code{by}, plus \code{"All"}. The levels are the factor
 levels when \code{by} is a factor, and the sorted unique values otherwise. A row
-with a missing \code{by} counts in \code{"All"} only.
+with a missing \code{by} counts in \code{"All"} only. A level of \code{by} that is \code{"All"}
+is an error. A level with no rows has a row in the output with \code{n = 0}.
 
 For a \code{"bin"} variable:
 \itemize{
 \item \code{events} is the count of 1, and \code{pct} is \code{100 * events / n}.
-\item \code{p} compares the levels of \code{by}. It comes from the Pearson chi-square
-test without continuity correction. When any expected count is below 5,
-it comes from Fisher's exact test.
+\item \code{p} compares the levels of \code{by} that have a non-missing value. It comes
+from the Pearson chi-square test without continuity correction. When
+any expected count is below 5, it comes from Fisher's exact test.
 \item \code{test} is \code{"chisq"} or \code{"fisher"}, and it is the same on every row of the
-variable.
+variable. When fewer than two levels have a non-missing value, \code{p} and
+\code{test} are \code{NA}.
 \item A value other than 0, 1 or \code{NA} is an error.
 }
 

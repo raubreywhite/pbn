@@ -11,8 +11,8 @@
 #' @param home The project folder.
 #' @return The path of the results file. It is
 #'   `<home>/<version>_results/results.qs2` when `data_raw` is `NULL`, and
-#'   `<home>/<version>_results/scenario/<basename of data_raw>/results.qs2`
-#'   otherwise.
+#'   `<home>/<version>_results/scenario/<name>/results.qs2` otherwise.
+#'   `<name>` is the basename of the normalised `data_raw`.
 #' @examples
 #' \donttest{
 #' home <- file.path(tempdir(), "pbn_run_example")

@@ -11,15 +11,17 @@
 #' @details
 #' The groups are the levels of `by`, plus `"All"`. The levels are the factor
 #' levels when `by` is a factor, and the sorted unique values otherwise. A row
-#' with a missing `by` counts in `"All"` only.
+#' with a missing `by` counts in `"All"` only. A level of `by` that is `"All"`
+#' is an error. A level with no rows has a row in the output with `n = 0`.
 #'
 #' For a `"bin"` variable:
 #' - `events` is the count of 1, and `pct` is `100 * events / n`.
-#' - `p` compares the levels of `by`. It comes from the Pearson chi-square
-#'   test without continuity correction. When any expected count is below 5,
-#'   it comes from Fisher's exact test.
+#' - `p` compares the levels of `by` that have a non-missing value. It comes
+#'   from the Pearson chi-square test without continuity correction. When
+#'   any expected count is below 5, it comes from Fisher's exact test.
 #' - `test` is `"chisq"` or `"fisher"`, and it is the same on every row of the
-#'   variable.
+#'   variable. When fewer than two levels have a non-missing value, `p` and
+#'   `test` are `NA`.
 #' - A value other than 0, 1 or `NA` is an error.
 #'
 #' For a `"cont"` variable, `mean` and `sd` hold the numbers. `p` and `test`
@@ -50,6 +52,13 @@ table1 <- function(d, by, vars) {
     levels(grp)
   } else {
     sort(unique(as.character(grp[!is.na(grp)])))
+  }
+  if ("All" %in% levels_by) {
+    stop(
+      "A level of `by` is \"All\". table1() uses \"All\" for every row, ",
+      "so rename that level.",
+      call. = FALSE
+    )
   }
   grp <- as.character(grp)
   rows <- lapply(seq_len(nrow(vars)), function(i) {
@@ -150,14 +159,17 @@ summarise_one <- function(x, type) {
 }
 
 # Pearson chi-square without continuity correction, or Fisher's exact test
-# when any expected count is below 5. This is the rule SPSS uses.
+# when any expected count is below 5. This is the rule SPSS uses. A level
+# with no row in the table is not a group of the test, so an unused factor
+# level does not change the test.
 bin_test <- function(x, grp, levels_by) {
   keep <- !is.na(grp)
   tab <- table(
     factor(grp[keep], levels = levels_by),
     factor(x[keep], levels = c(0, 1))
   )
-  if (nrow(tab) < 2 || sum(tab) == 0) {
+  tab <- tab[rowSums(tab) > 0, , drop = FALSE]
+  if (nrow(tab) < 2) {
     return(list(p = NA_real_, test = NA_character_))
   }
   expected <- outer(rowSums(tab), colSums(tab)) / sum(tab)

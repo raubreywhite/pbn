@@ -192,11 +192,41 @@ project_row <- function(rule, status, path, detail) {
   ))
 }
 
-# Every file and folder in the project, as paths relative to `path`.
-# .git/ is left out.
+# The files and folders of an OS or an editor. No rule reads them.
+dropping_files <- c(".DS_Store", ".Rhistory", ".RData")
+dropping_folders <- c(".git", ".Rproj.user")
+
+# Every file and folder that the rules read, as paths relative to `path`.
+# When `path` is the top folder of a git repository, these are the files
+# that git tracks or that git does not ignore, and their folders. Otherwise
+# they are the files and folders on disk. The droppings are left out in both
+# cases.
 project_entries <- function(path) {
+  files <- git_files(path)
+  if (is.null(files)) {
+    out <- disk_entries(path)
+  } else {
+    out <- c(files, parent_folders(files))
+  }
+  parts <- strsplit(out, "/", fixed = TRUE)
+  dropping <- vapply(
+    parts,
+    function(p) {
+      name <- p[length(p)]
+      return(
+        any(p %in% dropping_folders) ||
+          name %in% dropping_files ||
+          startsWith(name, "~$")
+      )
+    },
+    logical(1)
+  )
+  return(out[!dropping])
+}
+
+disk_entries <- function(path) {
   top <- list.files(path, all.files = TRUE, no.. = TRUE)
-  top <- setdiff(top, ".git")
+  top <- setdiff(top, dropping_folders)
   out <- top
   for (t in top[dir.exists(file.path(path, top))]) {
     inner <- list.files(
@@ -211,26 +241,98 @@ project_entries <- function(path) {
   return(out)
 }
 
+# `git ls-files --cached --others --exclude-standard` in `path`, or NULL when
+# `path` is not the top folder of a git repository. A tracked file that is
+# deleted on disk is left out.
+git_files <- function(path) {
+  git <- Sys.which("git")
+  if (!nzchar(git)) {
+    return(NULL)
+  }
+  top <- suppressWarnings(system2(
+    git,
+    c("-C", shQuote(path), "rev-parse", "--show-toplevel"),
+    stdout = TRUE,
+    stderr = FALSE
+  ))
+  if (!is.null(attr(top, "status")) || length(top) != 1) {
+    return(NULL)
+  }
+  if (!identical(normalizePath(top), normalizePath(path))) {
+    return(NULL)
+  }
+  files <- system2(
+    git,
+    c(
+      "-c",
+      "core.quotepath=off",
+      "-C",
+      shQuote(path),
+      "ls-files",
+      "--cached",
+      "--others",
+      "--exclude-standard"
+    ),
+    stdout = TRUE,
+    stderr = FALSE
+  )
+  if (!is.null(attr(files, "status"))) {
+    stop("git ls-files failed in ", path, call. = FALSE)
+  }
+  files <- unique(files)
+  return(files[file.exists(file.path(path, files))])
+}
+
+# Every folder above the files, as paths relative to the project folder.
+parent_folders <- function(files) {
+  out <- character(0)
+  folders <- dirname(files)
+  while (length(folders) > 0) {
+    folders <- unique(folders[folders != "."])
+    out <- c(out, folders)
+    folders <- dirname(folders)
+  }
+  return(unique(out))
+}
+
+# The top-level entries of `entries`.
+top_entries <- function(entries) {
+  return(unique(sub("/.*$", "", entries)))
+}
+
+# A dotfile or an RStudio project file at the top level. The house layout
+# allows these, whatever their name.
+is_root_tool_file <- function(path, entries) {
+  return(
+    !grepl("/", entries, fixed = TRUE) &
+      (startsWith(entries, ".") | grepl("\\.Rproj$", entries)) &
+      !dir.exists(file.path(path, entries))
+  )
+}
+
 run_scripts <- function(path) {
-  return(list.files(path, pattern = run_script_pattern))
+  entries <- project_entries(path)
+  return(entries[
+    grepl(run_script_pattern, entries) & !dir.exists(file.path(path, entries))
+  ])
 }
 
 functions_folders <- function(path) {
-  found <- list.dirs(path, full.names = FALSE, recursive = FALSE)
-  return(grep(functions_pattern, found, value = TRUE))
+  entries <- project_entries(path)
+  return(entries[
+    grepl(functions_pattern, entries) & dir.exists(file.path(path, entries))
+  ])
 }
 
 # The .R files in the vNN_functions/ folders, relative to `path`. This is the
 # file pattern that org uses to choose the files it sources.
 functions_files <- function(path) {
-  out <- character(0)
-  for (f in functions_folders(path)) {
-    out <- c(
-      out,
-      file.path(f, list.files(file.path(path, f), pattern = "\\.[rR]$"))
-    )
-  }
-  return(out)
+  entries <- project_entries(path)
+  keep <- dirname(entries) %in%
+    functions_folders(path) &
+    grepl("\\.[rR]$", entries) &
+    !dir.exists(file.path(path, entries))
+  return(entries[keep])
 }
 
 parse_or_null <- function(file, keep_source = FALSE) {
@@ -252,7 +354,8 @@ rule_lower_case_names <- function(path) {
   )
   entries <- project_entries(path)
   entries <- entries[
-    !(entries == "background" | startsWith(entries, "background/"))
+    !(entries == "background" | startsWith(entries, "background/")) &
+      !is_root_tool_file(path, entries)
   ]
   name <- basename(entries)
   is_dir <- dir.exists(file.path(path, entries))
@@ -367,10 +470,14 @@ rule_version_items_complete <- function(path) {
 
 rule_results_contract <- function(path) {
   rule <- "results_contract"
-  folders <- list.dirs(path, full.names = FALSE, recursive = FALSE)
-  folders <- grep("^v[0-9]{2}_results$", folders, value = TRUE)
-  files <- file.path(folders, "results.qs2")
-  files <- files[file.exists(file.path(path, files))]
+  entries <- project_entries(path)
+  files <- entries[
+    grepl(
+      "^v[0-9]{2}_results/(scenario/[^/]+/)?results\\.qs2$",
+      entries
+    ) &
+      !dir.exists(file.path(path, entries))
+  ]
   out <- list()
   for (f in files) {
     x <- tryCatch(qs2::qs_read(file.path(path, f)), error = function(e) {
@@ -405,8 +512,8 @@ rule_results_contract <- function(path) {
 
 rule_manual_manuscript_names <- function(path) {
   rule <- "manual_manuscript_names"
-  folder <- file.path(path, "manuscript", "manual")
-  found <- list.files(folder)
+  entries <- project_entries(path)
+  found <- basename(entries[dirname(entries) == "manuscript/manual"])
   bad <- found[!grepl(manual_pattern, found)]
   where <- file.path("manuscript", "manual", bad)
   return(project_row(
@@ -527,6 +634,8 @@ rule_unknown_path <- function(path) {
     "^v[0-9]{2}_results$",
     "^v[0-9]{2}_test$",
     "^check_project\\.R$",
+    "^v[0-9]{2}_check_functions\\.R$",
+    "^v[0-9]{2}_check_scenarios\\.R$",
     "^manuscript$",
     "^background$",
     "^adhoc$",
@@ -538,7 +647,8 @@ rule_unknown_path <- function(path) {
     "^\\.git$",
     "^pbn_allow\\.txt$"
   )
-  top <- list.files(path, all.files = TRUE, no.. = TRUE)
+  entries <- project_entries(path)
+  top <- top_entries(entries[!is_root_tool_file(path, entries)])
   matched <- vapply(
     top,
     function(t) return(any(vapply(known, grepl, logical(1), x = t))),
@@ -578,7 +688,10 @@ project_rules <- function() {
     ),
     results_contract = list(
       rule_results_contract,
-      "every vNN_results/results.qs2 passes check_results()"
+      paste(
+        "every vNN_results/results.qs2 and",
+        "vNN_results/scenario/*/results.qs2 passes check_results()"
+      )
     ),
     manual_manuscript_names = list(
       rule_manual_manuscript_names,

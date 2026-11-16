@@ -182,3 +182,192 @@ test_that("run_version stops with the output of a failing script", {
   expect_error(run_version("v01", home = p$home), "planted failure")
   expect_error(run_version("v01", home = p$home), "before the stop")
 })
+
+test_that("a data_raw argument in any form leaves the real results.qs2 byte-identical", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  other <- write_data(
+    file.path(p$root, "data_other"),
+    x = c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+    y = 11:20
+  )
+  dir.create(file.path(other, "sub"))
+  # The parent folder of home holds a d.csv too, so a run on `..` reaches
+  # save_results() unless initialize_project() stops it.
+  write_data(p$root, x = c(0, 0, 0, 0, 0, 1, 1, 1, 1, 1), y = 21:30)
+  real <- run_version("v01", home = p$home)
+  md5_real <- md5_of(real)
+  scenario <- file.path(
+    p$home,
+    "v01_results",
+    "scenario",
+    "data_other",
+    "results.qs2"
+  )
+
+  for (arg in c("../data_other/sub/..", "../data_other/", "../data_other")) {
+    unlink(scenario)
+    res <- run_script_raw(p$home, arg)
+    expect_identical(res$status, 0L, info = arg)
+    expect_true(file.exists(scenario), info = arg)
+    owner <- if (file.exists(scenario)) {
+      qs2::qs_read(scenario)$manifest$data_raw
+    } else {
+      NA_character_
+    }
+    expect_identical(owner, normalizePath(other, winslash = "/"), info = arg)
+    expect_identical(md5_of(real), md5_real, info = arg)
+  }
+
+  forbidden <- c(
+    ".." = "or holds it",
+    "." = "or holds it",
+    "v01_results" = "or holds it",
+    "v01_results/" = "or holds it",
+    "../data_default" = "is the default data folder",
+    "../data_default/" = "is the default data folder"
+  )
+  for (arg in names(forbidden)) {
+    res <- run_script_raw(p$home, arg)
+    expect_identical(res$status, 1L, info = arg)
+    expect_match(res$stdout, forbidden[[arg]], fixed = TRUE, info = arg)
+    expect_identical(md5_of(real), md5_real, info = arg)
+  }
+  expect_identical(
+    sort(list.files(file.path(p$home, "v01_results", "scenario"))),
+    "data_other"
+  )
+})
+
+test_that("a scenario folder that links to the real results folder stops the run", {
+  skip_if_pbn_not_installed()
+  skip_on_os("windows")
+  p <- local_project()
+  real <- run_version("v01", home = p$home)
+  md5_real <- md5_of(real)
+  linked <- write_data(
+    file.path(p$root, "data_link"),
+    x = c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+    y = 11:20
+  )
+  dir.create(file.path(p$home, "v01_results", "scenario"))
+  file.symlink(
+    file.path(p$home, "v01_results"),
+    file.path(p$home, "v01_results", "scenario", "data_link")
+  )
+
+  res <- run_script_raw(p$home, linked)
+  expect_identical(res$status, 1L)
+  expect_match(
+    res$stdout,
+    "The scenario results folder",
+    fixed = TRUE
+  )
+  expect_match(res$stdout, "is the real results folder", fixed = TRUE)
+  expect_identical(md5_of(real), md5_real)
+})
+
+test_that("data_md5 lists only the files that existed at initialize_project()", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  # The run writes two outputs before save_results(): one into the results
+  # folder and one into the data folder.
+  lines <- append(
+    run_script_lines("v01", p$data_default),
+    c(
+      "writeLines(\"x\", file.path(p$results, \"fig.txt\"))",
+      "writeLines(\"x\", file.path(p$data_raw, \"made_by_run.txt\"))"
+    ),
+    after = 1
+  )
+  writeLines(lines, file.path(p$home, "v01_run.R"))
+
+  # The data folder is the scenario results folder itself.
+  same <- file.path(p$home, "v01_results", "scenario", "same")
+  write_data(same, x = c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0), y = 11:20)
+  file <- run_version("v01", data_raw = same, home = p$home)
+  expect_identical(
+    normalizePath(dirname(file)),
+    normalizePath(same)
+  )
+  r <- qs2::qs_read(file)
+  expect_identical(r$manifest$data_raw, normalizePath(same, winslash = "/"))
+  expect_identical(names(r$manifest$data_md5), "d.csv")
+  expect_identical(
+    unname(r$manifest$data_md5),
+    md5_of(file.path(same, "d.csv"))
+  )
+  expect_true(all(file.exists(file.path(
+    same,
+    c("fig.txt", "made_by_run.txt")
+  ))))
+
+  # A real run hashes at the same time.
+  real <- qs2::qs_read(run_version("v01", home = p$home))
+  expect_true(file.exists(file.path(p$data_default, "made_by_run.txt")))
+  expect_identical(names(real$manifest$data_md5), "d.csv")
+})
+
+test_that("two data folders with one basename cannot share a scenario folder", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  a <- normalizePath(
+    write_data(
+      file.path(p$root, "a", "same"),
+      x = c(1, 1, 1, 1, 1, 0, 0, 0, 0, 0),
+      y = 11:20
+    ),
+    winslash = "/"
+  )
+  b <- normalizePath(
+    write_data(
+      file.path(p$root, "b", "same"),
+      x = c(0, 0, 0, 0, 0, 1, 1, 1, 1, 1),
+      y = 21:30
+    ),
+    winslash = "/"
+  )
+  file <- run_version("v01", data_raw = a, home = p$home)
+  md5_a <- md5_of(file)
+
+  err <- tryCatch(
+    run_version("v01", data_raw = b, home = p$home),
+    error = function(e) return(e)
+  )
+  expect_s3_class(err, "error")
+  msg <- if (inherits(err, "error")) conditionMessage(err) else ""
+  expect_match(msg, "holds the results of the data folder", fixed = TRUE)
+  expect_match(msg, a, fixed = TRUE)
+  expect_match(msg, b, fixed = TRUE)
+  expect_identical(md5_of(file), md5_a)
+
+  # The same data folder again is the same scenario, so it runs.
+  expect_identical(run_version("v01", data_raw = a, home = p$home), file)
+})
+
+test_that("the manifest packages name qs2, the package that writes the file", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  r <- qs2::qs_read(run_version("v01", home = p$home))
+  expect_true("qs2" %in% names(r$manifest$packages))
+  expect_identical(
+    unname(r$manifest$packages["qs2"]),
+    as.character(utils::packageVersion("qs2"))
+  )
+})
+
+test_that("run_date is the date only, so a second run writes the same bytes", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  file <- run_version("v01", home = p$home)
+  first <- md5_of(file)
+  expect_match(
+    qs2::qs_read(file)$manifest$run_date,
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+  )
+  # A run takes less than one second. Wait, so that a date-time to the
+  # second would differ between the two runs.
+  Sys.sleep(1.1)
+  run_version("v01", home = p$home)
+  expect_identical(md5_of(file), first)
+})

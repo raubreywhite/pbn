@@ -22,20 +22,31 @@ status 1 when any rule fails.
 A rule with no finding prints one PASS line. Each finding prints one line:
 \verb{PASS|WARN|FAIL  <rule>  <detail>}. A count line comes last.
 
+Every rule reads one set of files and their folders:
+\itemize{
+\item When \code{path} is the top folder of a git repository, the set is the output
+of \verb{git ls-files --cached --others --exclude-standard}. These are the
+tracked files, and the untracked files that git does not ignore.
+\item Otherwise, the set is every file and folder on disk.
+}
+
+Both sets leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
+files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
+
 The rules:
 \itemize{
 \item \code{lower_case_names} (FAIL): a file or folder name has a capital letter.
-\verb{.git/} and everything under \verb{background/} are not checked. These are
-exempt: \code{README.md}, \code{CHANGELOG.md}, \code{AGENTS.md}, \code{CLAUDE.md}, \code{LICENSE},
-\code{DESCRIPTION}, file extensions, and the initials in
-\verb{manuscript/manual/vNN_<INITIALS>.docx}.
+Everything under \verb{background/} is not checked. These are exempt:
+\code{README.md}, \code{CHANGELOG.md}, \code{AGENTS.md}, \code{CLAUDE.md}, \code{LICENSE},
+\code{DESCRIPTION}, a top-level dotfile, a top-level \verb{*.Rproj} file, file
+extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}.
 \item \code{run_script_initialises} (FAIL): a \code{vNN_run.R} at the top level has no
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
 \code{"vNN"}.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
-\item \code{results_contract} (FAIL): a \code{vNN_results/results.qs2} fails
-\code{\link[=check_results]{check_results()}}.
+\item \code{results_contract} (FAIL): a \code{vNN_results/results.qs2} or a
+\verb{vNN_results/scenario/<name>/results.qs2} fails \code{\link[=check_results]{check_results()}}.
 \item \code{manual_manuscript_names} (FAIL): a file in \verb{manuscript/manual/} does not
 match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?\\.docx$}.
 \item \code{no_local_copy_of_pbn_function} (FAIL): a top-level assignment in a
@@ -46,7 +57,8 @@ counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
-folder.
+folder. A top-level dotfile and a top-level \verb{*.Rproj} file are never
+unknown.
 }
 
 The R parser, not a regular expression, finds the calls, the assignments

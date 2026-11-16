@@ -12,8 +12,10 @@
 #' @param extra A list of other results.
 #' @param d The analysis data, or `NULL`. pbn stores only its number of rows.
 #' @details
-#' Call [initialize_project()] first. The results folder is
-#' `<home>/<version>_results`, never the dated subfolder of org.
+#' Call [initialize_project()] first. The results folder is the `results`
+#' element that [initialize_project()] returns, never the dated subfolder of
+#' org. It is `<home>/<version>_results` in a real run, and
+#' `<home>/<version>_results/scenario/<name>` in a scenario run.
 #'
 #' The object is a named list with exactly these top-level names:
 #' `manifest`, `exclusions`, `estimates`, `tables` and `extra`. pbn builds the
@@ -21,11 +23,13 @@
 #' - `pbn_version` and `r_version`.
 #' - `packages`, a named character vector. The names are the attached and
 #'   loaded packages that are not base packages, and the values are their
-#'   versions.
-#' - `run_date`, the date and time of the call.
+#'   versions. `qs2` is always in the list, because it writes the file.
+#' - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so two
+#'   runs on one day with the same inputs and packages write the same bytes.
 #' - `version`, `data_raw` and `data_raw_source`, from [initialize_project()].
 #' - `data_md5`, a named character vector with the md5 of each file directly
-#'   in `data_raw`.
+#'   in `data_raw`. [initialize_project()] computes it, so a file that the run
+#'   writes after that call is not in the list.
 #' - `n_rows_data`, the number of rows of `d`, or `NA` when `d` is `NULL`.
 #' @return Invisibly, the path of the results file.
 #' @examples
@@ -115,15 +119,17 @@ is_named_list_of_data_frames <- function(x) {
 }
 
 build_manifest <- function(d) {
+  # qs2 writes the file, so it MUST be in the package list.
+  loadNamespace("qs2")
   return(list(
     pbn_version = as.character(getNamespaceVersion("pbn")),
     r_version = R.version.string,
     packages = loaded_packages(),
-    run_date = format(Sys.time(), "%Y-%m-%d %H:%M:%S %Z"),
+    run_date = format(Sys.Date(), "%Y-%m-%d"),
     version = state$version,
     data_raw = state$data_raw,
     data_raw_source = state$data_raw_source,
-    data_md5 = data_md5(state$data_raw),
+    data_md5 = state$data_md5,
     n_rows_data = if (is.null(d)) NA_integer_ else nrow(d)
   ))
 }

@@ -9,19 +9,28 @@
 #' A rule with no finding prints one PASS line. Each finding prints one line:
 #' `PASS|WARN|FAIL  <rule>  <detail>`. A count line comes last.
 #'
+#' Every rule reads one set of files and their folders:
+#' - When `path` is the top folder of a git repository, the set is the output
+#'   of `git ls-files --cached --others --exclude-standard`. These are the
+#'   tracked files, and the untracked files that git does not ignore.
+#' - Otherwise, the set is every file and folder on disk.
+#'
+#' Both sets leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
+#' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
+#'
 #' The rules:
 #' - `lower_case_names` (FAIL): a file or folder name has a capital letter.
-#'   `.git/` and everything under `background/` are not checked. These are
-#'   exempt: `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
-#'   `DESCRIPTION`, file extensions, and the initials in
-#'   `manuscript/manual/vNN_<INITIALS>.docx`.
+#'   Everything under `background/` is not checked. These are exempt:
+#'   `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
+#'   `DESCRIPTION`, a top-level dotfile, a top-level `*.Rproj` file, file
+#'   extensions, and the initials in `manuscript/manual/vNN_<INITIALS>.docx`.
 #' - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
 #'   call `pbn::initialize_project()` whose `version` argument is the string
 #'   `"vNN"`.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
-#' - `results_contract` (FAIL): a `vNN_results/results.qs2` fails
-#'   [check_results()].
+#' - `results_contract` (FAIL): a `vNN_results/results.qs2` or a
+#'   `vNN_results/scenario/<name>/results.qs2` fails [check_results()].
 #' - `manual_manuscript_names` (FAIL): a file in `manuscript/manual/` does not
 #'   match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$`.
 #' - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
@@ -32,7 +41,8 @@
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
-#'   folder.
+#'   folder. A top-level dotfile and a top-level `*.Rproj` file are never
+#'   unknown.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.

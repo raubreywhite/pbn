@@ -32,7 +32,9 @@ arguments:
 \itemize{
 \item \code{results} is \verb{<home>/<version>_results}. In a scenario run with
 \verb{data_raw=<path>}, it is
-\verb{<home>/<version>_results/scenario/<basename of path>}.
+\verb{<home>/<version>_results/scenario/<name>}. \verb{<name>} is the basename of
+the normalised path, so \code{~}, \code{..} and a trailing slash are resolved
+first.
 \item \code{folders_to_be_sourced} is \verb{<version>_functions}.
 \item \code{max_loc_per_file} is 1000.
 }
@@ -41,6 +43,21 @@ A trailing command-line argument \verb{data_raw=<path>} replaces \code{data_raw}
 \code{\link[=run_version]{run_version()}} gives this argument. pbn reads no environment variables.
 A run with this argument is a scenario run. A scenario run never writes to
 the results folder of the real run.
+
+A scenario run stops before it writes anything in these cases:
+\itemize{
+\item The scenario results folder, normalised, is the real results folder.
+\item The data folder is the default \code{data_raw}. That is the real run.
+\item The data folder is the real results folder, or holds it.
+\item The scenario folder holds a \code{results.qs2} with a different
+\code{manifest$data_raw}. Two data folders with the same basename share one
+scenario folder.
+}
+
+The data folder MAY be the scenario results folder itself.
+\code{initialize_project()} computes the md5 of each file directly in the data
+folder. \code{\link[=save_results]{save_results()}} stores these values as \code{manifest$data_md5}, so a
+file that the run writes later is not in the list.
 
 org creates a dated subfolder in the results folder. pbn writes to the
 results folder itself. Thus \code{initialize_project()} deletes each dated

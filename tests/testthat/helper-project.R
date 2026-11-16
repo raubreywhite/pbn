@@ -104,3 +104,21 @@ skip_if_pbn_not_installed <- function() {
   testthat::skip_if_not(installed, "pbn is not installed in .libPaths()")
   return(invisible(TRUE))
 }
+
+# Runs v01_run.R in a new R session with the raw argument data_raw=<arg>.
+# run_version() normalises its data_raw, so these tests call the script
+# directly to give the forms that a person types.
+run_script_raw <- function(home, arg) {
+  return(callr::rscript(
+    file.path(home, "v01_run.R"),
+    cmdargs = paste0("data_raw=", arg),
+    wd = home,
+    show = FALSE,
+    stderr = "2>&1",
+    fail_on_status = FALSE
+  ))
+}
+
+md5_of <- function(file) {
+  return(unname(tools::md5sum(file)))
+}

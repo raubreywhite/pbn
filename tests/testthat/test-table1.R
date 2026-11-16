@@ -103,3 +103,47 @@ test_that("table1 stops on a bin variable with a value other than 0, 1 or NA", {
     fixed = TRUE
   )
 })
+
+test_that("table1 stops on a level of by named All", {
+  d <- data.table::copy(d40)
+  d$g[d$g == "a"] <- "All"
+  expect_error(
+    table1(d, by = "g", vars = vars40),
+    "A level of `by` is \"All\"",
+    fixed = TRUE
+  )
+  d$g <- factor(d$g, levels = c("All", "b"))
+  expect_error(
+    table1(d, by = "g", vars = vars40),
+    "A level of `by` is \"All\"",
+    fixed = TRUE
+  )
+})
+
+test_that("table1 leaves an unused factor level out of the test", {
+  d <- data.table::copy(d40)
+  d$g <- factor(d$g, levels = c("a", "b", "c"))
+  t1 <- table1(d, by = "g", vars = vars40)
+  r <- t1[t1$var == "x1", ]
+  expect_identical(r$grp, c("All", "a", "b", "c"))
+  expect_identical(r$n, c(38L, 20L, 18L, 0L))
+  # The same 2x2 table as the chi-square test above.
+  hand <- stats::pchisq(
+    38 * 96^2 / (20 * 18 * 20 * 18),
+    df = 1,
+    lower.tail = FALSE
+  )
+  expect_equal(r$p, rep(hand, 4))
+  expect_identical(r$test, rep("chisq", 4))
+})
+
+test_that("table1 gives no test when only one group has rows", {
+  d <- data.table::copy(d40[d40$g == "a", ])
+  d$g <- factor(d$g, levels = c("a", "b"))
+  t1 <- table1(d, by = "g", vars = vars40)
+  r <- t1[t1$var == "x1", ]
+  expect_identical(r$grp, c("All", "a", "b"))
+  expect_identical(r$n, c(20L, 20L, 0L))
+  expect_true(all(is.na(r$p)))
+  expect_true(all(is.na(r$test)))
+})

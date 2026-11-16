@@ -290,3 +290,87 @@ test_that("check_project quits with status 1 after it prints every line", {
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
   expect_match(bad$stdout, "8 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
+
+test_that("check_project reads only the files that git does not ignore", {
+  skip_if_not(nzchar(Sys.which("git")), "git is not installed")
+  p <- local_project()
+  writeLines(c("v01_results/", "Notes.TXT"), file.path(p$home, ".gitignore"))
+  git <- system2(
+    "git",
+    c("-C", shQuote(p$home), "init", "-q"),
+    stdout = TRUE,
+    stderr = TRUE
+  )
+  expect_null(attr(git, "status"))
+  write_lines(p$home, "adhoc/Notes.TXT", "x")
+  write_lines(p$home, ".DS_Store", "x")
+  write_lines(p$home, "adhoc/.DS_Store", "x")
+
+  found <- project_findings(p$home)
+  expect_identical(found$rule, project_rule_names)
+  expect_identical(found$status, rep("PASS", length(project_rule_names)))
+
+  # Un-ignore the file. git now lists it, so the rule fails.
+  writeLines("v01_results/", file.path(p$home, ".gitignore"))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "lower_case_names")
+  expect_identical(found$path[found$status == "FAIL"], "adhoc/Notes.TXT")
+})
+
+test_that("check_project leaves out OS and editor files outside git", {
+  p <- local_project()
+  write_lines(p$home, ".DS_Store", "x")
+  write_lines(p$home, "adhoc/.DS_Store", "x")
+  write_lines(p$home, ".Rhistory", "x")
+  write_lines(p$home, ".RData", "x")
+  write_lines(p$home, ".Rproj.user/Shared/notebooks/A.txt", "x")
+  write_lines(p$home, "manuscript/manual/~$v01_AB.docx", "x")
+  write_lines(p$home, "adhoc/~$Draft.docx", "x")
+  write_lines(p$home, ".Rbuildignore", "x")
+  write_lines(p$home, "Project.Rproj", "x")
+
+  found <- project_findings(p$home)
+  expect_identical(found$rule, project_rule_names)
+  expect_identical(found$status, rep("PASS", length(project_rule_names)))
+})
+
+test_that("unknown_path knows the check scripts and pbn_allow.txt", {
+  p <- local_project()
+  write_lines(p$home, "v01_check_functions.R", "x <- 1")
+  write_lines(p$home, "v01_check_scenarios.R", "x <- 1")
+  write_lines(p$home, "pbn_allow.txt", character(0))
+
+  found <- project_findings(p$home)
+  expect_identical(found$rule, project_rule_names)
+  expect_identical(found$status, rep("PASS", length(project_rule_names)))
+})
+
+test_that("results_contract fails on a scenario results file that fails check_results", {
+  p <- local_project()
+  folder <- file.path(p$home, "v01_results", "scenario", "made_up")
+  dir.create(folder, recursive = TRUE)
+  x <- list(
+    manifest = list(n_rows_data = 10L),
+    exclusions = data.frame(
+      step = "a",
+      n_before = 10,
+      n_excluded = 1,
+      n_after = 10
+    ),
+    estimates = data.frame(term = "x", estimate = 1),
+    tables = list(),
+    extra = list()
+  )
+  qs2::qs_save(x, file.path(folder, "results.qs2"))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "results_contract")
+  expect_identical(
+    found$path[found$status == "FAIL"],
+    "v01_results/scenario/made_up/results.qs2"
+  )
+  expect_match(
+    found$detail[found$status == "FAIL"],
+    "exclusions_table",
+    fixed = TRUE
+  )
+})

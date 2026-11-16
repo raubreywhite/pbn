@@ -382,7 +382,7 @@ str(r$manifest)
 #>  $ scenario   : chr "real"
 #>  $ sim        : int 1
 #>  $ sims       : int 1
-#>  $ data_raw   : chr "/tmp/RtmpSo0Qmx/pbn_get_started/data_raw"
+#>  $ data_raw   : chr "/tmp/RtmpszmMHn/pbn_get_started/data_raw"
 #>  $ data_md5   : Named chr "396527785293e765115178711b7aab75"
 #>   ..- attr(*, "names")= chr "d.csv"
 #>  $ n_rows_data: int 388

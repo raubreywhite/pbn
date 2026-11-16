@@ -6,22 +6,25 @@
 #'
 #' @param x The results object, normally from [read_results()].
 #' @details
-#' The four rules:
+#' The five rules:
 #' - `top_level_names`: the names are `manifest`, `exclusions`, `estimates`,
 #'   `tables` and `extra`, each once, and there are no others.
 #' - `exclusions_table`: `exclusions` is a data.frame with the columns `step`,
-#'   `n_before`, `n_excluded` and `n_after`. On every row,
-#'   `n_before - n_excluded == n_after`.
+#'   `n_before`, `n_excluded` and `n_after`. When `manifest$stacked` is
+#'   `TRUE`, it also has the column `sim` that [run_scenarios()] adds. On every
+#'   row, `n_before - n_excluded == n_after`.
 #' - `no_fitted_models`: no element anywhere in `x` inherits from `lm`, `glm`,
 #'   `gam`, `merMod`, `brmsfit`, `coxph` or `lavaan`.
 #' - `no_row_per_person`: no data.frame anywhere in `x` has
 #'   `manifest$n_rows_data` rows. When `n_rows_data` is `NA`, this rule checks
 #'   nothing.
+#' - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
+#'   `sims`, and `scenario` is one string.
 #' @return A data.frame with one row per rule and the columns `rule`, `status`
 #'   and `detail`. `status` is `"PASS"` or `"FAIL"`.
 #' @examples
 #' x <- list(
-#'   manifest = list(n_rows_data = 100L),
+#'   manifest = list(scenario = "real", sim = 1L, sims = 1L, n_rows_data = 100L),
 #'   exclusions = data.frame(
 #'     step = "age 18 or more",
 #'     n_before = 100,
@@ -40,6 +43,7 @@ check_results <- function(x) {
     rule_top_level_names(x),
     rule_exclusions_table(x),
     rule_no_fitted_models(x),
-    rule_no_row_per_person(x)
+    rule_no_row_per_person(x),
+    rule_manifest_scenario(x)
   ))
 }

@@ -19,23 +19,26 @@ and \code{detail}. \code{status} is \code{"PASS"} or \code{"FAIL"}.
 nothing.
 }
 \details{
-The four rules:
+The five rules:
 \itemize{
 \item \code{top_level_names}: the names are \code{manifest}, \code{exclusions}, \code{estimates},
 \code{tables} and \code{extra}, each once, and there are no others.
 \item \code{exclusions_table}: \code{exclusions} is a data.frame with the columns \code{step},
-\code{n_before}, \code{n_excluded} and \code{n_after}. On every row,
-\code{n_before - n_excluded == n_after}.
+\code{n_before}, \code{n_excluded} and \code{n_after}. When \code{manifest$stacked} is
+\code{TRUE}, it also has the column \code{sim} that \code{\link[=run_scenarios]{run_scenarios()}} adds. On every
+row, \code{n_before - n_excluded == n_after}.
 \item \code{no_fitted_models}: no element anywhere in \code{x} inherits from \code{lm}, \code{glm},
 \code{gam}, \code{merMod}, \code{brmsfit}, \code{coxph} or \code{lavaan}.
 \item \code{no_row_per_person}: no data.frame anywhere in \code{x} has
 \code{manifest$n_rows_data} rows. When \code{n_rows_data} is \code{NA}, this rule checks
 nothing.
+\item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
+\code{sims}, and \code{scenario} is one string.
 }
 }
 \examples{
 x <- list(
-  manifest = list(n_rows_data = 100L),
+  manifest = list(scenario = "real", sim = 1L, sims = 1L, n_rows_data = 100L),
   exclusions = data.frame(
     step = "age 18 or more",
     n_before = 100,

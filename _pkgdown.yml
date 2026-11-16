@@ -21,7 +21,7 @@ reference:
 - title: "Run a project version"
   contents:
     - initialize_project
-    - run_version
+    - run_scenarios
 
 - title: "Results"
   contents:

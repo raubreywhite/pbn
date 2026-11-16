@@ -29,9 +29,9 @@ finds a failure.
 }
 \details{
 Call \code{\link[=initialize_project]{initialize_project()}} first. The results folder is the \code{results}
-element that \code{\link[=initialize_project]{initialize_project()}} returns, never the dated subfolder of
-org. It is \verb{<home>/<version>_results} in a real run, and
-\verb{<home>/<version>_results/scenario/<name>} in a scenario run.
+element that \code{\link[=initialize_project]{initialize_project()}} returns. It is
+\verb{<home>/<version>_results/<scenario>/} for a scenario with 1 simulation,
+and \verb{<home>/<version>_results/<scenario>/sim_<kkkk>/} otherwise.
 
 The object is a named list with exactly these top-level names:
 \code{manifest}, \code{exclusions}, \code{estimates}, \code{tables} and \code{extra}. pbn builds the
@@ -43,7 +43,8 @@ loaded packages that are not base packages, and the values are their
 versions. \code{qs2} is always in the list, because it writes the file.
 \item \code{run_date}, the date of the call as \code{YYYY-MM-DD}. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.
-\item \code{version}, \code{data_raw} and \code{data_raw_source}, from \code{\link[=initialize_project]{initialize_project()}}.
+\item \code{version}, \code{scenario}, \code{sim}, \code{sims} and \code{data_raw}, from
+\code{\link[=initialize_project]{initialize_project()}}. \code{data_raw} is the data folder of the run.
 \item \code{data_md5}, a named character vector with the md5 of each file directly
 in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}} computes it, so a file that the run
 writes after that call is not in the list.
@@ -54,6 +55,10 @@ writes after that call is not in the list.
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
+writeLines(
+  "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
+  file.path(home, "v01_functions", "_cfg.R")
+)
 pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 
 pbn::save_results(

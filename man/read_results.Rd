@@ -4,10 +4,14 @@
 \alias{read_results}
 \title{Read the results object of a project version}
 \usage{
-read_results(version, home = ".")
+read_results(version, scenario = "real", sim = NULL, home = ".")
 }
 \arguments{
 \item{version}{The version, for example \code{"v01"}.}
+
+\item{scenario}{The scenario. The default is \code{"real"}.}
+
+\item{sim}{\code{NULL}, or the number of one simulation.}
 
 \item{home}{The project folder.}
 }
@@ -15,8 +19,20 @@ read_results(version, home = ".")
 The results object, a named list. See \code{\link[=save_results]{save_results()}}.
 }
 \description{
-\code{read_results()} reads \verb{<home>/<version>_results/results.qs2}, the file
-that \code{\link[=save_results]{save_results()}} writes.
+\code{read_results()} reads the \code{results.qs2} of one scenario, the file that
+\code{\link[=save_results]{save_results()}} or \code{\link[=run_scenarios]{run_scenarios()}} writes. The default reads the real
+results.
+}
+\details{
+With \code{sim = NULL}, \code{read_results()} reads
+\verb{<home>/<version>_results/<scenario>/results.qs2}. That is the results of
+a scenario with 1 simulation, or the simulations that \code{\link[=run_scenarios]{run_scenarios()}}
+stacked. With a number \code{k}, it reads
+\verb{<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2}, where
+\verb{<kkkk>} is \code{k} with four digits.
+
+A manuscript MUST read the real results only. \code{\link[=check_project]{check_project()}} fails a
+call in \verb{manuscript/built/} that gives a \code{scenario} other than \code{"real"}.
 }
 \examples{
 # See the example of save_results().

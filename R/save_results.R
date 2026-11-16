@@ -13,9 +13,9 @@
 #' @param d The analysis data, or `NULL`. pbn stores only its number of rows.
 #' @details
 #' Call [initialize_project()] first. The results folder is the `results`
-#' element that [initialize_project()] returns, never the dated subfolder of
-#' org. It is `<home>/<version>_results` in a real run, and
-#' `<home>/<version>_results/scenario/<name>` in a scenario run.
+#' element that [initialize_project()] returns. It is
+#' `<home>/<version>_results/<scenario>/` for a scenario with 1 simulation,
+#' and `<home>/<version>_results/<scenario>/sim_<kkkk>/` otherwise.
 #'
 #' The object is a named list with exactly these top-level names:
 #' `manifest`, `exclusions`, `estimates`, `tables` and `extra`. pbn builds the
@@ -26,7 +26,8 @@
 #'   versions. `qs2` is always in the list, because it writes the file.
 #' - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so two
 #'   runs on one day with the same inputs and packages write the same bytes.
-#' - `version`, `data_raw` and `data_raw_source`, from [initialize_project()].
+#' - `version`, `scenario`, `sim`, `sims` and `data_raw`, from
+#'   [initialize_project()]. `data_raw` is the data folder of the run.
 #' - `data_md5`, a named character vector with the md5 of each file directly
 #'   in `data_raw`. [initialize_project()] computes it, so a file that the run
 #'   writes after that call is not in the list.
@@ -36,6 +37,10 @@
 #' home <- file.path(tempdir(), "pbn_save_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 #' dir.create(file.path(home, "data"))
+#' writeLines(
+#'   "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
+#'   file.path(home, "v01_functions", "_cfg.R")
+#' )
 #' pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 #'
 #' pbn::save_results(
@@ -127,8 +132,10 @@ build_manifest <- function(d) {
     packages = loaded_packages(),
     run_date = format(Sys.Date(), "%Y-%m-%d"),
     version = state$version,
+    scenario = state$scenario,
+    sim = state$sim,
+    sims = state$sims,
     data_raw = state$data_raw,
-    data_raw_source = state$data_raw_source,
     data_md5 = state$data_md5,
     n_rows_data = if (is.null(d)) NA_integer_ else nrow(d)
   ))

@@ -1,18 +1,3 @@
-valid_results <- function() {
-  return(list(
-    manifest = list(version = "v01", n_rows_data = 40L),
-    exclusions = data.frame(
-      step = c("age 18 or more", "no missing outcome"),
-      n_before = c(50, 45),
-      n_excluded = c(5, 5),
-      n_after = c(45, 40)
-    ),
-    estimates = data.frame(term = c("a", "b"), estimate = c(0.1, 0.2)),
-    tables = list(counts = data.frame(grp = c("a", "b"), n = c(20, 20))),
-    extra = list(note = "synthetic")
-  ))
-}
-
 failing <- function(x) {
   found <- check_results(x)
   return(found$rule[found$status == "FAIL"])
@@ -26,10 +11,11 @@ test_that("check_results passes a valid object on every rule", {
       "top_level_names",
       "exclusions_table",
       "no_fitted_models",
-      "no_row_per_person"
+      "no_row_per_person",
+      "manifest_scenario"
     )
   )
-  expect_identical(found$status, rep("PASS", 4))
+  expect_identical(found$status, rep("PASS", 5))
   expect_identical(names(found), c("rule", "status", "detail"))
 })
 
@@ -96,4 +82,62 @@ test_that("no_row_per_person checks nothing when n_rows_data is NA", {
   x$tables$people <- data.frame(id = 1:40)
   x$manifest$n_rows_data <- NA_integer_
   expect_identical(failing(x), character(0))
+})
+
+test_that("manifest_scenario fails when the manifest has no scenario, sim or sims", {
+  for (el in c("scenario", "sim", "sims")) {
+    x <- valid_results()
+    x$manifest[[el]] <- NULL
+    expect_identical(failing(x), "manifest_scenario", info = el)
+    expect_match(
+      check_results(x)$detail[5],
+      paste("manifest has no", el),
+      fixed = TRUE,
+      info = el
+    )
+  }
+})
+
+test_that("manifest_scenario fails when scenario is not one string", {
+  for (bad in list(1, c("real", "null"), NA_character_, character(0))) {
+    x <- valid_results()
+    x$manifest$scenario <- bad
+    expect_identical(failing(x), "manifest_scenario")
+  }
+})
+
+test_that("manifest_scenario passes a made-up scenario and a stacked manifest", {
+  x <- valid_results()
+  x$manifest$scenario <- "null"
+  x$manifest$sim <- NA_integer_
+  x$manifest$sims <- 3L
+  expect_identical(failing(x), character(0))
+})
+
+test_that("a stacked object with a sim column passes every rule", {
+  x <- valid_results()
+  x$manifest$stacked <- TRUE
+  x$manifest$sim <- NA_integer_
+  x$manifest$sims <- 2L
+  x$manifest$n_rows_data <- NA_integer_
+  x$exclusions <- rbind(
+    data.frame(sim = 1L, x$exclusions),
+    data.frame(sim = 2L, x$exclusions)
+  )
+  expect_identical(failing(x), character(0))
+
+  # The same table without the stacked manifest fails.
+  x$manifest$stacked <- NULL
+  expect_identical(failing(x), "exclusions_table")
+  expect_match(
+    check_results(x)$detail[2],
+    "the columns are sim, step",
+    fixed = TRUE
+  )
+})
+
+test_that("a stacked object without the sim column fails exclusions_table", {
+  x <- valid_results()
+  x$manifest$stacked <- TRUE
+  expect_identical(failing(x), "exclusions_table")
 })

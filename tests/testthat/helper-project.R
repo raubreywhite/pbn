@@ -33,6 +33,87 @@ run_script_lines <- function(version, data_raw) {
   ))
 }
 
+# The scenarios real (1 simulation), known (1) and null (3).
+cfg_lines <- function() {
+  return(c(
+    "CFG <- list(",
+    "  scenarios = data.frame(",
+    "    scenario = c(\"real\", \"known\", \"null\"),",
+    "    sims = c(1, 1, 3)",
+    "  ),",
+    "  vars = data.table::data.table(",
+    "    var = c(\"x\", \"y\"),",
+    "    type = c(\"bin\", \"cont\")",
+    "  )",
+    ")"
+  ))
+}
+
+# Planted by hand: group a holds 4 ones of x and group b holds 1, so the mean
+# of x is 0.5.
+fake_known_lines <- function() {
+  return(c(
+    "fake_known <- function(dir) {",
+    "  d <- data.frame(",
+    "    g = rep(c(\"a\", \"b\"), each = 5),",
+    "    x = c(1, 1, 1, 1, 0, 1, 0, 0, 0, 0),",
+    "    y = 31:40",
+    "  )",
+    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
+    "}"
+  ))
+}
+
+# Draws with the seed that initialize_project() set.
+fake_null_lines <- function() {
+  return(c(
+    "fake_null <- function(dir) {",
+    "  d <- data.frame(",
+    "    g = rep(c(\"a\", \"b\"), each = 20),",
+    "    x = stats::rbinom(40, 1, 0.5),",
+    "    y = stats::rnorm(40)",
+    "  )",
+    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
+    "}"
+  ))
+}
+
+expect_known_lines <- function(events_a = 4) {
+  return(c(
+    "expect_known <- function(results) {",
+    "  t1 <- results$tables$table1",
+    "  events_a <- t1$events[t1$var == \"x\" & t1$grp == \"a\"]",
+    "  mean_x <- results$estimates$estimate",
+    "  data.frame(",
+    "    assertion = c(\"events of x in group a\", \"mean of x\"),",
+    paste0("    expected = c(", events_a, ", 0.5),"),
+    "    observed = c(events_a, mean_x),",
+    paste0(
+      "    pass = c(events_a == ",
+      events_a,
+      ", isTRUE(all.equal(mean_x, 0.5)))"
+    ),
+    "  )",
+    "}"
+  ))
+}
+
+expect_null_lines <- function() {
+  return(c(
+    "expect_null <- function(results) {",
+    "  e <- results$estimates",
+    "  n_sims <- length(unique(e$sim))",
+    "  mean_x <- mean(e$estimate)",
+    "  data.frame(",
+    "    assertion = c(\"simulations\", \"mean of x over the simulations\"),",
+    "    expected = c(\"3\", \"0.3 to 0.7\"),",
+    "    observed = c(as.character(n_sims), format(mean_x)),",
+    "    pass = c(n_sims == 3, mean_x > 0.3 && mean_x < 0.7)",
+    "  )",
+    "}"
+  ))
+}
+
 write_data <- function(folder, x, y) {
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
   d <- data.frame(g = rep(c("a", "b"), each = 5), x = x, y = y)
@@ -45,6 +126,7 @@ local_project <- function(env = parent.frame()) {
   dir.create(root)
   withr::defer(unlink(root, recursive = TRUE), envir = env)
   home <- file.path(root, "project")
+  # Planted: group a holds 3 ones of x, so the mean of x is 0.4.
   data_default <- normalizePath(
     write_data(
       file.path(root, "data_default"),
@@ -55,18 +137,11 @@ local_project <- function(env = parent.frame()) {
   )
 
   write_lines(home, "v01_run.R", run_script_lines("v01", data_default))
-  write_lines(
-    home,
-    "v01_functions/_cfg.R",
-    c(
-      "CFG <- list(",
-      "  vars = data.table::data.table(",
-      "    var = c(\"x\", \"y\"),",
-      "    type = c(\"bin\", \"cont\")",
-      "  )",
-      ")"
-    )
-  )
+  write_lines(home, "v01_functions/_cfg.R", cfg_lines())
+  write_lines(home, "v01_functions/fake_known.R", fake_known_lines())
+  write_lines(home, "v01_functions/fake_null.R", fake_null_lines())
+  write_lines(home, "v01_functions/expect_known.R", expect_known_lines())
+  write_lines(home, "v01_functions/expect_null.R", expect_null_lines())
   write_lines(
     home,
     "v01_functions/double_it.R",
@@ -105,13 +180,11 @@ skip_if_pbn_not_installed <- function() {
   return(invisible(TRUE))
 }
 
-# Runs v01_run.R in a new R session with the raw argument data_raw=<arg>.
-# run_version() normalises its data_raw, so these tests call the script
-# directly to give the forms that a person types.
-run_script_raw <- function(home, arg) {
+# Runs v01_run.R in a new R session with the trailing arguments `args`.
+run_script <- function(home, args = character(0)) {
   return(callr::rscript(
     file.path(home, "v01_run.R"),
-    cmdargs = paste0("data_raw=", arg),
+    cmdargs = args,
     wd = home,
     show = FALSE,
     stderr = "2>&1",
@@ -121,4 +194,38 @@ run_script_raw <- function(home, arg) {
 
 md5_of <- function(file) {
   return(unname(tools::md5sum(file)))
+}
+
+# Every file under `folder`, relative to it, with its md5 and mtime.
+file_states <- function(folder) {
+  files <- sort(list.files(folder, recursive = TRUE, all.files = TRUE))
+  full <- file.path(folder, files)
+  return(data.frame(
+    file = files,
+    md5 = md5_of(full),
+    mtime = as.numeric(file.mtime(full))
+  ))
+}
+
+# A valid results object of the real scenario. Every check_results() rule
+# passes on it.
+valid_results <- function() {
+  return(list(
+    manifest = list(
+      version = "v01",
+      scenario = "real",
+      sim = 1L,
+      sims = 1L,
+      n_rows_data = 40L
+    ),
+    exclusions = data.frame(
+      step = c("age 18 or more", "no missing outcome"),
+      n_before = c(50, 45),
+      n_excluded = c(5, 5),
+      n_after = c(45, 40)
+    ),
+    estimates = data.frame(term = c("a", "b"), estimate = c(0.1, 0.2)),
+    tables = list(counts = data.frame(grp = c("a", "b"), n = c(20, 20))),
+    extra = list(note = "synthetic")
+  ))
 }

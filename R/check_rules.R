@@ -10,7 +10,7 @@ pbn_exports <- c(
   "check_results",
   "initialize_project",
   "read_results",
-  "run_version",
+  "run_scenarios",
   "save_results",
   "table1"
 )
@@ -73,14 +73,20 @@ rule_exclusions_table <- function(x) {
   if (!is.data.frame(e)) {
     return(result_row(rule, "exclusions is not a data.frame", ""))
   }
-  if (!setequal(names(e), exclusions_columns) || ncol(e) != 4) {
+  # run_scenarios() adds the column sim when it stacks simulations.
+  want <- if (is_stacked(x)) {
+    c("sim", exclusions_columns)
+  } else {
+    exclusions_columns
+  }
+  if (!setequal(names(e), want) || ncol(e) != length(want)) {
     return(result_row(
       rule,
       paste0(
         "the columns are ",
         paste(names(e), collapse = ", "),
         "; they must be ",
-        paste(exclusions_columns, collapse = ", ")
+        paste(want, collapse = ", ")
       ),
       ""
     ))
@@ -152,6 +158,36 @@ rule_no_row_per_person <- function(x) {
     character(0)
   }
   return(result_row(rule, failures, paste0("no data.frame has ", n, " rows")))
+}
+
+is_stacked <- function(x) {
+  m <- if (is.list(x)) x[["manifest"]] else NULL
+  return(is.list(m) && isTRUE(m[["stacked"]]))
+}
+
+rule_manifest_scenario <- function(x) {
+  rule <- "manifest_scenario"
+  m <- if (is.list(x)) x[["manifest"]] else NULL
+  if (!is.list(m)) {
+    return(result_row(rule, "manifest is not a list", ""))
+  }
+  failures <- character(0)
+  missing <- setdiff(c("scenario", "sim", "sims"), names(m))
+  if (length(missing) > 0) {
+    failures <- paste("manifest has no", paste(missing, collapse = ", "))
+  }
+  if (!"scenario" %in% missing && !is_one_string(m[["scenario"]])) {
+    failures <- c(failures, "manifest$scenario is not one string")
+  }
+  return(result_row(
+    rule,
+    failures,
+    "the manifest names the scenario, the simulation and the simulations"
+  ))
+}
+
+is_one_string <- function(x) {
+  return(is.character(x) && length(x) == 1 && !is.na(x))
 }
 
 is_fitted_model <- function(o) {
@@ -471,14 +507,28 @@ rule_version_items_complete <- function(path) {
 rule_results_contract <- function(path) {
   rule <- "results_contract"
   entries <- project_entries(path)
+  is_file <- !dir.exists(file.path(path, entries))
   files <- entries[
     grepl(
-      "^v[0-9]{2}_results/(scenario/[^/]+/)?results\\.qs2$",
+      "^v[0-9]{2}_results/[^/]+/(sim_[0-9]{4}/)?results\\.qs2$",
       entries
     ) &
-      !dir.exists(file.path(path, entries))
+      is_file
   ]
-  out <- list()
+  old_place <- entries[
+    grepl("^v[0-9]{2}_results/results\\.qs2$", entries) & is_file
+  ]
+  out <- list(project_row(
+    rule,
+    "FAIL",
+    old_place,
+    paste0(
+      old_place,
+      ": a results file in the old place. pbn writes ",
+      "vNN_results/<scenario>/results.qs2",
+      recycle0 = TRUE
+    )
+  ))
   for (f in files) {
     x <- tryCatch(qs2::qs_read(file.path(path, f)), error = function(e) {
       return(e)
@@ -634,8 +684,8 @@ rule_unknown_path <- function(path) {
     "^v[0-9]{2}_results$",
     "^v[0-9]{2}_test$",
     "^check_project\\.R$",
+    "^v[0-9]{2}_output\\.R$",
     "^v[0-9]{2}_check_functions\\.R$",
-    "^v[0-9]{2}_check_scenarios\\.R$",
     "^manuscript$",
     "^background$",
     "^adhoc$",
@@ -689,13 +739,21 @@ project_rules <- function() {
     results_contract = list(
       rule_results_contract,
       paste(
-        "every vNN_results/results.qs2 and",
-        "vNN_results/scenario/*/results.qs2 passes check_results()"
+        "every vNN_results/<scenario>/results.qs2 and",
+        "vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()"
       )
+    ),
+    scenario_checks = list(
+      rule_scenario_checks,
+      "every vNN_results/<scenario>/check.csv passes"
     ),
     manual_manuscript_names = list(
       rule_manual_manuscript_names,
       "every file in manuscript/manual/ is named vNN_<INITIALS>.docx"
+    ),
+    manuscript_reads_real = list(
+      rule_manuscript_reads_real,
+      "manuscript/built/ reads only the real results"
     ),
     no_local_copy_of_pbn_function = list(
       rule_no_local_copy_of_pbn_function,

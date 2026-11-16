@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.11.16
+Version: 2026.11.17
 Authors@R:
     c(
       person(
@@ -12,10 +12,10 @@ Authors@R:
       )
     )
 Description: Holds the house layout of a versioned analysis project and
-    the checks of that layout. It starts a project version with the house
-    defaults of 'org', computes the numbers of a descriptive table, writes
-    and reads one results object with a fixed contract, and runs a project
-    version in a new R session.
+    the checks of that layout. It starts one scenario of a project version
+    with the house defaults of 'org', computes the numbers of a descriptive
+    table, writes and reads one results object with a fixed contract, and
+    runs the real data and each made-up scenario in new R sessions.
 License: MIT + file LICENSE
 URL: https://www.rwhite.no/pbn/, https://github.com/raubreywhite/pbn
 BugReports: https://github.com/raubreywhite/pbn/issues
@@ -25,7 +25,9 @@ Depends: R (>= 4.1.0)
 Imports:
     callr,
     data.table,
-    org (>= 2026.8.20),
+    knitr,
+    org (>= 2026.11.16),
+    plnr,
     qs2,
     stats,
     tools,
@@ -33,7 +35,9 @@ Imports:
 Suggests:
     testthat (>= 3.0.0),
     withr
-Remotes: raubreywhite/org
+Remotes:
+    raubreywhite/org,
+    raubreywhite/plnr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0

@@ -1,20 +1,60 @@
 #' Read the results object of a project version
 #'
-#' `read_results()` reads `<home>/<version>_results/results.qs2`, the file
-#' that [save_results()] writes.
+#' `read_results()` reads the `results.qs2` of one scenario, the file that
+#' [save_results()] or [run_scenarios()] writes. The default reads the real
+#' results.
 #'
 #' @param version The version, for example `"v01"`.
+#' @param scenario The scenario. The default is `"real"`.
+#' @param sim `NULL`, or the number of one simulation.
 #' @param home The project folder.
+#' @details
+#' With `sim = NULL`, `read_results()` reads
+#' `<home>/<version>_results/<scenario>/results.qs2`. That is the results of
+#' a scenario with 1 simulation, or the simulations that [run_scenarios()]
+#' stacked. With a number `k`, it reads
+#' `<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2`, where
+#' `<kkkk>` is `k` with four digits.
+#'
+#' A manuscript MUST read the real results only. [check_project()] fails a
+#' call in `manuscript/built/` that gives a `scenario` other than `"real"`.
 #' @return The results object, a named list. See [save_results()].
 #' @examples
 #' # See the example of save_results().
 #' @family results
 #' @export
-read_results <- function(version, home = ".") {
+read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
   check_version(version)
-  file <- file.path(home, paste0(version, "_results"), "results.qs2")
+  if (!is_scenario_name(scenario)) {
+    stop(
+      "`scenario` must be one name of lower-case letters, digits and ",
+      "underscores.",
+      call. = FALSE
+    )
+  }
+  folder <- file.path(home, paste0(version, "_results"), scenario)
+  if (!is.null(sim)) {
+    if (!is_sim_number(sim)) {
+      stop(
+        "`sim` must be NULL or one whole number of 1 or more.",
+        call. = FALSE
+      )
+    }
+    folder <- file.path(folder, sim_folder(sim))
+  }
+  file <- file.path(folder, "results.qs2")
   if (!file.exists(file)) {
     stop("There is no results file at ", file, call. = FALSE)
   }
   return(qs2::qs_read(file))
+}
+
+is_sim_number <- function(sim) {
+  return(
+    is.numeric(sim) &&
+      length(sim) == 1 &&
+      !is.na(sim) &&
+      sim >= 1 &&
+      sim == round(sim)
+  )
 }

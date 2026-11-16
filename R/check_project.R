@@ -29,10 +29,18 @@
 #'   `"vNN"`.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
-#' - `results_contract` (FAIL): a `vNN_results/results.qs2` or a
-#'   `vNN_results/scenario/<name>/results.qs2` fails [check_results()].
+#' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
+#'   `vNN_results/<scenario>/sim_NNNN/results.qs2` fails [check_results()],
+#'   or a `results.qs2` is directly in `vNN_results/`.
+#' - `scenario_checks` (FAIL): a `vNN_results/<scenario>/check.csv` has a
+#'   value of `pass` that is not `TRUE`. [run_scenarios()] writes these files.
 #' - `manual_manuscript_names` (FAIL): a file in `manuscript/manual/` does not
 #'   match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$`.
+#' - `manuscript_reads_real` (FAIL): an `.R`, `.qmd` or `.Rmd` file in
+#'   `manuscript/built/` calls `read_results()` or `pbn::read_results()` with
+#'   a `scenario` argument that is not the string `"real"`. A call without
+#'   `scenario` passes. In `.qmd` and `.Rmd` files, the rule reads the R
+#'   chunks that [knitr::purl()] extracts and the inline R code.
 #' - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
 #'   `vNN_functions/*.R` file defines a function with the name of a pbn
 #'   export.
@@ -41,8 +49,9 @@
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
-#'   folder. A top-level dotfile and a top-level `*.Rproj` file are never
-#'   unknown.
+#'   folder. The layout names `vNN_run.R`, `vNN_output.R`, `vNN_functions/`,
+#'   `vNN_results/`, `vNN_test/` and `vNN_check_functions.R`, among others. A
+#'   top-level dotfile and a top-level `*.Rproj` file are never unknown.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.

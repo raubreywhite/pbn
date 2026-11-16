@@ -1,3 +1,7 @@
+# pbn 2026.11.20
+
+- New article `vignette("pbn")`, Get started. It builds a small fake project file by file and runs it. The README links to it and no longer holds the walk-through.
+
 # pbn 2026.11.19
 
 - For a fake scenario, the manifest has `fake_md5`, the md5 of the code of `fake_<scenario>()`, in the place of `data_md5`. A writer such as `haven::write_sav()` stamps the time into a file, so `data_md5` changed on every run. This changes the format of `results.qs2`. The new `check_results()` rule `manifest_data` fails the results file of a fake scenario that an older pbn wrote: run the scenarios again to write it. The rule also fails a `data_md5` or `fake_md5` that is not in the form of an md5.

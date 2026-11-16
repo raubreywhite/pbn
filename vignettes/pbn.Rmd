@@ -1,0 +1,392 @@
+---
+title: "Get started with pbn"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Get started with pbn}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+## What pbn is for
+
+Most analysis projects have a layout of their own. A number in a manuscript then often has no clear path back to the code and the data that made it. Tests on fake data, where they exist, run apart from the analysis. pbn gives each project one layout and one run script, and it makes the real data one scenario among fake ones.
+
+## The layout
+
+Names are lower case, with a few exceptions such as `README.md` and the initials in a manuscript file name. `?check_project` lists every exception. Each version of the analysis has a prefix, here `v01_`. A project holds these items at the top level:
+
+```text
+v01_run.R                 the run script of version v01
+v01_functions/            the config and the functions that the run script sources
+v01_results/<scenario>/   the results of each scenario
+v01_test/                 optional testthat files for the functions
+v01_check_functions.R     optional checks of the functions
+check_project.R           one line: pbn::check_project()
+run_scenarios.R           one line: pbn::run_scenarios("v01")
+pbn_allow.txt             optional exceptions to check_project()
+manuscript/manual/        manuscripts that a person edits
+manuscript/built/vNN/     manuscripts that code builds from the results
+background/               documents from outside the project, with names that pbn does not check
+adhoc/                    work outside the run script
+data_describe/            descriptions of the data
+README.md                 what the project is and how to run it
+CHANGELOG.md              the changes of each version
+AGENTS.md                 the rules for agents that work in the project
+.gitignore                the files that git leaves out
+```
+
+The rest of this article builds a small fake project in a temporary folder, file by file, and runs it. The project compares a 0/1 outcome between two groups, `a` and `b`.
+
+```{r}
+root <- file.path(tempdir(), "pbn_get_started")
+home <- file.path(root, "project")
+dir.create(file.path(home, "v01_functions"), recursive = TRUE)
+```
+
+## The config
+
+`v01_functions/_cfg.R` holds the config of version v01. `CFG$scenarios` names each scenario and its number of simulations. The scenario `real` MUST be there, and it uses the real data. Here the fake scenario `known` has 1 simulation and the fake scenario `null` has 3. `CFG$vars` names the variables of the descriptive table.
+
+```{cat, engine.opts = list(file = file.path(home, "v01_functions", "_cfg.R"), lang = "r")}
+CFG <- list(
+  scenarios = data.frame(
+    scenario = c("real", "known", "null"),
+    sims = c(1, 1, 3)
+  ),
+  vars = data.table::data.table(
+    var = c("outcome", "x"),
+    type = c("bin", "cont")
+  )
+)
+```
+
+Keep `_cfg.R` to top-level assignments. `run_scenarios()` and `check_project()` source `v01_functions/` in a new R session to read `CFG$scenarios`, so each other top-level call in the folder runs there too.
+
+## A fake scenario
+
+Each fake scenario needs two functions in `v01_functions/`. `fake_<scenario>(dir)` writes the data files into the folder `dir`. `expect_<scenario>(results)` gets the results of the scenario and returns the assertions on them.
+
+The scenario `known` plants the counts by hand. The comment holds the arithmetic, so a reader can check each expected value without R.
+
+```{cat, engine.opts = list(file = file.path(home, "v01_functions", "scenario_known.R"), lang = "r")}
+# Group a has 11 rows: 2 with the outcome, 8 without, 1 missing.
+# Group b has 11 rows: 6 with the outcome, 4 without, 1 missing.
+# The run excludes the 2 rows with a missing outcome: 22 - 2 = 20 rows.
+# Percentage with the outcome: 100 * (2 + 6) / 20 = 40.
+# Odds ratio of b against a: (6 / 4) / (2 / 8) = 6.
+fake_known <- function(dir) {
+  d <- data.frame(
+    id = 1:22,
+    group = rep(c("a", "b"), each = 11),
+    x = 31:52,
+    outcome = c(rep(c(1, 0, NA), c(2, 8, 1)), rep(c(1, 0, NA), c(6, 4, 1)))
+  )
+  data.table::fwrite(d, file.path(dir, "d.csv"))
+}
+
+expect_known <- function(results) {
+  e <- results$estimates
+  t1 <- results$tables$table1
+  observed <- c(
+    results$exclusions$n_excluded,
+    t1$events[t1$var == "outcome" & t1$grp == "b"],
+    e$estimate[e$term == "pct_outcome"],
+    e$estimate[e$term == "or_group_b"]
+  )
+  expected <- c(2, 6, 40, 6)
+  data.frame(
+    assertion = c(
+      "rows excluded",
+      "outcome events in group b",
+      "percentage with the outcome",
+      "odds ratio of b against a"
+    ),
+    expected = expected,
+    observed = observed,
+    pass = abs(observed - expected) < 1e-6
+  )
+}
+```
+
+The scenario `known` tests four outputs of the analysis against numbers that a person computed by hand. It does not test how the analysis behaves on data as large or as untidy as the real data.
+
+`expect_<scenario>()` MUST return a data.frame with at least one row and the columns `assertion`, `expected`, `observed` and `pass`. `run_scenarios()` counts an error, zero rows or another shape as one failed assertion. `expect_real()` is optional.
+
+The scenario `null` draws data where the outcome does not depend on the group. pbn sets the seed to the number of the simulation before it calls `fake_null()`. Each simulation thus has different data, and a second run gives the same data again.
+
+```{cat, engine.opts = list(file = file.path(home, "v01_functions", "scenario_null.R"), lang = "r")}
+fake_null <- function(dir) {
+  d <- data.frame(
+    id = 1:400,
+    group = sample(c("a", "b"), 400, replace = TRUE),
+    x = round(stats::rnorm(400, 50, 10)),
+    outcome = stats::rbinom(400, 1, 0.3)
+  )
+  data.table::fwrite(d, file.path(dir, "d.csv"))
+}
+
+# results holds the 3 simulations stacked, with a first column sim.
+expect_null <- function(results) {
+  e <- results$estimates
+  sims_n <- length(unique(e$sim))
+  log_or <- mean(log(e$estimate[e$term == "or_group_b"]))
+  data.frame(
+    assertion = c("simulations", "mean log odds ratio of b against a"),
+    expected = c("3", "-0.5 to 0.5"),
+    observed = c(sims_n, round(log_or, 3)),
+    pass = c(sims_n == 3, abs(log_or) < 0.5)
+  )
+}
+```
+
+The scenario `null` tests that the mean log odds ratio over 3 simulations is within 0.5 of zero when the data has no difference between the groups. It does not test that the analysis finds a difference that is there. With 400 rows, one log odds ratio has a standard error of about 0.22, so the mean of 3 has about 0.13. The bound 0.5 is thus about 4 standard errors.
+
+## The run script
+
+`v01_run.R` runs one simulation of one scenario. The same script runs on each scenario, and only the data changes.
+
+The real data of this fake project is a small csv file in the folder `data_raw`, next to the project folder. In a real project, this folder holds the real data, and it lives outside the repository.
+
+```{r}
+data_raw <- file.path(root, "data_raw")
+dir.create(data_raw)
+set.seed(4)
+d <- data.frame(id = 1:400, group = rep(c("a", "b"), 200), x = round(rnorm(400, 50, 10)))
+d$outcome <- rbinom(400, 1, ifelse(d$group == "b", 0.4, 0.25))
+d$outcome[sample(400, 12)] <- NA
+data.table::fwrite(d, file.path(data_raw, "d.csv"))
+```
+
+The run script has these parts, in this order:
+
+1. One commented line `# pbn::use_scenario("<name>", sim = 1)` for each scenario. The section "Stepping through a scenario by hand" explains them.
+2. The call `pbn::initialize_project()`. It sources `v01_functions/`, and it gives the data folder `p$data_raw` and the results folder `p$results` of the scenario.
+3. PART 1 reads the data, and PART 2 computes the results and saves them with `pbn::save_results()`.
+4. `pbn::end_if_fake_scenario()` ends the run of a fake scenario.
+5. PART 3 writes the output of the real results.
+
+```{cat, engine.opts = list(file = file.path(home, "v01_run.R"), lang = "r")}
+# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.
+# pbn::use_scenario("real", sim = 1)
+# pbn::use_scenario("known", sim = 1)
+# pbn::use_scenario("null", sim = 1)
+p <- pbn::initialize_project(version = "v01", home = ".", data_raw = "../data_raw")
+
+# PART 1 -- DATA CREATION ====
+d0 <- data.table::fread(file.path(p$data_raw, "d.csv"))
+d <- d0[!is.na(outcome)]
+
+# PART 2 -- ANALYSIS ====
+fit <- stats::glm(outcome ~ group, family = "binomial", data = d)
+pbn::save_results(
+  exclusions = data.frame(
+    step = "outcome not missing",
+    n_before = nrow(d0),
+    n_excluded = nrow(d0) - nrow(d),
+    n_after = nrow(d)
+  ),
+  estimates = data.frame(
+    term = c("pct_outcome", "or_group_b"),
+    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]))
+  ),
+  tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
+  d = d
+)
+pbn::end_if_fake_scenario()
+
+# PART 3 -- OUTPUT ====
+r <- pbn::read_results("v01")
+data.table::fwrite(r$tables$table1, file.path(p$results, "table1.csv"))
+```
+
+`data_raw` is relative to the project folder, because `run_scenarios()` runs the script there. pbn reads `data_raw` for the real data only.
+
+`save_results()` checks the results object before it writes `results.qs2`. It stops on a fitted model of a class that `?check_results` lists. It also stops on a table with as many rows as the data. `d = d` gives pbn that number of rows. Without `d`, pbn does not make the second check.
+
+## Running everything
+
+`run_scenarios.R` holds one line. In a real project, you run it with the project folder as the working directory.
+
+```{cat, engine.opts = list(file = file.path(home, "run_scenarios.R"), lang = "r")}
+pbn::run_scenarios("v01")
+```
+
+Here the call gives the project folder as `home`. `run_scenarios()` runs `v01_run.R` once for each simulation of each scenario, each time in a new R session. It then stacks the 3 simulations of `null`, and it calls `expect_known()` and `expect_null()`.
+
+```{r}
+pbn::run_scenarios("v01", home = home)
+```
+
+Each scenario has a folder in `v01_results/`. The scenario `null` has one folder for each simulation, and its stacked `results.qs2`. A fake run keeps its data in `data/`.
+
+```{r}
+list.files(file.path(home, "v01_results"), recursive = TRUE)
+```
+
+`run_scenarios()` writes the assertions of each fake scenario to `check.csv`:
+
+```{r}
+cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
+```
+
+## Reading results
+
+`read_results()` reads the `results.qs2` of one scenario. The default scenario is `real`.
+
+```{r}
+r <- pbn::read_results("v01", home = home)
+r$estimates
+r$tables$table1
+```
+
+With `sim`, it reads the results of that one simulation. Without `sim`, it reads the results file of the scenario. For a scenario with one simulation, that file is the results of the run. For a scenario with more, it is the stacked results of all simulations, with a first column `sim`.
+
+```{r}
+pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
+pbn::read_results("v01", scenario = "null", home = home)$estimates
+```
+
+The manifest records where the results come from. It holds the versions of R, pbn and the loaded packages, the date, the scenario and the simulation. For the real data, `data_md5` holds the md5 of each data file. For a fake scenario, `fake_md5` holds the md5 of the code of `fake_<scenario>()`.
+
+```{r}
+str(r$manifest)
+```
+
+## Stepping through a scenario by hand
+
+The commented lines at the top of `v01_run.R` are for a person who steps through the script in an interactive R session. To step through a scenario:
+
+1. Set the project folder as the working directory.
+2. Run one of the commented lines without the `#`.
+3. Run the script line by line.
+
+```{r, eval = FALSE}
+pbn::use_scenario("null", sim = 1)
+# Now run v01_run.R line by line.
+pbn::use_scenario("real", sim = 1)
+```
+
+This chunk does not run when the article builds, because `use_scenario()` stops in a non-interactive R session.
+
+The choice lasts for the R session. Each later `initialize_project()` call uses it, also when you run the script again. `initialize_project()` then prints one line, here `pbn: scenario null, simulation 1 of 3 (fake)`. Change `sim` to step through another simulation. `pbn::use_scenario("real", sim = 1)` goes back to the real data.
+
+The lines MUST stay commented in the file. An active line stops the run under `Rscript`, and `check_project()` fails it.
+
+## Where a fake run ends
+
+`end_if_fake_scenario()` comes directly after `save_results()`. For a fake scenario under `run_scenarios()`, it quits R with status 0, and `run_scenarios()` counts that as a success. PART 3 thus runs for the real data only, and only the real scenario has `table1.csv`:
+
+```{r}
+list.files(file.path(home, "v01_results"), pattern = "^table1[.]csv$", recursive = TRUE)
+```
+
+```{r, include = FALSE}
+stopifnot(identical(list.files(file.path(home, "v01_results"), pattern = "^table1[.]csv$", recursive = TRUE), "real/table1.csv"))
+```
+
+In an interactive R session, `end_if_fake_scenario()` stops with an error for a fake scenario, and the R session stays open.
+
+## Checking the project
+
+`check_project.R` holds one line.
+
+```{cat, engine.opts = list(file = file.path(home, "check_project.R"), lang = "r")}
+pbn::check_project()
+```
+
+`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count.
+
+```{r}
+pbn::check_project(home)
+```
+
+In a non-interactive R session, `check_project()` quits R with status 1 when a rule fails. The build of this article is such a session. So the article runs the failing check in a new R session, with `callr`.
+
+Add a file with a capital letter in its name, and run `check_project.R`:
+
+```{r}
+dir.create(file.path(home, "adhoc"))
+writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
+out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+out$status
+cat(grep("FAIL", strsplit(out$stdout, "\n")[[1]], value = TRUE), sep = "\n")
+```
+
+```{r, include = FALSE}
+stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\n")[[1]], "FAIL  lower_case_names  adhoc/Notes.txt")))
+```
+
+Remove the file again:
+
+```{r}
+unlink(file.path(home, "adhoc"), recursive = TRUE)
+```
+
+## A check that goes red
+
+Make one small error in the analysis: compute the percentage on the rows before the exclusion. Keep a copy of the script first.
+
+```{r}
+run <- file.path(home, "v01_run.R")
+file.copy(run, file.path(root, "v01_run_copy.R"))
+script <- readLines(run)
+script <- sub("100 * mean(d$outcome)", "100 * sum(d$outcome) / nrow(d0)", script, fixed = TRUE)
+writeLines(script, run)
+grep("sum(d$outcome)", readLines(run), value = TRUE, fixed = TRUE)
+```
+
+Run the scenario `known` only:
+
+```{r, error = TRUE}
+pbn::run_scenarios("v01", scenario = "known", home = home)
+```
+
+```{r, include = FALSE}
+stopifnot(identical(utils::read.csv(file.path(home, "v01_results", "known", "check.csv"))$pass, c(TRUE, TRUE, FALSE, TRUE)))
+```
+
+The real data runs through the same lines of `v01_run.R` as the fake data. A fake scenario with a known answer thus tests the analysis that gives the real results. On the real data, the wrong denominator gives a plausible percentage and no error. Only the planted count shows the mistake.
+
+Put the copy back, and run the scenario again. Its assertions pass.
+
+```{r, results = "hide", message = FALSE}
+file.copy(file.path(root, "v01_run_copy.R"), run, overwrite = TRUE)
+pbn::run_scenarios("v01", scenario = "known", home = home)
+```
+
+```{r, include = FALSE}
+stopifnot(all(utils::read.csv(file.path(home, "v01_results", "known", "check.csv"))$pass))
+```
+
+## Manuscripts
+
+`manuscript/manual/` holds the Word files that a person edits. Each name MUST match `vNN_<INITIALS>.docx`, for example `v01_AB.docx`, with the initials in upper case. `manuscript/built/vNN/` holds the manuscripts that code builds from the results. A built manuscript MUST read the real results only, and `check_project()` fails a `read_results()` call there with another scenario. A call without `scenario` reads the real results:
+
+```{r, include = FALSE}
+dir.create(file.path(home, "manuscript", "built", "v01"), recursive = TRUE)
+```
+
+```{cat, engine.opts = list(file = file.path(home, "manuscript", "built", "v01", "numbers.R"), lang = "r")}
+r <- pbn::read_results("v01")
+```
+
+The default `home = "."` is the working directory, so this file MUST run with the project folder as the working directory.
+
+## What pbn does not do yet
+
+- No function starts a new version, for example `v02_run.R` and `v02_functions/` from version v01.
+- No function creates the folders and the files of a new project.
+- No tool shows the tracked changes between two Word manuscripts.
+- No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
+- `run_scenarios()` runs the simulations one after another. A run that fails stops it, and the later runs do not start.
+- When `run_scenarios()` runs some scenarios only, the results of the other scenarios stay as they are, also when they are out of date.
+- `fake_md5` is the md5 of the code of `fake_<scenario>()` only. A change in a function that it calls does not change `fake_md5`.
+- `check_project()` runs project code when it sources `v01_functions/`. Its rule `use_scenario_lines` does not check the order of the lines.
+
+```{r, include = FALSE}
+unlink(root, recursive = TRUE)
+```

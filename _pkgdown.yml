@@ -11,11 +11,11 @@ template:
         layout, and one results object with a fixed contract.
       cta:
         primary:
+          text: "Get started"
+          href: "articles/pbn.html"
+        secondary:
           text: "Browse the reference"
           href: "reference/index.html"
-        secondary:
-          text: "Read the changelog"
-          href: "news/index.html"
 
 reference:
 - title: "Run a project version"

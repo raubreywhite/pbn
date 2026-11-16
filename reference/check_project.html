@@ -11,7 +11,7 @@ status 1 when any rule fails."><meta property="og:image" content="https://www.rw
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -93,6 +93,18 @@ call <code><a href="use_scenario.html">pbn::use_scenario()</a></code> or <code><
 <code><a href="use_scenario.html">pbn::use_scenario</a></code>, that is not in a comment. A call inside a function
 body or an <code>if</code> counts. <code><a href="use_scenario.html">use_scenario()</a></code> is for stepping through the
 script by hand.</p></li>
+<li><p><code>use_scenario_lines</code> (FAIL): a <code>vNN_run.R</code> at the top level does not have
+exactly one comment <code># pbn::use_scenario("&lt;name&gt;", sim = 1)</code> for each
+scenario of <code>CFG$scenarios</code>. A comment for another scenario fails too.
+The detail names each such scenario, with the number of lines when there is
+more than one. The rule does not check the order.</p>
+<p>A comment counts only when all of these hold:</p><ul><li><p>It is above the first call <code><a href="initialize_project.html">pbn::initialize_project()</a></code>.</p></li>
+<li><p>It is at the top level of the script, not in a function body or a
+braced block such as an <code>if</code>.</p></li>
+<li><p>It is the only thing on its line.</p></li>
+<li><p>It has <code>sim = 1</code>. Any whitespace between its parts is allowed.</p></li>
+</ul><p>The rule is a WARN with the reason when the script has no call
+<code><a href="initialize_project.html">pbn::initialize_project()</a></code>, or when pbn cannot read <code>CFG$scenarios</code>.</p></li>
 <li><p><code>version_items_complete</code> (FAIL): a <code>vNN_run.R</code> has no <code>vNN_functions/</code>,
 or the reverse.</p></li>
 <li><p><code>results_contract</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/results.qs2</code> or a
@@ -121,6 +133,11 @@ folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <c
 <code>*.Rproj</code> file are never unknown.</p></li>
 </ul><p>The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.</p>
+<p><code>check_project()</code> runs project code. To read <code>CFG$scenarios</code> for the rule
+<code>use_scenario_lines</code>, it sources the <code>vNN_functions/</code> folder of each
+<code>vNN_run.R</code> with <code><a href="https://www.rwhite.no/org/reference/initialize_project.html" class="external-link">org::initialize_project()</a></code> in a new R session, as
+<code><a href="run_scenarios.html">run_scenarios()</a></code> does. Each top-level call in those files runs then, for
+example a call that writes a file.</p>
 <p>The file <code>pbn_allow.txt</code> in the project folder MAY list exceptions. Write
 one <code>rule&lt;TAB&gt;path</code> per line, with the path relative to the project folder.
 An allowed finding prints as WARN, with <code>(allowed)</code> at the end. An entry
@@ -139,6 +156,7 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_active_use_scenario  no vNN_run.R has an active call pbn::use_scenario()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> WARN  use_scenario_lines  v01_run.R: pbn cannot read CFG$scenarios: CFG$scenarios in v01_functions/ must be a data.frame with the columns scenario and sims.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2 passes check_results()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
@@ -148,7 +166,7 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 12 PASS, 0 WARN, 0 FAIL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 PASS, 1 WARN, 0 FAIL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

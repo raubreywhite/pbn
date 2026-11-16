@@ -66,11 +66,18 @@ the `manifest`, a list with these elements:
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
   `data_raw` is the data folder of the run.
 
-- `data_md5`, a named character vector with the md5 of each file
-  directly in `data_raw`.
+- For the scenario `"real"` only, `data_md5`, a named character vector
+  with the md5 of each file directly in `data_raw`.
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   computes it, so a file that the run writes after that call is not in
   the list.
+
+- For a fake scenario only, `fake_md5`, one string: the md5 of the code
+  of `fake_<scenario>()`, without its source references. Two runs of one
+  simulation on one day with the same code and packages then write the
+  same bytes. This holds also when `fake_<scenario>()` stamps the time
+  into a file. A change in a function that `fake_<scenario>()` calls
+  does not change `fake_md5`.
 
 - `n_rows_data`, the number of rows of `d`, or `NA` when `d` is `NULL`.
 
@@ -92,7 +99,7 @@ writeLines(
 )
 pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpoLbHrA/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpbNfz7k/pbn_save_example/v01_functions into 
 
 pbn::save_results(
   exclusions = data.frame(

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -40,6 +40,13 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.19" id="pbn-20261119">pbn 2026.11.19<a class="anchor" aria-label="anchor" href="#pbn-20261119"></a></h2>
+<ul><li>For a fake scenario, the manifest has <code>fake_md5</code>, the md5 of the code of <code>fake_&lt;scenario&gt;()</code>, in the place of <code>data_md5</code>. A writer such as <code>haven::write_sav()</code> stamps the time into a file, so <code>data_md5</code> changed on every run. This changes the format of <code>results.qs2</code>. The new <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_data</code> fails the results file of a fake scenario that an older pbn wrote: run the scenarios again to write it. The rule also fails a <code>data_md5</code> or <code>fake_md5</code> that is not in the form of an md5.</li>
+<li>
+<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> keeps the class of each stacked table, so a data.table in simulation 1 gives a stacked data.table. Before, every stacked table was a data.frame.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>use_scenario_lines</code>. A <code>vNN_run.R</code> MUST have exactly one top-level comment <code># pbn::use_scenario("&lt;name&gt;", sim = 1)</code> above <code><a href="../reference/initialize_project.html">pbn::initialize_project()</a></code> for each scenario of <code>CFG$scenarios</code>. A comment for another scenario fails too. To read them, <code><a href="../reference/check_project.html">check_project()</a></code> sources <code>vNN_functions/</code> in a new R session, so it runs project code.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.18" id="pbn-20261118">pbn 2026.11.18<a class="anchor" aria-label="anchor" href="#pbn-20261118"></a></h2>
 <ul><li>Removed the <code>scenario</code> argument of <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. A call that still passes it stops with R’s unused-argument error. The command line <code>scenario=&lt;name&gt; sim=&lt;k&gt;</code> gives the scenario, or else the new <code><a href="../reference/use_scenario.html">use_scenario()</a></code>, or else <code>"real"</code>.</li>

@@ -67,6 +67,28 @@ The rules:
   [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
   is for stepping through the script by hand.
 
+- `use_scenario_lines` (FAIL): a `vNN_run.R` at the top level does not
+  have exactly one comment `# pbn::use_scenario("<name>", sim = 1)` for
+  each scenario of `CFG$scenarios`. A comment for another scenario fails
+  too. The detail names each such scenario, with the number of lines
+  when there is more than one. The rule does not check the order.
+
+  A comment counts only when all of these hold:
+
+  - It is above the first call
+    [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+
+  - It is at the top level of the script, not in a function body or a
+    braced block such as an `if`.
+
+  - It is the only thing on its line.
+
+  - It has `sim = 1`. Any whitespace between its parts is allowed.
+
+  The rule is a WARN with the reason when the script has no call
+  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+  or when pbn cannot read `CFG$scenarios`.
+
 - `version_items_complete` (FAIL): a `vNN_run.R` has no
   `vNN_functions/`, or the reverse.
 
@@ -114,6 +136,15 @@ The rules:
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
 
+`check_project()` runs project code. To read `CFG$scenarios` for the
+rule `use_scenario_lines`, it sources the `vNN_functions/` folder of
+each `vNN_run.R` with
+[`org::initialize_project()`](https://www.rwhite.no/org/reference/initialize_project.html)
+in a new R session, as
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+does. Each top-level call in those files runs then, for example a call
+that writes a file.
+
 The file `pbn_allow.txt` in the project folder MAY list exceptions.
 Write one `rule<TAB>path` per line, with the path relative to the
 project folder. An allowed finding prints as WARN, with `(allowed)` at
@@ -133,6 +164,7 @@ pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  no_active_use_scenario  no vNN_run.R has an active call pbn::use_scenario()
+#> WARN  use_scenario_lines  v01_run.R: pbn cannot read CFG$scenarios: CFG$scenarios in v01_functions/ must be a data.frame with the columns scenario and sims.
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -142,7 +174,7 @@ pbn::check_project(home)
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 12 PASS, 0 WARN, 0 FAIL
+#> 12 PASS, 1 WARN, 0 FAIL
 
 unlink(home, recursive = TRUE)
 ```

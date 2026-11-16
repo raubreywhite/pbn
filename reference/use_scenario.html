@@ -11,7 +11,7 @@ steps through a run script by hand."><meta property="og:image" content="https://
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,6 +83,9 @@ underscores. <code><a href="initialize_project.html">initialize_project()</a></c
 <span><span class="co"># pbn::use_scenario("real", sim = 1)</span></span>
 <span><span class="co"># pbn::use_scenario("null", sim = 1)</span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"/data/raw"</span><span class="op">)</span></span></code></pre><p></p></div>
+<p>The rule <code>use_scenario_lines</code> of <code><a href="check_project.html">check_project()</a></code> fails a run script
+that does not have exactly one such line for each scenario of
+<code>CFG$scenarios</code>, or that has a line for another scenario.</p>
 <p>To step through a scenario, run one of these lines without the <code>#</code>, then
 run the script line by line. The lines MUST stay commented in the file.
 <code>use_scenario()</code> stops in a non-interactive R session, for example under

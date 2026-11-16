@@ -100,6 +100,9 @@ commented in the file:
 stops under `Rscript`, and
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
 fails an active call.
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+also fails a missing line, and a line for a scenario that is not in
+`CFG$scenarios`.
 
 To run every simulation of every scenario, each in a new R session:
 

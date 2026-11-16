@@ -24,7 +24,7 @@ A data.frame with one row per rule and the columns `rule`, `status` and
 
 ## Details
 
-The five rules:
+The six rules:
 
 - `top_level_names`: the names are `manifest`, `exclusions`,
   `estimates`, `tables` and `extra`, each once, and there are no others.
@@ -45,6 +45,14 @@ The five rules:
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.
 
+- `manifest_data`: `manifest` has exactly one of `data_md5` and
+  `fake_md5`. It has `data_md5` when `scenario` is `"real"`, and
+  `fake_md5` when `scenario` is another string. `fake_md5` MUST be one
+  string of 32 lower-case hex digits. `data_md5` MUST be a character
+  vector of such strings, named by file. It has length 0 when the data
+  folder has no file. A results file that pbn 2026.11.18 or older wrote
+  has `data_md5` for a fake scenario, so it fails this rule.
+
 ## See also
 
 Other results:
@@ -55,7 +63,13 @@ Other results:
 
 ``` r
 x <- list(
-  manifest = list(scenario = "real", sim = 1L, sims = 1L, n_rows_data = 100L),
+  manifest = list(
+    scenario = "real",
+    sim = 1L,
+    sims = 1L,
+    data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    n_rows_data = 100L
+  ),
   exclusions = data.frame(
     step = "age 18 or more",
     n_before = 100,
@@ -73,10 +87,12 @@ pbn::check_results(x)
 #> 3  no_fitted_models   PASS
 #> 4 no_row_per_person   PASS
 #> 5 manifest_scenario   PASS
-#>                                                                detail
-#> 1                             the five top-level names, and no others
-#> 2                   n_before - n_excluded != n_after on these rows: 1
-#> 3                                       no fitted model in the object
-#> 4                                          no data.frame has 100 rows
-#> 5 the manifest names the scenario, the simulation and the simulations
+#> 6     manifest_data   PASS
+#>                                                                 detail
+#> 1                              the five top-level names, and no others
+#> 2                    n_before - n_excluded != n_after on these rows: 1
+#> 3                                        no fitted model in the object
+#> 4                                           no data.frame has 100 rows
+#> 5  the manifest names the scenario, the simulation and the simulations
+#> 6 the manifest has data_md5 for "real" or fake_md5 for a fake scenario
 ```

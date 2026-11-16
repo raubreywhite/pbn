@@ -1,5 +1,30 @@
 # Changelog
 
+## pbn 2026.11.19
+
+- For a fake scenario, the manifest has `fake_md5`, the md5 of the code
+  of `fake_<scenario>()`, in the place of `data_md5`. A writer such as
+  `haven::write_sav()` stamps the time into a file, so `data_md5`
+  changed on every run. This changes the format of `results.qs2`. The
+  new
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  rule `manifest_data` fails the results file of a fake scenario that an
+  older pbn wrote: run the scenarios again to write it. The rule also
+  fails a `data_md5` or `fake_md5` that is not in the form of an md5.
+- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  keeps the class of each stacked table, so a data.table in simulation 1
+  gives a stacked data.table. Before, every stacked table was a
+  data.frame.
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `use_scenario_lines`. A `vNN_run.R` MUST have exactly one
+  top-level comment `# pbn::use_scenario("<name>", sim = 1)` above
+  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  for each scenario of `CFG$scenarios`. A comment for another scenario
+  fails too. To read them,
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  sources `vNN_functions/` in a new R session, so it runs project code.
+
 ## pbn 2026.11.18
 
 - Removed the `scenario` argument of

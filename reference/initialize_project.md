@@ -93,10 +93,18 @@ there for each scenario other than `"real"`.
     `fake_<scenario>(dir)` with its path. The project MUST define
     `fake_<scenario>()` in `<version>_functions/`.
 
-5.  It computes the md5 of each file directly in the data folder.
+5.  It computes an md5 that identifies the data, and
     [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-    stores these values as `manifest$data_md5`, so a file that the run
-    writes later is not in the list.
+    stores it in the manifest:
+
+    - For `"real"`, the md5 of each file directly in the data folder, as
+      `manifest$data_md5`. A file that the run writes later is not in
+      the list.
+
+    - For a fake scenario, the md5 of the code of `fake_<scenario>()`,
+      as `manifest$fake_md5`. A writer such as `haven::write_sav()`
+      stamps the time into the file. The md5 of the files would then
+      change on every run, and the data would not.
 
 `initialize_project()` stops in these cases:
 
@@ -153,11 +161,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpoLbHrA/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpbNfz7k/pbn_initialize_example/v01_functions into 
 p$scenario
 #> [1] "real"
 p$results
-#> [1] "/tmp/RtmpoLbHrA/pbn_initialize_example/v01_results/real"
+#> [1] "/tmp/RtmpbNfz7k/pbn_initialize_example/v01_results/real"
 list.files(p$data_raw)
 #> [1] "d.csv"
 

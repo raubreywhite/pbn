@@ -11,7 +11,7 @@ simulations of each scenario and checks the assertions of the project."><meta pr
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,10 +102,13 @@ the scenarios that it does not run stay as they are.</p></li>
 <code>&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/results.qs2</code> into
 <code>&lt;version&gt;_results/&lt;scenario&gt;/results.qs2</code>. It stops when the files are
 not exactly the simulations 1 to <code>sims</code>. <code>estimates</code>, <code>exclusions</code> and
-each data.frame in <code>tables</code> get a first column <code>sim</code>. <code>extra</code> is an
-empty list. The <code>manifest</code> is that of simulation 1. In it, <code>sim</code> and
-<code>n_rows_data</code> are <code>NA</code>, <code>sims</code> is the number of simulations, and
-<code>stacked</code> is <code>TRUE</code>.</p></li>
+each data.frame in <code>tables</code> get a first column <code>sim</code>. Each keeps the
+class of its object in simulation 1, so a data.table stays a
+data.table. <code>extra</code> is an empty list. The <code>manifest</code> is that of
+simulation 1. In it, <code>sim</code> and <code>n_rows_data</code> are <code>NA</code>, <code>sims</code> is the
+number of simulations, and <code>stacked</code> is <code>TRUE</code>. For a fake scenario, it
+stops when a simulation has no valid <code>manifest$fake_md5</code>, or when the
+simulations do not have one value of it.</p></li>
 <li><p>For each scenario that has a function <code>expect_&lt;scenario&gt;()</code> in
 <code>&lt;version&gt;_functions/</code>, it calls that function on the results of the
 scenario in a new R session. <code>expect_real()</code> is optional. The function

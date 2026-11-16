@@ -64,9 +64,13 @@ Invisibly, a data.frame of every assertion, with the columns `scenario`,
     `<version>_results/<scenario>/results.qs2`. It stops when the files
     are not exactly the simulations 1 to `sims`. `estimates`,
     `exclusions` and each data.frame in `tables` get a first column
-    `sim`. `extra` is an empty list. The `manifest` is that of
-    simulation 1. In it, `sim` and `n_rows_data` are `NA`, `sims` is the
-    number of simulations, and `stacked` is `TRUE`.
+    `sim`. Each keeps the class of its object in simulation 1, so a
+    data.table stays a data.table. `extra` is an empty list. The
+    `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
+    are `NA`, `sims` is the number of simulations, and `stacked` is
+    `TRUE`. For a fake scenario, it stops when a simulation has no valid
+    `manifest$fake_md5`, or when the simulations do not have one value
+    of it.
 
 4.  For each scenario that has a function `expect_<scenario>()` in
     `<version>_functions/`, it calls that function on the results of the

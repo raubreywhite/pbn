@@ -11,7 +11,7 @@ finds a failure."><meta property="og:image" content="https://www.rwhite.no/pbn/l
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -102,9 +102,16 @@ versions. <code>qs2</code> is always in the list, because it writes the file.</p
 runs on one day with the same inputs and packages write the same bytes.</p></li>
 <li><p><code>version</code>, <code>scenario</code>, <code>sim</code>, <code>sims</code> and <code>data_raw</code>, from
 <code><a href="initialize_project.html">initialize_project()</a></code>. <code>data_raw</code> is the data folder of the run.</p></li>
-<li><p><code>data_md5</code>, a named character vector with the md5 of each file directly
-in <code>data_raw</code>. <code><a href="initialize_project.html">initialize_project()</a></code> computes it, so a file that the run
-writes after that call is not in the list.</p></li>
+<li><p>For the scenario <code>"real"</code> only, <code>data_md5</code>, a named character vector
+with the md5 of each file directly in <code>data_raw</code>. <code><a href="initialize_project.html">initialize_project()</a></code>
+computes it, so a file that the run writes after that call is not in the
+list.</p></li>
+<li><p>For a fake scenario only, <code>fake_md5</code>, one string: the md5 of the code of
+<code>fake_&lt;scenario&gt;()</code>, without its source references. Two runs of one
+simulation on one day with the same code and packages then write the
+same bytes. This holds also when <code>fake_&lt;scenario&gt;()</code> stamps the time
+into a file. A change in a function that <code>fake_&lt;scenario&gt;()</code> calls does
+not change <code>fake_md5</code>.</p></li>
 <li><p><code>n_rows_data</code>, the number of rows of <code>d</code>, or <code>NA</code> when <code>d</code> is <code>NULL</code>.</p></li>
 </ul></div>
     <div class="section level2">
@@ -125,7 +132,7 @@ writes after that call is not in the list.</p></li>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span>, env <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpoLbHrA/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpbNfz7k/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">save_results</span><span class="op">(</span></span></span>
 <span class="r-in"><span>  exclusions <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span></span>

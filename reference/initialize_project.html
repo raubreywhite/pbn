@@ -11,7 +11,7 @@ first call in every vNN_run.R."><meta property="og:image" content="https://www.r
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.18</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.19</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -120,9 +120,15 @@ data folder is <code>data/</code> in the results folder. <code>initialize_projec
 deletes it, creates it empty, and calls <code>fake_&lt;scenario&gt;(dir)</code> with its
 path. The project MUST define <code>fake_&lt;scenario&gt;()</code> in
 <code>&lt;version&gt;_functions/</code>.</p></li>
-<li><p>It computes the md5 of each file directly in the data folder.
-<code><a href="save_results.html">save_results()</a></code> stores these values as <code>manifest$data_md5</code>, so a file
-that the run writes later is not in the list.</p></li>
+<li><p>It computes an md5 that identifies the data, and <code><a href="save_results.html">save_results()</a></code>
+stores it in the manifest:</p><ul><li><p>For <code>"real"</code>, the md5 of each file directly in the data folder, as
+<code>manifest$data_md5</code>. A file that the run writes later is not in the
+list.</p></li>
+<li><p>For a fake scenario, the md5 of the code of <code>fake_&lt;scenario&gt;()</code>, as
+<code>manifest$fake_md5</code>. A writer such as <code>haven::write_sav()</code> stamps the
+time into the file. The md5 of the files would then change on every
+run, and the data would not.</p></li>
+</ul></li>
 </ol><p><code>initialize_project()</code> stops in these cases:</p><ul><li><p><code>scenario=</code> or <code>sim=</code> is given more than once.</p></li>
 <li><p><code>sim=</code> is not a whole number of 1 or more.</p></li>
 <li><p>The scenario is not in <code>CFG$scenarios</code>, or <code>sim</code> is more than its
@@ -168,11 +174,11 @@ The state of the run is then empty, so <code><a href="save_results.html">save_re
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpoLbHrA/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpbNfz7k/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">scenario</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "real"</span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpoLbHrA/pbn_initialize_example/v01_results/real"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpbNfz7k/pbn_initialize_example/v01_results/real"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">data_raw</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "d.csv"</span>
 <span class="r-in"><span></span></span>

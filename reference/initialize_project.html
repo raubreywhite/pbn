@@ -11,7 +11,7 @@ first call in every vNN_run.R."><meta property="og:image" content="https://www.r
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -83,8 +83,10 @@ scenario is <code>"real"</code>. pbn does not read it for any other scenario.</p
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>Invisibly, a list with <code>version</code>, <code>home</code>, <code>scenario</code>, <code>sim</code>,
-<code>sims</code>, <code>results</code> and <code>data_raw</code>. <code>results</code> is the results folder and
-<code>data_raw</code> is the data folder of the run.</p>
+<code>sims</code>, <code>results</code>, <code>data_raw</code> and <code>settings</code>. <code>results</code> is the results
+folder and <code>data_raw</code> is the data folder of the run. <code>settings</code> is a
+named list of the settings of the scenario, or an empty list when
+<code>CFG$scenarios</code> has no setting column.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -93,7 +95,15 @@ with these columns:</p><ul><li><p><code>scenario</code>: unique names that match
 <code>"real"</code>.</p></li>
 <li><p><code>sims</code>: the number of simulations of the scenario, a whole number of 1 or
 more.</p></li>
-</ul><p>The scenario and the simulation come from the first of these that gives
+</ul><p>Each other column is a setting of the scenario, for example <code>n_boot</code> for a
+number of bootstrap replicates that is smaller in the fake scenarios. A
+setting column MUST be an atomic vector with no <code>NA</code>. A list column or an
+<code>NA</code> stops <code>initialize_project()</code> and <code><a href="run_scenarios.html">run_scenarios()</a></code>, and the error
+names the column. <code>p$settings</code> holds the value of each setting column for
+the scenario of the run. <code><a href="save_results.html">save_results()</a></code> stores the settings as
+<code>CFG$scenarios</code> gives them in <code>manifest$settings</code>. A change that the run
+script makes to <code>p$settings</code> does not reach the manifest.</p>
+<p>The scenario and the simulation come from the first of these that gives
 them. pbn reads no environment variables.</p><ol><li><p>The trailing command-line arguments <code>scenario=&lt;name&gt;</code> and <code>sim=&lt;k&gt;</code>.
 <code><a href="run_scenarios.html">run_scenarios()</a></code> gives both. When only one of them is there, the other
 one is <code>"real"</code> or 1.</p></li>
@@ -104,7 +114,11 @@ script by hand.</p></li>
 <p>In an interactive R session, <code>initialize_project()</code> prints one line, for
 example <code>pbn: scenario null, simulation 2 of 3 (fake)</code>. <code>(fake)</code> is there
 for each scenario other than <code>"real"</code>.</p>
-<p><code>initialize_project()</code> does these steps in this order:</p><ol><li><p>It calls <code><a href="https://www.rwhite.no/org/reference/initialize_project.html" class="external-link">org::initialize_project()</a></code> with <code>results</code> set to
+<p><code>initialize_project()</code> does these steps in this order:</p><ol><li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
+<code>&lt;version&gt;_functions/</code>, before it sources them. <code><a href="save_results.html">save_results()</a></code> stores
+them in <code>manifest$source_md5</code>, and <code>run_scenarios(resume = TRUE)</code> reads
+them.</p></li>
+<li><p>It calls <code><a href="https://www.rwhite.no/org/reference/initialize_project.html" class="external-link">org::initialize_project()</a></code> with <code>results</code> set to
 <code>&lt;home&gt;/&lt;version&gt;_results</code>, <code>results_subfolder</code> set to the scenario,
 <code>folders_to_be_sourced</code> set to <code>&lt;version&gt;_functions</code>, and
 <code>max_loc_per_file</code> set to 1000.</p></li>
@@ -113,7 +127,7 @@ for each scenario other than <code>"real"</code>.</p>
 <code>&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/</code> otherwise. <code>&lt;kkkk&gt;</code> is the
 simulation with four digits. <code>org::project$results_today</code> is set to
 this folder.</p></li>
-<li><p>It calls <code>set.seed(sim)</code>. It also calls <code>set.seed(sim)</code> before step 1,
+<li><p>It calls <code>set.seed(sim)</code>. It also calls <code>set.seed(sim)</code> before step 2,
 so random work while org sources the functions folder depends on <code>sim</code>
 only.</p></li>
 <li><p>For <code>"real"</code>, the data folder is <code>data_raw</code>. For any other scenario, the
@@ -135,6 +149,7 @@ run, and the data would not.</p></li>
 <li><p>The scenario is not in <code>CFG$scenarios</code>, or <code>sim</code> is more than its
 <code>sims</code>.</p></li>
 <li><p><code>fake_&lt;scenario&gt;()</code> is missing.</p></li>
+<li><p>A setting column of <code>CFG$scenarios</code> is a list or has <code>NA</code>.</p></li>
 </ul><p>When it stops, it deletes each empty results folder that the call created.
 The state of the run is then empty, so <code><a href="save_results.html">save_results()</a></code> and
 <code><a href="end_if_fake_scenario.html">end_if_fake_scenario()</a></code> stop until a call succeeds. The choice of
@@ -175,11 +190,11 @@ The state of the run is then empty, so <code><a href="save_results.html">save_re
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpaPPyQy/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpeJQORh/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">scenario</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "real"</span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpaPPyQy/pbn_initialize_example/v01_results/real"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpeJQORh/pbn_initialize_example/v01_results/real"</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">data_raw</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> [1] "d.csv"</span>
 <span class="r-in"><span></span></span>

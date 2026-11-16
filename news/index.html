@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,22 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.21" id="pbn-20261121">pbn 2026.11.21<a class="anchor" aria-label="anchor" href="#pbn-20261121"></a></h2>
+<ul><li>
+<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> writes the stdout and the stderr of each run to <code>run.log</code> in the results folder of the simulation. For a failed run, it prints the whole log, and the error names the run and the log. Before, the output was in the error message, and R cuts an error message at 1000 bytes by default.</li>
+<li>New argument <code>workers</code> of <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code>: the number of simulations that run at the same time, each in a new R session. After a failed run, no new run starts, the started runs end, and the error names each failed run.</li>
+<li>New argument <code>resume</code> of <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code>. With <code>TRUE</code>, it keeps each simulation with a <code>results.qs2</code> from a completed run of the same run script and functions folder, and runs the others. The default <code>FALSE</code> runs every simulation.</li>
+<li>After a run that succeeds, <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> writes <code>run.ok</code> with the md5 of <code>results.qs2</code>. A run that quits with status 0 but writes no valid <code>results.qs2</code> for its scenario and simulation now fails. Before, a scenario with 1 simulation and no <code>expect_</code> function could pass with an invalid file.</li>
+<li>
+<code>run.log</code> and <code>run.ok</code> are run artefacts: list both in the <code>.gitignore</code> of a project. <code><a href="../reference/check_project.html">check_project()</a></code> does not read them.</li>
+<li>The manifest gains <code>source_md5</code>, the md5 of the run script and of each file of the functions folder, for every scenario. New <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_source</code>.</li>
+<li>A <code>results.qs2</code> that pbn 2026.11.20 or older wrote has no <code>source_md5</code>. It fails <code>manifest_source</code> and the <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>results_contract</code>: run the scenarios again to write it.</li>
+<li>Each column of <code>CFG$scenarios</code> other than <code>scenario</code> and <code>sims</code> is a setting of the scenario. <code><a href="../reference/initialize_project.html">initialize_project()</a></code> returns the settings of the run as <code>settings</code>, and the manifest stores them. A list column or an <code>NA</code> is an error. Before, pbn dropped these columns without a message.</li>
+<li>
+<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> deletes the <code>check.csv</code> of each chosen scenario and each stacked <code>results.qs2</code> before the first run, and the <code>results.qs2</code> of each simulation that it runs.</li>
+<li>pbn no longer imports <code>plnr</code>. <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> starts and watches its R sessions with <code>callr</code>.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.20" id="pbn-20261120">pbn 2026.11.20<a class="anchor" aria-label="anchor" href="#pbn-20261120"></a></h2>
 <ul><li>New article <code><a href="../articles/pbn.html">vignette("pbn")</a></code>, Get started. It builds a small fake project file by file and runs it. The README links to it and no longer holds the walk-through.</li>

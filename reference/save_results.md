@@ -66,6 +66,20 @@ the `manifest`, a list with these elements:
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
   `data_raw` is the data folder of the run.
 
+- `settings`, the named list of the settings of the scenario from the
+  setting columns of `CFG$scenarios`. It is an empty list when there are
+  none.
+
+- `source_md5`, a named character vector for every scenario. It holds
+  the md5 of `<version>_run.R` and of each file in
+  `<version>_functions/`, named by the path relative to `home` and
+  sorted.
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  computes it before it sources the files. The
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  rule `manifest_source` needs the run script in it, so `save_results()`
+  stops when `<version>_run.R` does not exist.
+
 - For the scenario `"real"` only, `data_md5`, a named character vector
   with the md5 of each file directly in `data_raw`.
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
@@ -93,13 +107,14 @@ Other results:
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
+writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
   file.path(home, "v01_functions", "_cfg.R")
 )
 pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpaPPyQy/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpeJQORh/pbn_save_example/v01_functions into 
 
 pbn::save_results(
   exclusions = data.frame(

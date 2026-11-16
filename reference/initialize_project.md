@@ -33,8 +33,10 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 ## Value
 
 Invisibly, a list with `version`, `home`, `scenario`, `sim`, `sims`,
-`results` and `data_raw`. `results` is the results folder and `data_raw`
-is the data folder of the run.
+`results`, `data_raw` and `settings`. `results` is the results folder
+and `data_raw` is the data folder of the run. `settings` is a named list
+of the settings of the scenario, or an empty list when `CFG$scenarios`
+has no setting column.
 
 ## Details
 
@@ -46,6 +48,18 @@ data.frame with these columns:
 
 - `sims`: the number of simulations of the scenario, a whole number of 1
   or more.
+
+Each other column is a setting of the scenario, for example `n_boot` for
+a number of bootstrap replicates that is smaller in the fake scenarios.
+A setting column MUST be an atomic vector with no `NA`. A list column or
+an `NA` stops `initialize_project()` and
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md),
+and the error names the column. `p$settings` holds the value of each
+setting column for the scenario of the run.
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+stores the settings as `CFG$scenarios` gives them in
+`manifest$settings`. A change that the run script makes to `p$settings`
+does not reach the manifest.
 
 The scenario and the simulation come from the first of these that gives
 them. pbn reads no environment variables.
@@ -71,29 +85,35 @@ there for each scenario other than `"real"`.
 
 `initialize_project()` does these steps in this order:
 
-1.  It calls
+1.  It computes the md5 of `<version>_run.R` and of each file in
+    `<version>_functions/`, before it sources them.
+    [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+    stores them in `manifest$source_md5`, and
+    `run_scenarios(resume = TRUE)` reads them.
+
+2.  It calls
     [`org::initialize_project()`](https://www.rwhite.no/org/reference/initialize_project.html)
     with `results` set to `<home>/<version>_results`,
     `results_subfolder` set to the scenario, `folders_to_be_sourced` set
     to `<version>_functions`, and `max_loc_per_file` set to 1000.
 
-2.  It reads `CFG$scenarios`. The results folder is
+3.  It reads `CFG$scenarios`. The results folder is
     `<version>_results/<scenario>/` when the scenario has 1 simulation,
     and `<version>_results/<scenario>/sim_<kkkk>/` otherwise. `<kkkk>`
     is the simulation with four digits. `org::project$results_today` is
     set to this folder.
 
-3.  It calls `set.seed(sim)`. It also calls `set.seed(sim)` before step
-    1, so random work while org sources the functions folder depends on
+4.  It calls `set.seed(sim)`. It also calls `set.seed(sim)` before step
+    2, so random work while org sources the functions folder depends on
     `sim` only.
 
-4.  For `"real"`, the data folder is `data_raw`. For any other scenario,
+5.  For `"real"`, the data folder is `data_raw`. For any other scenario,
     the data folder is `data/` in the results folder.
     `initialize_project()` deletes it, creates it empty, and calls
     `fake_<scenario>(dir)` with its path. The project MUST define
     `fake_<scenario>()` in `<version>_functions/`.
 
-5.  It computes an md5 that identifies the data, and
+6.  It computes an md5 that identifies the data, and
     [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
     stores it in the manifest:
 
@@ -116,6 +136,8 @@ there for each scenario other than `"real"`.
   `sims`.
 
 - `fake_<scenario>()` is missing.
+
+- A setting column of `CFG$scenarios` is a list or has `NA`.
 
 When it stops, it deletes each empty results folder that the call
 created. The state of the run is then empty, so
@@ -161,11 +183,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpaPPyQy/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpeJQORh/pbn_initialize_example/v01_functions into 
 p$scenario
 #> [1] "real"
 p$results
-#> [1] "/tmp/RtmpaPPyQy/pbn_initialize_example/v01_results/real"
+#> [1] "/tmp/RtmpeJQORh/pbn_initialize_example/v01_results/real"
 list.files(p$data_raw)
 #> [1] "d.csv"
 

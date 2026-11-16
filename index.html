@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.20</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.21</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,6 +95,7 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_scenarios.html">run_scenarios</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/check_project.html">check_project</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="reference/run_scenarios.html">run_scenarios()</a></code> writes the run artefacts <code>run.log</code> and <code>run.ok</code> into each results folder. List both in the <code>.gitignore</code> of the project.</p>
 <p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> builds a small fake project file by file, and runs it. Read it first.</p>
 </div>
 <div class="section level2">
@@ -124,7 +125,7 @@
 </tr>
 <tr>
 <td><code><a href="reference/run_scenarios.html">run_scenarios()</a></code></td>
-<td>Runs <code>vNN_run.R</code> for each scenario and simulation in a new R session, stacks the simulations and checks the assertions.</td>
+<td>Runs <code>vNN_run.R</code> for each scenario and simulation in a new R session, <code>workers</code> of them at the same time. It stacks the simulations and checks the assertions. With <code>resume = TRUE</code>, it keeps each simulation with results from the same code.</td>
 </tr>
 <tr>
 <td><code><a href="reference/save_results.html">save_results()</a></code></td>

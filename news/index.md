@@ -1,5 +1,55 @@
 # Changelog
 
+## pbn 2026.11.21
+
+- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  writes the stdout and the stderr of each run to `run.log` in the
+  results folder of the simulation. For a failed run, it prints the
+  whole log, and the error names the run and the log. Before, the output
+  was in the error message, and R cuts an error message at 1000 bytes by
+  default.
+- New argument `workers` of
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md):
+  the number of simulations that run at the same time, each in a new R
+  session. After a failed run, no new run starts, the started runs end,
+  and the error names each failed run.
+- New argument `resume` of
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md).
+  With `TRUE`, it keeps each simulation with a `results.qs2` from a
+  completed run of the same run script and functions folder, and runs
+  the others. The default `FALSE` runs every simulation.
+- After a run that succeeds,
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  writes `run.ok` with the md5 of `results.qs2`. A run that quits with
+  status 0 but writes no valid `results.qs2` for its scenario and
+  simulation now fails. Before, a scenario with 1 simulation and no
+  `expect_` function could pass with an invalid file.
+- `run.log` and `run.ok` are run artefacts: list both in the
+  `.gitignore` of a project.
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  does not read them.
+- The manifest gains `source_md5`, the md5 of the run script and of each
+  file of the functions folder, for every scenario. New
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  rule `manifest_source`.
+- A `results.qs2` that pbn 2026.11.20 or older wrote has no
+  `source_md5`. It fails `manifest_source` and the
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `results_contract`: run the scenarios again to write it.
+- Each column of `CFG$scenarios` other than `scenario` and `sims` is a
+  setting of the scenario.
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  returns the settings of the run as `settings`, and the manifest stores
+  them. A list column or an `NA` is an error. Before, pbn dropped these
+  columns without a message.
+- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  deletes the `check.csv` of each chosen scenario and each stacked
+  `results.qs2` before the first run, and the `results.qs2` of each
+  simulation that it runs.
+- pbn no longer imports `plnr`.
+  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+  starts and watches its R sessions with `callr`.
+
 ## pbn 2026.11.20
 
 - New article

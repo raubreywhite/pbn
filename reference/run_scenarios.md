@@ -7,7 +7,13 @@ simulations of each scenario and checks the assertions of the project.
 ## Usage
 
 ``` r
-run_scenarios(version, scenario = NULL, home = ".")
+run_scenarios(
+  version,
+  scenario = NULL,
+  home = ".",
+  workers = 1,
+  resume = FALSE
+)
 ```
 
 ## Arguments
@@ -25,6 +31,17 @@ run_scenarios(version, scenario = NULL, home = ".")
 
   The project folder.
 
+- workers:
+
+  The number of simulations that run at the same time, one whole number
+  of 1 or more. Each simulation runs in its own new R session.
+
+- resume:
+
+  `FALSE` runs every simulation of the chosen scenarios. `TRUE` keeps
+  each simulation with results from the same code, and runs the others.
+  See the section Resume.
+
 ## Value
 
 Invisibly, a data.frame of every assertion, with the columns `scenario`,
@@ -41,28 +58,63 @@ Invisibly, a data.frame of every assertion, with the columns `scenario`,
     scenario other than `"real"` has no function `expect_<scenario>()`.
     It checks every chosen scenario before it runs any of them.
 
-2.  It makes a
-    [plnr::Plan](https://www.rwhite.no/plnr/reference/Plan.html) with
-    one analysis for each scenario and simulation. Each analysis runs
-    the script with
-    [`callr::rscript()`](https://callr.r-lib.org/reference/rscript.html)
-    and the arguments `scenario=<name> sim=<k>`, with `home` as the
-    working directory. A run that fails stops `run_scenarios()` with the
-    output of the run.
+2.  With `resume = TRUE`, it chooses the simulations to keep, and prints
+    one line for each of them.
 
-    Before each run, `run_scenarios()` deletes the `results.qs2` of that
-    simulation. Before simulation 1, it also deletes the `results.qs2`
-    and the `check.csv` in `<version>_results/<scenario>/`. A run that
-    writes no `results.qs2` stops `run_scenarios()`. A run that quits
-    with status 0 after it writes `results.qs2` succeeds, so
-    [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-    can end the run of a fake scenario. Files of the scenarios that it
-    does not run stay as they are.
+3.  It deletes these files, and it stops before any run when one of them
+    stays:
 
-3.  For each scenario with more than 1 simulation, it stacks the files
+    - the `check.csv` of each chosen scenario.
+
+    - the stacked `results.qs2` of each chosen scenario with more than 1
+      simulation.
+
+    - the `results.qs2` and the `run.ok` of each simulation that it
+      runs.
+
+    Files of the scenarios that it does not run stay as they are.
+
+4.  It runs the script once for each simulation that it does not keep.
+    Each run is a new R session with the arguments
+    `scenario=<name> sim=<k>`, and with `home` as the working directory.
+    At most `workers` runs go at the same time. The stdout and the
+    stderr of each run go to `run.log` in the results folder of the
+    simulation. Each run writes `run.log` again, also a run that
+    succeeds.
+
+    A run succeeds when all of these hold:
+
+    - It quits with status 0, so
+      [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+      can end the run of a fake scenario.
+
+    - Its `results.qs2` exists and passes
+      [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+
+    - `manifest$scenario`, `manifest$sim` and `manifest$sims` are those
+      of the simulation.
+
+    After a run that succeeds, `run_scenarios()` writes `run.ok` beside
+    `run.log`. `run.ok` holds one line, the md5 of `results.qs2`. A run
+    that stops after it writes `results.qs2` thus has no `run.ok`. This
+    is also the case when the caller is interrupted. `run.log` and
+    `run.ok` are run artefacts. List both in the `.gitignore` of the
+    project.
+
+    Each other run fails. For a run that fails, `run_scenarios()` prints
+    the whole `run.log` with [`cat()`](https://rdrr.io/r/base/cat.html).
+    After the first failure, it starts no new run, and the runs that
+    started go on to their end. It then stops with an error that names
+    the scenario, the simulation and the `run.log` of each failed run.
+    It stacks and checks no scenario.
+
+5.  For each scenario with more than 1 simulation, it stacks the files
     `<version>_results/<scenario>/sim_<kkkk>/results.qs2` into
     `<version>_results/<scenario>/results.qs2`. It stops when the files
-    are not exactly the simulations 1 to `sims`. `estimates`,
+    are not exactly the simulations 1 to `sims`. After `sims` in
+    `CFG$scenarios` becomes smaller, the folders of the higher
+    simulations stay. Stacking then stops, and the error names their
+    files. Delete those folders to stack again. `estimates`,
     `exclusions` and each data.frame in `tables` get a first column
     `sim`. Each keeps the class of its object in simulation 1, so a
     data.table stays a data.table. `extra` is an empty list. The
@@ -70,9 +122,10 @@ Invisibly, a data.frame of every assertion, with the columns `scenario`,
     are `NA`, `sims` is the number of simulations, and `stacked` is
     `TRUE`. For a fake scenario, it stops when a simulation has no valid
     `manifest$fake_md5`, or when the simulations do not have one value
-    of it.
+    of it. It also stops when the simulations do not have one value of
+    `manifest$settings`.
 
-4.  For each scenario that has a function `expect_<scenario>()` in
+6.  For each scenario that has a function `expect_<scenario>()` in
     `<version>_functions/`, it calls that function on the results of the
     scenario in a new R session. `expect_real()` is optional. The
     function MUST return a data.frame with at least one row and the
@@ -93,6 +146,42 @@ writes it to `check.csv` too:
 
 After every scenario is done, `run_scenarios()` stops when a value of
 `pass` is not `TRUE`. The error lists the failed assertions.
+
+## Workers
+
+Each simulation depends only on its scenario and its number, so
+`workers` does not change the results files or `check.csv`. Only the
+order of the lines on the console can change. pbn does not limit the
+threads that R or the BLAS library starts in each R session.
+
+## Resume
+
+With `resume = TRUE`, `run_scenarios()` keeps a simulation when all of
+these hold:
+
+- Its `results.qs2` exists and passes
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+
+- Its `run.ok` exists and holds the md5 of `results.qs2` now. So the run
+  completed, and nothing changed `results.qs2` after it.
+
+- `manifest$scenario`, `manifest$sim` and `manifest$sims` are those of
+  the simulation.
+
+- `manifest$source_md5` is the md5 of the files of `<version>_run.R` and
+  `<version>_functions/` now.
+
+- For a fake scenario, `manifest$fake_md5` is the md5 of the code of
+  `fake_<scenario>()` now.
+
+Each other simulation runs again, and the console line of its start
+gives the reason. The stacking and the `expect_` assertions always run
+again.
+
+Resume does not find a change in the real data, or in the version of R
+or of a package. It also does not find a change in a file outside
+`<version>_run.R` and `<version>_functions/`. After such a change, use
+`resume = FALSE`.
 
 ## See also
 
@@ -139,9 +228,12 @@ writeLines(
   file.path(home, "v01_run.R")
 )
 pbn::run_scenarios("v01", home = home)
-#> pbn: scenario real, simulation 1
-#> pbn: scenario null, simulation 1
-#> pbn: scenario null, simulation 2
+#> pbn: scenario real, simulation 1: started
+#> pbn: scenario real, simulation 1: ran
+#> pbn: scenario null, simulation 1: started
+#> pbn: scenario null, simulation 1: ran
+#> pbn: scenario null, simulation 2: started
+#> pbn: scenario null, simulation 2: ran
 #> Assertions of the scenario "null":
 #>        assertion expected observed pass
 #>  two simulations        2        2 TRUE

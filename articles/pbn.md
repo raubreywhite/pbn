@@ -54,11 +54,18 @@ MUST be there, and it uses the real data. Here the fake scenario `known`
 has 1 simulation and the fake scenario `null` has 3. `CFG$vars` names
 the variables of the descriptive table.
 
+Each other column of `CFG$scenarios` is a setting of the scenario. Here
+`n_boot` is the number of bootstrap replicates: 200 for the real data
+and 20 for each fake scenario, so the fake runs are fast. The run script
+reads it as `p$settings$n_boot`. A setting column MUST be an atomic
+vector with no `NA`.
+
 ``` r
 CFG <- list(
   scenarios = data.frame(
     scenario = c("real", "known", "null"),
-    sims = c(1, 1, 3)
+    sims = c(1, 1, 3),
+    n_boot = c(200, 20, 20)
   ),
   vars = data.table::data.table(
     var = c("outcome", "x"),
@@ -219,6 +226,8 @@ d <- d0[!is.na(outcome)]
 
 # PART 2 -- ANALYSIS ====
 fit <- stats::glm(outcome ~ group, family = "binomial", data = d)
+# A small bootstrap of the percentage, with the replicates of the scenario.
+boot <- replicate(p$settings$n_boot, 100 * mean(sample(d$outcome, replace = TRUE)))
 pbn::save_results(
   exclusions = data.frame(
     step = "outcome not missing",
@@ -227,8 +236,8 @@ pbn::save_results(
     n_after = nrow(d)
   ),
   estimates = data.frame(
-    term = c("pct_outcome", "or_group_b"),
-    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]))
+    term = c("pct_outcome", "or_group_b", "se_pct_outcome"),
+    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]), stats::sd(boot))
   ),
   tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
   d = d
@@ -267,13 +276,22 @@ runs `v01_run.R` once for each simulation of each scenario, each time in
 a new R session. It then stacks the 3 simulations of `null`, and it
 calls `expect_known()` and `expect_null()`.
 
+`workers = 2` runs 2 simulations at the same time. The results files are
+the same as with the default `workers = 1`, and only the order of the
+lines on the console can change.
+
 ``` r
-pbn::run_scenarios("v01", home = home)
-#> pbn: scenario real, simulation 1
-#> pbn: scenario known, simulation 1
-#> pbn: scenario null, simulation 1
-#> pbn: scenario null, simulation 2
-#> pbn: scenario null, simulation 3
+pbn::run_scenarios("v01", home = home, workers = 2)
+#> pbn: scenario real, simulation 1: started
+#> pbn: scenario known, simulation 1: started
+#> pbn: scenario real, simulation 1: ran
+#> pbn: scenario null, simulation 1: started
+#> pbn: scenario known, simulation 1: ran
+#> pbn: scenario null, simulation 2: started
+#> pbn: scenario null, simulation 1: ran
+#> pbn: scenario null, simulation 3: started
+#> pbn: scenario null, simulation 2: ran
+#> pbn: scenario null, simulation 3: ran
 #> Assertions of the scenario "known":
 #>                    assertion expected observed pass
 #>                rows excluded        2        2 TRUE
@@ -288,17 +306,31 @@ pbn::run_scenarios("v01", home = home)
 
 Each scenario has a folder in `v01_results/`. The scenario `null` has
 one folder for each simulation, and its stacked `results.qs2`. A fake
-run keeps its data in `data/`.
+run keeps its data in `data/`. `run.log` holds the stdout and the stderr
+of the run. When a run fails,
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+prints its whole `run.log`, and the error names the file. After a run
+that succeeds,
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+writes `run.ok` with the md5 of `results.qs2`. A run that stops after
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+has no `run.ok`. List `run.log` and `run.ok` in the `.gitignore` of the
+project.
 
 ``` r
 list.files(file.path(home, "v01_results"), recursive = TRUE)
 #>  [1] "known/check.csv"           "known/data/d.csv"         
-#>  [3] "known/results.qs2"         "null/check.csv"           
-#>  [5] "null/results.qs2"          "null/sim_0001/data/d.csv" 
-#>  [7] "null/sim_0001/results.qs2" "null/sim_0002/data/d.csv" 
-#>  [9] "null/sim_0002/results.qs2" "null/sim_0003/data/d.csv" 
-#> [11] "null/sim_0003/results.qs2" "real/results.qs2"         
-#> [13] "real/table1.csv"
+#>  [3] "known/results.qs2"         "known/run.log"            
+#>  [5] "known/run.ok"              "null/check.csv"           
+#>  [7] "null/results.qs2"          "null/sim_0001/data/d.csv" 
+#>  [9] "null/sim_0001/results.qs2" "null/sim_0001/run.log"    
+#> [11] "null/sim_0001/run.ok"      "null/sim_0002/data/d.csv" 
+#> [13] "null/sim_0002/results.qs2" "null/sim_0002/run.log"    
+#> [15] "null/sim_0002/run.ok"      "null/sim_0003/data/d.csv" 
+#> [17] "null/sim_0003/results.qs2" "null/sim_0003/run.log"    
+#> [19] "null/sim_0003/run.ok"      "real/results.qs2"         
+#> [21] "real/run.log"              "real/run.ok"              
+#> [23] "real/table1.csv"
 ```
 
 [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
@@ -313,6 +345,40 @@ cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "odds ratio of b against a",6,5.99999999999878,TRUE
 ```
 
+## Running again after a failure
+
+A run of some hours can fail late. With `resume = TRUE`,
+[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+keeps each simulation with a `results.qs2` that passes
+[`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+and that has a `run.ok` with its md5. The results MUST also come from
+the same `v01_run.R` and `v01_functions/`. It runs the other
+simulations, and it stacks and checks every scenario again.
+
+Delete the results of simulation 2 of `null`, and run again with
+`resume = TRUE`:
+
+``` r
+unlink(file.path(home, "v01_results", "null", "sim_0002", "results.qs2"))
+pbn::run_scenarios("v01", home = home, resume = TRUE)
+#> pbn: scenario real, simulation 1: kept
+#> pbn: scenario known, simulation 1: kept
+#> pbn: scenario null, simulation 1: kept
+#> pbn: scenario null, simulation 3: kept
+#> pbn: scenario null, simulation 2: started, because there is no results.qs2
+#> pbn: scenario null, simulation 2: ran
+#> Assertions of the scenario "known":
+#>                    assertion expected observed pass
+#>                rows excluded        2        2 TRUE
+#>    outcome events in group b        6        6 TRUE
+#>  percentage with the outcome       40       40 TRUE
+#>    odds ratio of b against a        6        6 TRUE
+#> Assertions of the scenario "null":
+#>                           assertion    expected observed pass
+#>                         simulations           3    3.000 TRUE
+#>  mean log odds ratio of b against a -0.5 to 0.5    0.133 TRUE
+```
+
 ## Reading results
 
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
@@ -321,9 +387,10 @@ reads the `results.qs2` of one scenario. The default scenario is `real`.
 ``` r
 r <- pbn::read_results("v01", home = home)
 r$estimates
-#>          term  estimate
-#> 1 pct_outcome 29.123711
-#> 2  or_group_b  1.747826
+#>             term  estimate
+#> 1    pct_outcome 29.123711
+#> 2     or_group_b  1.747826
+#> 3 se_pct_outcome  2.399824
 r$tables$table1
 #>        var    grp     n missing     mean       sd events      pct          p
 #>     <char> <char> <int>   <int>    <num>    <num>  <int>    <num>      <num>
@@ -351,29 +418,34 @@ more, it is the stacked results of all simulations, with a first column
 
 ``` r
 pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
-#>          term  estimate
-#> 1 pct_outcome 30.250000
-#> 2  or_group_b  1.323457
+#>             term  estimate
+#> 1    pct_outcome 30.250000
+#> 2     or_group_b  1.323457
+#> 3 se_pct_outcome  2.346996
 pbn::read_results("v01", scenario = "null", home = home)$estimates
-#>   sim        term  estimate
-#> 1   1 pct_outcome 31.750000
-#> 2   1  or_group_b  1.087506
-#> 3   2 pct_outcome 30.250000
-#> 4   2  or_group_b  1.323457
-#> 5   3 pct_outcome 27.250000
-#> 6   3  or_group_b  1.035040
+#>   sim           term  estimate
+#> 1   1    pct_outcome 31.750000
+#> 2   1     or_group_b  1.087506
+#> 3   1 se_pct_outcome  1.972508
+#> 4   2    pct_outcome 30.250000
+#> 5   2     or_group_b  1.323457
+#> 6   2 se_pct_outcome  2.346996
+#> 7   3    pct_outcome 27.250000
+#> 8   3     or_group_b  1.035040
+#> 9   3 se_pct_outcome  2.320390
 ```
 
 The manifest records where the results come from. It holds the versions
-of R, pbn and the loaded packages, the date, the scenario and the
-simulation. For the real data, `data_md5` holds the md5 of each data
-file. For a fake scenario, `fake_md5` holds the md5 of the code of
-`fake_<scenario>()`.
+of R, pbn and the loaded packages, the date, the scenario, the
+simulation and the settings of the scenario. `source_md5` holds the md5
+of `v01_run.R` and of each file in `v01_functions/`. For the real data,
+`data_md5` holds the md5 of each data file. For a fake scenario,
+`fake_md5` holds the md5 of the code of `fake_<scenario>()`.
 
 ``` r
 str(r$manifest)
-#> List of 11
-#>  $ pbn_version: chr "2026.11.20"
+#> List of 13
+#>  $ pbn_version: chr "2026.11.21"
 #>  $ r_version  : chr "R version 4.6.2 (2026-10-29)"
 #>  $ packages   : Named chr [1:8] "0.2.0" "1.18.6.1" "1.8.1" "2026.11.18" ...
 #>   ..- attr(*, "names")= chr [1:8] "charport" "data.table" "glue" "org" ...
@@ -382,7 +454,11 @@ str(r$manifest)
 #>  $ scenario   : chr "real"
 #>  $ sim        : int 1
 #>  $ sims       : int 1
-#>  $ data_raw   : chr "/tmp/RtmpszmMHn/pbn_get_started/data_raw"
+#>  $ data_raw   : chr "/tmp/RtmpfFSrZ6/pbn_get_started/data_raw"
+#>  $ settings   :List of 1
+#>   ..$ n_boot: num 200
+#>  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "7f906a9381c789e76e363f51d46748b1" "d2b4c6343bc9270dce126a778bcb42a0"
+#>   ..- attr(*, "names")= chr [1:4] "v01_functions/_cfg.R" "v01_functions/scenario_known.R" "v01_functions/scenario_null.R" "v01_run.R"
 #>  $ data_md5   : Named chr "396527785293e765115178711b7aab75"
 #>   ..- attr(*, "names")= chr "d.csv"
 #>  $ n_rows_data: int 388
@@ -511,14 +587,15 @@ script <- readLines(run)
 script <- sub("100 * mean(d$outcome)", "100 * sum(d$outcome) / nrow(d0)", script, fixed = TRUE)
 writeLines(script, run)
 grep("sum(d$outcome)", readLines(run), value = TRUE, fixed = TRUE)
-#> [1] "    estimate = c(100 * sum(d$outcome) / nrow(d0), exp(stats::coef(fit)[[\"groupb\"]]))"
+#> [1] "    estimate = c(100 * sum(d$outcome) / nrow(d0), exp(stats::coef(fit)[[\"groupb\"]]), stats::sd(boot))"
 ```
 
 Run the scenario `known` only:
 
 ``` r
 pbn::run_scenarios("v01", scenario = "known", home = home)
-#> pbn: scenario known, simulation 1
+#> pbn: scenario known, simulation 1: started
+#> pbn: scenario known, simulation 1: ran
 #> Assertions of the scenario "known":
 #>                    assertion expected observed  pass
 #>                rows excluded        2  2.00000  TRUE
@@ -572,9 +649,11 @@ with the project folder as the working directory.
 - No function formats a table for a journal.
   [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) computes
   the numbers only, and it gives no p-value for a continuous variable.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  runs the simulations one after another. A run that fails stops it, and
-  the later runs do not start.
+- `workers` limits the number of R sessions. It does not limit the
+  threads that R or the BLAS library starts in each of them.
+- `resume = TRUE` does not find a change in the real data, or in the
+  version of R or of a package. It also does not find a change in a file
+  outside `v01_run.R` and `v01_functions/`.
 - When
   [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
   runs some scenarios only, the results of the other scenarios stay as

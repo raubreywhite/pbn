@@ -1,0 +1,8 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^.*\.Rcheck$
+^pkgdown$
+^docs$
+^\.github$
+^_pkgdown\.yml$
+^Rplots\.pdf$

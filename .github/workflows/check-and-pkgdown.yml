@@ -1,0 +1,14 @@
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+name: Check and pkgdown
+
+jobs:
+  r-package:
+    permissions:
+      contents: write
+    uses: raubreywhite/rwtemplate/.github/workflows/r-package.yml@3a02a568840bf9d6d41f76e139922eb658da0e13

@@ -1,0 +1,47 @@
+url: https://www.rwhite.no/pbn/
+
+template:
+  package: rwtemplate
+  params:
+    hero:
+      overline: "R package - Project policy"
+      title: "One layout for every analysis project."
+      lede: >
+        The house layout of a versioned analysis project, the checks of that
+        layout, and one results object with a fixed contract.
+      cta:
+        primary:
+          text: "Browse the reference"
+          href: "reference/index.html"
+        secondary:
+          text: "Read the changelog"
+          href: "news/index.html"
+
+reference:
+- title: "Run a project version"
+  contents:
+    - initialize_project
+    - run_version
+
+- title: "Results"
+  contents:
+    - save_results
+    - read_results
+    - check_results
+
+- title: "Checks of the layout"
+  contents:
+    - check_project
+
+- title: "Shared helpers"
+  contents:
+    - table1
+
+authors:
+  footer:
+    roles: [cre, aut]
+    text: "Crafted by"
+  sidebar:
+    roles: [cre, aut, cph]
+  Richard Aubrey White:
+    href: "https://www.rwhite.no"

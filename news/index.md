@@ -180,6 +180,12 @@ each scenario. To move a project, change these items:
 - With the steps, the cache key and `fake_md5` hold each step, and the
   cache line names a changed step. The article Get started uses the
   steps.
+- The error of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) also
+  names the first failed analysis and holds its error. pbn cuts it so
+  that the whole error stays below 900 bytes. A knitr build keeps this
+  error and loses the output of
+  [`cat()`](https://rdrr.io/r/base/cat.html).
 
 ## pbn 2026.11.22
 

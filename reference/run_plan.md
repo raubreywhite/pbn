@@ -95,8 +95,11 @@ worker and with more. After the run, `run_plan()` prints each failed
 analysis with its name and its full error message with
 [`cat()`](https://rdrr.io/r/base/cat.html), and then it stops. R cuts an
 error message at 1000 bytes by default, and
-[`cat()`](https://rdrr.io/r/base/cat.html) does not. pbn then saves
-nothing, because
+[`cat()`](https://rdrr.io/r/base/cat.html) does not. The error message
+of `run_plan()` also names the first failed analysis in the order of the
+plan, and holds its error. pbn cuts that error to keep the message below
+900 bytes. When 2 or more analyses fail and all have the same error, the
+message says so. pbn then saves nothing, because
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 needs the value of `run_plan()`. The results files of an earlier run
 stay as they are.

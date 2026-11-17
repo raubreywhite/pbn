@@ -160,6 +160,7 @@
 <li>New argument <code>coverage</code> of <code><a href="../reference/expect_recovers.html">expect_recovers()</a></code>. With <code>FALSE</code>, it makes no coverage assertion, needs no <code>lower</code> and <code>upper</code>, and needs 100 simulations.</li>
 <li>
 <code>read_results(sim = 1)</code> reads the <code>results.qs2</code> of a scenario with 1 simulation.</li>
+<li>On Windows, in a git repository, <code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/save_results.html">save_results()</a></code> stopped even when <code>.gitignore</code> held <code>*gitexclude*</code>. pbn now gives <code>git check-ignore</code> its paths with LF line ends, because git reads the CR of CR LF as part of a path.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

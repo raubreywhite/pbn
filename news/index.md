@@ -246,6 +246,12 @@ each scenario. To move a project, change these items:
   `upper`, and needs 100 simulations.
 - `read_results(sim = 1)` reads the `results.qs2` of a scenario with 1
   simulation.
+- On Windows, in a git repository,
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) and
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  stopped even when `.gitignore` held `*gitexclude*`. pbn now gives
+  `git check-ignore` its paths with LF line ends, because git reads the
+  CR of CR LF as part of a path.
 
 ## pbn 2026.11.22
 

@@ -13,8 +13,8 @@
 <link href="deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><meta property="og:title" content="House Layout and Checks for Analysis Projects">
-<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It runs the real data and fake scenarios as one plnr plan, with a seed for each simulation, writes one results object for each scenario and simulation with a fixed contract, checks the fake scenarios against their known answers, and computes the numbers of a descriptive table.">
-<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It runs the real data and fake scenarios as one plnr plan, with a seed for each simulation, writes one results object for each scenario and simulation with a fixed contract, checks the fake scenarios against their known answers, and computes the numbers of a descriptive table.">
+<meta name="description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It runs the real data and fake scenarios as one plnr plan, with a seed for each simulation, writes one results object for each scenario and simulation with a fixed contract, checks the fake scenarios against their known answers, and computes the numbers of a descriptive table. It checks the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario against limits from their Monte Carlo standard errors (Morris, White and Crowther, 2019, &lt;doi:10.1002/sim.8086&gt;).">
+<meta property="og:description" content="Holds the house layout of a versioned analysis project and the checks of that layout. It runs the real data and fake scenarios as one plnr plan, with a seed for each simulation, writes one results object for each scenario and simulation with a fixed contract, checks the fake scenarios against their known answers, and computes the numbers of a descriptive table. It checks the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario against limits from their Monte Carlo standard errors (Morris, White and Crowther, 2019, &lt;doi:10.1002/sim.8086&gt;).">
 <meta property="og:image" content="https://www.rwhite.no/pbn/logo.png">
 </head>
 <body>
@@ -104,7 +104,7 @@
 <span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_plan.html">run_plan</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">p</span>, <span class="va">scenarios</span><span class="op">)</span></span>
 <span></span>
-<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/end_unless_real.html">end_unless_real</a></span><span class="op">(</span><span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/make_outputs.html">make_outputs</a></span><span class="op">(</span><span class="va">make_output</span>, <span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
 <p>From the project folder, run it with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
 <p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> builds a small fake project file by file, and runs it. Read it first.</p>
 </div>
@@ -150,6 +150,18 @@
 <tr>
 <td><code><a href="reference/save_results.html">save_results()</a></code></td>
 <td>Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. <code>gitexclude</code> puts the results with data for each person in a file that git ignores.</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/expect_recovers.html">expect_recovers()</a></code>, <code><a href="reference/expect_biased.html">expect_biased()</a></code>
+</td>
+<td>Check the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario, and the bias of a control.</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/make_outputs.html">make_outputs()</a></code>, <code><a href="reference/stamp_fake.html">stamp_fake()</a></code>
+</td>
+<td>Write the figures and the tables of the real data and of chosen fake scenarios, with fake output marked.</td>
 </tr>
 <tr>
 <td><code><a href="reference/end_unless_real.html">end_unless_real()</a></code></td>

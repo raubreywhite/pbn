@@ -37,7 +37,7 @@ pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, outcome = CFG$
 r <- pbn::run_plan(p)
 pbn::save_results(r, p, scenarios)
 
-pbn::end_unless_real(scenarios)
+pbn::make_outputs(make_output, scenarios)
 ```
 
 From the project folder, run it with `Rscript v01_run.R`, and check the
@@ -58,6 +58,8 @@ builds a small fake project file by file, and runs it. Read it first.
 | [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md) | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
 | [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |
 | [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md) | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. `gitexclude` puts the results with data for each person in a file that git ignores. |
+| [`expect_recovers()`](https://www.rwhite.no/pbn/reference/expect_recovers.md), [`expect_biased()`](https://www.rwhite.no/pbn/reference/expect_biased.md) | Check the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario, and the bias of a control. |
+| [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md), [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md) | Write the figures and the tables of the real data and of chosen fake scenarios, with fake output marked. |
 | [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md) | Ends a run script after [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md) when the run had no real data. |
 | [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md) | Reads the results files of one scenario. The default is `"real"`. |
 | [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md) | Checks a results object against the contract. |

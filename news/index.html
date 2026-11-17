@@ -123,6 +123,14 @@
 <li>
 <code>element_names</code> passes a <code>results.qs2</code> with <code>manifest</code> only when the manifest puts kinds in <code>results_gitexclude.qs2</code>.</li>
 <li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>gitexclude_not_tracked</code>. <code>results_contract</code> also checks each <code>results_gitexclude.qs2</code>, and <code>unknown_path</code> knows <code>vNN_cache_gitexclude/</code>.</li>
+<li>New <code><a href="../reference/expect_recovers.html">expect_recovers()</a></code> checks the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario. Each limit is 3.89 Monte Carlo standard errors, and each row shows the smallest error that it finds with a probability of 80%.</li>
+<li>New <code><a href="../reference/expect_biased.html">expect_biased()</a></code>, for a control analysis that MUST be biased. Both functions fail an assertion below 100 simulations, or 288 for the coverage of a 95% interval, and above 5% missing values. They also fail an <code>se</code> of 0 or less, a <code>lower</code> above its <code>upper</code>, and estimates that are all equal.</li>
+<li>New <code><a href="../reference/make_outputs.html">make_outputs()</a></code> calls the output function of the project for <code>"real"</code> and for each fake scenario with <code>output = TRUE</code>. The fake output goes to <code>&lt;scenario&gt;/output_fake_data/</code> with the name prefix <code>fake_data_</code>, and pbn empties each folder first. It stops when the call for a fake scenario changes a file outside its folder. It deletes the output of a scenario whose checks failed.</li>
+<li>New <code><a href="../reference/stamp_fake.html">stamp_fake()</a></code>, which puts the label “FAKE DATA” on a ggplot of a fake scenario. ggplot2 is in Suggests, and grid in Imports.</li>
+<li>
+<code>CFG$scenarios</code> MAY have the column <code>output</code>, <code>TRUE</code> or <code>FALSE</code>, and <code>FALSE</code> for <code>"real"</code>. It is not a setting. Before, a column <code>output</code> was a setting of any atomic type.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>fake_data_names</code>.</li>
+<li>The article Get started has the scenarios <code>null</code> and <code>confounded</code>, with 140 simulations each and recovery checks, and an output part with <code><a href="../reference/make_outputs.html">make_outputs()</a></code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

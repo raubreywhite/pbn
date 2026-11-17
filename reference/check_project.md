@@ -95,6 +95,12 @@ The rules:
   [`knitr::purl()`](https://rdrr.io/pkg/knitr/man/knit.html) extracts
   and the inline R code.
 
+- `fake_data_names` (FAIL): a file in a folder `output_fake_data/` has a
+  name without the prefix `fake_data_`, or a file with the prefix is in
+  another folder.
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  writes these folders.
+
 - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
   `vNN_functions/*.R` file defines a function with the name of a pbn
   export.
@@ -111,6 +117,10 @@ The rules:
   `vNN_results/`, `vNN_cache_gitexclude/`, `vNN_test/`,
   `vNN_check_functions.R` and `check_project.R`, among others. A
   top-level dotfile and a top-level `*.Rproj` file are never unknown.
+  The rule reads the top level only, so it never warns on the folders
+  `output/` and `output_fake_data/` that
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  writes in `vNN_results/<scenario>/`.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -139,11 +149,12 @@ pbn::check_project(home)
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
 #> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+#> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 12 PASS, 0 WARN, 0 FAIL
+#> 13 PASS, 0 WARN, 0 FAIL
 
 unlink(home, recursive = TRUE)
 ```

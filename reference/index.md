@@ -30,6 +30,20 @@
 - [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
   : Check a results object against the contract
 
+## Checks of fake scenarios
+
+- [`expect_recovers()`](https://www.rwhite.no/pbn/reference/expect_recovers.md)
+  : Check that an analysis recovers the truth of a fake scenario
+- [`expect_biased()`](https://www.rwhite.no/pbn/reference/expect_biased.md)
+  : Check that a control analysis shows its bias
+
+## Output
+
+- [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  : Write the output of the real data and of chosen fake scenarios
+- [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md) :
+  Mark a figure of fake data
+
 ## Checks of the layout
 
 - [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

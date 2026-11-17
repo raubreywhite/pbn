@@ -23,9 +23,9 @@ scenarios(cfg, only = NULL)
 
 ## Value
 
-A data.frame with the columns `scenario`, `sims` and each setting
-column, one row for each chosen scenario in the order of
-`cfg$scenarios`. `sims` is an integer.
+A data.frame with the columns `scenario`, `sims`, `output` when
+`cfg$scenarios` has it, and each setting column. It has one row for each
+chosen scenario in the order of `cfg$scenarios`. `sims` is an integer.
 
 ## Details
 
@@ -36,6 +36,13 @@ column, one row for each chosen scenario in the order of
 
 - `sims`: the number of simulations of the scenario, a whole number of 1
   or more.
+
+- `output`: optional. `TRUE` or `FALSE` on each row, and `FALSE` for
+  `"real"`.
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  writes the output of a fake scenario with `TRUE`. This column is not a
+  setting. It is not in the argsets, in the key of the cache or in
+  `manifest$settings`.
 
 Each other column is a setting of the scenario, for example `n_boot` for
 a number of bootstrap replicates that is smaller in the fake scenarios.

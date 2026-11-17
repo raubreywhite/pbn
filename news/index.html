@@ -221,7 +221,7 @@
 <li>
 <code><a href="../reference/initialize_project.html">initialize_project()</a></code> takes <code>folders</code>, the named folders that the project reads, such as <code>c(main = "../data", lookup = "../codes")</code>, in the place of <code>data_raw</code>. One folder without a name is <code>main</code>. A call with <code>data_raw =</code> stops and gives the new argument.</li>
 <li>New <code>folder(name, ...)</code> gives the path of a folder of the project, or of a path inside it, such as <code>pbn::folder("main", "sub", "d.csv")</code>, also on a worker of <code><a href="../reference/run_plan.html">run_plan()</a></code>. A part with a leading <code>/</code>, a drive or <code>..</code> stops. pbn gives org no folder, so <code>org::project$data_raw</code> is gone.</li>
-<li>pbn reads no content of a data file. <code>manifest$data_files</code>, in the place of <code>data_md5</code>, lists each file under each folder at any depth, as <code>&lt;folder&gt;/&lt;path&gt;</code>, with its size and its modification time. A file that changed in place and kept both is not seen.</li>
+<li>pbn reads no content of a data file. <code>manifest$data_files</code>, in the place of <code>data_md5</code>, lists each file under each folder at any depth, as <code>&lt;folder&gt;/&lt;path&gt;</code>, with its size and its modification time in whole seconds. A file that changed in place and kept its size and that second is not seen.</li>
 <li>The cache key holds that fingerprint and no path. So the same files in another place, copied with their modification times, give the same key and the same results. A changed, new or removed file gives the cache line “the raw data in the folder lookup changed”.</li>
 <li>The rule <code>manifest_data</code> of <code><a href="../reference/check_results.html">check_results()</a></code> needs <code>data_files</code> for <code>"real"</code>, and fails a manifest with <code>data_md5</code>.</li>
 <li>
@@ -233,7 +233,7 @@
 <li>
 <code>run_script_initialises</code> does not count a call with an argument that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> does not have.</li>
 <li>New <code><a href="../reference/to_one_file.html">to_one_file()</a></code> writes the run of the real data as one R script, <code>vNN_one_file.R</code> in the project of the session, for a server without a network. It stops on kept code that uses a left-out <code>expect_</code> function, and on a file that does not parse. <code><a href="../reference/initialize_project.html">initialize_project()</a></code> gains the argument <code>one_file</code> for that script.</li>
-<li>New <code><a href="../reference/check_one_file.html">check_one_file()</a></code> runs that script on copies of the folders and compares its real results with those of the project.</li>
+<li>New <code><a href="../reference/check_one_file.html">check_one_file()</a></code> runs that script on copies of the folders and compares its real results with those of the project. When the run stops, it prints the exit status and the last 20 lines of its output.</li>
 <li>
 <code>unknown_path</code> knows <code>vNN_one_file.R</code>, and the code rules do not read it.</li>
 <li>New <code><a href="../reference/show_blocks.html">show_blocks()</a></code> and <code><a href="../reference/show_blocks.html">show_block()</a></code> print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.</li>

@@ -123,8 +123,10 @@ The fingerprint is a data.frame with one row for each file, sorted by
 
 - `size`, the size in bytes.
 
-- `mtime`, the modification time in seconds since 1970-01-01 UTC, with
-  the fraction of a second that the file system keeps.
+- `mtime`, the modification time in whole seconds since 1970-01-01 UTC,
+  with the fraction of a second cut off. A copy of a file can lose part
+  of that fraction, for example on Windows, and whole seconds stay the
+  same.
 
 Hidden files count. A link to a file gives the size and the time of its
 target, and [`list.files()`](https://rdrr.io/r/base/list.files.html)
@@ -134,10 +136,10 @@ same folder. It stops when a folder holds or is inside
 `<version>_results/` or `<version>_cache_gitexclude/`, because pbn
 writes there in each run. A folder elsewhere inside `home` is allowed.
 
-A file that changed in place, and kept its size and its modification
-time, is not seen. A copy that does not keep the modification times
-looks like changed data, so the cache computes the data again.
-`file.copy(..., copy.date = TRUE)` keeps them.
+A file that changed in place, and kept its size and the second of its
+modification time, is not seen. A copy that does not keep the
+modification times looks like changed data, so the cache computes the
+data again. `file.copy(..., copy.date = TRUE)` keeps them.
 
 ## One file
 
@@ -190,11 +192,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpaFWqJo/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmpt3wZVk/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpaFWqJo/pbn_initialize_example/v01_results"
+#> [1] "/tmp/Rtmpt3wZVk/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmpaFWqJo/pbn_initialize_example/data"
+#> [1] "/tmp/Rtmpt3wZVk/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

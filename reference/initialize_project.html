@@ -144,16 +144,18 @@ chooses the scenarios, and <code><a href="add_data.html">add_data()</a></code> a
 <code>file</code> in the C locale:</p><ul><li><p><code>file</code>, the name <code>&lt;folder name&gt;/&lt;path in the folder&gt;</code> with <code>/</code>, for
 example <code>main/sub/d.csv</code>. It never holds the path of the folder.</p></li>
 <li><p><code>size</code>, the size in bytes.</p></li>
-<li><p><code>mtime</code>, the modification time in seconds since 1970-01-01 UTC, with
-the fraction of a second that the file system keeps.</p></li>
+<li><p><code>mtime</code>, the modification time in whole seconds since 1970-01-01 UTC,
+with the fraction of a second cut off. A copy of a file can lose part
+of that fraction, for example on Windows, and whole seconds stay the
+same.</p></li>
 </ul><p>Hidden files count. A link to a file gives the size and the time of its
 target, and <code><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files()</a></code> follows a link to a folder. A broken link stops
 <code>initialize_project()</code>. It also stops when a folder of <code>folders</code> is inside
 another or is the same folder. It stops when a folder holds or is inside
 <code>&lt;version&gt;_results/</code> or <code>&lt;version&gt;_cache_gitexclude/</code>, because pbn writes
 there in each run. A folder elsewhere inside <code>home</code> is allowed.</p>
-<p>A file that changed in place, and kept its size and its modification
-time, is not seen. A copy that does not keep the modification times looks
+<p>A file that changed in place, and kept its size and the second of its
+modification time, is not seen. A copy that does not keep the modification times looks
 like changed data, so the cache computes the data again. <code>file.copy(..., copy.date = TRUE)</code> keeps them.</p>
     </div>
     <div class="section level2">
@@ -200,11 +202,11 @@ file.</p>
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpaFWqJo/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmpt3wZVk/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpaFWqJo/pbn_initialize_example/v01_results"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmpt3wZVk/pbn_initialize_example/v01_results"</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="folder.html">folder</a></span><span class="op">(</span><span class="st">"main"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpaFWqJo/pbn_initialize_example/data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmpt3wZVk/pbn_initialize_example/data"</span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">$</span><span class="va">scenarios</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scenario sims</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     real    1</span>

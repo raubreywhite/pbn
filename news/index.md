@@ -431,8 +431,9 @@ each scenario. To move a project, change these items:
   folder, so `org::project$data_raw` is gone.
 - pbn reads no content of a data file. `manifest$data_files`, in the
   place of `data_md5`, lists each file under each folder at any depth,
-  as `<folder>/<path>`, with its size and its modification time. A file
-  that changed in place and kept both is not seen.
+  as `<folder>/<path>`, with its size and its modification time in whole
+  seconds. A file that changed in place and kept its size and that
+  second is not seen.
 - The cache key holds that fingerprint and no path. So the same files in
   another place, copied with their modification times, give the same key
   and the same results. A changed, new or removed file gives the cache
@@ -475,7 +476,8 @@ each scenario. To move a project, change these items:
 - New
   [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
   runs that script on copies of the folders and compares its real
-  results with those of the project.
+  results with those of the project. When the run stops, it prints the
+  exit status and the last 20 lines of its output.
 - `unknown_path` knows `vNN_one_file.R`, and the code rules do not read
   it.
 - New

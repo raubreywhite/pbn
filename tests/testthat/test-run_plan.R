@@ -325,7 +325,7 @@ test_that("a worker finds a package in a library that this R session added with 
   unloadNamespace("pbnprobe")
 })
 
-test_that("a new worker starts with the library paths of this R session", {
+test_that("a new worker gets the library paths of this R session in R_LIBS", {
   lib <- local_probe_library()
   cl <- make_cluster(1)
   withr::defer(parallel::stopCluster(cl))
@@ -334,10 +334,11 @@ test_that("a new worker starts with the library paths of this R session", {
   }
   environment(first_call) <- baseenv()
   seen <- parallel::clusterCall(cl, first_call)[[1]]
-  # The worker reports what it saw, so that a failure on another platform
-  # shows whether R_LIBS reached the worker.
+  # R_LIBS reaches the worker. Its .libPaths() at start is not asserted: under
+  # R CMD check on Windows the start-up of R sets other paths, and
+  # prepare_workers() then sets the paths with set_lib_paths().
   expect_true(
-    lib %in% seen$paths,
+    lib %in% strsplit(seen$r_libs, .Platform$path.sep, fixed = TRUE)[[1]],
     info = paste0(
       "lib: ", lib,
       "\nR_LIBS of the worker: ", seen$r_libs,

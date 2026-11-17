@@ -256,7 +256,8 @@ The key file also records the version of each package that was loaded in
 the R session that computed the value, after `fn` returned. On a worker,
 that is the worker. The record leaves out the base packages. It also
 leaves out the packages that run the plan, tests and documents: pbn,
-plnr, foreach, doParallel, iterators, qs2, digest, uuid, progress,
+plnr, foreach, doParallel, doFuture, future, future.apply, globals,
+listenv, parallelly, progressr, iterators, qs2, digest, uuid, progress,
 testthat, pkgload, devtools, callr, processx, ps, knitr, rmarkdown and
 evaluate. A later use compares each recorded version with
 [`utils::packageVersion()`](https://rdrr.io/r/utils/packageDescription.html)
@@ -326,6 +327,7 @@ Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
 [`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md),
+[`progress()`](https://www.rwhite.no/pbn/reference/progress.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

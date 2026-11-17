@@ -20,6 +20,8 @@
   : Add one analysis for each scenario and simulation to a plan
 - [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) : Run
   a plan
+- [`progress()`](https://www.rwhite.no/pbn/reference/progress.md) : Show
+  the progress inside one analysis
 - [`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md)
   [`get_argset()`](https://www.rwhite.no/pbn/reference/get_data.md) :
   Get the data or the argset of one analysis at the console

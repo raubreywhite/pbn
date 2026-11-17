@@ -100,6 +100,7 @@ Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
 [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
+[`progress()`](https://www.rwhite.no/pbn/reference/progress.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

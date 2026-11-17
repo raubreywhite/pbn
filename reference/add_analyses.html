@@ -145,6 +145,42 @@ column, for example <code>data$d[, x := 1]</code>, and a new key from
 some rows, <code><a href="https://rdrr.io/pkg/data.table/man/setorder.html" class="external-link">data.table::setorder()</a></code> and <code><a href="https://rdrr.io/pkg/data.table/man/setattr.html" class="external-link">data.table::setattr()</a></code> on a
 column. Copy the data first with <code><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">data.table::copy()</a></code> when the analysis
 changes it.</p>
+<p>While <code><a href="run_plan.html">run_plan()</a></code> runs, an analysis also fails when it changes an object
+of the functions folder, for example <code>CFG</code>. plnr runs many analyses in one
+R session, so the change would reach each later analysis of that session.
+A result would then depend on the analyses that ran before it there. pbn
+checks each object that the functions folder made or changed when
+<code><a href="initialize_project.html">initialize_project()</a></code> sourced it, other than a function, a plnr plan and
+<code>.Random.seed</code>. It compares the bytes of <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">serialize()</a></code> of each object
+before and after the analysis. That finds a new value, a new element and
+a new attribute. It compares them before and after each data function or
+data step too. A data function that changes such an object fails each
+analysis that gets its data.</p>
+<p>While <code><a href="run_plan.html">run_plan()</a></code> runs, two more parts of the state of an R session
+cannot pass from one analysis to the next:</p><ul><li><p>An analysis fails when it leaves a new object in the global
+environment, for example with <code>&lt;&lt;-</code> or <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>. <code>.Random.seed</code> does
+not count.</p></li>
+<li><p>pbn takes the kind of random number generator of the run from
+<code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> at the start of <code><a href="run_plan.html">run_plan()</a></code>. It sets that kind again
+before each seed of a data function and of an analysis. An analysis
+that calls <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> then changes no draw of a later analysis.</p></li>
+</ul><p>A data.table subset with a logical, for example
+<code>CFG$table[group == "a"]</code>, adds an index to the table in place. Copy the
+table first with <code><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">data.table::copy()</a></code>, or set
+<code>options(datatable.auto.index = FALSE)</code> in the project. pbn sets neither.</p>
+<p>The check has these limits:</p><ul><li><p>It does not see a function inside an object, because R compiles a
+function after some calls.</p></li>
+<li><p>It does not see the contents of an environment inside an object, for
+example that of a formula. It does not call an active binding.</p></li>
+<li><p>It does not see a change of an object that already was in the global
+environment, other than an object of the functions folder.</p></li>
+<li><p>The analysis that made the change fails, and the change stays for the
+later analyses of that R session. With more workers, each batch of a
+worker gets its own copy, so one analysis of each batch can fail.</p></li>
+<li><p>Without <code><a href="initialize_project.html">initialize_project()</a></code>, pbn checks no object.</p></li>
+</ul><p>The check costs time in proportion to the size of the objects. One
+computer took about 45 microseconds for each analysis with a <code>CFG</code> of 49
+elements. These held 5 data.tables of 100 rows, 20 KB in <code><a href="https://rdrr.io/r/base/serialize.html" class="external-link">serialize()</a></code>.</p>
 <p>For each scenario and simulation, pbn also adds one analysis named
 <code>&lt;scenario&gt;__sim_&lt;kkkk&gt;__pbn_n_rows</code>. It counts the rows of each data
 element. <code><a href="save_results.html">save_results()</a></code> stores the counts in <code>manifest$n_rows_data</code>, and
@@ -159,6 +195,7 @@ name is in the plan already.</p>
 <code><a href="add_data.html">add_data()</a></code>,
 <code><a href="cohort_data.html">cohort_data()</a></code>,
 <code><a href="get_data.html">get_data()</a></code>,
+<code><a href="progress.html">progress()</a></code>,
 <code><a href="run_plan.html">run_plan()</a></code></p></div>
     </div>
 

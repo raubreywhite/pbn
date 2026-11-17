@@ -97,7 +97,8 @@ The `manifest` is a list with these elements:
   [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md), the
   list also holds the packages loaded on a worker at the end of the run.
   An example is the package of a model. With 2 or more workers, this R
-  session also loads doParallel, so the list then holds doParallel too.
+  session also loads doFuture and the packages that it imports, such as
+  future, so the list then holds these too.
 
 - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so
   two runs on one day with the same inputs and packages write the same
@@ -433,7 +434,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpZRWtob/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpSE2Nsf/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

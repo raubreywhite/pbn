@@ -183,6 +183,22 @@
 <li>
 <code><a href="../reference/make_outputs.html">make_outputs()</a></code> compares the new names of the files of a fake scenario in lower case, as Windows and macOS do.</li>
 <li>pbn passes R CMD check on Windows (R-hub, R-devel).</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> with workers now runs the analyses through doFuture, and no longer through doParallel. The future plan is <code><a href="https://future.futureverse.org/reference/cluster.html" class="external-link">future::cluster</a></code>, on the PSOCK cluster that pbn makes. doParallel does not relay the progress of a worker to this R session, and a future does. future and doFuture replace doParallel in Suggests.</li>
+<li>A future empties the global environment of its worker. So with workers, each batch of analyses takes the objects of the functions folder to its worker. The output, the messages and the warnings of a worker now reach this R session. A worker has no option <code>mc.cores</code>, as before.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> shows one line for each scenario, drawn again in place in a console. A log gets no line in the first 60 seconds. Then it gets one when a scenario finishes, and at most one every 60 seconds for a running scenario. It replaces the progress bar of plnr. pbn imports progressr.</li>
+<li>New <code>progress(done, total, label)</code> shows the progress of a long analysis on the line of its scenario. It does nothing outside <code><a href="../reference/run_plan.html">run_plan()</a></code> and in a forked child process.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> fails an analysis that changes an object of the functions folder. An example is the index that a data.table subset <code>CFG$table[x == 1]</code> adds in place. <code><a href="../reference/initialize_project.html">initialize_project()</a></code> records these objects.</li>
+<li>The rule <code>no_local_copy_of_pbn_function</code> also fails a function <code>progress</code> of a project.</li>
+<li>
+<code><a href="../reference/progress.html">progress()</a></code> checks its arguments at each call, also within 0.5 seconds of a call that it showed.</li>
+<li>An error outside an analysis, for example of a worker that stops, no longer ends <code><a href="../reference/run_plan.html">run_plan()</a></code> with a raw error of future. <code><a href="../reference/run_plan.html">run_plan()</a></code> writes the run log with the error, sets the backend back, and stops with one message.</li>
+<li>An analysis fails when it leaves a new object in the global environment. A data function fails when it changes an object of the functions folder.</li>
+<li>The data functions and the analyses set the kind of random number generator of the run before each seed. An analysis that calls <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> then changes no later draw.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/save_results.html">save_results()</a></code> read the argsets of a plan in one pass. Before, the time grew with the square of the number of analyses.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

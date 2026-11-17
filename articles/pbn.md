@@ -319,6 +319,7 @@ fit_models <- function(data, argset) {
     fit <- stats::glm(stats::as.formula(paste("outcome ~", rhs)), family = "binomial", data = data$d)
     est[k] <- stats::coef(fit)[["groupb"]]
     w[k] <- stats::vcov(fit)["groupb", "groupb"]
+    pbn::progress(k, CFG$data$n_imp, "imputations")
   }
   # Rubin's rules: the variance within the imputations, plus (1 + 1/m) times
   # the variance between them.
@@ -404,7 +405,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpCbeRy1/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpWiHFUW/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -428,15 +429,16 @@ head(names(p$analyses), 5)
 #> [5] "null__sim_0003__pbn_n_rows"
 ```
 
-`workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster.
-pbn gives each worker the objects that `v01_functions/` defines and the
-attached packages, so the functions find `CFG` and each other. The data
-and each analysis set their own seed. So one analysis by hand in this R
-session gives the value of the worker:
+`workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster,
+through the packages future and doFuture. pbn gives each worker the
+objects that `v01_functions/` defines and the attached packages, so the
+functions find `CFG` and each other. The data and each analysis set
+their own seed. So one analysis by hand in this R session gives the
+value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 16:23.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -444,6 +446,60 @@ identical(by_hand, r[["confounded__sim_0003__models__1"]])
 This holds for functions that depend only on their arguments, the
 functions and `CFG` of `v01_functions/`, the attached packages and the
 seed. pbn does not copy the R options to the workers.
+
+An analysis MUST NOT change `CFG` or another object of `v01_functions/`.
+A later analysis in the same R session would see the change, so its
+result would depend on the analyses before it.
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) fails
+such an analysis, also for the index that a data.table subset such as
+`CFG$vars[var == "x"]` adds in place.
+[`?add_analyses`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+gives the rules.
+
+## Progress
+
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) shows
+one line for each scenario: its finished analyses, the time since its
+start, and a note. In an interactive terminal, it draws the lines again
+in place, for example:
+
+``` text
+pbn: 4 scenarios, 2 workers, started 14:02
+  real          3/3   analyses       5s  done
+  known         4/4   analyses       1s  done
+  null        168/560 analyses   1m 05s  models (x, sim 43) imputations 2/3 66%
+  confounded    0/560 analyses           waiting
+```
+
+In RStudio, it draws one line again in place. A run with `Rscript` into
+a log adds lines instead. It adds none in the first 60 seconds of the
+run, so a short run adds none. After that, it adds one line when a
+scenario finishes. A running scenario gets at most one line every 60
+seconds, and only with 10% more done. The section Progress of
+[`?run_plan`](https://www.rwhite.no/pbn/reference/run_plan.md) gives the
+rules.
+
+`fit_models()` calls
+[`pbn::progress()`](https://www.rwhite.no/pbn/reference/progress.md) in
+its loop over the imputations. While the analysis runs, the line of its
+scenario shows its text, as for `null` above. The text holds the kind,
+the values of the extra dimensions, the simulation, the step and the
+percent. Outside
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md),
+[`pbn::progress()`](https://www.rwhite.no/pbn/reference/progress.md)
+only checks its arguments, so the function also runs by hand.
+
+[`pbn::progress()`](https://www.rwhite.no/pbn/reference/progress.md)
+does nothing in a forked child process, for example inside
+[`parallel::mclapply()`](https://rdrr.io/r/parallel/mclapply.html). Call
+it in the loop of the analysis, between chunks of the work:
+
+``` r
+for (chunk in split(seq_len(2000), ceiling(seq_len(2000) / 100))) {
+  est <- c(est, unlist(parallel::mclapply(chunk, one_replicate, mc.cores = 4)))
+  pbn::progress(length(est), 2000, "bootstrap")
+}
+```
 
 ## The results
 
@@ -576,7 +632,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpWiHFUW/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -624,7 +680,7 @@ cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
     #> 
     #> ## When
     #> 
-    #> The run started 2026-11-17 13:49:23 +0000. This section and the section Timings change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
+    #> The run started 2026-11-17 16:23:21 +0000. This section and the section Timings change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
     #> 
     #> ## Run
     #> 
@@ -678,65 +734,65 @@ cat(log[seq(grep("^## Timings", log), length(log))], sep = "\n")
 #> 
 #> | Step                                               | Wall seconds |
 #> |----------------------------------------------------|-------------:|
-#> | run_plan()                                         |        12.59 |
-#> | save_results(): build, write and stack the results |         1.86 |
-#> | save_results(): the checks of check_results()      |         1.03 |
+#> | run_plan()                                         |        12.14 |
+#> | save_results(): build, write and stack the results |         2.35 |
+#> | save_results(): the checks of check_results()      |         1.20 |
 #> | save_results(): the expect_ functions              |         0.02 |
-#> | save_results() in total                            |         3.00 |
-#> | make_outputs(): real                               |         0.86 |
-#> | make_outputs(): known                              |         0.20 |
+#> | save_results() in total                            |         3.68 |
+#> | make_outputs(): real                               |         0.88 |
+#> | make_outputs(): known                              |         0.27 |
 #> 
-#> Summed over the 2 workers, the data and the analyses took 9.27 computing seconds. run_plan() took 12.59 wall seconds.
+#> Summed over the 2 workers, the data and the analyses took 11.96 computing seconds. run_plan() took 12.14 wall seconds.
 #> 
 #> ### Scenarios, in computing seconds
 #> 
 #> | Scenario   | Data | Analyses | Total |
 #> |------------|-----:|---------:|------:|
-#> | real       | 0.42 |     0.03 |  0.45 |
-#> | known      | 0.42 |     0.03 |  0.45 |
-#> | null       | 2.25 |     1.95 |  4.20 |
-#> | confounded | 2.19 |     1.97 |  4.16 |
+#> | real       | 0.53 |     0.13 |  0.66 |
+#> | known      | 0.08 |     0.02 |  0.10 |
+#> | null       | 3.17 |     2.64 |  5.82 |
+#> | confounded | 2.84 |     2.55 |  5.38 |
 #> 
 #> ### Data steps, in computing seconds
 #> 
 #> | Data | Scenario   | Step         | Calls | Total | Median | Maximum |
 #> |------|------------|--------------|------:|------:|-------:|--------:|
 #> | d    | real       | raw          |     1 |  0.02 |   0.02 |    0.02 |
-#> | d    | real       | clean        |     1 |  0.30 |   0.30 |    0.30 |
+#> | d    | real       | clean        |     1 |  0.40 |   0.40 |    0.40 |
 #> | d    | real       | cohort       |     1 |  0.01 |   0.01 |    0.01 |
 #> | d    | real       | after_cohort |     1 |  0.02 |   0.02 |    0.02 |
-#> | d    | known      | raw          |     1 |  0.02 |   0.02 |    0.02 |
-#> | d    | known      | clean        |     1 |  0.30 |   0.30 |    0.30 |
-#> | d    | known      | cohort       |     1 |  0.01 |   0.01 |    0.01 |
-#> | d    | known      | after_cohort |     1 |  0.02 |   0.02 |    0.02 |
-#> | d    | null       | raw          |   140 |  0.08 |   0.00 |    0.00 |
-#> | d    | null       | clean        |   140 |  0.87 |   0.01 |    0.01 |
-#> | d    | null       | cohort       |   140 |  0.12 |   0.00 |    0.01 |
-#> | d    | null       | after_cohort |   140 |  0.51 |   0.00 |    0.01 |
-#> | d    | confounded | raw          |   140 |  0.09 |   0.00 |    0.00 |
-#> | d    | confounded | clean        |   140 |  0.87 |   0.01 |    0.01 |
-#> | d    | confounded | cohort       |   140 |  0.12 |   0.00 |    0.00 |
-#> | d    | confounded | after_cohort |   140 |  0.51 |   0.00 |    0.01 |
+#> | d    | known      | raw          |     1 |  0.00 |   0.00 |    0.00 |
+#> | d    | known      | clean        |     1 |  0.01 |   0.01 |    0.01 |
+#> | d    | known      | cohort       |     1 |  0.00 |   0.00 |    0.00 |
+#> | d    | known      | after_cohort |     1 |  0.00 |   0.00 |    0.00 |
+#> | d    | null       | raw          |   140 |  0.06 |   0.00 |    0.02 |
+#> | d    | null       | clean        |   140 |  1.31 |   0.01 |    0.21 |
+#> | d    | null       | cohort       |   140 |  0.15 |   0.00 |    0.01 |
+#> | d    | null       | after_cohort |   140 |  0.66 |   0.00 |    0.02 |
+#> | d    | confounded | raw          |   140 |  0.04 |   0.00 |    0.00 |
+#> | d    | confounded | clean        |   140 |  1.12 |   0.01 |    0.01 |
+#> | d    | confounded | cohort       |   140 |  0.14 |   0.00 |    0.00 |
+#> | d    | confounded | after_cohort |   140 |  0.66 |   0.00 |    0.01 |
 #> 
 #> ### Analysis kinds, in computing seconds
 #> 
 #> | Scenario   | Kind      | Analyses | Total | Median | Maximum |
 #> |------------|-----------|---------:|------:|-------:|--------:|
 #> | real       | table1    |        1 |  0.00 |   0.00 |    0.00 |
-#> | real       | models    |        1 |  0.02 |   0.02 |    0.02 |
+#> | real       | models    |        1 |  0.12 |   0.12 |    0.12 |
 #> | real       | predicted |        1 |  0.00 |   0.00 |    0.00 |
-#> | known      | table1    |        1 |  0.00 |   0.00 |    0.00 |
-#> | known      | models    |        1 |  0.02 |   0.02 |    0.02 |
-#> | known      | crude     |        1 |  0.00 |   0.00 |    0.00 |
+#> | known      | table1    |        1 |  0.01 |   0.01 |    0.01 |
+#> | known      | models    |        1 |  0.01 |   0.01 |    0.01 |
+#> | known      | crude     |        1 |  0.01 |   0.01 |    0.01 |
 #> | known      | predicted |        1 |  0.00 |   0.00 |    0.00 |
-#> | null       | table1    |      140 |  0.27 |   0.00 |    0.00 |
-#> | null       | models    |      140 |  0.77 |   0.00 |    0.01 |
-#> | null       | crude     |      140 |  0.69 |   0.00 |    0.01 |
-#> | null       | predicted |      140 |  0.22 |   0.00 |    0.01 |
-#> | confounded | table1    |      140 |  0.27 |   0.00 |    0.00 |
-#> | confounded | models    |      140 |  0.78 |   0.01 |    0.01 |
-#> | confounded | crude     |      140 |  0.69 |   0.00 |    0.01 |
-#> | confounded | predicted |      140 |  0.24 |   0.00 |    0.01 |
+#> | null       | table1    |      140 |  0.37 |   0.00 |    0.01 |
+#> | null       | models    |      140 |  1.10 |   0.01 |    0.11 |
+#> | null       | crude     |      140 |  0.89 |   0.01 |    0.01 |
+#> | null       | predicted |      140 |  0.29 |   0.00 |    0.01 |
+#> | confounded | table1    |      140 |  0.38 |   0.00 |    0.01 |
+#> | confounded | models    |      140 |  1.00 |   0.01 |    0.02 |
+#> | confounded | crude     |      140 |  0.88 |   0.01 |    0.01 |
+#> | confounded | predicted |      140 |  0.29 |   0.00 |    0.01 |
 ```
 
 `pbn::render_run("v01")` renders the log to `v01_results/run.pdf`. It
@@ -849,8 +905,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 16:23.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 16:23.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -868,7 +924,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpWiHFUW/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpWiHFUW/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpWiHFUW/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -877,8 +933,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 16:23.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 16:23.
 ```
 
 ### A cleaning step that drops a row
@@ -937,8 +993,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 16:23.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 16:23.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -995,7 +1051,7 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpCbeRy1/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpWiHFUW/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- pbn::get_argset(p, "confounded", 3, "models")
 data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
@@ -1137,6 +1193,10 @@ with the project folder as the working directory.
   of the shared data. It does not find a change of values in place, for
   example `data$d[1, x := 0]`. Copy the data first with
   [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html).
+- pbn finds an analysis that changes an object of `v01_functions/`, such
+  as `CFG`. It does not find a change of a function inside the object, a
+  change inside an environment of the object, or a change by a data
+  function.
 - `workers` limits the number of R sessions. It does not limit the
   threads that R or the BLAS library starts in each of them.
 - `workers` limits the R sessions of pbn only. An analysis that starts

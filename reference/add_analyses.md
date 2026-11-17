@@ -128,6 +128,69 @@ on a column. Copy the data first with
 [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html)
 when the analysis changes it.
 
+While [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+runs, an analysis also fails when it changes an object of the functions
+folder, for example `CFG`. plnr runs many analyses in one R session, so
+the change would reach each later analysis of that session. A result
+would then depend on the analyses that ran before it there. pbn checks
+each object that the functions folder made or changed when
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+sourced it, other than a function, a plnr plan and `.Random.seed`. It
+compares the bytes of
+[`serialize()`](https://rdrr.io/r/base/serialize.html) of each object
+before and after the analysis. That finds a new value, a new element and
+a new attribute. It compares them before and after each data function or
+data step too. A data function that changes such an object fails each
+analysis that gets its data.
+
+While [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+runs, two more parts of the state of an R session cannot pass from one
+analysis to the next:
+
+- An analysis fails when it leaves a new object in the global
+  environment, for example with `<<-` or
+  [`assign()`](https://rdrr.io/r/base/assign.html). `.Random.seed` does
+  not count.
+
+- pbn takes the kind of random number generator of the run from
+  [`RNGkind()`](https://rdrr.io/r/base/Random.html) at the start of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md). It
+  sets that kind again before each seed of a data function and of an
+  analysis. An analysis that calls
+  [`RNGkind()`](https://rdrr.io/r/base/Random.html) then changes no draw
+  of a later analysis.
+
+A data.table subset with a logical, for example
+`CFG$table[group == "a"]`, adds an index to the table in place. Copy the
+table first with
+[`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html), or
+set `options(datatable.auto.index = FALSE)` in the project. pbn sets
+neither.
+
+The check has these limits:
+
+- It does not see a function inside an object, because R compiles a
+  function after some calls.
+
+- It does not see the contents of an environment inside an object, for
+  example that of a formula. It does not call an active binding.
+
+- It does not see a change of an object that already was in the global
+  environment, other than an object of the functions folder.
+
+- The analysis that made the change fails, and the change stays for the
+  later analyses of that R session. With more workers, each batch of a
+  worker gets its own copy, so one analysis of each batch can fail.
+
+- Without
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+  pbn checks no object.
+
+The check costs time in proportion to the size of the objects. One
+computer took about 45 microseconds for each analysis with a `CFG` of 49
+elements. These held 5 data.tables of 100 rows, 20 KB in
+[`serialize()`](https://rdrr.io/r/base/serialize.html).
+
 For each scenario and simulation, pbn also adds one analysis named
 `<scenario>__sim_<kkkk>__pbn_n_rows`. It counts the rows of each data
 element.
@@ -147,6 +210,7 @@ Other plan:
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
 [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
 [`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md),
+[`progress()`](https://www.rwhite.no/pbn/reference/progress.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

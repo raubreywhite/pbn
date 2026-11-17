@@ -11,6 +11,8 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
 ```
 
+This article is the manual of pbn. It builds one small fake project file by file, and runs it.
+
 ## What pbn is for
 
 Most analysis projects have a layout of their own. A number in a manuscript then often has no clear path back to the code and the data that made it. Tests on fake data, where they exist, run apart from the analysis. pbn gives each project one layout and one run script. The run script is a `plnr` plan, and the real data is one scenario among fake ones.
@@ -713,7 +715,7 @@ A script with output code after the run that is not in a function MAY use `pbn::
 pbn::check_project()
 ```
 
-`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does.
+`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
 
 ```{r}
 pbn::check_project(home)

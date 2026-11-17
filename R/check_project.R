@@ -81,6 +81,16 @@
 #'   of `pbn_allow.txt` allows each function of one file.
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
+#' - `no_local_assign` (FAIL): an `.R` file calls `local()`, `assign()`,
+#'   `delayedAssign()`, `assignInNamespace()` or `assignInMyNamespace()`, or
+#'   uses `<<-` or `->>`, at any depth. Each of these creates or changes an
+#'   object in a place other than the line where it stands. The rule reads
+#'   the `.R` files of `loc_per_file`, parses each file and runs no code of
+#'   it. A call with the prefix of its own package, `base::` or `utils::`,
+#'   counts. A call of the same name from another package passes. A variable or an argument named `local` or `assign`
+#'   passes, and so do `<-`, `->`, `=` and `:=`. The rule skips a file that R
+#'   cannot parse. The detail gives the file, the line and the construct. An
+#'   entry of `pbn_allow.txt` allows each finding of one file.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R` and

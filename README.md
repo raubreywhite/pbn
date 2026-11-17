@@ -8,6 +8,13 @@ mechanism packages without opinions.
 This is a trial version. It holds the smallest set of functions that one real
 project can use.
 
+## For an AI agent
+
+Read <https://www.rwhite.no/pbn/articles/pbn.md> before you write or change
+the run script of an analysis project. It is the manual of pbn as one worked
+example, in plain Markdown, built for an agent to read in one piece.
+<https://www.rwhite.no/pbn/llms.txt> lists every other page.
+
 ## Installation
 
 ```r
@@ -38,9 +45,8 @@ pbn::make_outputs(make_output, scenarios)
 From the project folder, run it with `Rscript v01_run.R`, and check the layout
 with `pbn::check_project()`.
 
-The article
-[Get started](https://www.rwhite.no/pbn/articles/pbn.html) builds a small
-fake project file by file, and runs it. Read it first.
+The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html) is the
+manual. It builds a small fake project file by file, and runs it.
 
 ## The functions
 

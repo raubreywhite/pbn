@@ -713,7 +713,10 @@ rule_unknown_path <- function(path) {
 unknown_in_results <- function(path, entries) {
   inside <- entries[grepl("^v[0-9]{2}_results/[^/]+$", entries)]
   files <- inside[!dir.exists(file.path(path, inside))]
-  return(files[!basename(files) %in% c("run.md", "run.pdf", errors_file_name, "results.qs2")])
+  return(files[
+    !basename(files) %in%
+      c("run.md", "run.pdf", errors_file_name, "results.qs2")
+  ])
 }
 
 bind_rows <- function(rows) {
@@ -788,6 +791,13 @@ project_rules <- function() {
     no_environment_variables = list(
       rule_no_environment_variables,
       "no Sys.getenv or Sys.setenv in a run script or a functions folder"
+    ),
+    no_local_assign = list(
+      rule_no_local_assign,
+      paste(
+        "no .R file calls local, assign, delayedAssign, assignInNamespace",
+        "or assignInMyNamespace, or uses <<- or ->>"
+      )
     ),
     unknown_path = list(
       rule_unknown_path,

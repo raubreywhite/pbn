@@ -102,6 +102,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - The check of the objects of the functions folder names the first element that changed, for example `CFG$vars`, and how. The output function of `make_outputs()` and each `expect_` function get the same check.
 - The section Run gives the number of the other packages. A cohort without an exclusion step gets one sentence. The section Output gives the number of warnings of the output function. The row of dashes of a table is as wide as its column.
 - New `check_project()` rule `cyclomatic_complexity`: a function of the project MUST score at most 15 in cyclocomp. pbn imports cyclocomp.
+- New `check_project()` rule `no_local_assign`: an `.R` file of the project MUST NOT call `local()`, `assign()`, `delayedAssign()`, `assignInNamespace()` or `assignInMyNamespace()`, or use `<<-` or `->>`.
 
 # pbn 2026.11.22
 

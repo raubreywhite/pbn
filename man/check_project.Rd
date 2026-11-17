@@ -97,6 +97,16 @@ fails. The detail gives the file, the function and its score. An entry
 of \code{pbn_allow.txt} allows each function of one file.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
+\item \code{no_local_assign} (FAIL): an \code{.R} file calls \code{local()}, \code{assign()},
+\code{delayedAssign()}, \code{assignInNamespace()} or \code{assignInMyNamespace()}, or
+uses \verb{<<-} or \verb{->>}, at any depth. Each of these creates or changes an
+object in a place other than the line where it stands. The rule reads
+the \code{.R} files of \code{loc_per_file}, parses each file and runs no code of
+it. A call with the prefix of its own package, \verb{base::} or \verb{utils::},
+counts. A call of the same name from another package passes. A variable or an argument named \code{local} or \code{assign}
+passes, and so do \verb{<-}, \verb{->}, \code{=} and \verb{:=}. The rule skips a file that R
+cannot parse. The detail gives the file, the line and the construct. An
+entry of \code{pbn_allow.txt} allows each finding of one file.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R} and

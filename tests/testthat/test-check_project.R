@@ -12,6 +12,7 @@ project_rule_names <- c(
   "loc_per_file",
   "cyclomatic_complexity",
   "no_environment_variables",
+  "no_local_assign",
   "unknown_path"
 )
 
@@ -30,7 +31,7 @@ test_that("check_project prints one line per rule and a count line", {
     out[1],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "14 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "15 PASS, 0 WARN, 0 FAIL")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -380,6 +381,152 @@ test_that("no_environment_variables passes the word in a string or a comment", {
   expect_identical(failed_rules(project_findings(p$home)), character(0))
 })
 
+test_that("no_local_assign fails each construct at top level and inside a function, with the file, the line and the construct", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/zz_bad.R",
+    c(
+      "a <- local({",
+      "  1",
+      "})",
+      "assign(\"b\", 1)",
+      "base::assign(\"c\", 1)",
+      "base::local(1)",
+      "delayedAssign(\"d\", 1)",
+      "utils::assignInNamespace(\"e\", 1, \"stats\")",
+      "assignInMyNamespace(\"f\", 1)",
+      "g <<- 1",
+      "1 ->> h",
+      "nested <- function(x) {",
+      "  y <- local(x)",
+      "  assign(\"z\", x)",
+      "  delayedAssign(\"w\", x)",
+      "  i <<- x",
+      "  x ->> j",
+      "  return(y)",
+      "}"
+    )
+  )
+  write_lines(p$home, "adhoc/early.R", c("a <- 1", "assign(\"b\", a)"))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "no_local_assign")
+  expect_identical(
+    found$detail[found$rule == "no_local_assign"],
+    c(
+      "adhoc/early.R:2: assign()",
+      paste0(
+        "v01_functions/zz_bad.R:",
+        c(1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17),
+        ": ",
+        c(
+          "local()",
+          "assign()",
+          "assign()",
+          "local()",
+          "delayedAssign()",
+          "assignInNamespace()",
+          "assignInMyNamespace()",
+          "<<-",
+          "->>",
+          "local()",
+          "assign()",
+          "delayedAssign()",
+          "<<-",
+          "->>"
+        )
+      )
+    )
+  )
+  expect_identical(
+    unique(found$path[found$rule == "no_local_assign"]),
+    c("adhoc/early.R", "v01_functions/zz_bad.R")
+  )
+})
+
+test_that("no_local_assign passes the words in a comment or a string, a variable or an argument named local or assign, <-, ->, =, := and a call from another package", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/zz_good.R",
+    c(
+      "# local() and assign() and <<- and ->> in a comment",
+      "note <- \"local(1); assign('a', 1); a <<- 1; 1 ->> a\"",
+      "local <- 1",
+      "assign <- local + 1",
+      "f <- function(x, local = TRUE, assign = FALSE) {",
+      "  return(list(local = local, assign = assign))",
+      "}",
+      "y = f(1, local = FALSE)",
+      "2 -> z",
+      "dt <- data.table::data.table(a = 1)",
+      "dt[, b := a]",
+      "other::assign(\"a\", 1)",
+      "other::local(1)",
+      "assignment <- \"assign(\""
+    )
+  )
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  expect_identical(found$status[found$rule == "no_local_assign"], "PASS")
+})
+
+test_that("no_local_assign gives the right lines in a file with CR LF line ends", {
+  p <- local_project()
+  con <- file(file.path(p$home, "adhoc_crlf.R"), open = "wb")
+  writeBin(
+    charToRaw(paste0(
+      "x <- 1\r\n",
+      "\r\n",
+      "f <- function() {\r\n",
+      "  # assign() in a comment\r\n",
+      "  assign(\"a\", 1)\r\n",
+      "}\r\n",
+      "y <<- 2\r\n"
+    )),
+    con
+  )
+  close(con)
+  expect_identical(
+    local_assign_hits(file.path(p$home, "adhoc_crlf.R")),
+    data.frame(line = c(5L, 7L), construct = c("assign()", "<<-"))
+  )
+  found <- project_findings(p$home)
+  expect_identical(
+    found$detail[found$rule == "no_local_assign"],
+    c("adhoc_crlf.R:5: assign()", "adhoc_crlf.R:7: <<-")
+  )
+})
+
+test_that("no_local_assign skips a file that R cannot parse, which loc_per_file fails, and an allowed file warns", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "adhoc/broken.R",
+    c("assign(\"a\", 1)", "f <- function( {")
+  )
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "loc_per_file")
+  expect_identical(found$status[found$rule == "no_local_assign"], "PASS")
+  unlink(file.path(p$home, "adhoc", "broken.R"))
+
+  write_lines(
+    p$home,
+    "adhoc/more.R",
+    c("a <- 1", "assign(\"b\", 2)", "c <<- 3")
+  )
+  write_lines(p$home, "pbn_allow.txt", "no_local_assign\tadhoc/more.R")
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  row <- found[found$rule == "no_local_assign", ]
+  expect_identical(row$status, c("WARN", "WARN"))
+  expect_identical(
+    row$detail,
+    c("adhoc/more.R:2: assign() (allowed)", "adhoc/more.R:3: <<- (allowed)")
+  )
+  expect_false(any(found$rule == "pbn_allow"))
+})
+
 test_that("unknown_path warns on a top-level path the layout does not name", {
   p <- local_project()
   write_lines(p$home, "notes.txt", "x")
@@ -424,7 +571,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "14 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(ok$stdout, "15 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -440,7 +587,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "13 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "14 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {

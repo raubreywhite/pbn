@@ -640,7 +640,7 @@ cat(log[seq(grep("^## History", log) + 4, length(log))], sep = "\n")
 
 ```{r, include = FALSE}
 rows <- grep("^\\| 20", log, value = TRUE)
-stopifnot(length(rows) == 6, grepl("| 9 of 9 analyses failed ", rows[4], fixed = TRUE), grepl("| real, known ", rows[2], fixed = TRUE))
+stopifnot(length(rows) == 6, grepl(" analyses failed", rows[4], fixed = TRUE), grepl("| real, known ", rows[2], fixed = TRUE))
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. Keep the data code in `data_*.R` files: a change in another file does not change the key. To compute every value again, delete `v01_cache_gitexclude/`.

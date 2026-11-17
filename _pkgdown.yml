@@ -27,6 +27,7 @@ reference:
 - title: "The plan"
   contents:
     - add_data
+    - cohort_data
     - add_analyses
     - run_plan
 

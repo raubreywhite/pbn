@@ -15,7 +15,8 @@ save_results(r, p, scenarios, gitexclude = NULL)
 \item{scenarios}{The scenarios of the run, from \code{\link[=scenarios]{scenarios()}}. They MUST
 be the scenarios of the analyses of \code{p}.}
 
-\item{gitexclude}{MUST be \code{NULL} in this version.}
+\item{gitexclude}{\code{NULL}, or the names of the analysis kinds whose
+results hold data for each person. See the section Two files.}
 }
 \value{
 Invisibly, a data.frame of every assertion, with the columns
@@ -30,7 +31,12 @@ object fails \code{\link[=check_results]{check_results()}}.
 \details{
 Call \code{\link[=initialize_project]{initialize_project()}} first. For each scenario and simulation,
 \code{save_results()} builds one results object, a named list. Its first
-element is \code{manifest}. Then comes one element for each analysis kind of
+element is \code{manifest}. When a data function returned a
+\code{cohort::CohortPipeline}, the next element is \code{exclusions}, the exclusion
+tables of the cohorts row-bound in the order of \code{\link[=add_data]{add_data()}}. The column
+\code{data} names the data of each row. The section A cohort as the data of
+\code{\link[=add_data]{add_data()}} gives the columns. A plan without a cohort has no element
+\code{exclusions}. Then comes one element for each analysis kind of
 \code{\link[=add_analyses]{add_analyses()}}, under the kind name and in the order of the calls. The
 scenario \code{"real"} has no element of a kind with \code{control = TRUE}. The
 element of a kind holds the values of its analyses for that scenario and
@@ -67,19 +73,35 @@ an empty list when there are none.
 rule \code{manifest_source} needs the run script in it, so \code{save_results()}
 stops when \verb{<version>_run.R} did not exist.
 \item For the scenario \code{"real"} only, \code{data_md5}, the md5 of each file directly
-in \code{data_raw} when \code{\link[=initialize_project]{initialize_project()}} ran. \code{save_results()} stops for
-\code{"real"} when \code{data_raw} did not exist then.
+in \code{data_raw} when \code{\link[=run_plan]{run_plan()}} started. So it names the data that the
+run read, also after a change of a file since \code{\link[=initialize_project]{initialize_project()}}.
+\code{save_results()} stops for \code{"real"} when \code{data_raw} did not exist when
+\code{\link[=initialize_project]{initialize_project()}} ran.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
 functions of \code{\link[=add_data]{add_data()}}, without their source references. A change in
 a function that a data function calls does not change \code{fake_md5}.
 \code{source_md5} holds the md5 of the files of those functions.
 \item \code{n_rows_data}, a named integer vector with the number of rows of each
-data element, or \code{NA} for an element that is not a data.frame. The
+data element. A list of data.frames with one number of rows, for
+example a list of imputed data sets, has the rows of one of them. Each
+other element that is not a data.frame has \code{NA}. The
 analysis \verb{<scenario>__sim_<kkkk>__pbn_n_rows} of \code{\link[=add_analyses]{add_analyses()}} counts
 them where the data is, also on a worker. The rule \code{no_row_per_person}
 reads it.
-\item \code{analyses}, a data.frame with the columns \code{analysis} and \code{control}: the
-analysis kinds in the object.
+\item \code{n_rows_before_exclusions}, a named integer vector with the number of
+rows given to the cohort of each data element, or \code{NA} for data without
+a cohort. \code{no_row_per_person} reads it too.
+\item \code{n_rows_after_exclusions}, the same for the rows after the exclusions:
+\code{n_after} of the last step of the exclusion table. It has a number also
+when \code{n_rows_data} is \code{NA}, for example for a \code{mids} object.
+\item \code{analyses}, a data.frame with the columns \code{analysis}, \code{control} and
+\code{file}: the analysis kinds in the object, and the file of each,
+\code{"results.qs2"} or \code{"results_gitexclude.qs2"}.
+\item \code{data_cache}, a data.frame with one row for each data element of
+\code{\link[=add_data]{add_data()}} and the columns \code{data}, \code{cache}, \code{from_cache} and
+\code{cache_key}. \code{cache} is the argument of \code{\link[=add_data]{add_data()}}. \code{from_cache} is
+\code{TRUE} when \code{\link[=run_plan]{run_plan()}} read the data from the cache. \code{cache_key} is the
+md5 of the cache key, or \code{NA} without a cache.
 }
 
 \code{save_results()} does these steps in this order. It stops at the first step
@@ -141,9 +163,35 @@ data.frame with a column \code{sim}, because pbn adds that column.
 
 The \code{manifest} is that of simulation 1. In it, \code{sim} and \code{n_rows_data}
 are \code{NA}, \code{sims} is the number of simulations, and \code{stacked} is \code{TRUE}.
+The columns \code{from_cache} and \code{cache_key} of \code{data_cache} are \code{NA}.
 Stacking stops when the files of the simulations are not exactly the
 simulations 1 to \code{sims}, for example after \code{sims} became smaller. Delete
 the folders of the higher simulations then.
+}
+
+\section{Two files}{
+
+\code{save_results()} writes the results of the kinds in \code{gitexclude} to
+\code{results_gitexclude.qs2}, beside each \code{results.qs2}. \code{results.qs2} holds
+\code{manifest}, \code{exclusions} and every other kind. Use \code{gitexclude} for a
+kind with fitted models, imputations or one row for each person. The
+project's \code{.gitignore} MUST hold the line \verb{*gitexclude*}, so that git
+never tracks that file. \code{\link[=read_results]{read_results()}} reads both files.
+
+These rules apply:
+\itemize{
+\item \code{save_results()} stops before it writes anything when a name in
+\code{gitexclude} is not an analysis kind of \code{p}.
+\item In a git repository, it also stops when git does not ignore
+\code{results_gitexclude.qs2}.
+\item \code{\link[=check_results]{check_results()}} checks \code{results.qs2} only. So \code{results.qs2} MUST hold
+an element other than \code{manifest}: one kind, or \code{exclusions}.
+\item The simulations of the two files are stacked apart, with the rules of
+the section Stacking.
+\item Without kinds in \code{gitexclude}, \code{save_results()} deletes an old
+\code{results_gitexclude.qs2} of the scenario and of each of its
+simulations. It prints one line for each deleted file.
+}
 }
 
 \examples{

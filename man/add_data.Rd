@@ -4,7 +4,7 @@
 \alias{add_data}
 \title{Add a data function to a plan}
 \usage{
-add_data(p, name, fn)
+add_data(p, name, fn, cache = FALSE)
 }
 \arguments{
 \item{p}{A plan from \code{plnr::Plan$new()}.}
@@ -13,7 +13,11 @@ add_data(p, name, fn)
 \code{data[[name]]}.}
 
 \item{fn}{The data function, normally
-\code{function(scenario, sim) get_data(scenario, sim)}.}
+\code{function(scenario, sim) data_raw(scenario, sim) |> data_clean() |> data_cohort()}.}
+
+\item{cache}{\code{TRUE} saves the value of \code{fn} on disk for each scenario and
+simulation. The next run reads it while the cache key is the same. See
+the section Cache.}
 }
 \value{
 Invisibly, the name of the data.
@@ -60,6 +64,117 @@ only.
 While \code{\link[=run_plan]{run_plan()}} runs, an error in \code{fn} fails each analysis that gets
 the data. When you call \code{p$get_data()} by hand, the error stops the call.
 }
+\section{A cohort as the data}{
+
+\code{fn} MAY return a \code{cohort::CohortPipeline} after its exclusions. The
+analyses then get \code{data[[name]]} as the data.table of
+\verb{$get_included(<cohort>)}. \verb{<cohort>} is the one cohort of the pipeline
+that no other cohort branches from. A pipeline with more than one such
+cohort fails the data. Each other value goes to the analyses as it is.
+
+A step after the cohort, such as an imputation, reads the data of the
+cohort with \code{\link[=cohort_data]{cohort_data()}}. It returns its value through
+\code{\link[=keep_exclusions]{keep_exclusions()}}, which puts the exclusion table on it. The value MAY
+be any R object, for example a list of imputed data sets.
+
+pbn keeps the exclusion table of the cohort, and \code{\link[=save_results]{save_results()}} stores
+it in the element \code{exclusions} of the results. The table has one row for
+each exclusion step of the cohort and of the cohorts above it, in the
+order of the steps. It is a data.frame with these columns:
+\itemize{
+\item \code{data}, the name of the data.
+\item \code{step}, the reason of \verb{$exclude_and_track()}.
+\item \code{n_before}, \code{n_excluded} and \code{n_after}, the number of rows before the
+step, excluded by the step, and after the step. \code{n_excluded} and
+\code{n_after} are \code{n_excluded} and \code{n_remaining} of \verb{$consort()}.
+}
+
+The value carries the table in its attribute \code{pbn_exclusions}, and the
+number of rows given to the pipeline in its attribute \code{pbn_n_before}.
+\code{\link[=save_results]{save_results()}} writes that number to \code{manifest$n_rows_before_exclusions}.
+The attributes are how both come back from a worker: the R6 object stays
+on the worker.
+}
+
+\section{Cache}{
+
+With \code{cache = TRUE}, \code{fn} MUST have the arguments \code{scenario} and \code{sim}
+without a default. Call \code{\link[=initialize_project]{initialize_project()}} first. For
+each scenario and simulation, \code{\link[=run_plan]{run_plan()}} writes the value to
+\verb{<home>/<version>_cache_gitexclude/<name>/<scenario>/sim_<kkkk>.qs2}. The
+value is the data.table and its exclusion table for a cohort. The cache
+key goes to \verb{sim_<kkkk>_key.qs2} in the same folder. The cache key is the
+md5 of these parts:
+\itemize{
+\item the scenario, the simulation and the settings of the scenario.
+\item for \code{"real"} only, the md5 of each file directly in \code{data_raw} at the
+time of the use. pbn hashes a file again only when its size or its
+modification time differs from the last record.
+\item the md5 of each file of \verb{<version>_functions/} whose name starts with
+\code{data_}, for example \code{data_raw.R}, \code{data_clean.R}, \code{data_cohort.R} and
+\code{data_impute.R}. \code{\link[=initialize_project]{initialize_project()}} computes them before it sources
+the files.
+\item the code of \code{fn}, deparsed without its source references.
+\item \code{CFG$data}, when \code{CFG} has the element \code{data}. Put the config that the
+data code reads there. A change in another element of \code{CFG} does not
+change the key.
+\item the versions of R and pbn. The version of R covers the base packages.
+\item the three parts of \code{\link[=RNGkind]{RNGkind()}}.
+}
+
+The key file also records the version of each package that was loaded in
+the R session that computed the value, after \code{fn} returned. On a worker,
+that is the worker. The record leaves out the base packages. It also
+leaves out the packages that run the plan, tests and documents: pbn, plnr, foreach,
+doParallel, iterators, qs2, digest, uuid, progress, testthat, pkgload,
+devtools, callr, processx, ps, knitr, rmarkdown and evaluate. A later use
+compares each recorded version with \code{\link[utils:packageVersion]{utils::packageVersion()}} now. A
+package with another version, or one that is not installed now, computes
+the value again.
+
+Each use of the cache stops when a \code{data_*.R} file on disk differs from
+the file that \code{\link[=initialize_project]{initialize_project()}} hashed and sourced: changed, added or
+removed. The error names the file. Run \code{\link[=initialize_project]{initialize_project()}} again. A
+file with its recorded size and modification time is not hashed again,
+so a change that keeps both is not found.
+
+Keep the data code in the files \code{data_*.R}. The key holds no other file.
+A function of the data code can be in another file. A change in it then
+leaves the key the same, and the run reads the old data. This is the one
+change of the data code that the cache does not find.
+
+When the key is the same, \code{\link[=run_plan]{run_plan()}} reads the value from the cache and
+does not call \code{fn}. Each analysis sets its own seed, so its results are
+the same as with a new value. Otherwise, or when a cache file cannot be
+read, it calls \code{fn} and writes the cache. To compute every value again,
+delete the folder \verb{<version>_cache_gitexclude/}. No argument does that.
+
+For each scenario and simulation, \code{\link[=run_plan]{run_plan()}} prints one line with
+\code{cat()}. The line says that the data came from the cache, with the date
+and time of the cache file. Or it says that pbn computed it, and why.
+The reason names each changed \code{data_*.R} file, \code{CFG$data}, the raw data,
+the code of \code{fn} or the settings. It can also name the kind of random
+number generator, or each package with another version. With \code{workers = 1}, the line comes before the
+data function runs. With more workers, \code{\link[=run_plan]{run_plan()}} prints the lines after
+the run, in the order of the plan.
+
+\code{\link[=run_plan]{run_plan()}} writes each file to a temporary file in the same folder, and
+renames it. plnr runs the data of one scenario and simulation in one task,
+so two workers of one run never write the same file. When two runs write
+one file at the same time, the last rename wins, and each file is whole.
+The cache file holds its key too, so a cache file and a key file from two
+runs give a new computation.
+
+The cache folder holds data for each person. When the project is a git
+repository, git MUST ignore it: \code{\link[=run_plan]{run_plan()}} stops before it runs anything
+when git does not ignore the cache files. Add the line \verb{*gitexclude*} to
+the \code{.gitignore} of the project.
+
+\code{p$get_data()} and \code{p$run_one()} by hand use the cache too, and print the
+same line. pbn computes the key at the time of the call, with the same
+rules.
+}
+
 \examples{
 p <- plnr::Plan$new()
 pbn::add_data(p, "d", fn = function(scenario, sim) {
@@ -71,6 +186,7 @@ pbn::add_data(p, "d", fn = function(scenario, sim) {
 
 Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
+\code{\link[=cohort_data]{cohort_data()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

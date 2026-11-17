@@ -24,13 +24,16 @@ The rule \code{element_names} checks that the manifest is there. The rules
 is valid. The seven rules:
 \itemize{
 \item \code{element_names}: \code{x} is a list with the element \code{manifest} exactly once
-and at least one other element. Each element has a name. Each name is
-syntactic, so \code{make.names()} does not change it, and no name is there
-twice.
+and at least one other element. The other element MAY be missing when
+\code{manifest$analyses} puts a kind in \code{results_gitexclude.qs2}. Each
+element has a name. Each name is syntactic, so \code{make.names()} does not
+change it, and no name is there twice.
 \item \code{exclusions_table}: when \code{x} has an element \code{exclusions}, it is a
 data.frame with the columns \code{step}, \code{n_before}, \code{n_excluded} and
-\code{n_after}. When \code{manifest$stacked} is \code{TRUE}, it also has the column
-\code{sim} that \code{\link[=save_results]{save_results()}} adds when it stacks. On every row,
+\code{n_after}, and MAY have the column \code{data}. \code{\link[=save_results]{save_results()}} writes
+\code{data} for the exclusion table of a cohort. When \code{manifest$stacked} is
+\code{TRUE}, it also has the column \code{sim} that \code{\link[=save_results]{save_results()}} adds when it
+stacks. On every row,
 \code{n_before - n_excluded == n_after}. Without an element \code{exclusions}, the
 rule passes and says so.
 \item \code{allowed_objects}: each element at each depth is one of these:
@@ -62,8 +65,11 @@ that R and data.table set: \code{names}, \code{dim}, \code{dimnames}, \code{row.
 \code{.internal.selfref}.
 \item \code{no_row_per_person}: no element at any depth of the results has one
 value for each row of the data. \code{manifest$n_rows_data} holds one row
-count, or one for each data element. For each count \code{n} of 2 or more,
-the rule fails each of these:
+count, or one for each data element. For a cohort,
+\code{manifest$n_rows_before_exclusions} and
+\code{manifest$n_rows_after_exclusions} hold the rows before and after the
+exclusions too. For each count \code{n} of 2 or more in any of the three, the
+rule fails each of these:
 \itemize{
 \item a data.frame with \code{n} rows.
 \item an atomic vector of length \code{n}, also a factor, a \code{Date} or a
@@ -72,7 +78,7 @@ the rule fails each of these:
 }
 
 The walk goes into lists, the columns and list columns of data.frames,
-and attributes. It does not go into \code{manifest}. A count that is \code{NA}, 0
+and attributes. It does not go into \code{manifest} or \code{exclusions}. A count that is \code{NA}, 0
 or 1 checks nothing, and a \code{manifest$n_rows_data} without another count
 checks nothing too. A table with fewer rows than the data passes, and
 so does a vector with one value for each group.
@@ -91,6 +97,10 @@ script \verb{<version>_run.R} of \code{manifest$version}, or a \code{vNN_run.R} 
 the manifest has no valid version. A results file that pbn 2026.11.20
 or older wrote has no \code{source_md5}, so it fails this rule.
 }
+
+\code{check_results()} checks the object of \code{results.qs2}. The object of
+\code{results_gitexclude.qs2} MAY hold data for each person, and these rules do
+not apply to it. See the section Two files of \code{\link[=save_results]{save_results()}}.
 }
 \examples{
 x <- list(

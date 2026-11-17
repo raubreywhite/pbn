@@ -62,6 +62,18 @@
 #'
 #' `run_plan()` sets `use_foreach` of the plan: `FALSE` for 1 worker and
 #' `TRUE` for more.
+#'
+#' After [initialize_project()], `run_plan()` first computes the md5 of each
+#' raw data file again when its size or its modification time changed. The
+#' value carries the md5 in its stamp, and [save_results()] writes it to
+#' `manifest$data_md5`.
+#'
+#' For a data function with `cache = TRUE`, `run_plan()` needs
+#' [initialize_project()] first, and it prints one line for each scenario and
+#' simulation. The section Cache of [add_data()] gives the rules. A data
+#' function that returns a `cohort::CohortPipeline` runs on the worker, and
+#' only its data.table and its exclusion table come back. The section A
+#' cohort as the data of [add_data()] gives the rules.
 #' @return Invisibly, a named list with one element for each analysis of the
 #'   plan, in the order of the plan. Element `i` is the value of the action
 #'   function of analysis `i`. Give it to [save_results()].
@@ -98,6 +110,14 @@ run_plan <- function(p, workers = 1) {
   if (workers > 1) {
     check_parallel_packages()
   }
+  # The md5 of the raw data of this run, also after a change of a file since
+  # initialize_project(). The stamp carries it to the manifest.
+  if (!is.null(state$results)) {
+    refresh_data_md5()
+  }
+  data_md5 <- state$data_md5
+  cached <- set_cache(p, info, workers)
+  on.exit(clear_cache(info, cached), add = TRUE)
   set_catch(info, TRUE)
   on.exit(set_catch(info, FALSE), add = TRUE)
   if (workers == 1) {
@@ -107,10 +127,13 @@ run_plan <- function(p, workers = 1) {
     r <- run_on_cluster(p, workers)
   }
   r <- unbox_results(r, names(p$analyses))
+  if (workers > 1 && length(cached) > 0) {
+    print_cache_lines(r, info)
+  }
   stop_on_failed(r)
   # The stamp binds the value to this plan. save_results() checks it. It
   # holds no count of the runs, so two runs of one plan stay identical().
-  attr(r, "pbn_run") <- list(plan = info$token)
+  attr(r, "pbn_run") <- list(plan = info$token, data_md5 = data_md5)
   return(invisible(r))
 }
 

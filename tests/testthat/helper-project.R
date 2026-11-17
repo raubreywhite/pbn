@@ -197,6 +197,9 @@ local_project <- function(env = parent.frame(), counter = NULL) {
   dir.create(root)
   withr::defer(unlink(root, recursive = TRUE), envir = env)
   root <- normalizePath(root, winslash = "/")
+  # git does not look above `root`, so the project is a git repository only
+  # when a test makes it one, whatever folder holds the temporary files.
+  withr::local_envvar(GIT_CEILING_DIRECTORIES = root, .local_envir = env)
   home <- file.path(root, "project")
   data_default <- normalizePath(
     write_data(file.path(root, "data_default")),

@@ -3,6 +3,7 @@ project_rule_names <- c(
   "run_script_initialises",
   "version_items_complete",
   "results_contract",
+  "gitexclude_not_tracked",
   "scenario_checks",
   "manual_manuscript_names",
   "manuscript_reads_real",
@@ -27,7 +28,7 @@ test_that("check_project prints one line per rule and a count line", {
     out[1],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "11 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "12 PASS, 0 WARN, 0 FAIL")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -290,7 +291,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "11 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(ok$stdout, "12 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -306,7 +307,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "10 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "11 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {

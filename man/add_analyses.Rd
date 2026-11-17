@@ -13,8 +13,10 @@ add_analyses(p, scenarios, name, fn, ..., control = FALSE)
 
 \item{name}{The name of the analysis kind, for example \code{"models"}. It is
 the name of the element of the results object. It MUST be a syntactic
-name that starts with a letter. It MUST NOT be \code{"manifest"} or start
-with \code{"pbn_"}. Each kind of one plan MUST have its own name.}
+name that starts with a letter. It MUST NOT be \code{"manifest"} or
+\code{"exclusions"}, and it MUST NOT start with \code{"pbn_"}. Each kind of one
+plan MUST have its own name. \code{\link[=save_results]{save_results()}} names the exclusion table
+of a cohort \code{exclusions}.}
 
 \item{fn}{The action function, \verb{function(data, argset)}.}
 
@@ -127,6 +129,7 @@ p$get_argset("null__sim_0002__means__2")
 
 Other plan:
 \code{\link[=add_data]{add_data()}},
+\code{\link[=cohort_data]{cohort_data()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

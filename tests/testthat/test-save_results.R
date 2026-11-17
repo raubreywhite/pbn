@@ -80,9 +80,15 @@ test_that("the manifest names the run, the data, the rows of the data and the an
       "source_md5",
       "data_md5",
       "n_rows_data",
-      "analyses"
+      "n_rows_before_exclusions",
+      "n_rows_after_exclusions",
+      "analyses",
+      "data_cache"
     )
   )
+  # The data of this project is no cohort.
+  expect_identical(m$n_rows_before_exclusions, c(d = NA_integer_))
+  expect_identical(m$n_rows_after_exclusions, c(d = NA_integer_))
   expect_identical(m$pbn_version, as.character(utils::packageVersion("pbn")))
   expect_identical(m$run_date, format(Sys.Date(), "%Y-%m-%d"))
   expect_true("qs2" %in% names(m$packages))
@@ -103,7 +109,15 @@ test_that("the manifest names the run, the data, the rows of the data and the an
   expect_identical(m$n_rows_data, c(d = 10L))
   expect_identical(
     m$analyses,
-    data.frame(analysis = c("table1", "models"), control = FALSE)
+    data.frame(
+      analysis = c("table1", "models"),
+      control = FALSE,
+      file = "results.qs2"
+    )
+  )
+  expect_identical(
+    m$data_cache,
+    data.frame(data = "d", cache = FALSE, from_cache = FALSE, cache_key = NA_character_)
   )
 
   f <- read_results("v01", "null", sim = 3, home = p$home)$manifest
@@ -116,7 +130,8 @@ test_that("the manifest names the run, the data, the rows of the data and the an
     f$analyses,
     data.frame(
       analysis = c("table1", "models", "models_crude"),
-      control = c(FALSE, FALSE, TRUE)
+      control = c(FALSE, FALSE, TRUE),
+      file = "results.qs2"
     )
   )
 })
@@ -281,7 +296,8 @@ test_that("save_results stops on bad input and saves nothing", {
   run <- run_project(p)
   expect_error(
     save_results(run$r, run$plan, run$scenarios, gitexclude = "x"),
-    "`gitexclude` must be NULL"
+    "These names in `gitexclude` are not analysis kinds of the plan: x.",
+    fixed = TRUE
   )
   expect_error(
     save_results(run$r[-1], run$plan, run$scenarios),

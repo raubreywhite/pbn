@@ -35,14 +35,17 @@ Imports:
     utils
 Suggests:
     callr,
+    cohort (>= 2026.11.18),
     doParallel,
     foreach,
+    janitor,
     R6,
     rmarkdown,
     testthat (>= 3.0.0),
     withr
 VignetteBuilder: knitr
 Remotes:
+    raubreywhite/cohort,
     raubreywhite/org,
     raubreywhite/plnr
 Config/testthat/edition: 3

@@ -19,8 +19,9 @@ read_results(version, scenario = "real", sim = NULL, home = ".")
 The results object, a named list. See \code{\link[=save_results]{save_results()}}.
 }
 \description{
-\code{read_results()} reads the \code{results.qs2} of one scenario, the file that
-\code{\link[=save_results]{save_results()}} writes. The default reads the real results.
+\code{read_results()} reads the \code{results.qs2} of one scenario, and the
+\code{results_gitexclude.qs2} beside it, the files that \code{\link[=save_results]{save_results()}}
+writes. The default reads the real results.
 }
 \details{
 With \code{sim = NULL}, \code{read_results()} reads
@@ -36,6 +37,18 @@ one simulation. It also stops when that file holds no assertion, or has
 no column \code{pass} that R can read. \code{\link[=save_results]{save_results()}} still writes such results, so that you
 can find the fault. The error names the file and how to read it with
 \code{\link[qs2:qs_read]{qs2::qs_read()}}.
+
+\code{read_results()} returns one list with the elements of both files. The
+order is that of a results object: \code{manifest}, \code{exclusions}, and the
+analysis kinds in the order of \code{manifest$analyses}. These rules apply to
+\code{results_gitexclude.qs2}:
+\itemize{
+\item When the manifest names kinds in it and the file is missing, it returns
+the elements of \code{results.qs2}. A clone of the repository has no such
+file. It gives one warning that names the missing kinds and the file.
+\item It stops when the file holds other kinds than the manifest names, also
+when the manifest names none.
+}
 
 A manuscript MUST read the real results only. \code{\link[=check_project]{check_project()}} fails a
 call in \verb{manuscript/built/} that gives a \code{scenario} other than \code{"real"}.

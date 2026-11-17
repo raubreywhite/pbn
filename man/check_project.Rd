@@ -49,6 +49,16 @@ or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
 \verb{vNN_results/<scenario>/sim_NNNN/results.qs2} fails \code{\link[=check_results]{check_results()}},
 or a \code{results.qs2} is directly in \verb{vNN_results/}.
+
+The rule also reads each \code{results_gitexclude.qs2} beside such a file,
+also when git ignores it. It fails when the file does not hold exactly
+the analysis kinds that the manifest of \code{results.qs2} puts there.
+\code{\link[=check_results]{check_results()}} does not check it.
+\item \code{gitexclude_not_tracked} (FAIL): git tracks a path with \code{gitexclude} in
+its name, from \verb{git ls-files} in \code{path}. Such a path holds data for each
+person. When git is not installed or \code{path} is not in a git repository,
+the rule has nothing to check. It then prints one PASS line that says
+so.
 \item \code{scenario_checks} (FAIL): a \verb{vNN_results/<scenario>/check.csv} has a
 value of \code{pass} that is not \code{TRUE}, holds no assertion, or has no column
 \code{pass} that R can read. \code{\link[=save_results]{save_results()}} writes these files.
@@ -68,8 +78,8 @@ counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
-\verb{vNN_test/}, \code{vNN_check_functions.R} and \code{check_project.R}, among
-others. A top-level dotfile and a top-level
+\verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R} and
+\code{check_project.R}, among others. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown.
 }
 

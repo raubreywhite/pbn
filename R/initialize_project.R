@@ -79,10 +79,13 @@ initialize_project <- function(
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
   code_md5 <- source_md5(home, version)
+  code_stat <- file_stat(file.path(home, names(code_md5)), names(code_md5))
   real_md5 <- NULL
+  real_stat <- NULL
   if (dir.exists(data_raw)) {
     data_raw <- normalizePath(data_raw, winslash = "/", mustWork = TRUE)
     real_md5 <- data_md5(data_raw)
+    real_stat <- file_stat(file.path(data_raw, names(real_md5)), names(real_md5))
   }
   # results = NULL: org then creates no folder, also no folder with today's
   # date, and it does not create data_raw.
@@ -101,7 +104,16 @@ initialize_project <- function(
   )
   # Every step that can stop is above this line.
   list2env(
-    c(out, list(data_md5 = real_md5, source_md5 = code_md5, env = env)),
+    c(
+      out,
+      list(
+        data_md5 = real_md5,
+        data_stat = real_stat,
+        source_md5 = code_md5,
+        source_stat = code_stat,
+        env = env
+      )
+    ),
     envir = state
   )
   return(invisible(out))
@@ -140,6 +152,22 @@ check_state <- function(caller) {
     )
   }
   return(invisible(NULL))
+}
+
+# The size and the modification time of each of the files `files`, under the
+# names `names`. pbn hashes a file again only when one of them changed.
+file_stat <- function(files, names) {
+  return(data.frame(
+    file = names,
+    size = file.size(files),
+    mtime = as.numeric(file.mtime(files))
+  ))
+}
+
+# tools::md5sum() of the files `files`, without names. In one place, so that
+# the tests can count the files that pbn hashes.
+hash_files <- function(files) {
+  return(unname(tools::md5sum(files)))
 }
 
 # The md5 of each file directly in `folder`, named by the file.

@@ -79,7 +79,8 @@ rule_element_names <- function(x) {
   if (sum(nm == "manifest") != 1) {
     failures <- "manifest MUST be there exactly once"
   }
-  if (!any(nm != "manifest")) {
+  # results_gitexclude.qs2 MAY hold every kind.
+  if (!any(nm != "manifest") && length(gitexclude_kinds(x)) == 0) {
     failures <- c(failures, "there is no element other than manifest")
   }
   failures <- c(failures, name_failures(nm))
@@ -135,12 +136,7 @@ rule_exclusions_table <- function(x) {
   if (!is.data.frame(e)) {
     return(result_row(rule, "exclusions is not a data.frame", ""))
   }
-  # save_results() adds the column sim when it stacks simulations.
-  want <- if (is_stacked(x)) {
-    c("sim", exclusions_columns)
-  } else {
-    exclusions_columns
-  }
+  want <- exclusions_want(x, e)
   if (!setequal(names(e), want) || ncol(e) != length(want)) {
     return(result_row(
       rule,
@@ -176,6 +172,20 @@ rule_exclusions_table <- function(x) {
     failures,
     paste0("the counts add up on every row; the number of rows is ", nrow(e))
   ))
+}
+
+# The columns that the exclusion table `e` of the results `x` MUST have.
+# save_results() adds the column sim when it stacks simulations. The column
+# data, which names the data of a cohort, is optional.
+exclusions_want <- function(x, e) {
+  want <- exclusions_columns
+  if (is_stacked(x)) {
+    want <- c("sim", want)
+  }
+  if ("data" %in% names(e)) {
+    want <- c(want, "data")
+  }
+  return(want)
 }
 
 rule_allowed_objects <- function(x) {
@@ -250,8 +260,15 @@ is_values <- function(o) {
 
 rule_no_row_per_person <- function(x) {
   rule <- "no_row_per_person"
-  n <- if (is.list(x) && is.list(x[["manifest"]])) {
-    x[["manifest"]][["n_rows_data"]]
+  m <- if (is.list(x)) x[["manifest"]] else NULL
+  # The rows of the data, and for a cohort also the rows given to the
+  # pipeline before its exclusions.
+  n <- if (is.list(m)) {
+    c(
+      m[["n_rows_data"]],
+      m[["n_rows_before_exclusions"]],
+      m[["n_rows_after_exclusions"]]
+    )
   } else {
     NULL
   }
@@ -280,8 +297,10 @@ rule_no_row_per_person <- function(x) {
     ))
   }
   # The manifest is pbn's. A vector in it, such as packages, can have n
-  # values by chance.
-  results <- x[names(x) != "manifest"]
+  # values by chance. So is exclusions, with one row for each step: k steps
+  # and k people would fail it. exclusions_table checks it, and
+  # add_analyses() refuses a kind of that name.
+  results <- x[!names(x) %in% c("manifest", "exclusions")]
   where <- find_paths(results, "x", function(o) return(person_size(o, n)))
   failures <- if (length(where) > 0) {
     paste0(

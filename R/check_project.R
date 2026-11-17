@@ -33,6 +33,16 @@
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
 #'   `vNN_results/<scenario>/sim_NNNN/results.qs2` fails [check_results()],
 #'   or a `results.qs2` is directly in `vNN_results/`.
+#'
+#'   The rule also reads each `results_gitexclude.qs2` beside such a file,
+#'   also when git ignores it. It fails when the file does not hold exactly
+#'   the analysis kinds that the manifest of `results.qs2` puts there.
+#'   [check_results()] does not check it.
+#' - `gitexclude_not_tracked` (FAIL): git tracks a path with `gitexclude` in
+#'   its name, from `git ls-files` in `path`. Such a path holds data for each
+#'   person. When git is not installed or `path` is not in a git repository,
+#'   the rule has nothing to check. It then prints one PASS line that says
+#'   so.
 #' - `scenario_checks` (FAIL): a `vNN_results/<scenario>/check.csv` has a
 #'   value of `pass` that is not `TRUE`, holds no assertion, or has no column
 #'   `pass` that R can read. [save_results()] writes these files.
@@ -52,8 +62,8 @@
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
-#'   `vNN_test/`, `vNN_check_functions.R` and `check_project.R`, among
-#'   others. A top-level dotfile and a top-level
+#'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R` and
+#'   `check_project.R`, among others. A top-level dotfile and a top-level
 #'   `*.Rproj` file are never unknown.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments

@@ -58,6 +58,18 @@ stack_scenario <- function(root, scenario, sims) {
   }
   file <- file.path(folder, "results.qs2")
   qs2::qs_save(x, file)
+  # The simulations of results_gitexclude.qs2 are stacked apart, with the
+  # same rules.
+  private <- NULL
+  if (length(gitexclude_kinds(x)) > 0) {
+    private_files <- file.path(
+      folder,
+      sim_folder(seq_len(sims)),
+      "results_gitexclude.qs2"
+    )
+    private <- stack_element(lapply(private_files, qs2::qs_read), "x", scenario)
+  }
+  write_private(private, folder)
   return(invisible(file))
 }
 
@@ -103,6 +115,15 @@ stack_results <- function(runs, scenario) {
   manifest$sim <- NA_integer_
   manifest$sims <- length(runs)
   manifest$n_rows_data <- NA_integer_
+  for (n in c("n_rows_before_exclusions", "n_rows_after_exclusions")) {
+    if (!is.null(manifest[[n]])) {
+      manifest[[n]] <- NA_integer_
+    }
+  }
+  if (is.data.frame(manifest$data_cache)) {
+    manifest$data_cache$from_cache <- NA
+    manifest$data_cache$cache_key <- NA_character_
+  }
   manifest$stacked <- TRUE
   results <- lapply(runs, function(r) return(r[names(r) != "manifest"]))
   return(c(list(manifest = manifest), stack_element(results, "x", scenario)))
@@ -332,7 +353,10 @@ check_column <- function(a, b, k, where, col, scenario) {
 check_expectations <- function(fn, root, scenario) {
   folder <- file.path(root, scenario)
   fn_name <- paste0("expect_", scenario, "()")
-  results <- qs2::qs_read(file.path(folder, "results.qs2"))
+  results <- merge_gitexclude(
+    qs2::qs_read(file.path(folder, "results.qs2")),
+    folder
+  )
   found <- tryCatch(fn(results), error = function(e) {
     return(failed_assertion(
       paste(fn_name, "runs without an error"),

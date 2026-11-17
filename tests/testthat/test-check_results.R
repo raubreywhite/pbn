@@ -471,6 +471,24 @@ test_that("a stacked object with a sim column passes every rule", {
   )
 })
 
+test_that("exclusions_table passes the column data of a cohort, also stacked, and fails another extra column", {
+  x <- valid_results()
+  x$exclusions <- data.frame(data = "d", x$exclusions)
+  expect_identical(failing(x), character(0))
+  x$manifest$stacked <- TRUE
+  x$exclusions <- data.frame(sim = 1L, x$exclusions)
+  expect_identical(failing(x), character(0))
+
+  y <- valid_results()
+  y$exclusions <- data.frame(cohort = "d", y$exclusions)
+  expect_identical(failing(y), "exclusions_table")
+  expect_match(
+    check_results(y)$detail[2],
+    "the columns are cohort, step",
+    fixed = TRUE
+  )
+})
+
 test_that("a stacked object without the sim column fails exclusions_table", {
   x <- valid_results()
   x$manifest$stacked <- TRUE
@@ -661,4 +679,60 @@ test_that("manifest_source fails a missing, malformed or incomplete source_md5",
     detail <- if (is.null(cases[[nm]]$detail)) malformed else cases[[nm]]$detail
     expect_identical(check_results(x)$detail[7], detail, info = nm)
   }
+})
+
+test_that("no_row_per_person also checks the rows before the exclusions of a cohort", {
+  x <- valid_results()
+  x$manifest$n_rows_before_exclusions <- c(d = 50L)
+  x$raw <- data.frame(i = seq_len(49))
+  expect_identical(failing(x), character(0))
+  x$raw <- data.frame(i = seq_len(50))
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(
+    check_results(x)$detail[4],
+    "x$raw (a data.frame with 50 rows) has one value for each row",
+    fixed = TRUE
+  )
+})
+
+test_that("element_names passes a manifest alone when the manifest puts kinds in results_gitexclude.qs2, and fails it otherwise", {
+  x <- valid_results()["manifest"]
+  x$manifest$analyses <- data.frame(analysis = "models", control = FALSE, file = "results.qs2")
+  expect_identical(failing(x), "element_names")
+  x$manifest$analyses$file <- "results_gitexclude.qs2"
+  expect_identical(failing(x), character(0))
+})
+
+test_that("no_row_per_person checks the rows after the exclusions when n_rows_data is NA", {
+  x <- valid_results()
+  x$manifest$n_rows_data <- c(d = NA_integer_)
+  x$manifest$n_rows_before_exclusions <- c(d = 100L)
+  x$manifest$n_rows_after_exclusions <- c(d = 90L)
+  x$person <- data.frame(i = seq_len(89))
+  expect_identical(failing(x), character(0))
+  x$person <- data.frame(i = seq_len(90))
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(
+    check_results(x)$detail[4],
+    "x$person (a data.frame with 90 rows)",
+    fixed = TRUE
+  )
+})
+
+test_that("no_row_per_person does not walk the exclusions table of a cohort, and still checks each analysis kind", {
+  x <- valid_results()
+  x$manifest$n_rows_data <- c(d = 2L)
+  x$exclusions <- data.frame(
+    data = "d",
+    step = c("age under 18", "age over 26"),
+    n_before = c(8, 6),
+    n_excluded = c(2, 4),
+    n_after = c(6, 2)
+  )
+  x$estimates <- data.frame(term = "a", estimate = 0.1)
+  x$tables <- list(counts = data.frame(grp = "a", n = 2))
+  expect_identical(failing(x), character(0))
+  x$person <- data.frame(i = 1:2)
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(check_results(x)$detail[4], "x$person (a data.frame with 2 rows)", fixed = TRUE)
 })

@@ -19,14 +19,17 @@ pak::pak("raubreywhite/pbn")
 A project version has a run script `v01_run.R` and a folder
 `v01_functions/`. `v01_functions/_cfg.R` names the scenarios in
 `CFG$scenarios`: the real data, and fake data that the project makes itself.
-The run script is one `plnr` plan over every scenario and simulation:
+The run script is one `plnr` plan over every scenario and simulation. Its
+data function reads the data, cleans it and builds a `cohort`:
 
 ```r
 pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
 scenarios <- pbn::scenarios(CFG)
 
 p <- plnr::Plan$new()
-pbn::add_data(p, "d", fn = function(scenario, sim) get_data(scenario, sim))
+pbn::add_data(p, "d", fn = function(scenario, sim) {
+  data_raw(scenario, sim) |> data_clean() |> data_cohort()
+})
 pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, outcome = CFG$outcomes)
 r <- pbn::run_plan(p)
 pbn::save_results(r, p, scenarios)
@@ -47,12 +50,13 @@ fake project file by file, and runs it. Read it first.
 |---|---|
 | `initialize_project()` | Sets the paths of a project version and sources `vNN_functions/` with the house defaults of `org`. |
 | `scenarios()` | Checks `CFG$scenarios` and chooses the scenarios of a run. |
-| `add_data()` | Adds a data function to a plan. plnr calls it once for each scenario and simulation. |
+| `add_data()` | Adds a data function to a plan. plnr calls it once for each scenario and simulation. A cohort gives its data and its exclusion table, and `cache = TRUE` keeps the data on disk. |
+| `cohort_data()`, `keep_exclusions()` | Give the data of a cohort to a step after it, such as an imputation, and keep the exclusion table on the value of that step. |
 | `add_analyses()` | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
 | `run_plan()` | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |
-| `save_results()` | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. |
+| `save_results()` | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. `gitexclude` puts the results with data for each person in a file that git ignores. |
 | `end_unless_real()` | Ends a run script after `save_results()` when the run had no real data. |
-| `read_results()` | Reads the `results.qs2` of one scenario. The default is `"real"`. |
+| `read_results()` | Reads the results files of one scenario. The default is `"real"`. |
 | `check_results()` | Checks a results object against the contract. |
 | `check_project()` | Checks a project folder against the house layout, and quits with status 1 on a failure when R is not interactive. |
 | `table1()` | Computes the numbers of a descriptive table, with chi-square or Fisher's exact p-values. |

@@ -10,8 +10,10 @@ pbn_exports <- c(
   "add_data",
   "check_project",
   "check_results",
+  "cohort_data",
   "end_unless_real",
   "initialize_project",
+  "keep_exclusions",
   "read_results",
   "run_plan",
   "save_results",
@@ -363,20 +365,64 @@ rule_results_contract <- function(path) {
     }
     found <- check_results(x)
     failed <- found[found$status == "FAIL", , drop = FALSE]
-    if (nrow(failed) > 0) {
+    problems <- paste(failed$rule, failed$detail, sep = ": ", recycle0 = TRUE)
+    # results_gitexclude.qs2 MAY hold data for each person. It MUST hold the
+    # kinds that the manifest names, and nothing else. git ignores it, so it
+    # is read from the disk.
+    private <- file.path(path, dirname(f), gitexclude_file)
+    problems <- c(problems, read_gitexclude(x, private)$problem)
+    if (length(problems) > 0) {
       out[[f]] <- project_row(
         rule,
         "FAIL",
         f,
-        paste0(
-          f,
-          ": ",
-          paste(failed$rule, failed$detail, sep = ": ", collapse = "; ")
-        )
+        paste0(f, ": ", paste(problems, collapse = "; "))
       )
     }
   }
   return(bind_rows(out))
+}
+
+rule_gitexclude_not_tracked <- function(path) {
+  rule <- "gitexclude_not_tracked"
+  git <- git_binary()
+  if (!nzchar(git)) {
+    return(project_row(
+      rule,
+      "PASS",
+      "",
+      "git is not installed, so nothing to check"
+    ))
+  }
+  if (!in_git_repository(git, path)) {
+    return(project_row(
+      rule,
+      "PASS",
+      "",
+      "the project is not a git repository, so nothing to check"
+    ))
+  }
+  files <- system2(
+    git,
+    c("-c", "core.quotepath=off", "-C", shQuote(path), "ls-files"),
+    stdout = TRUE,
+    stderr = FALSE
+  )
+  if (!is.null(attr(files, "status"))) {
+    stop("git ls-files failed in ", path, call. = FALSE)
+  }
+  bad <- files[grepl("gitexclude", files, fixed = TRUE)]
+  return(project_row(
+    rule,
+    "FAIL",
+    bad,
+    paste0(
+      bad,
+      ": git tracks it, and a path with gitexclude in its name holds data ",
+      "for each person. Run git rm --cached on it",
+      recycle0 = TRUE
+    )
+  ))
 }
 
 rule_manual_manuscript_names <- function(path) {
@@ -501,6 +547,7 @@ rule_unknown_path <- function(path) {
     run_script_pattern,
     functions_pattern,
     "^v[0-9]{2}_results$",
+    "^v[0-9]{2}_cache_gitexclude$",
     "^v[0-9]{2}_test$",
     "^check_project\\.R$",
     "^v[0-9]{2}_check_functions\\.R$",
@@ -560,6 +607,10 @@ project_rules <- function() {
         "every vNN_results/<scenario>/results.qs2 and",
         "vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()"
       )
+    ),
+    gitexclude_not_tracked = list(
+      rule_gitexclude_not_tracked,
+      "git tracks no path with gitexclude in its name"
     ),
     scenario_checks = list(
       rule_scenario_checks,

@@ -10,11 +10,17 @@
 #'   [add_analyses()].
 #' @param scenarios The scenarios of the run, from [scenarios()]. They MUST
 #'   be the scenarios of the analyses of `p`.
-#' @param gitexclude MUST be `NULL` in this version.
+#' @param gitexclude `NULL`, or the names of the analysis kinds whose
+#'   results hold data for each person. See the section Two files.
 #' @details
 #' Call [initialize_project()] first. For each scenario and simulation,
 #' `save_results()` builds one results object, a named list. Its first
-#' element is `manifest`. Then comes one element for each analysis kind of
+#' element is `manifest`. When a data function returned a
+#' `cohort::CohortPipeline`, the next element is `exclusions`, the exclusion
+#' tables of the cohorts row-bound in the order of [add_data()]. The column
+#' `data` names the data of each row. The section A cohort as the data of
+#' [add_data()] gives the columns. A plan without a cohort has no element
+#' `exclusions`. Then comes one element for each analysis kind of
 #' [add_analyses()], under the kind name and in the order of the calls. The
 #' scenario `"real"` has no element of a kind with `control = TRUE`. The
 #' element of a kind holds the values of its analyses for that scenario and
@@ -48,19 +54,35 @@
 #'   rule `manifest_source` needs the run script in it, so `save_results()`
 #'   stops when `<version>_run.R` did not exist.
 #' - For the scenario `"real"` only, `data_md5`, the md5 of each file directly
-#'   in `data_raw` when [initialize_project()] ran. `save_results()` stops for
-#'   `"real"` when `data_raw` did not exist then.
+#'   in `data_raw` when [run_plan()] started. So it names the data that the
+#'   run read, also after a change of a file since [initialize_project()].
+#'   `save_results()` stops for `"real"` when `data_raw` did not exist when
+#'   [initialize_project()] ran.
 #' - For a fake scenario only, `fake_md5`, one md5 of the code of the data
 #'   functions of [add_data()], without their source references. A change in
 #'   a function that a data function calls does not change `fake_md5`.
 #'   `source_md5` holds the md5 of the files of those functions.
 #' - `n_rows_data`, a named integer vector with the number of rows of each
-#'   data element, or `NA` for an element that is not a data.frame. The
+#'   data element. A list of data.frames with one number of rows, for
+#'   example a list of imputed data sets, has the rows of one of them. Each
+#'   other element that is not a data.frame has `NA`. The
 #'   analysis `<scenario>__sim_<kkkk>__pbn_n_rows` of [add_analyses()] counts
 #'   them where the data is, also on a worker. The rule `no_row_per_person`
 #'   reads it.
-#' - `analyses`, a data.frame with the columns `analysis` and `control`: the
-#'   analysis kinds in the object.
+#' - `n_rows_before_exclusions`, a named integer vector with the number of
+#'   rows given to the cohort of each data element, or `NA` for data without
+#'   a cohort. `no_row_per_person` reads it too.
+#' - `n_rows_after_exclusions`, the same for the rows after the exclusions:
+#'   `n_after` of the last step of the exclusion table. It has a number also
+#'   when `n_rows_data` is `NA`, for example for a `mids` object.
+#' - `analyses`, a data.frame with the columns `analysis`, `control` and
+#'   `file`: the analysis kinds in the object, and the file of each,
+#'   `"results.qs2"` or `"results_gitexclude.qs2"`.
+#' - `data_cache`, a data.frame with one row for each data element of
+#'   [add_data()] and the columns `data`, `cache`, `from_cache` and
+#'   `cache_key`. `cache` is the argument of [add_data()]. `from_cache` is
+#'   `TRUE` when [run_plan()] read the data from the cache. `cache_key` is the
+#'   md5 of the cache key, or `NA` without a cache.
 #'
 #' `save_results()` does these steps in this order. It stops at the first step
 #' that fails:
@@ -115,9 +137,30 @@
 #'
 #' The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
 #' are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
+#' The columns `from_cache` and `cache_key` of `data_cache` are `NA`.
 #' Stacking stops when the files of the simulations are not exactly the
 #' simulations 1 to `sims`, for example after `sims` became smaller. Delete
 #' the folders of the higher simulations then.
+#' @section Two files:
+#' `save_results()` writes the results of the kinds in `gitexclude` to
+#' `results_gitexclude.qs2`, beside each `results.qs2`. `results.qs2` holds
+#' `manifest`, `exclusions` and every other kind. Use `gitexclude` for a
+#' kind with fitted models, imputations or one row for each person. The
+#' project's `.gitignore` MUST hold the line `*gitexclude*`, so that git
+#' never tracks that file. [read_results()] reads both files.
+#'
+#' These rules apply:
+#' - `save_results()` stops before it writes anything when a name in
+#'   `gitexclude` is not an analysis kind of `p`.
+#' - In a git repository, it also stops when git does not ignore
+#'   `results_gitexclude.qs2`.
+#' - [check_results()] checks `results.qs2` only. So `results.qs2` MUST hold
+#'   an element other than `manifest`: one kind, or `exclusions`.
+#' - The simulations of the two files are stacked apart, with the rules of
+#'   the section Stacking.
+#' - Without kinds in `gitexclude`, `save_results()` deletes an old
+#'   `results_gitexclude.qs2` of the scenario and of each of its
+#'   simulations. It prints one line for each deleted file.
 #' @return Invisibly, a data.frame of every assertion, with the columns
 #'   `scenario`, `assertion`, `expected`, `observed` and `pass`.
 #' @examples
@@ -157,18 +200,22 @@
 save_results <- function(r, p, scenarios, gitexclude = NULL) {
   check_state("save_results")
   check_plan(p)
-  if (!is.null(gitexclude)) {
-    stop("`gitexclude` must be NULL in this version of pbn.", call. = FALSE)
-  }
   table <- check_scenario_table(scenarios, "`scenarios`")
   info <- plan_info(p)
   check_run(r, p, info)
+  gitexclude <- check_gitexclude(gitexclude, info, table)
   index <- analysis_index(p, info)
   check_coverage(index, table, info)
   check_settings(index, table, info)
   check_inputs(table)
 
-  objects <- build_objects(r, index, table, info)
+  # The md5 of the raw data that run_plan() read, from its stamp.
+  stamp <- attr(r, "pbn_run", exact = TRUE)
+  data_md5 <- stamp[["data_md5"]]
+  if (is.null(data_md5)) {
+    data_md5 <- state$data_md5
+  }
+  objects <- build_objects(r, index, table, info, gitexclude, data_md5)
   check_objects(objects)
   root <- state$results
   for (i in which(table$sims > 1)) {
@@ -379,32 +426,41 @@ expect_function <- function(scenario) {
   ))
 }
 
-# For each scenario of `table`, a list with `sims`, the results object of
-# each simulation and, for more than 1 simulation, the stacked object.
-build_objects <- function(r, index, table, info) {
+# For each scenario of `table`, a list with `sims`, the object of
+# results.qs2 of each simulation in `runs`, the object of
+# results_gitexclude.qs2 or NULL of each simulation in `private`, and, for
+# more than 1 simulation, the stacked object of results.qs2.
+build_objects <- function(r, index, table, info, gitexclude, data_md5) {
   fake_md5 <- function_md5(info$data)
   out <- list()
   for (i in seq_len(nrow(table))) {
     s <- table$scenario[i]
     runs <- lapply(seq_len(table$sims[i]), function(sim) {
-      return(build_object(r, index, table, info, s, sim, fake_md5))
+      x <- build_object(r, index, table, info, s, sim, fake_md5, data_md5)
+      return(split_results(x, gitexclude))
     })
-    out[[s]] <- list(sims = table$sims[i], runs = runs)
+    out[[s]] <- list(
+      sims = table$sims[i],
+      runs = lapply(runs, function(x) return(x$public)),
+      private = lapply(runs, function(x) return(x$private))
+    )
     if (table$sims[i] > 1) {
-      out[[s]]$stacked <- stack_results(runs, s)
+      out[[s]]$stacked <- stack_results(out[[s]]$runs, s)
     }
   }
   return(out)
 }
 
-# The results object of one scenario and simulation.
-build_object <- function(r, index, table, info, s, sim, fake_md5) {
+# The results object of one scenario and simulation, with every element.
+# split_results() splits it into the two files.
+build_object <- function(r, index, table, info, s, sim, fake_md5, data_md5) {
   here <- index[index$scenario == s & index$sim == sim, , drop = FALSE]
   kinds <- info$kinds
   if (s == "real") {
     kinds <- kinds[!kinds$control, , drop = FALSE]
   }
-  results <- list()
+  counted <- r[[here$name[here$hidden]]]
+  results <- exclusions_element(attr(counted, "exclusions", exact = TRUE))
   for (kind in kinds$analysis) {
     rows <- !here$hidden & here$analysis == kind
     results[kind] <- list(combine_kind(
@@ -415,6 +471,10 @@ build_object <- function(r, index, table, info, s, sim, fake_md5) {
     ))
   }
   rownames(kinds) <- NULL
+  kinds$file <- rep("results.qs2", nrow(kinds))
+  n_rows <- counted
+  attributes(n_rows) <- list(names = names(counted))
+  cohort_n <- cohort_counts(counted)
   manifest <- c(
     list(
       pbn_version = as.character(getNamespaceVersion("pbn")),
@@ -429,16 +489,80 @@ build_object <- function(r, index, table, info, s, sim, fake_md5) {
       source_md5 = state$source_md5
     ),
     if (s == "real") {
-      list(data_md5 = state$data_md5)
+      list(data_md5 = data_md5)
     } else {
       list(fake_md5 = fake_md5)
     },
     list(
-      n_rows_data = r[[here$name[here$hidden]]],
-      analyses = kinds
+      n_rows_data = n_rows,
+      n_rows_before_exclusions = cohort_n$before,
+      n_rows_after_exclusions = cohort_n$after,
+      analyses = kinds,
+      data_cache = data_cache_table(info, attr(counted, "cache", exact = TRUE))
     )
   )
   return(c(list(manifest = manifest), results))
+}
+
+# The rows given to the cohort of each data element, `before`, and the rows
+# after its exclusions, `after`, from the value `counted` of the analysis
+# that counts the rows. `after` is n_after of the last step of the exclusion
+# table, or `before` for a cohort without a step. Both are NA for data
+# without a cohort.
+cohort_counts <- function(counted) {
+  start <- attr(counted, "n_before", exact = TRUE)
+  tables <- attr(counted, "exclusions", exact = TRUE)
+  nm <- names(counted)
+  before <- vapply(
+    nm,
+    function(n) return(if (is.null(start[[n]])) NA_integer_ else start[[n]]),
+    integer(1)
+  )
+  after <- vapply(
+    nm,
+    function(n) {
+      e <- tables[[n]]
+      if (is.null(e)) {
+        return(NA_integer_)
+      }
+      if (nrow(e) == 0) {
+        return(before[[n]])
+      }
+      return(as.integer(e$n_after[nrow(e)]))
+    },
+    integer(1)
+  )
+  return(list(before = before, after = after))
+}
+
+# The element exclusions: the exclusion tables of the cohorts, row-bound in
+# the order of the data. An empty list without a cohort.
+exclusions_element <- function(tables) {
+  if (length(tables) == 0) {
+    return(list())
+  }
+  out <- do.call(rbind, unname(tables))
+  rownames(out) <- NULL
+  return(list(exclusions = out))
+}
+
+# One row for each data element of the plan: whether it has a cache, whether
+# the data came from the cache, and the md5 of its cache key. `cache` holds
+# the record of each data element with a cache, from the analysis that
+# counts the rows.
+data_cache_table <- function(info, cache) {
+  nm <- names(info$data)
+  record <- function(n, field, none) {
+    x <- cache[[n]]
+    return(if (is.null(x)) none else x[[field]])
+  }
+  return(data.frame(
+    data = nm,
+    cache = vapply(nm, function(n) return(isTRUE(info$cache[[n]])), TRUE),
+    from_cache = vapply(nm, record, TRUE, field = "from_cache", none = FALSE),
+    cache_key = vapply(nm, record, "", field = "key", none = NA_character_),
+    row.names = NULL
+  ))
 }
 
 # The element of one analysis kind from the values `values` of its analyses
@@ -544,6 +668,7 @@ write_scenario <- function(o, root, s) {
   )
   if (o$sims == 1) {
     qs2::qs_save(o$runs[[1]], file.path(folder, "results.qs2"))
+    write_private(o$private[[1]], folder)
     return(invisible(NULL))
   }
   unlink(file.path(folder, "results.qs2"))
@@ -553,6 +678,7 @@ write_scenario <- function(o, root, s) {
       o$runs[[sim]],
       file.path(folder, sim_folder(sim), "results.qs2")
     )
+    write_private(o$private[[sim]], file.path(folder, sim_folder(sim)))
   }
   stack_scenario(root, s, o$sims)
   return(invisible(NULL))

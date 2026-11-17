@@ -79,6 +79,18 @@ no count of the runs, so two runs of one plan can be \code{identical()}.
 
 \code{run_plan()} sets \code{use_foreach} of the plan: \code{FALSE} for 1 worker and
 \code{TRUE} for more.
+
+After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} first computes the md5 of each
+raw data file again when its size or its modification time changed. The
+value carries the md5 in its stamp, and \code{\link[=save_results]{save_results()}} writes it to
+\code{manifest$data_md5}.
+
+For a data function with \code{cache = TRUE}, \code{run_plan()} needs
+\code{\link[=initialize_project]{initialize_project()}} first, and it prints one line for each scenario and
+simulation. The section Cache of \code{\link[=add_data]{add_data()}} gives the rules. A data
+function that returns a \code{cohort::CohortPipeline} runs on the worker, and
+only its data.table and its exclusion table come back. The section A
+cohort as the data of \code{\link[=add_data]{add_data()}} gives the rules.
 }
 \examples{
 CFG <- list(scenarios = data.frame(scenario = c("real", "null"), sims = 2))
@@ -100,6 +112,7 @@ r[["null__sim_0002__mean_x__1"]]
 
 Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
-\code{\link[=add_data]{add_data()}}
+\code{\link[=add_data]{add_data()}},
+\code{\link[=cohort_data]{cohort_data()}}
 }
 \concept{plan}

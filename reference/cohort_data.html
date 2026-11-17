@@ -80,12 +80,15 @@ attributes <code>pbn_exclusions</code> and <code>pbn_n_before</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>A data function MAY end with a step after the cohort:</p>
+    <p>A step after the cohort reads the data with <code>cohort_data()</code>. As the step
+<code>after_cohort</code> of <code><a href="add_data.html">add_data()</a></code>, it returns its value, and pbn puts the
+exclusion table on it:</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="va">data_impute</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">cp</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/cohort_data.html">cohort_data</a></span><span class="op">(</span><span class="va">cp</span><span class="op">)</span></span>
-<span>  <span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="fu">impute_once</span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
-<span>  <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/cohort_data.html">keep_exclusions</a></span><span class="op">(</span><span class="va">imp</span>, <span class="va">cp</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="fl">1</span><span class="op">:</span><span class="fl">5</span>, <span class="kw">function</span><span class="op">(</span><span class="va">k</span><span class="op">)</span> <span class="fu">impute_once</span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre><p></p></div>
+<p>At the end of a data function <code>fn</code>, the step returns
+<code>pbn::keep_exclusions(imp, cp)</code>, so that the table stays.</p>
 <p><code>cohort_data()</code> returns <code>cp$get_included(&lt;cohort&gt;)</code>. <code>&lt;cohort&gt;</code> is the one
 cohort of the pipeline that no other cohort branches from, the cohort that
 <code><a href="add_data.html">add_data()</a></code> gives the analyses. It stops on a pipeline with more than one

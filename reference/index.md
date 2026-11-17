@@ -12,7 +12,7 @@
 ## The plan
 
 - [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) : Add
-  a data function to a plan
+  data to a plan
 - [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
   [`keep_exclusions()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
   : Work on the data of a cohort and keep its exclusion table

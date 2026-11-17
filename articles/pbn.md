@@ -74,9 +74,13 @@ pbn::initialize_project(version = "v01", home = ".", data_raw = "../data_raw")
 scenarios <- pbn::scenarios(CFG)
 
 p <- plnr::Plan$new()
-pbn::add_data(p, "d", cache = TRUE, fn = function(scenario, sim) {
-  data_raw(scenario, sim) |> data_clean() |> data_cohort() |> data_impute()
-})
+pbn::add_data(p, "d",
+  raw = data_raw,
+  clean = data_clean,
+  cohort = data_cohort,
+  after_cohort = data_impute,
+  cache = TRUE
+)
 pbn::add_analyses(p, scenarios, name = "table1", fn = make_table1)
 pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, adjust = "x")
 pbn::add_analyses(p, scenarios, name = "crude", fn = fit_models, adjust = "none", control = TRUE)
@@ -92,7 +96,7 @@ pbn::make_outputs(make_output, scenarios)
 2.  [`pbn::scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
     checks `CFG$scenarios` and chooses the scenarios of the run.
 3.  [`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md)
-    adds the data function, and
+    adds the four steps of the data, and
     [`pbn::add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
     adds each analysis kind.
 4.  [`pbn::run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
@@ -156,24 +160,33 @@ The project reports 90% intervals. A check of the coverage of a 95%
 interval needs 288 simulations, and this article must build in a short
 time. The section The checks gives the rule.
 
-## The data function
+## The data steps
 
-The data function of the run script has four steps, and each step has
-its own file in `v01_functions/`:
+The data has four steps, and each step has its own file in
+`v01_functions/`.
+[`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md)
+gets each step as an argument, and runs the steps in this order:
 
-1.  `data_raw(scenario, sim)` reads the real file, or makes fake data
-    with the same columns.
-2.  `data_clean(d)` gives the columns clean names. It drops no row.
-3.  `data_cohort(d)` applies the exclusions with `cohort`, and returns
-    the cohort.
-4.  `data_impute(cp)` imputes the missing values of `x`. The section
-    Imputation is data explains it.
+1.  `raw`: `data_raw(scenario, sim)` reads the real file, or makes fake
+    data with the same columns.
+2.  `clean`: `data_clean(d)` gives the columns clean names.
+3.  `cohort`: `data_cohort(d)` applies the exclusions with `cohort`, and
+    returns the cohort.
+4.  `after_cohort`: `data_impute(cp)` imputes the missing values of `x`.
+    The section Imputation is data explains it.
+
+pbn takes the steps apart to count the rows between them. Each exclusion
+MUST go through `$exclude_and_track()` in `data_cohort()`, so that the
+exclusion table counts it. So `data_clean()` MUST return as many rows as
+`data_raw()` gave it, and the cohort MUST start with all of them.
+Otherwise the data fails, and the error gives both numbers of rows. The
+section A cleaning step that drops a row shows the error.
 
 `data_raw()` reads the real file from the folder that
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-gives as `org::project$data_raw`. pbn sets the seed to `sim` before each
-call, so each simulation has its own data, and a second run gives the
-same data.
+gives as `org::project$data_raw`. pbn sets the seed to `sim` once,
+before `data_raw()`, so each simulation has its own data, and a second
+run gives the same data.
 
 ``` r
 # known: group a has 11 rows, 2 with the outcome, 8 without, 1 missing.
@@ -237,20 +250,27 @@ data_impute <- function(cp) {
     d[, (col) := x]
     data.table::set(d, miss, col, round(mu + stats::rnorm(length(miss), 0, stats::sigma(fit))))
   }
-  pbn::keep_exclusions(d, cp)
+  d
 }
 ```
 
 The value of `data_cohort()` is a
 [`cohort::CohortPipeline`](https://www.rwhite.no/cohort/reference/CohortPipeline.html).
 `pbn::cohort_data(cp)` gives its data.table after the exclusions to the
-next step. `pbn::keep_exclusions(d, cp)` returns the imputed data with
-the exclusion table of the cohort, so
+next step. pbn puts the exclusion table of the cohort on the value of
+`data_impute()`, so
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 still stores that table.
 [`?add_data`](https://www.rwhite.no/pbn/reference/add_data.md) and
 [`?cohort_data`](https://www.rwhite.no/pbn/reference/cohort_data.md)
 give the rules.
+
+Data that does not fit the four steps, for example data that joins two
+cohorts, goes to
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) as one
+function: `fn = function(scenario, sim)`. pbn then checks no rows inside
+it, and a step after the cohort in `fn` returns its value through
+`pbn::keep_exclusions(x, cp)`.
 
 ## The analyses and the controls
 
@@ -373,7 +393,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpQw0Q1R/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpoA3n44/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -381,7 +401,7 @@ table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #>                                       282
 ```
 
-plnr called the data function once for each of the 282 scenarios and
+plnr ran the data steps once for each of the 282 scenarios and
 simulations, and gave the data to every analysis of that simulation.
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
 adds one analysis for each scenario, simulation and value of the extra
@@ -399,13 +419,13 @@ head(names(p$analyses), 5)
 
 `workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster.
 pbn gives each worker the objects that `v01_functions/` defines and the
-attached packages, so the functions find `CFG` and each other. Each data
-function and each analysis sets its own seed. So one analysis by hand in
-this R session gives the value of the worker:
+attached packages, so the functions find `CFG` and each other. The data
+and each analysis set their own seed. So one analysis by hand in this R
+session gives the value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 06:20.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 07:52.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -483,8 +503,8 @@ of R, pbn and the loaded packages, the date, the scenario and the
 simulation. `source_md5` holds the md5 of `v01_run.R` and of each file
 in `v01_functions/`. For the real data, `data_md5` holds the md5 of each
 data file. For a fake scenario, `fake_md5` holds the md5 of the code of
-the data function. `n_rows_data` holds the number of rows of the data
-after the exclusions.
+the data steps. `n_rows_data` holds the number of rows of the data after
+the exclusions.
 
 ``` r
 str(res$manifest[c("scenario", "sim", "sims", "data_md5", "n_rows_data", "n_rows_before_exclusions", "analyses")])
@@ -539,7 +559,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpQw0Q1R/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpoA3n44/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -654,8 +674,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 06:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 06:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 07:52.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 07:52.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -673,7 +693,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpQw0Q1R/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpQw0Q1R/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpQw0Q1R/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpoA3n44/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpoA3n44/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpoA3n44/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -682,21 +702,50 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 06:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 06:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 07:52.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 07:52.
+```
+
+### A cleaning step that drops a row
+
+Make `data_clean()` drop the rows with a missing outcome. That is an
+exclusion, and it belongs in `data_cohort()`, where it is already. Keep
+a copy of the file first, and show the first failed analysis:
+
+``` r
+clean_file <- file.path(home, "v01_functions", "data_clean.R")
+file.copy(clean_file, file.path(root, "data_clean_copy.R"))
+#> [1] TRUE
+code <- sub("^  d$", "  d[!is.na(outcome)]", readLines(clean_file))
+writeLines(code, clean_file)
+out <- callr::rscript(run_file, wd = home, show = FALSE, fail_on_status = FALSE)
+lines <- strsplit(out$stdout, "\n")[[1]]
+cat(lines[grep(" failed:$", lines)[1] + 0:1], sep = "\n")
+#> pbn: the analysis real__sim_0001__pbn_n_rows failed:
+#> The data function 'd' failed: The step clean of the data "d" returned 388 rows, but the step raw returned 400 rows. The step clean MUST return a data.frame with the same number of rows. Put each exclusion in the step cohort, with $exclude_and_track(), so that pbn counts it.
+```
+
+Each analysis of the run fails in the same way, and
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+does not run. Put the copy back:
+
+``` r
+file.copy(file.path(root, "data_clean_copy.R"), clean_file, overwrite = TRUE)
+#> [1] TRUE
 ```
 
 ## Imputation is data
 
 A multiple imputation can take hours, and every analysis reads its
-result. So it belongs in the data function. With `cache = TRUE` in
+result. So it belongs in the data, as the step `after_cohort`. With
+`cache = TRUE` in
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) saves
-the value of the data function on disk for each scenario and simulation,
-in `v01_cache_gitexclude/`. The next run reads it again while the cache
-key is the same. A change of an analysis then runs the analyses only.
+the data on disk for each scenario and simulation, in
+`v01_cache_gitexclude/`. The next run reads it again while the cache key
+is the same. A change of an analysis then runs the analyses only.
 
-`data_impute()` comes after `data_cohort()`, so the imputation model
+`data_impute()` is the step after the cohort, so the imputation model
 uses the people of the cohort only. It draws `CFG$data$n_imp` values for
 each missing `x`, from a linear model of `x` on `group` and the outcome,
 with a normal error. It writes the draws to the columns `x_1`, `x_2` and
@@ -713,28 +762,29 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 06:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 06:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 07:52.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 07:52.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
 ```
 
 Change the data code: `data_impute()` keeps one decimal of each draw.
-pbn computes the data again and names the changed file:
+pbn computes the data again, and names the changed file and the changed
+step:
 
 ``` r
 code <- readLines(file.path(home, "v01_functions", "data_impute.R"))
 code <- sub("round(mu + ", "round(digits = 1, mu + ", code, fixed = TRUE)
 writeLines(code, file.path(home, "v01_functions", "data_impute.R"))
 fourth <- run_lines()
-#> pbn: data d, real sim_0001: computed, because v01_functions/data_impute.R changed.
-#> pbn: data d, known sim_0001: computed, because v01_functions/data_impute.R changed.
+#> pbn: data d, real sim_0001: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
+#> pbn: data d, known sim_0001: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`,
-and `CFG$data`. It also holds the code of the data function, the raw
-data, the settings, the versions of R and pbn, and
+and `CFG$data`. It also holds the code of each step, the raw data, the
+settings, the versions of R and pbn, and
 [`RNGkind()`](https://rdrr.io/r/base/Random.html). Beside the key, pbn
 records the version of each package loaded when the data was computed. A
 new version of one of them computes the data again.
@@ -765,10 +815,10 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpQw0Q1R/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpoA3n44/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- p$get_argset("confounded__sim_0003__models__1")
 data <- p$get_data("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R changed.
+#> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
 argset$adjust
 #> [1] "x"
 nrow(data$d)
@@ -908,10 +958,14 @@ with the project folder as the working directory.
   [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html).
 - `workers` limits the number of R sessions. It does not limit the
   threads that R or the BLAS library starts in each of them.
-- `fake_md5` is the md5 of the code of the data functions of
+- `fake_md5` is the md5 of the code of the steps of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) only.
-  A change in a function that they call, such as `data_raw()`, does not
-  change `fake_md5`. `source_md5` holds the md5 of its file.
+  A change in a function that a step calls does not change `fake_md5`.
+  `source_md5` holds the md5 of its file.
+- The checks between the steps compare the number of rows, not which
+  rows. A `data_clean()`, or a `data_cohort()` before `$new()`, that
+  drops one row and repeats another passes. pbn does not check the rows
+  of the step `after_cohort`.
 - The check of the rows of the data compares sizes only. A copy of the
   data with one row less passes.
 - The cache stores the whole value of one data element for each scenario

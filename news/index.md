@@ -167,6 +167,19 @@ each scenario. To move a project, change these items:
 - The article Get started has the scenarios `null` and `confounded`,
   with 140 simulations each and recovery checks, and an output part with
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md).
+- [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) takes
+  the data as the steps `raw`, `clean`, `cohort` and `after_cohort`, or
+  as one function `fn`. The data fails when `clean` changes the number
+  of rows, or when the cohort does not start with every row. Each
+  exclusion thus goes through the cohort, which counts it.
+- pbn puts the exclusion table of the cohort on the value of
+  `after_cohort`, so the step needs no
+  [`keep_exclusions()`](https://www.rwhite.no/pbn/reference/cohort_data.md).
+  [`keep_exclusions()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
+  is for a data function `fn`.
+- With the steps, the cache key and `fake_md5` hold each step, and the
+  cache line names a changed step. The article Get started uses the
+  steps.
 
 ## pbn 2026.11.22
 

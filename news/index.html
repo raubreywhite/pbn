@@ -131,6 +131,10 @@
 <code>CFG$scenarios</code> MAY have the column <code>output</code>, <code>TRUE</code> or <code>FALSE</code>, and <code>FALSE</code> for <code>"real"</code>. It is not a setting. Before, a column <code>output</code> was a setting of any atomic type.</li>
 <li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>fake_data_names</code>.</li>
 <li>The article Get started has the scenarios <code>null</code> and <code>confounded</code>, with 140 simulations each and recovery checks, and an output part with <code><a href="../reference/make_outputs.html">make_outputs()</a></code>.</li>
+<li>
+<code><a href="../reference/add_data.html">add_data()</a></code> takes the data as the steps <code>raw</code>, <code>clean</code>, <code>cohort</code> and <code>after_cohort</code>, or as one function <code>fn</code>. The data fails when <code>clean</code> changes the number of rows, or when the cohort does not start with every row. Each exclusion thus goes through the cohort, which counts it.</li>
+<li>pbn puts the exclusion table of the cohort on the value of <code>after_cohort</code>, so the step needs no <code><a href="../reference/cohort_data.html">keep_exclusions()</a></code>. <code><a href="../reference/cohort_data.html">keep_exclusions()</a></code> is for a data function <code>fn</code>.</li>
+<li>With the steps, the cache key and <code>fake_md5</code> hold each step, and the cache line names a changed step. The article Get started uses the steps.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

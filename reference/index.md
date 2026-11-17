@@ -3,18 +3,25 @@
 ## Run a project version
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  : Start one scenario of an analysis project version
-- [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
-  : Choose the scenario for stepping through a run script by hand
-- [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-  : End the run script here when the scenario is fake
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  : Run every scenario of a project version in new R sessions
+  : Start a project version
+- [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md) :
+  Choose the scenarios of a run
+- [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md)
+  : End the run script here unless the real data ran
+
+## The plan
+
+- [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) : Add
+  a data function to a plan
+- [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+  : Add one analysis for each scenario and simulation to a plan
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) : Run
+  a plan
 
 ## Results
 
 - [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-  : Save the results object of a project version
+  : Save the results of a run
 - [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
   : Read the results object of a project version
 - [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)

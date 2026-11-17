@@ -38,9 +38,9 @@ is valid. The seven rules:
   data.frame with the columns `step`, `n_before`, `n_excluded` and
   `n_after`. When `manifest$stacked` is `TRUE`, it also has the column
   `sim` that
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  adds. On every row, `n_before - n_excluded == n_after`. Without an
-  element `exclusions`, the rule passes and says so.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  adds when it stacks. On every row, `n_before - n_excluded == n_after`.
+  Without an element `exclusions`, the rule passes and says so.
 
 - `allowed_objects`: each element at each depth is one of these:
 
@@ -73,7 +73,8 @@ is valid. The seven rules:
   `index` and `.internal.selfref`.
 
 - `no_row_per_person`: no element at any depth of the results has one
-  value for each row of the data. When `n` is `manifest$n_rows_data`,
+  value for each row of the data. `manifest$n_rows_data` holds one row
+  count, or one for each data element. For each count `n` of 2 or more,
   the rule fails each of these:
 
   - a data.frame with `n` rows.
@@ -84,9 +85,10 @@ is valid. The seven rules:
   - a matrix or an array with a dimension `n`.
 
   The walk goes into lists, the columns and list columns of data.frames,
-  and attributes. It does not go into `manifest`. When `n_rows_data` is
-  `NA`, 0 or 1, this rule checks nothing. A table with fewer rows than
-  the data passes, and so does a vector with one value for each group.
+  and attributes. It does not go into `manifest`. A count that is `NA`,
+  0 or 1 checks nothing, and a `manifest$n_rows_data` without another
+  count checks nothing too. A table with fewer rows than the data
+  passes, and so does a vector with one value for each group.
 
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.

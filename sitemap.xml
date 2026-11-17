@@ -6,15 +6,17 @@
 <url><loc>https://www.rwhite.no/pbn/authors.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/index.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/news/index.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/add_analyses.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/add_data.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/check_project.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/check_results.html</loc></url>
-<url><loc>https://www.rwhite.no/pbn/reference/end_if_fake_scenario.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/end_unless_real.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/index.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/initialize_project.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/read_results.html</loc></url>
-<url><loc>https://www.rwhite.no/pbn/reference/run_scenarios.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/run_plan.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/save_results.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/scenarios.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/table1.html</loc></url>
-<url><loc>https://www.rwhite.no/pbn/reference/use_scenario.html</loc></url>
 </urlset>
 

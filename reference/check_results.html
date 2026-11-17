@@ -11,7 +11,7 @@ nothing."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.png"
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -81,7 +81,7 @@ twice.</p></li>
 <li><p><code>exclusions_table</code>: when <code>x</code> has an element <code>exclusions</code>, it is a
 data.frame with the columns <code>step</code>, <code>n_before</code>, <code>n_excluded</code> and
 <code>n_after</code>. When <code>manifest$stacked</code> is <code>TRUE</code>, it also has the column
-<code>sim</code> that <code><a href="run_scenarios.html">run_scenarios()</a></code> adds. On every row,
+<code>sim</code> that <code><a href="save_results.html">save_results()</a></code> adds when it stacks. On every row,
 <code>n_before - n_excluded == n_after</code>. Without an element <code>exclusions</code>, the
 rule passes and says so.</p></li>
 <li><p><code>allowed_objects</code>: each element at each depth is one of these:</p><ul><li><p>a data.frame, of any class that inherits from data.frame. This
@@ -107,15 +107,17 @@ that R and data.table set: <code>names</code>, <code>dim</code>, <code>dimnames<
 <code>class</code>, <code>levels</code>, <code>tzone</code>, <code>units</code>, <code>comment</code>, <code>sorted</code>, <code>index</code> and
 <code>.internal.selfref</code>.</p></li>
 <li><p><code>no_row_per_person</code>: no element at any depth of the results has one
-value for each row of the data. When <code>n</code> is <code>manifest$n_rows_data</code>, the
-rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
+value for each row of the data. <code>manifest$n_rows_data</code> holds one row
+count, or one for each data element. For each count <code>n</code> of 2 or more,
+the rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
 <li><p>an atomic vector of length <code>n</code>, also a factor, a <code>Date</code> or a
 <code>POSIXct</code>.</p></li>
 <li><p>a matrix or an array with a dimension <code>n</code>.</p></li>
 </ul><p>The walk goes into lists, the columns and list columns of data.frames,
-and attributes. It does not go into <code>manifest</code>. When <code>n_rows_data</code> is
-<code>NA</code>, 0 or 1, this rule checks nothing. A table with fewer rows than the
-data passes, and so does a vector with one value for each group.</p></li>
+and attributes. It does not go into <code>manifest</code>. A count that is <code>NA</code>, 0
+or 1 checks nothing, and a <code>manifest$n_rows_data</code> without another count
+checks nothing too. A table with fewer rows than the data passes, and
+so does a vector with one value for each group.</p></li>
 <li><p><code>manifest_scenario</code>: <code>manifest</code> has the elements <code>scenario</code>, <code>sim</code> and
 <code>sims</code>, and <code>scenario</code> is one string.</p></li>
 <li><p><code>manifest_data</code>: <code>manifest</code> has exactly one of <code>data_md5</code> and

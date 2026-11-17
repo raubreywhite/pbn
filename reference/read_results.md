@@ -2,8 +2,6 @@
 
 `read_results()` reads the `results.qs2` of one scenario, the file that
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-or
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
 writes. The default reads the real results.
 
 ## Usage
@@ -40,10 +38,20 @@ The results object, a named list. See
 With `sim = NULL`, `read_results()` reads
 `<home>/<version>_results/<scenario>/results.qs2`. That is the results
 of a scenario with 1 simulation, or the simulations that
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 stacked. With a number `k`, it reads
 `<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2`, where
 `<kkkk>` is `k` with four digits.
+
+`read_results()` stops when
+`<home>/<version>_results/<scenario>/check.csv` exists and holds a value
+of `pass` that is not `TRUE`, also when it reads one simulation. It also
+stops when that file holds no assertion, or has no column `pass` that R
+can read.
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+still writes such results, so that you can find the fault. The error
+names the file and how to read it with
+[`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html).
 
 A manuscript MUST read the real results only.
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

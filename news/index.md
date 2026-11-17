@@ -1,5 +1,83 @@
 # Changelog
 
+## pbn 2026.11.23
+
+The run script is now one `plnr` plan over every scenario and
+simulation. pbn no longer starts the run script in a new R session for
+each scenario. To move a project, change these items:
+
+| Removed | Use instead |
+|----|----|
+| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `org::project$data_raw`, and each argset holds `scenario`, `sim` and the settings. |
+| `use_scenario()` and its commented lines in `vNN_run.R` | `p$get_argset("<scenario>__sim_<kkkk>__<name>__<i>")` and `p$get_data()` inside `if (plnr::is_run_directly())`. |
+| `run_scenarios()`, `run_scenarios.R`, `workers` and `resume` | `pbn::scenarios(CFG)`, or `pbn::scenarios(CFG, only = "null")`, and `pbn::run_plan(p, workers = 2)`. A run always runs every chosen scenario. |
+| `fake_<scenario>(dir)` and the folder `data/` of a fake run | One data function `get_data(scenario, sim)` for every scenario, added with [`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). |
+| The command-line arguments `scenario=` and `sim=` | `pbn::scenarios(CFG, only = ...)` in the run script. |
+| `save_results(..., d = d)` | `pbn::save_results(r, p, scenarios)`. Each element is an analysis kind of [`pbn::add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md). |
+| `end_if_fake_scenario()` | `pbn::end_unless_real(scenarios)`. |
+| `run.log` and `run.ok` | Nothing. [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) prints each failed analysis with its full error. |
+
+- New [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md),
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
+  [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) and
+  [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md).
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  sets no seed and reads no command line. It creates no folder, and it
+  stops when `vNN_functions/` is missing. `data_raw` MAY be absent: only
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  for `"real"` then stops.
+- A data function MUST take `scenario` and `sim` without a default, or
+  neither.
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) stops
+  on a default for either and on `sim` without `scenario`, and it sets
+  the seed to `sim` before each call.
+- Each analysis gets its own seed in `argset$seed`, from its kind, its
+  counter and `sim`, and never `sim` itself for sims 1 to 9999. To step
+  through an analysis by hand, run `set.seed(argset$seed)`.
+- With more workers,
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) gives
+  the same results when a function reads only its arguments, the
+  functions folder, the attached packages and the seed. R options are
+  not copied to the workers.
+- `add_analyses(control = TRUE)` adds an analysis for the fake scenarios
+  only. The real results never hold it.
+- `run_plan(workers > 1)` needs doParallel and foreach, which are now in
+  Suggests. It copies the objects of the sourced environment and the
+  paths of
+  [`org::project`](https://www.rwhite.no/org/reference/project.html) to
+  each worker, and attaches the attached packages there.
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) fails
+  an analysis that adds, removes, renames or replaces a column of the
+  shared data. It does not find a change of values in place. When it
+  stops, the results files of an earlier run stay.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  stops on a value of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) from
+  another plan, and on `scenarios` with other settings than the argsets.
+- [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  stops on results whose `check.csv` holds an assertion that did not
+  pass, holds no assertion, or has no column `pass`. The error says how
+  to read them with
+  [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html).
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  marks new results “not checked yet” in `check.csv` until their
+  `expect_` function has run. It writes each `check.csv` to a temporary
+  file and renames it.
+- `scenario_checks` fails a `check.csv` with no assertion.
+- The manifest gains `analyses`, the analysis kinds with `control`.
+  `n_rows_data` is a named vector with one count for each data element.
+  `fake_md5` is the md5 of the code of the data functions of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). The
+  manifest no longer holds `data_raw`.
+- `no_row_per_person` checks each count of `n_rows_data` of 2 or more. A
+  results file with one count works as before.
+- [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  no longer has the rules `no_active_use_scenario` and
+  `use_scenario_lines`, and it no longer starts an R session.
+  `unknown_path` no longer knows `run_scenarios.R`.
+- pbn imports `plnr` (\>= 2026.11.17) again. `callr` moves to Suggests.
+
 ## pbn 2026.11.22
 
 - `save_results(..., d)` saves each named argument as one result under
@@ -24,11 +102,10 @@
 - The new rule `element_names` replaces `top_level_names`. The rules
   `exclusions_table`, `no_row_per_person`, `manifest_scenario`,
   `manifest_data` and `manifest_source` keep their names.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  stacks every element of the results. Before, it dropped `extra`. A
-  data.frame gets a first column `sim`, and a list is stacked element by
-  element. Each other value becomes a list with one entry for each
-  simulation.
+- `run_scenarios()` stacks every element of the results. Before, it
+  dropped `extra`. A data.frame gets a first column `sim`, and a list is
+  stacked element by element. Each other value becomes a list with one
+  entry for each simulation.
 - Stacking stops when two simulations differ in the structure at one
   path, and the error names the path and the two simulations.
 - `no_row_per_person` also fails an atomic vector of length
@@ -52,28 +129,24 @@
 
 ## pbn 2026.11.21
 
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  writes the stdout and the stderr of each run to `run.log` in the
-  results folder of the simulation. For a failed run, it prints the
-  whole log, and the error names the run and the log. Before, the output
-  was in the error message, and R cuts an error message at 1000 bytes by
-  default.
-- New argument `workers` of
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md):
-  the number of simulations that run at the same time, each in a new R
-  session. After a failed run, no new run starts, the started runs end,
-  and the error names each failed run.
-- New argument `resume` of
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md).
-  With `TRUE`, it keeps each simulation with a `results.qs2` from a
-  completed run of the same run script and functions folder, and runs
-  the others. The default `FALSE` runs every simulation.
-- After a run that succeeds,
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  writes `run.ok` with the md5 of `results.qs2`. A run that quits with
-  status 0 but writes no valid `results.qs2` for its scenario and
-  simulation now fails. Before, a scenario with 1 simulation and no
-  `expect_` function could pass with an invalid file.
+- `run_scenarios()` writes the stdout and the stderr of each run to
+  `run.log` in the results folder of the simulation. For a failed run,
+  it prints the whole log, and the error names the run and the log.
+  Before, the output was in the error message, and R cuts an error
+  message at 1000 bytes by default.
+- New argument `workers` of `run_scenarios()`: the number of simulations
+  that run at the same time, each in a new R session. After a failed
+  run, no new run starts, the started runs end, and the error names each
+  failed run.
+- New argument `resume` of `run_scenarios()`. With `TRUE`, it keeps each
+  simulation with a `results.qs2` from a completed run of the same run
+  script and functions folder, and runs the others. The default `FALSE`
+  runs every simulation.
+- After a run that succeeds, `run_scenarios()` writes `run.ok` with the
+  md5 of `results.qs2`. A run that quits with status 0 but writes no
+  valid `results.qs2` for its scenario and simulation now fails. Before,
+  a scenario with 1 simulation and no `expect_` function could pass with
+  an invalid file.
 - `run.log` and `run.ok` are run artefacts: list both in the
   `.gitignore` of a project.
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -92,13 +165,11 @@
   returns the settings of the run as `settings`, and the manifest stores
   them. A list column or an `NA` is an error. Before, pbn dropped these
   columns without a message.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  deletes the `check.csv` of each chosen scenario and each stacked
-  `results.qs2` before the first run, and the `results.qs2` of each
-  simulation that it runs.
-- pbn no longer imports `plnr`.
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  starts and watches its R sessions with `callr`.
+- `run_scenarios()` deletes the `check.csv` of each chosen scenario and
+  each stacked `results.qs2` before the first run, and the `results.qs2`
+  of each simulation that it runs.
+- pbn no longer imports `plnr`. `run_scenarios()` starts and watches its
+  R sessions with `callr`.
 
 ## pbn 2026.11.20
 
@@ -118,10 +189,9 @@
   rule `manifest_data` fails the results file of a fake scenario that an
   older pbn wrote: run the scenarios again to write it. The rule also
   fails a `data_md5` or `fake_md5` that is not in the form of an md5.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  keeps the class of each stacked table, so a data.table in simulation 1
-  gives a stacked data.table. Before, every stacked table was a
-  data.frame.
+- `run_scenarios()` keeps the class of each stacked table, so a
+  data.table in simulation 1 gives a stacked data.table. Before, every
+  stacked table was a data.frame.
 - New
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
   rule `use_scenario_lines`. A `vNN_run.R` MUST have exactly one
@@ -138,9 +208,7 @@
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
   A call that still passes it stops with R’s unused-argument error. The
   command line `scenario=<name> sim=<k>` gives the scenario, or else the
-  new
-  [`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md),
-  or else `"real"`.
+  new `use_scenario()`, or else `"real"`.
 - New `use_scenario(scenario, sim = 1)` chooses the scenario for the
   rest of the R session when a person steps through a run script by
   hand. It stops in a non-interactive R session.
@@ -149,28 +217,22 @@
   prints one line with the scenario and the simulation, and `(fake)` for
   a fake scenario. A call that stops leaves no run for
   [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-  or
-  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md).
-- New
-  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-  ends a run script after
+  or `end_if_fake_scenario()`.
+- New `end_if_fake_scenario()` ends a run script after
   [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
   for a fake scenario, so the output part runs for the real data only.
-  It quits with status 0 under `Rscript`, and
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  counts that as a success.
+  It quits with status 0 under `Rscript`, and `run_scenarios()` counts
+  that as a success.
 - New
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
   rule `no_active_use_scenario`. It fails an active call or the
-  reference
-  [`pbn::use_scenario`](https://www.rwhite.no/pbn/reference/use_scenario.md),
-  also in a function body or an `if`. `run_script_initialises` names
-  each argument that
+  reference `pbn::use_scenario`, also in a function body or an `if`.
+  `run_script_initialises` names each argument that
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   does not have.
 - `unknown_path` knows `run_scenarios.R`. It no longer knows
   `vNN_output.R`: the output part goes in `vNN_run.R`, after
-  [`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md).
+  `end_if_fake_scenario()`.
 
 ## pbn 2026.11.17
 
@@ -185,19 +247,15 @@
 - Results go to `vNN_results/<scenario>/results.qs2`, or to
   `vNN_results/<scenario>/sim_NNNN/results.qs2` for a scenario with more
   than 1 simulation. pbn needs `org` 2026.11.16 for this.
-- New
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  runs every simulation of every scenario in a new R session with a
-  `plnr` plan, stacks the simulations, and checks them with
-  `expect_<scenario>()`.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  needs `expect_<scenario>()` for every fake scenario, and stops before
-  any run when one is missing. An `expect_` function that errors or
-  returns no assertions counts as a failed assertion.
-- [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  deletes the results of a simulation before it runs it, and stops when
-  the run writes no `results.qs2`. An older file is never stacked or
-  checked.
+- New `run_scenarios()` runs every simulation of every scenario in a new
+  R session with a `plnr` plan, stacks the simulations, and checks them
+  with `expect_<scenario>()`.
+- `run_scenarios()` needs `expect_<scenario>()` for every fake scenario,
+  and stops before any run when one is missing. An `expect_` function
+  that errors or returns no assertions counts as a failed assertion.
+- `run_scenarios()` deletes the results of a simulation before it runs
+  it, and stops when the run writes no `results.qs2`. An older file is
+  never stacked or checked.
 - [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
   takes `scenario` (default `"real"`) and `sim`.
 - The manifest gains `scenario`, `sim` and `sims`. New

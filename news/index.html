@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.22</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.23</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -42,6 +42,70 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.23" id="pbn-20261123">pbn 2026.11.23<a class="anchor" aria-label="anchor" href="#pbn-20261123"></a></h2>
+<p>The run script is now one <code>plnr</code> plan over every scenario and simulation. pbn no longer starts the run script in a new R session for each scenario. To move a project, change these items:</p>
+<table class="table"><colgroup><col width="50%"><col width="50%"></colgroup><thead><tr><th>Removed</th>
+<th>Use instead</th>
+</tr></thead><tbody><tr><td>
+<code>p &lt;- pbn::initialize_project(...)</code>, with <code>p$scenario</code>, <code>p$sim</code>, <code>p$data_raw</code> and <code>p$settings</code>
+</td>
+<td>
+<code>pbn::initialize_project(...)</code> sets the paths only. A data function reads <code>org::project$data_raw</code>, and each argset holds <code>scenario</code>, <code>sim</code> and the settings.</td>
+</tr><tr><td>
+<code>use_scenario()</code> and its commented lines in <code>vNN_run.R</code>
+</td>
+<td>
+<code>p$get_argset("&lt;scenario&gt;__sim_&lt;kkkk&gt;__&lt;name&gt;__&lt;i&gt;")</code> and <code>p$get_data()</code> inside <code>if (plnr::is_run_directly())</code>.</td>
+</tr><tr><td>
+<code>run_scenarios()</code>, <code>run_scenarios.R</code>, <code>workers</code> and <code>resume</code>
+</td>
+<td>
+<code>pbn::scenarios(CFG)</code>, or <code>pbn::scenarios(CFG, only = "null")</code>, and <code>pbn::run_plan(p, workers = 2)</code>. A run always runs every chosen scenario.</td>
+</tr><tr><td>
+<code>fake_&lt;scenario&gt;(dir)</code> and the folder <code>data/</code> of a fake run</td>
+<td>One data function <code>get_data(scenario, sim)</code> for every scenario, added with <code><a href="../reference/add_data.html">pbn::add_data()</a></code>.</td>
+</tr><tr><td>The command-line arguments <code>scenario=</code> and <code>sim=</code>
+</td>
+<td>
+<code>pbn::scenarios(CFG, only = ...)</code> in the run script.</td>
+</tr><tr><td><code>save_results(..., d = d)</code></td>
+<td>
+<code>pbn::save_results(r, p, scenarios)</code>. Each element is an analysis kind of <code><a href="../reference/add_analyses.html">pbn::add_analyses()</a></code>.</td>
+</tr><tr><td><code>end_if_fake_scenario()</code></td>
+<td>
+<code>pbn::end_unless_real(scenarios)</code>.</td>
+</tr><tr><td>
+<code>run.log</code> and <code>run.ok</code>
+</td>
+<td>Nothing. <code><a href="../reference/run_plan.html">run_plan()</a></code> prints each failed analysis with its full error.</td>
+</tr></tbody></table><ul><li>New <code><a href="../reference/scenarios.html">scenarios()</a></code>, <code><a href="../reference/add_data.html">add_data()</a></code>, <code><a href="../reference/add_analyses.html">add_analyses()</a></code>, <code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/end_unless_real.html">end_unless_real()</a></code>.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> sets no seed and reads no command line. It creates no folder, and it stops when <code>vNN_functions/</code> is missing. <code>data_raw</code> MAY be absent: only <code><a href="../reference/save_results.html">save_results()</a></code> for <code>"real"</code> then stops.</li>
+<li>A data function MUST take <code>scenario</code> and <code>sim</code> without a default, or neither. <code><a href="../reference/add_data.html">add_data()</a></code> stops on a default for either and on <code>sim</code> without <code>scenario</code>, and it sets the seed to <code>sim</code> before each call.</li>
+<li>Each analysis gets its own seed in <code>argset$seed</code>, from its kind, its counter and <code>sim</code>, and never <code>sim</code> itself for sims 1 to 9999. To step through an analysis by hand, run <code>set.seed(argset$seed)</code>.</li>
+<li>With more workers, <code><a href="../reference/run_plan.html">run_plan()</a></code> gives the same results when a function reads only its arguments, the functions folder, the attached packages and the seed. R options are not copied to the workers.</li>
+<li>
+<code>add_analyses(control = TRUE)</code> adds an analysis for the fake scenarios only. The real results never hold it.</li>
+<li>
+<code>run_plan(workers &gt; 1)</code> needs doParallel and foreach, which are now in Suggests. It copies the objects of the sourced environment and the paths of <code><a href="https://www.rwhite.no/org/reference/project.html" class="external-link">org::project</a></code> to each worker, and attaches the attached packages there.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> fails an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place. When it stops, the results files of an earlier run stay.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> stops on a value of <code><a href="../reference/run_plan.html">run_plan()</a></code> from another plan, and on <code>scenarios</code> with other settings than the argsets.</li>
+<li>
+<code><a href="../reference/read_results.html">read_results()</a></code> stops on results whose <code>check.csv</code> holds an assertion that did not pass, holds no assertion, or has no column <code>pass</code>. The error says how to read them with <code><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs2::qs_read()</a></code>.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> marks new results “not checked yet” in <code>check.csv</code> until their <code>expect_</code> function has run. It writes each <code>check.csv</code> to a temporary file and renames it.</li>
+<li>
+<code>scenario_checks</code> fails a <code>check.csv</code> with no assertion.</li>
+<li>The manifest gains <code>analyses</code>, the analysis kinds with <code>control</code>. <code>n_rows_data</code> is a named vector with one count for each data element. <code>fake_md5</code> is the md5 of the code of the data functions of <code><a href="../reference/add_data.html">add_data()</a></code>. The manifest no longer holds <code>data_raw</code>.</li>
+<li>
+<code>no_row_per_person</code> checks each count of <code>n_rows_data</code> of 2 or more. A results file with one count works as before.</li>
+<li>
+<code><a href="../reference/check_project.html">check_project()</a></code> no longer has the rules <code>no_active_use_scenario</code> and <code>use_scenario_lines</code>, and it no longer starts an R session. <code>unknown_path</code> no longer knows <code>run_scenarios.R</code>.</li>
+<li>pbn imports <code>plnr</code> (&gt;= 2026.11.17) again. <code>callr</code> moves to Suggests.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>
 <ul><li>
 <code>save_results(..., d)</code> saves each named argument as one result under its name. A call with the names <code>exclusions</code>, <code>estimates</code>, <code>tables</code> and <code>extra</code> works as before.</li>
@@ -54,7 +118,7 @@
 <li>A result MAY be a data.frame, an atomic vector, <code>NULL</code>, or a list of these to any depth. The new rule <code>allowed_objects</code> replaces <code>no_fitted_models</code>. It also fails a function, an environment, an S4 or R6 object, a formula and a list with a class outside a fixed set. The detail names the path and the class.</li>
 <li>The new rule <code>element_names</code> replaces <code>top_level_names</code>. The rules <code>exclusions_table</code>, <code>no_row_per_person</code>, <code>manifest_scenario</code>, <code>manifest_data</code> and <code>manifest_source</code> keep their names.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> stacks every element of the results. Before, it dropped <code>extra</code>. A data.frame gets a first column <code>sim</code>, and a list is stacked element by element. Each other value becomes a list with one entry for each simulation.</li>
+<code>run_scenarios()</code> stacks every element of the results. Before, it dropped <code>extra</code>. A data.frame gets a first column <code>sim</code>, and a list is stacked element by element. Each other value becomes a list with one entry for each simulation.</li>
 <li>Stacking stops when two simulations differ in the structure at one path, and the error names the path and the two simulations.</li>
 <li>
 <code>no_row_per_person</code> also fails an atomic vector of length <code>n_rows_data</code> and a matrix or an array with a dimension <code>n_rows_data</code>, for example <code>fitted(fit)</code>. It does not look in <code>manifest</code>, and it checks nothing when <code>n_rows_data</code> is 0 or 1. Before, a 1-row table failed when the data had 1 row.</li>
@@ -67,18 +131,18 @@
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.21" id="pbn-20261121">pbn 2026.11.21<a class="anchor" aria-label="anchor" href="#pbn-20261121"></a></h2>
 <ul><li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> writes the stdout and the stderr of each run to <code>run.log</code> in the results folder of the simulation. For a failed run, it prints the whole log, and the error names the run and the log. Before, the output was in the error message, and R cuts an error message at 1000 bytes by default.</li>
-<li>New argument <code>workers</code> of <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code>: the number of simulations that run at the same time, each in a new R session. After a failed run, no new run starts, the started runs end, and the error names each failed run.</li>
-<li>New argument <code>resume</code> of <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code>. With <code>TRUE</code>, it keeps each simulation with a <code>results.qs2</code> from a completed run of the same run script and functions folder, and runs the others. The default <code>FALSE</code> runs every simulation.</li>
-<li>After a run that succeeds, <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> writes <code>run.ok</code> with the md5 of <code>results.qs2</code>. A run that quits with status 0 but writes no valid <code>results.qs2</code> for its scenario and simulation now fails. Before, a scenario with 1 simulation and no <code>expect_</code> function could pass with an invalid file.</li>
+<code>run_scenarios()</code> writes the stdout and the stderr of each run to <code>run.log</code> in the results folder of the simulation. For a failed run, it prints the whole log, and the error names the run and the log. Before, the output was in the error message, and R cuts an error message at 1000 bytes by default.</li>
+<li>New argument <code>workers</code> of <code>run_scenarios()</code>: the number of simulations that run at the same time, each in a new R session. After a failed run, no new run starts, the started runs end, and the error names each failed run.</li>
+<li>New argument <code>resume</code> of <code>run_scenarios()</code>. With <code>TRUE</code>, it keeps each simulation with a <code>results.qs2</code> from a completed run of the same run script and functions folder, and runs the others. The default <code>FALSE</code> runs every simulation.</li>
+<li>After a run that succeeds, <code>run_scenarios()</code> writes <code>run.ok</code> with the md5 of <code>results.qs2</code>. A run that quits with status 0 but writes no valid <code>results.qs2</code> for its scenario and simulation now fails. Before, a scenario with 1 simulation and no <code>expect_</code> function could pass with an invalid file.</li>
 <li>
 <code>run.log</code> and <code>run.ok</code> are run artefacts: list both in the <code>.gitignore</code> of a project. <code><a href="../reference/check_project.html">check_project()</a></code> does not read them.</li>
 <li>The manifest gains <code>source_md5</code>, the md5 of the run script and of each file of the functions folder, for every scenario. New <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_source</code>.</li>
 <li>A <code>results.qs2</code> that pbn 2026.11.20 or older wrote has no <code>source_md5</code>. It fails <code>manifest_source</code> and the <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>results_contract</code>: run the scenarios again to write it.</li>
 <li>Each column of <code>CFG$scenarios</code> other than <code>scenario</code> and <code>sims</code> is a setting of the scenario. <code><a href="../reference/initialize_project.html">initialize_project()</a></code> returns the settings of the run as <code>settings</code>, and the manifest stores them. A list column or an <code>NA</code> is an error. Before, pbn dropped these columns without a message.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> deletes the <code>check.csv</code> of each chosen scenario and each stacked <code>results.qs2</code> before the first run, and the <code>results.qs2</code> of each simulation that it runs.</li>
-<li>pbn no longer imports <code>plnr</code>. <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> starts and watches its R sessions with <code>callr</code>.</li>
+<code>run_scenarios()</code> deletes the <code>check.csv</code> of each chosen scenario and each stacked <code>results.qs2</code> before the first run, and the <code>results.qs2</code> of each simulation that it runs.</li>
+<li>pbn no longer imports <code>plnr</code>. <code>run_scenarios()</code> starts and watches its R sessions with <code>callr</code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.20" id="pbn-20261120">pbn 2026.11.20<a class="anchor" aria-label="anchor" href="#pbn-20261120"></a></h2>
@@ -88,18 +152,18 @@
 <h2 class="pkg-version" data-toc-text="2026.11.19" id="pbn-20261119">pbn 2026.11.19<a class="anchor" aria-label="anchor" href="#pbn-20261119"></a></h2>
 <ul><li>For a fake scenario, the manifest has <code>fake_md5</code>, the md5 of the code of <code>fake_&lt;scenario&gt;()</code>, in the place of <code>data_md5</code>. A writer such as <code>haven::write_sav()</code> stamps the time into a file, so <code>data_md5</code> changed on every run. This changes the format of <code>results.qs2</code>. The new <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_data</code> fails the results file of a fake scenario that an older pbn wrote: run the scenarios again to write it. The rule also fails a <code>data_md5</code> or <code>fake_md5</code> that is not in the form of an md5.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> keeps the class of each stacked table, so a data.table in simulation 1 gives a stacked data.table. Before, every stacked table was a data.frame.</li>
+<code>run_scenarios()</code> keeps the class of each stacked table, so a data.table in simulation 1 gives a stacked data.table. Before, every stacked table was a data.frame.</li>
 <li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>use_scenario_lines</code>. A <code>vNN_run.R</code> MUST have exactly one top-level comment <code># pbn::use_scenario("&lt;name&gt;", sim = 1)</code> above <code><a href="../reference/initialize_project.html">pbn::initialize_project()</a></code> for each scenario of <code>CFG$scenarios</code>. A comment for another scenario fails too. To read them, <code><a href="../reference/check_project.html">check_project()</a></code> sources <code>vNN_functions/</code> in a new R session, so it runs project code.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.18" id="pbn-20261118">pbn 2026.11.18<a class="anchor" aria-label="anchor" href="#pbn-20261118"></a></h2>
-<ul><li>Removed the <code>scenario</code> argument of <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. A call that still passes it stops with R’s unused-argument error. The command line <code>scenario=&lt;name&gt; sim=&lt;k&gt;</code> gives the scenario, or else the new <code><a href="../reference/use_scenario.html">use_scenario()</a></code>, or else <code>"real"</code>.</li>
+<ul><li>Removed the <code>scenario</code> argument of <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. A call that still passes it stops with R’s unused-argument error. The command line <code>scenario=&lt;name&gt; sim=&lt;k&gt;</code> gives the scenario, or else the new <code>use_scenario()</code>, or else <code>"real"</code>.</li>
 <li>New <code>use_scenario(scenario, sim = 1)</code> chooses the scenario for the rest of the R session when a person steps through a run script by hand. It stops in a non-interactive R session.</li>
-<li>In an interactive R session, <code><a href="../reference/initialize_project.html">initialize_project()</a></code> prints one line with the scenario and the simulation, and <code>(fake)</code> for a fake scenario. A call that stops leaves no run for <code><a href="../reference/save_results.html">save_results()</a></code> or <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code>.</li>
-<li>New <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code> ends a run script after <code><a href="../reference/save_results.html">save_results()</a></code> for a fake scenario, so the output part runs for the real data only. It quits with status 0 under <code>Rscript</code>, and <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> counts that as a success.</li>
-<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>no_active_use_scenario</code>. It fails an active call or the reference <code><a href="../reference/use_scenario.html">pbn::use_scenario</a></code>, also in a function body or an <code>if</code>. <code>run_script_initialises</code> names each argument that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> does not have.</li>
+<li>In an interactive R session, <code><a href="../reference/initialize_project.html">initialize_project()</a></code> prints one line with the scenario and the simulation, and <code>(fake)</code> for a fake scenario. A call that stops leaves no run for <code><a href="../reference/save_results.html">save_results()</a></code> or <code>end_if_fake_scenario()</code>.</li>
+<li>New <code>end_if_fake_scenario()</code> ends a run script after <code><a href="../reference/save_results.html">save_results()</a></code> for a fake scenario, so the output part runs for the real data only. It quits with status 0 under <code>Rscript</code>, and <code>run_scenarios()</code> counts that as a success.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>no_active_use_scenario</code>. It fails an active call or the reference <code>pbn::use_scenario</code>, also in a function body or an <code>if</code>. <code>run_script_initialises</code> names each argument that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> does not have.</li>
 <li>
-<code>unknown_path</code> knows <code>run_scenarios.R</code>. It no longer knows <code>vNN_output.R</code>: the output part goes in <code>vNN_run.R</code>, after <code><a href="../reference/end_if_fake_scenario.html">end_if_fake_scenario()</a></code>.</li>
+<code>unknown_path</code> knows <code>run_scenarios.R</code>. It no longer knows <code>vNN_output.R</code>: the output part goes in <code>vNN_run.R</code>, after <code>end_if_fake_scenario()</code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.17" id="pbn-20261117">pbn 2026.11.17<a class="anchor" aria-label="anchor" href="#pbn-20261117"></a></h2>
@@ -107,11 +171,11 @@
 <li>
 <code><a href="../reference/initialize_project.html">initialize_project()</a></code> takes <code>scenario</code>, and reads <code>scenario=&lt;name&gt;</code> and <code>sim=&lt;k&gt;</code> from the command line. It sets the seed to the simulation before org sources the functions and again before it calls <code>fake_&lt;scenario&gt;(dir)</code> for fake data.</li>
 <li>Results go to <code>vNN_results/&lt;scenario&gt;/results.qs2</code>, or to <code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> for a scenario with more than 1 simulation. pbn needs <code>org</code> 2026.11.16 for this.</li>
-<li>New <code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> runs every simulation of every scenario in a new R session with a <code>plnr</code> plan, stacks the simulations, and checks them with <code>expect_&lt;scenario&gt;()</code>.</li>
+<li>New <code>run_scenarios()</code> runs every simulation of every scenario in a new R session with a <code>plnr</code> plan, stacks the simulations, and checks them with <code>expect_&lt;scenario&gt;()</code>.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> needs <code>expect_&lt;scenario&gt;()</code> for every fake scenario, and stops before any run when one is missing. An <code>expect_</code> function that errors or returns no assertions counts as a failed assertion.</li>
+<code>run_scenarios()</code> needs <code>expect_&lt;scenario&gt;()</code> for every fake scenario, and stops before any run when one is missing. An <code>expect_</code> function that errors or returns no assertions counts as a failed assertion.</li>
 <li>
-<code><a href="../reference/run_scenarios.html">run_scenarios()</a></code> deletes the results of a simulation before it runs it, and stops when the run writes no <code>results.qs2</code>. An older file is never stacked or checked.</li>
+<code>run_scenarios()</code> deletes the results of a simulation before it runs it, and stops when the run writes no <code>results.qs2</code>. An older file is never stacked or checked.</li>
 <li>
 <code><a href="../reference/read_results.html">read_results()</a></code> takes <code>scenario</code> (default <code>"real"</code>) and <code>sim</code>.</li>
 <li>The manifest gains <code>scenario</code>, <code>sim</code> and <code>sims</code>. New <code><a href="../reference/check_results.html">check_results()</a></code> rule <code>manifest_scenario</code>.</li>

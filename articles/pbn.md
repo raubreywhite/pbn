@@ -5,8 +5,9 @@
 Most analysis projects have a layout of their own. A number in a
 manuscript then often has no clear path back to the code and the data
 that made it. Tests on fake data, where they exist, run apart from the
-analysis. pbn gives each project one layout and one run script, and it
-makes the real data one scenario among fake ones.
+analysis. pbn gives each project one layout and one run script. The run
+script is a `plnr` plan, and the real data is one scenario among fake
+ones.
 
 ## The layout
 
@@ -23,7 +24,6 @@ v01_results/<scenario>/   the results of each scenario
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
 check_project.R           one line: pbn::check_project()
-run_scenarios.R           one line: pbn::run_scenarios("v01")
 pbn_allow.txt             optional exceptions to check_project()
 manuscript/manual/        manuscripts that a person edits
 manuscript/built/vNN/     manuscripts that code builds from the results
@@ -46,150 +46,9 @@ home <- file.path(root, "project")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 ```
 
-## The config
-
-`v01_functions/_cfg.R` holds the config of version v01. `CFG$scenarios`
-names each scenario and its number of simulations. The scenario `real`
-MUST be there, and it uses the real data. Here the fake scenario `known`
-has 1 simulation and the fake scenario `null` has 3. `CFG$vars` names
-the variables of the descriptive table.
-
-Each other column of `CFG$scenarios` is a setting of the scenario. Here
-`n_boot` is the number of bootstrap replicates: 200 for the real data
-and 20 for each fake scenario, so the fake runs are fast. The run script
-reads it as `p$settings$n_boot`. A setting column MUST be an atomic
-vector with no `NA`.
-
-``` r
-CFG <- list(
-  scenarios = data.frame(
-    scenario = c("real", "known", "null"),
-    sims = c(1, 1, 3),
-    n_boot = c(200, 20, 20)
-  ),
-  vars = data.table::data.table(
-    var = c("outcome", "x"),
-    type = c("bin", "cont")
-  )
-)
-```
-
-Keep `_cfg.R` to top-level assignments.
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-and
-[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-source `v01_functions/` in a new R session to read `CFG$scenarios`, so
-each other top-level call in the folder runs there too.
-
-## A fake scenario
-
-Each fake scenario needs two functions in `v01_functions/`.
-`fake_<scenario>(dir)` writes the data files into the folder `dir`.
-`expect_<scenario>(results)` gets the results of the scenario and
-returns the assertions on them.
-
-The scenario `known` plants the counts by hand. The comment holds the
-arithmetic, so a reader can check each expected value without R.
-
-``` r
-# Group a has 11 rows: 2 with the outcome, 8 without, 1 missing.
-# Group b has 11 rows: 6 with the outcome, 4 without, 1 missing.
-# The run excludes the 2 rows with a missing outcome: 22 - 2 = 20 rows.
-# Percentage with the outcome: 100 * (2 + 6) / 20 = 40.
-# Odds ratio of b against a: (6 / 4) / (2 / 8) = 6.
-fake_known <- function(dir) {
-  d <- data.frame(
-    id = 1:22,
-    group = rep(c("a", "b"), each = 11),
-    x = 31:52,
-    outcome = c(rep(c(1, 0, NA), c(2, 8, 1)), rep(c(1, 0, NA), c(6, 4, 1)))
-  )
-  data.table::fwrite(d, file.path(dir, "d.csv"))
-}
-
-expect_known <- function(results) {
-  e <- results$estimates
-  t1 <- results$tables$table1
-  observed <- c(
-    results$exclusions$n_excluded,
-    t1$events[t1$var == "outcome" & t1$grp == "b"],
-    e$estimate[e$term == "pct_outcome"],
-    e$estimate[e$term == "or_group_b"]
-  )
-  expected <- c(2, 6, 40, 6)
-  data.frame(
-    assertion = c(
-      "rows excluded",
-      "outcome events in group b",
-      "percentage with the outcome",
-      "odds ratio of b against a"
-    ),
-    expected = expected,
-    observed = observed,
-    pass = abs(observed - expected) < 1e-6
-  )
-}
-```
-
-The scenario `known` tests four outputs of the analysis against numbers
-that a person computed by hand. It does not test how the analysis
-behaves on data as large or as untidy as the real data.
-
-`expect_<scenario>()` MUST return a data.frame with at least one row and
-the columns `assertion`, `expected`, `observed` and `pass`.
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-counts an error, zero rows or another shape as one failed assertion.
-`expect_real()` is optional.
-
-The scenario `null` draws data where the outcome does not depend on the
-group. pbn sets the seed to the number of the simulation before it calls
-`fake_null()`. Each simulation thus has different data, and a second run
-gives the same data again.
-
-``` r
-fake_null <- function(dir) {
-  d <- data.frame(
-    id = 1:400,
-    group = sample(c("a", "b"), 400, replace = TRUE),
-    x = round(stats::rnorm(400, 50, 10)),
-    outcome = stats::rbinom(400, 1, 0.3)
-  )
-  data.table::fwrite(d, file.path(dir, "d.csv"))
-}
-
-# results holds the 3 simulations stacked. Each data.frame has a first
-# column sim. The named vector counts is a list with one entry for each
-# simulation.
-expect_null <- function(results) {
-  e <- results$estimates
-  sims_n <- length(unique(e$sim))
-  log_or <- mean(log(e$estimate[e$term == "or_group_b"]))
-  rows <- unlist(lapply(results$counts, function(n) n[["rows"]]))
-  data.frame(
-    assertion = c("simulations", "mean log odds ratio of b against a", "rows of each simulation"),
-    expected = c("3", "-0.5 to 0.5", "400 400 400"),
-    observed = c(sims_n, round(log_or, 3), paste(rows, collapse = " ")),
-    pass = c(sims_n == 3, abs(log_or) < 0.5, identical(as.numeric(rows), c(400, 400, 400)))
-  )
-}
-```
-
-The scenario `null` tests that the mean log odds ratio over 3
-simulations is within 0.5 of zero when the data has no difference
-between the groups. It also tests that each simulation analyses all 400
-rows. It does not test that the analysis finds a difference that is
-there. With 400 rows, one log odds ratio has a standard error of about
-0.22, so the mean of 3 has about 0.13. The bound 0.5 is thus about 4
-standard errors.
-
-## The run script
-
-`v01_run.R` runs one simulation of one scenario. The same script runs on
-each scenario, and only the data changes.
-
 The real data of this fake project is a small csv file in the folder
 `data_raw`, next to the project folder. In a real project, this folder
-holds the real data, and it lives outside the repository.
+holds the real data, and it is outside the repository.
 
 ``` r
 data_raw <- file.path(root, "data_raw")
@@ -201,374 +60,400 @@ d$outcome[sample(400, 12)] <- NA
 data.table::fwrite(d, file.path(data_raw, "d.csv"))
 ```
 
-The run script has these parts, in this order:
+## The config
 
-1.  One commented line `# pbn::use_scenario("<name>", sim = 1)` for each
-    scenario. The section “Stepping through a scenario by hand” explains
-    them.
-2.  The call
-    [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
-    It sources `v01_functions/`, and it gives the data folder
-    `p$data_raw` and the results folder `p$results` of the scenario.
-3.  PART 1 reads the data, and PART 2 computes the results and saves
-    them with
-    [`pbn::save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
-4.  [`pbn::end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-    ends the run of a fake scenario.
-5.  PART 3 writes the output of the real results.
+`v01_functions/_cfg.R` holds the config of version v01. `CFG$scenarios`
+names each scenario and its number of simulations. The scenario `real`
+MUST be there, and it uses the real data. Here the fake scenario `known`
+has 1 simulation and the fake scenario `null` has 3. Each other column
+of `CFG$scenarios` is a setting of the scenario, and
+[`?scenarios`](https://www.rwhite.no/pbn/reference/scenarios.md) gives
+the rules.
 
 ``` r
-# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.
-# pbn::use_scenario("real", sim = 1)
-# pbn::use_scenario("known", sim = 1)
-# pbn::use_scenario("null", sim = 1)
-p <- pbn::initialize_project(version = "v01", home = ".", data_raw = "../data_raw")
-
-# PART 1 -- DATA CREATION ====
-d0 <- data.table::fread(file.path(p$data_raw, "d.csv"))
-d <- d0[!is.na(outcome)]
-
-# PART 2 -- ANALYSIS ====
-fit <- stats::glm(outcome ~ group, family = "binomial", data = d)
-# A small bootstrap of the percentage, with the replicates of the scenario.
-boot <- replicate(p$settings$n_boot, 100 * mean(sample(d$outcome, replace = TRUE)))
-pbn::save_results(
-  exclusions = data.frame(
-    step = "outcome not missing",
-    n_before = nrow(d0),
-    n_excluded = nrow(d0) - nrow(d),
-    n_after = nrow(d)
+CFG <- list(
+  scenarios = data.frame(
+    scenario = c("real", "known", "null"),
+    sims = c(1, 1, 3)
   ),
-  estimates = data.frame(
-    term = c("pct_outcome", "or_group_b", "se_pct_outcome"),
-    estimate = c(100 * mean(d$outcome), exp(stats::coef(fit)[["groupb"]]), stats::sd(boot))
-  ),
-  tables = list(table1 = pbn::table1(d, by = "group", vars = CFG$vars)),
-  counts = c(rows = nrow(d), events = sum(d$outcome)),
-  d = d
+  adjust = c("none", "x"),
+  vars = data.table::data.table(
+    var = c("outcome", "x"),
+    type = c("bin", "cont")
+  )
 )
-pbn::end_if_fake_scenario()
+```
+
+## The data function
+
+`get_data(scenario, sim)` gives the data of one scenario and simulation.
+For `real`, it reads the csv file in the folder that
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+gives as `org::project$data_raw`. For a fake scenario, it makes the
+data. pbn sets the seed to `sim` before each call, so each simulation
+has its own data, and a second run gives the same data.
+
+``` r
+# known: group a has 11 rows, 2 with the outcome, 8 without, 1 missing.
+# Group b has 11 rows, 6 with the outcome, 4 without, 1 missing.
+# Odds ratio of b against a: (6 / 4) / (2 / 8) = 6.
+# null: the outcome does not depend on the group.
+get_data <- function(scenario, sim) {
+  switch(scenario,
+    real = data.table::fread(file.path(org::project$data_raw, "d.csv")),
+    known = data.table::data.table(
+      id = 1:22,
+      group = rep(c("a", "b"), each = 11),
+      x = rep(c(31, 45, 38, 52, 40, 33, 47, 36, 50, 42, 44), 2),
+      outcome = c(rep(c(1, 0, NA), c(2, 8, 1)), rep(c(1, 0, NA), c(6, 4, 1)))
+    ),
+    data.table::data.table(
+      id = 1:400,
+      group = sample(c("a", "b"), 400, replace = TRUE),
+      x = round(stats::rnorm(400, 50, 10)),
+      outcome = stats::rbinom(400, 1, 0.3)
+    )
+  )
+}
+```
+
+The comment holds the arithmetic of `known`, so a reader can check each
+expected value without R.
+
+## The analyses
+
+An action function takes `data` and `argset`, as in any `plnr` plan.
+`data$d` is the data of the scenario and simulation. `argset` holds
+`scenario`, `sim`, the extra dimensions and the settings.
+
+``` r
+make_table1 <- function(data, argset) {
+  pbn::table1(data$d[!is.na(outcome)], by = "group", vars = CFG$vars)
+}
+
+fit_models <- function(data, argset) {
+  if (plnr::is_run_directly()) {
+    argset <- p$get_argset("null__sim_0003__models__2")
+    data <- p$get_data("null__sim_0003__models__2")
+  }
+  d <- data$d[!is.na(outcome)]
+  rhs <- if (argset$adjust == "none") "group" else "group + x"
+  fit <- stats::glm(stats::as.formula(paste("outcome ~", rhs)), family = "binomial", data = d)
+  data.frame(term = "or_group_b", estimate = exp(stats::coef(fit)[["groupb"]]))
+}
+
+# A negative control: with a permuted group, the true odds ratio is 1.
+fit_permuted <- function(data, argset) {
+  d <- data$d[!is.na(outcome)]
+  d[, group := sample(group)]
+  fit <- stats::glm(outcome ~ group, family = "binomial", data = d)
+  data.frame(term = "or_group_b", estimate = exp(stats::coef(fit)[["groupb"]]))
+}
+```
+
+## The assertions
+
+Each fake scenario needs a function `expect_<scenario>(results)`. It
+gets the results of the scenario, with one element for each analysis
+kind, and returns the assertions on them. It MUST return a data.frame
+with at least one row and the columns `assertion`, `expected`,
+`observed` and `pass`. `expect_real()` is optional.
+
+``` r
+expect_known <- function(results) {
+  t1 <- results$table1
+  m <- results$models
+  observed <- c(
+    t1$events[t1$var == "outcome" & t1$grp == "b"],
+    m$estimate[m$adjust == "none"]
+  )
+  expected <- c(6, 6)
+  data.frame(
+    assertion = c("outcome events in group b", "crude odds ratio of b against a"),
+    expected = expected,
+    observed = observed,
+    pass = abs(observed - expected) < 1e-6
+  )
+}
+
+# results holds the 3 simulations stacked, and each data.frame has a first
+# column sim.
+expect_null <- function(results) {
+  m <- results$models
+  p <- results$permuted
+  log_or <- mean(log(m$estimate[m$adjust == "none"]))
+  log_or_permuted <- mean(log(p$estimate))
+  data.frame(
+    assertion = c("simulations", "mean crude log odds ratio", "mean permuted log odds ratio"),
+    expected = c("3", "-0.5 to 0.5", "-0.5 to 0.5"),
+    observed = c(length(unique(m$sim)), round(log_or, 3), round(log_or_permuted, 3)),
+    pass = c(length(unique(m$sim)) == 3, abs(log_or) < 0.5, abs(log_or_permuted) < 0.5)
+  )
+}
+```
+
+The scenario `known` tests two outputs against numbers that a person
+computed by hand. It does not test how the analysis behaves on data as
+large or as untidy as the real data. The scenario `null` tests that the
+mean log odds ratio over 3 simulations is within 0.5 of zero when the
+groups do not differ. It does not test that the analysis finds a
+difference that is there. With 400 rows, one log odds ratio has a
+standard error of about 0.22, so the mean of 3 has about 0.13.
+
+## The run script
+
+`v01_run.R` runs every scenario as one `plnr` plan:
+
+1.  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+    sources `v01_functions/` and sets the paths.
+2.  [`pbn::scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
+    checks `CFG$scenarios` and chooses the scenarios of the run.
+3.  [`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md)
+    adds the data function, and
+    [`pbn::add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+    adds each analysis kind.
+4.  [`pbn::run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+    runs the plan, and
+    [`pbn::save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+    saves and checks the results.
+5.  [`pbn::end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md)
+    ends the script when the run had no real data.
+6.  PART 3 writes the output of the real results.
+
+``` r
+pbn::initialize_project(version = "v01", home = ".", data_raw = "../data_raw")
+scenarios <- pbn::scenarios(CFG)
+
+p <- plnr::Plan$new()
+pbn::add_data(p, "d", fn = function(scenario, sim) get_data(scenario, sim))
+pbn::add_analyses(p, scenarios, name = "table1", fn = make_table1)
+pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, adjust = CFG$adjust)
+pbn::add_analyses(p, scenarios, name = "permuted", fn = fit_permuted, control = TRUE)
+r <- pbn::run_plan(p)
+pbn::save_results(r, p, scenarios)
+
+pbn::end_unless_real(scenarios)
 
 # PART 3 -- OUTPUT ====
-r <- pbn::read_results("v01")
-data.table::fwrite(r$tables$table1, file.path(p$results, "table1.csv"))
+res <- pbn::read_results("v01")
+data.table::fwrite(res$table1, file.path("v01_results", "real", "table1.csv"))
 ```
 
-`data_raw` is relative to the project folder, because
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-runs the script there. pbn reads `data_raw` for the real data only.
+[`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+adds one analysis for each scenario, simulation and value of the extra
+dimensions. `models` has the extra dimension `adjust`, so it has two
+analyses for each simulation. `permuted` has `control = TRUE`, so it
+runs for the fake scenarios only and never appears in the real results.
+`pbn::scenarios(CFG, only = "null")` runs one scenario.
 
-## The results contract
-
-[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-saves each result under the name that the run script gives it, here
-`exclusions`, `estimates`, `tables` and `counts`. pbn adds the element
-`manifest`, so a result with that name is an error. A result MAY be one
-of these, and
-[`?check_results`](https://www.rwhite.no/pbn/reference/check_results.md)
-gives the full list:
-
-- a data.frame, also a data.table.
-- an atomic vector of any length, such as the named vector `counts`. A
-  matrix, a factor and a date are atomic vectors too.
-- `NULL`.
-- a list of these, to any depth.
-
-[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-checks the results object before it writes `results.qs2`. It stops on
-each other object, for example a fitted model or a function, and names
-its path. It stops when an element named `exclusions` does not have the
-columns `step`, `n_before`, `n_excluded` and `n_after`, or when its
-counts do not add up.
-
-The argument `d` is required. `d = d` gives pbn the number of rows of
-the analysis data.
-[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-then stops on a result with one value for each row, for example
-`fitted(fit)`. That is a data.frame with that number of rows, or a
-vector or a matrix with that number of values in one dimension. Use
-`d = NULL` when the run has no single data table.
-
-The check compares sizes only. A table with fewer rows than the data
-passes, and so does a vector with one value for each group. Such a
-result can still hold values of single persons, so check the small
-groups by hand.
-
-## Running everything
-
-`run_scenarios.R` holds one line. In a real project, you run it with the
-project folder as the working directory.
+`data_raw` is relative to the project folder, because the script runs
+there. In a real project, run it with `Rscript v01_run.R` from the
+project folder. Here [`source()`](https://rdrr.io/r/base/source.html)
+with `chdir = TRUE` runs it, so the plan stays in this R session:
 
 ``` r
-pbn::run_scenarios("v01")
-```
-
-Here the call gives the project folder as `home`.
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-runs `v01_run.R` once for each simulation of each scenario, each time in
-a new R session. It then stacks the 3 simulations of `null`, and it
-calls `expect_known()` and `expect_null()`.
-
-`workers = 2` runs 2 simulations at the same time. The results files are
-the same as with the default `workers = 1`, and only the order of the
-lines on the console can change.
-
-``` r
-pbn::run_scenarios("v01", home = home, workers = 2)
-#> pbn: scenario real, simulation 1: started
-#> pbn: scenario known, simulation 1: started
-#> pbn: scenario real, simulation 1: ran
-#> pbn: scenario null, simulation 1: started
-#> pbn: scenario known, simulation 1: ran
-#> pbn: scenario null, simulation 2: started
-#> pbn: scenario null, simulation 1: ran
-#> pbn: scenario null, simulation 3: started
-#> pbn: scenario null, simulation 2: ran
-#> pbn: scenario null, simulation 3: ran
+source(file.path(home, "v01_run.R"), chdir = TRUE)
+#> Sourcing all code inside /tmp/RtmpnSszvI/pbn_get_started/project/v01_functions into R_GlobalEnv
 #> Assertions of the scenario "known":
-#>                    assertion expected observed pass
-#>                rows excluded        2        2 TRUE
-#>    outcome events in group b        6        6 TRUE
-#>  percentage with the outcome       40       40 TRUE
-#>    odds ratio of b against a        6        6 TRUE
+#>                        assertion expected observed pass
+#>        outcome events in group b        6        6 TRUE
+#>  crude odds ratio of b against a        6        6 TRUE
 #> Assertions of the scenario "null":
-#>                           assertion    expected    observed pass
-#>                         simulations           3           3 TRUE
-#>  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE
-#>             rows of each simulation 400 400 400 400 400 400 TRUE
+#>                     assertion    expected observed pass
+#>                   simulations           3    3.000 TRUE
+#>     mean crude log odds ratio -0.5 to 0.5    0.133 TRUE
+#>  mean permuted log odds ratio -0.5 to 0.5   -0.186 TRUE
 ```
 
-Each scenario has a folder in `v01_results/`. The scenario `null` has
-one folder for each simulation, and its stacked `results.qs2`. A fake
-run keeps its data in `data/`. `run.log` holds the stdout and the stderr
-of the run. When a run fails,
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-prints its whole `run.log`, and the error names the file. After a run
-that succeeds,
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-writes `run.ok` with the md5 of `results.qs2`. A run that stops after
+plnr called `get_data()` once for each of the 5 scenarios and
+simulations, and gave the data to every analysis of that simulation. The
+plan has 24 analyses. pbn added the 5 analyses
+`<scenario>__sim_<kkkk>__pbn_n_rows`, which count the rows of the data
+for the manifest.
+
+``` r
+length(p$analyses)
+#> [1] 24
+head(names(p$analyses), 8)
+#> [1] "real__sim_0001__pbn_n_rows"  "known__sim_0001__pbn_n_rows"
+#> [3] "null__sim_0001__pbn_n_rows"  "null__sim_0002__pbn_n_rows" 
+#> [5] "null__sim_0003__pbn_n_rows"  "real__sim_0001__table1__1"  
+#> [7] "known__sim_0001__table1__1"  "null__sim_0001__table1__1"
+```
+
+## More than one worker
+
+`workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster.
+pbn gives each worker the objects that `v01_functions/` defines and the
+attached packages, so the functions find `CFG` and each other. Each data
+function and each analysis sets its own seed, so the results are the
+same:
+
+``` r
+r2 <- pbn::run_plan(p, workers = 2)
+identical(r2, r)
+#> [1] TRUE
+```
+
+This holds for functions that depend only on their arguments, the
+functions and `CFG` of `v01_functions/`, the attached packages and the
+seed. pbn does not copy the R options to the workers.
+
+## The results
+
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-has no `run.ok`. List `run.log` and `run.ok` in the `.gitignore` of the
-project.
+wrote one results object for each scenario and simulation. The scenario
+`null` has one folder for each simulation, and its stacked
+`results.qs2`. Each fake scenario has `check.csv`, the table of its
+assertions.
 
 ``` r
 list.files(file.path(home, "v01_results"), recursive = TRUE)
-#>  [1] "known/check.csv"           "known/data/d.csv"         
-#>  [3] "known/results.qs2"         "known/run.log"            
-#>  [5] "known/run.ok"              "null/check.csv"           
-#>  [7] "null/results.qs2"          "null/sim_0001/data/d.csv" 
-#>  [9] "null/sim_0001/results.qs2" "null/sim_0001/run.log"    
-#> [11] "null/sim_0001/run.ok"      "null/sim_0002/data/d.csv" 
-#> [13] "null/sim_0002/results.qs2" "null/sim_0002/run.log"    
-#> [15] "null/sim_0002/run.ok"      "null/sim_0003/data/d.csv" 
-#> [17] "null/sim_0003/results.qs2" "null/sim_0003/run.log"    
-#> [19] "null/sim_0003/run.ok"      "real/results.qs2"         
-#> [21] "real/run.log"              "real/run.ok"              
-#> [23] "real/table1.csv"
+#> [1] "known/check.csv"           "known/results.qs2"        
+#> [3] "null/check.csv"            "null/results.qs2"         
+#> [5] "null/sim_0001/results.qs2" "null/sim_0002/results.qs2"
+#> [7] "null/sim_0003/results.qs2" "real/results.qs2"         
+#> [9] "real/table1.csv"
 ```
 
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-writes the assertions of each fake scenario to `check.csv`:
+A results object is a named list. The first element is `manifest`, and
+then comes one element for each analysis kind. The data.frames of one
+kind are row-bound, with the extra dimension `adjust` as the first
+column. A value that is not a data.frame stays as it is.
+[`?save_results`](https://www.rwhite.no/pbn/reference/save_results.md)
+gives the rules.
 
 ``` r
-cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
-#> "assertion","expected","observed","pass"
-#> "rows excluded",2,2,TRUE
-#> "outcome events in group b",6,6,TRUE
-#> "percentage with the outcome",40,40,TRUE
-#> "odds ratio of b against a",6,5.99999999999878,TRUE
+res <- pbn::read_results("v01", home = home)
+names(res)
+#> [1] "manifest" "table1"   "models"
+res$models
+#>   adjust       term estimate
+#> 1   none or_group_b 1.747826
+#> 2      x or_group_b 1.745184
 ```
-
-## Running again after a failure
-
-A run of some hours can fail late. With `resume = TRUE`,
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-keeps each simulation with a `results.qs2` that passes
-[`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
-and that has a `run.ok` with its md5. The results MUST also come from
-the same `v01_run.R` and `v01_functions/`. It runs the other
-simulations, and it stacks and checks every scenario again.
-
-Delete the results of simulation 2 of `null`, and run again with
-`resume = TRUE`:
-
-``` r
-unlink(file.path(home, "v01_results", "null", "sim_0002", "results.qs2"))
-pbn::run_scenarios("v01", home = home, resume = TRUE)
-#> pbn: scenario real, simulation 1: kept
-#> pbn: scenario known, simulation 1: kept
-#> pbn: scenario null, simulation 1: kept
-#> pbn: scenario null, simulation 3: kept
-#> pbn: scenario null, simulation 2: started, because there is no results.qs2
-#> pbn: scenario null, simulation 2: ran
-#> Assertions of the scenario "known":
-#>                    assertion expected observed pass
-#>                rows excluded        2        2 TRUE
-#>    outcome events in group b        6        6 TRUE
-#>  percentage with the outcome       40       40 TRUE
-#>    odds ratio of b against a        6        6 TRUE
-#> Assertions of the scenario "null":
-#>                           assertion    expected    observed pass
-#>                         simulations           3           3 TRUE
-#>  mean log odds ratio of b against a -0.5 to 0.5       0.133 TRUE
-#>             rows of each simulation 400 400 400 400 400 400 TRUE
-```
-
-## Reading results
 
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-reads the `results.qs2` of one scenario. The default scenario is `real`.
+reads the real results by default. With `scenario`, it reads the results
+of a fake scenario, and with `sim` one simulation. The stacked results
+of `null` have a first column `sim`:
 
 ``` r
-r <- pbn::read_results("v01", home = home)
-r$estimates
-#>             term  estimate
-#> 1    pct_outcome 29.123711
-#> 2     or_group_b  1.747826
-#> 3 se_pct_outcome  2.399824
-r$tables$table1
-#>        var    grp     n missing     mean       sd events      pct          p
-#>     <char> <char> <int>   <int>    <num>    <num>  <int>    <num>      <num>
-#> 1: outcome    All   388       0       NA       NA    113 29.12371 0.01325468
-#> 2: outcome      a   196       0       NA       NA     46 23.46939 0.01325468
-#> 3: outcome      b   192       0       NA       NA     67 34.89583 0.01325468
-#> 4:       x    All   388       0 49.76031 9.711698     NA       NA         NA
-#> 5:       x      a   196       0 50.12245 9.768358     NA       NA         NA
-#> 6:       x      b   192       0 49.39062 9.664991     NA       NA         NA
-#>      test
-#>    <char>
-#> 1:  chisq
-#> 2:  chisq
-#> 3:  chisq
-#> 4:   <NA>
-#> 5:   <NA>
-#> 6:   <NA>
-```
-
-With `sim`, it reads the results of that one simulation. Without `sim`,
-it reads the results file of the scenario. For a scenario with one
-simulation, that file is the results of the run. For a scenario with
-more, it is the stacked results of all simulations. Stacking keeps every
-element. Each data.frame gets a first column `sim`. A list keeps its
-elements, and each of them is stacked by the same rules. To be stacked,
-each element of a list MUST have its own name. Each other element, such
-as `counts`, becomes a list with one entry for each simulation.
-
-``` r
-pbn::read_results("v01", scenario = "null", sim = 2, home = home)$estimates
-#>             term  estimate
-#> 1    pct_outcome 30.250000
-#> 2     or_group_b  1.323457
-#> 3 se_pct_outcome  2.346996
 null <- pbn::read_results("v01", scenario = "null", home = home)
-null$estimates
-#>   sim           term  estimate
-#> 1   1    pct_outcome 31.750000
-#> 2   1     or_group_b  1.087506
-#> 3   1 se_pct_outcome  1.972508
-#> 4   2    pct_outcome 30.250000
-#> 5   2     or_group_b  1.323457
-#> 6   2 se_pct_outcome  2.346996
-#> 7   3    pct_outcome 27.250000
-#> 8   3     or_group_b  1.035040
-#> 9   3 se_pct_outcome  2.320390
-null$counts
-#> $sim_0001
-#>   rows events 
-#>    400    127 
-#> 
-#> $sim_0002
-#>   rows events 
-#>    400    121 
-#> 
-#> $sim_0003
-#>   rows events 
-#>    400    109
+null$models
+#>   sim adjust       term estimate
+#> 1   1   none or_group_b 1.087506
+#> 2   1      x or_group_b 1.096456
+#> 3   2   none or_group_b 1.323457
+#> 4   2      x or_group_b 1.324507
+#> 5   3   none or_group_b 1.035040
+#> 6   3      x or_group_b 1.036015
+cat(readLines(file.path(home, "v01_results", "null", "check.csv")), sep = "\n")
+#> "assertion","expected","observed","pass"
+#> "simulations","3",3,TRUE
+#> "mean crude log odds ratio","-0.5 to 0.5",0.133,TRUE
+#> "mean permuted log odds ratio","-0.5 to 0.5",-0.186,TRUE
 ```
 
 The manifest records where the results come from. It holds the versions
-of R, pbn and the loaded packages, the date, the scenario, the
-simulation and the settings of the scenario. `source_md5` holds the md5
-of `v01_run.R` and of each file in `v01_functions/`. For the real data,
-`data_md5` holds the md5 of each data file. For a fake scenario,
-`fake_md5` holds the md5 of the code of `fake_<scenario>()`.
+of R, pbn and the loaded packages, the date, the scenario and the
+simulation. `source_md5` holds the md5 of `v01_run.R` and of each file
+in `v01_functions/`. For the real data, `data_md5` holds the md5 of each
+data file. For a fake scenario, `fake_md5` holds the md5 of the code of
+the data function. `n_rows_data` holds the number of rows of the data.
 
 ``` r
-str(r$manifest)
-#> List of 13
-#>  $ pbn_version: chr "2026.11.22"
-#>  $ r_version  : chr "R version 4.6.2 (2026-10-29)"
-#>  $ packages   : Named chr [1:8] "0.2.0" "1.18.6.1" "1.8.1" "2026.11.18" ...
-#>   ..- attr(*, "names")= chr [1:8] "charport" "data.table" "glue" "org" ...
-#>  $ run_date   : chr "2026-11-16"
-#>  $ version    : chr "v01"
+str(res$manifest[c("scenario", "sim", "sims", "data_md5", "n_rows_data", "analyses")])
+#> List of 6
 #>  $ scenario   : chr "real"
 #>  $ sim        : int 1
 #>  $ sims       : int 1
-#>  $ data_raw   : chr "/tmp/RtmpHPJyXw/pbn_get_started/data_raw"
-#>  $ settings   :List of 1
-#>   ..$ n_boot: num 200
-#>  $ source_md5 : Named chr [1:4] "9d40f36ee2b861c2b78e9eacc0e24cc4" "57cd526b253129ae94a32a8390c71d2c" "f89b576e4da8dbd6535ac65651519831" "ac8708b48789fa0fe6367514a62caaeb"
-#>   ..- attr(*, "names")= chr [1:4] "v01_functions/_cfg.R" "v01_functions/scenario_known.R" "v01_functions/scenario_null.R" "v01_run.R"
 #>  $ data_md5   : Named chr "396527785293e765115178711b7aab75"
 #>   ..- attr(*, "names")= chr "d.csv"
-#>  $ n_rows_data: int 388
+#>  $ n_rows_data: Named int 400
+#>   ..- attr(*, "names")= chr "d"
+#>  $ analyses   :'data.frame': 2 obs. of  2 variables:
+#>   ..$ analysis: chr [1:2] "table1" "models"
+#>   ..$ control : logi [1:2] FALSE FALSE
 ```
 
-## Stepping through a scenario by hand
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+checks each results object with
+[`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+before it writes anything. It stops on a fitted model or a function in
+the results, and on a table with one row for each row of the data. That
+check compares sizes only, so check the small groups by hand.
 
-The commented lines at the top of `v01_run.R` are for a person who steps
-through the script in an interactive R session. To step through a
-scenario:
+## Stepping through one analysis by hand
 
-1.  Set the project folder as the working directory.
-2.  Run one of the commented lines without the `#`.
-3.  Run the script line by line.
+The names of the analyses are `<scenario>__sim_<kkkk>__<name>__<i>`.
+`<i>` counts the values of the extra dimensions. To step through one
+analysis of `fit_models()` by hand, run the script up to
+[`pbn::run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md),
+then run the body of the function line by line. At the top level of the
+console,
+[`plnr::is_run_directly()`](https://www.rwhite.no/plnr/reference/is_run_directly.html)
+is `TRUE`, so the first lines load that analysis:
 
 ``` r
-pbn::use_scenario("null", sim = 1)
-# Now run v01_run.R line by line.
-pbn::use_scenario("real", sim = 1)
+argset <- p$get_argset("null__sim_0003__models__2")
+data <- p$get_data("null__sim_0003__models__2")
+argset
+#> $scenario
+#> [1] "null"
+#> 
+#> $sim
+#> [1] 3
+#> 
+#> $analysis
+#> [1] "models"
+#> 
+#> $seed
+#> [1] 1253196396
+#> 
+#> $adjust
+#> [1] "x"
+nrow(data$d)
+#> [1] 400
 ```
 
-This chunk does not run when the article builds, because
-[`use_scenario()`](https://www.rwhite.no/pbn/reference/use_scenario.md)
-stops in a non-interactive R session.
+When the plan runs `fit_models()`,
+[`plnr::is_run_directly()`](https://www.rwhite.no/plnr/reference/is_run_directly.html)
+is `FALSE`, and the lines do nothing. The plan calls
+`set.seed(argset$seed)` before each analysis. Run that line too before
+you step through a function that draws random numbers, such as
+`fit_permuted()`.
+[`?add_analyses`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+says how pbn derives the seed from the kind, its counter and the
+simulation.
 
-The choice lasts for the R session. Each later
-[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-call uses it, also when you run the script again.
-[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-then prints one line, here
-`pbn: scenario null, simulation 1 of 3 (fake)`. Change `sim` to step
-through another simulation. `pbn::use_scenario("real", sim = 1)` goes
-back to the real data.
+## The output part
 
-The lines MUST stay commented in the file. An active line stops the run
-under `Rscript`, and
-[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-fails it.
-
-## Where a fake run ends
-
-[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
+[`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md)
 comes directly after
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
-For a fake scenario under
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md),
-it quits R with status 0, and
-[`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-counts that as a success. PART 3 thus runs for the real data only, and
-only the real scenario has `table1.csv`:
+When the run had the scenario `real`, it does nothing. Otherwise, under
+`Rscript`, it quits R with status 0, so PART 3 runs for the real data
+only. In an interactive R session, it stops with an error, and the R
+session stays open.
+
+Run the script for the scenario `null` only, in a new R session:
 
 ``` r
-list.files(file.path(home, "v01_results"), pattern = "^table1[.]csv$", recursive = TRUE)
-#> [1] "real/table1.csv"
+script <- sub("pbn::scenarios(CFG)", 'pbn::scenarios(CFG, only = "null")', readLines(file.path(home, "v01_run.R")), fixed = TRUE)
+writeLines(script, file.path(root, "v01_run_null.R"))
+unlink(file.path(home, "v01_results", "real", "table1.csv"))
+out <- callr::rscript(file.path(root, "v01_run_null.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+out$status
+#> [1] 0
+cat(grep("^pbn:", strsplit(out$stdout, "\n")[[1]], value = TRUE), sep = "\n")
+#> pbn: The run had no scenario "real", so it ends here. The output part of the script needs the real results.
+file.exists(file.path(home, "v01_results", "real", "table1.csv"))
+#> [1] FALSE
 ```
 
-In an interactive R session,
-[`end_if_fake_scenario()`](https://www.rwhite.no/pbn/reference/end_if_fake_scenario.md)
-stops with an error for a fake scenario, and the R session stays open.
+The run wrote under `v01_results/null/` only. The results of the other
+scenarios stay as they are, also when they are out of date.
 
 ## Checking the project
 
@@ -586,8 +471,6 @@ rule that passes, one line for each finding, and a count.
 pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
-#> PASS  no_active_use_scenario  no vNN_run.R has an active call pbn::use_scenario()
-#> PASS  use_scenario_lines  every vNN_run.R has one line # pbn::use_scenario("<name>", sim = 1) for each scenario in CFG$scenarios, above pbn::initialize_project()
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -597,16 +480,13 @@ pbn::check_project(home)
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 13 PASS, 0 WARN, 0 FAIL
+#> 11 PASS, 0 WARN, 0 FAIL
 ```
 
 In a non-interactive R session,
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-quits R with status 1 when a rule fails. The build of this article is
-such a session. So the article runs the failing check in a new R
-session, with `callr`.
-
-Add a file with a capital letter in its name, and run `check_project.R`:
+quits R with status 1 when a rule fails. Add a file with a capital
+letter in its name, and run `check_project.R` in a new R session:
 
 ``` r
 dir.create(file.path(home, "adhoc"))
@@ -616,59 +496,63 @@ out$status
 #> [1] 1
 cat(grep("FAIL", strsplit(out$stdout, "\n")[[1]], value = TRUE), sep = "\n")
 #> FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter
-#> 12 PASS, 0 WARN, 1 FAIL
-```
-
-Remove the file again:
-
-``` r
+#> 10 PASS, 0 WARN, 1 FAIL
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
 ## A check that goes red
 
-Make one small error in the analysis: compute the percentage on the rows
-before the exclusion. Keep a copy of the script first.
+Make one small error in the analysis: swap the two branches of the `if`
+in `fit_models()`. The crude model is then adjusted for `x`, and the
+adjusted model is crude. Keep a copy of the file first.
 
 ``` r
-run <- file.path(home, "v01_run.R")
-file.copy(run, file.path(root, "v01_run_copy.R"))
+file <- file.path(home, "v01_functions", "analyses.R")
+file.copy(file, file.path(root, "analyses_copy.R"))
 #> [1] TRUE
-script <- readLines(run)
-script <- sub("100 * mean(d$outcome)", "100 * sum(d$outcome) / nrow(d0)", script, fixed = TRUE)
-writeLines(script, run)
-grep("sum(d$outcome) / nrow(d0)", readLines(run), value = TRUE, fixed = TRUE)
-#> [1] "    estimate = c(100 * sum(d$outcome) / nrow(d0), exp(stats::coef(fit)[[\"groupb\"]]), stats::sd(boot))"
+code <- readLines(file)
+code <- sub('"group" else "group + x"', '"group + x" else "group"', code, fixed = TRUE)
+writeLines(code, file)
+grep("rhs <-", readLines(file), value = TRUE)
+#> [1] "  rhs <- if (argset$adjust == \"none\") \"group + x\" else \"group\""
 ```
 
-Run the scenario `known` only:
+Run the script in a new R session:
 
 ``` r
-pbn::run_scenarios("v01", scenario = "known", home = home)
-#> pbn: scenario known, simulation 1: started
-#> pbn: scenario known, simulation 1: ran
-#> Assertions of the scenario "known":
-#>                    assertion expected observed  pass
-#>                rows excluded        2  2.00000  TRUE
-#>    outcome events in group b        6  6.00000  TRUE
-#>  percentage with the outcome       40 36.36364 FALSE
-#>    odds ratio of b against a        6  6.00000  TRUE
+out <- callr::rscript(file.path(home, "v01_run.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+out$status
+#> [1] 1
+cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
+#> "assertion","expected","observed","pass"
+#> "outcome events in group b",6,6,TRUE
+#> "crude odds ratio of b against a",6,7.0369269141867,FALSE
+```
+
+The real data runs through the same functions as the fake data. A fake
+scenario with a known answer thus tests the analysis that gives the real
+results. On the real data, the swapped models give plausible odds ratios
+and no error. Only the planted odds ratio shows the mistake.
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+now fails the rule `scenario_checks`. The results files stay, so that
+you can find the fault, but
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+stops on them:
+
+``` r
+pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! These assertions failed:
-#>   known: percentage with the outcome (expected 40, observed 36.3636363636364)
+#> ! /tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
-The real data runs through the same lines of `v01_run.R` as the fake
-data. A fake scenario with a known answer thus tests the analysis that
-gives the real results. On the real data, the wrong denominator gives a
-plausible percentage and no error. Only the planted count shows the
-mistake.
-
-Put the copy back, and run the scenario again. Its assertions pass.
+Put the copy back, and run the script again. Its assertions pass.
 
 ``` r
-file.copy(file.path(root, "v01_run_copy.R"), run, overwrite = TRUE)
-pbn::run_scenarios("v01", scenario = "known", home = home)
+file.copy(file.path(root, "analyses_copy.R"), file, overwrite = TRUE)
+#> [1] TRUE
+out <- callr::rscript(file.path(home, "v01_run.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+out$status
+#> [1] 0
 ```
 
 ## Manuscripts
@@ -693,6 +577,8 @@ with the project folder as the working directory.
 
 ## What pbn does not do yet
 
+- A run always runs every selected scenario and simulation. pbn keeps no
+  results of an earlier run to resume from.
 - No function starts a new version, for example `v02_run.R` and
   `v02_functions/` from version v01.
 - No function creates the folders and the files of a new project.
@@ -700,19 +586,20 @@ with the project folder as the working directory.
 - No function formats a table for a journal.
   [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) computes
   the numbers only, and it gives no p-value for a continuous variable.
+- When [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+  stops on a failed analysis, the results files of an earlier run stay
+  as they are.
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  reads them.
+- pbn finds an analysis that adds, removes, renames or replaces a column
+  of the shared data. It does not find a change of values in place, for
+  example `data$d[1, x := 0]`. Copy the data first with
+  [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html).
 - `workers` limits the number of R sessions. It does not limit the
   threads that R or the BLAS library starts in each of them.
-- `resume = TRUE` does not find a change in the real data, or in the
-  version of R or of a package. It also does not find a change in a file
-  outside `v01_run.R` and `v01_functions/`.
-- When
-  [`run_scenarios()`](https://www.rwhite.no/pbn/reference/run_scenarios.md)
-  runs some scenarios only, the results of the other scenarios stay as
-  they are, also when they are out of date.
-- `fake_md5` is the md5 of the code of `fake_<scenario>()` only. A
-  change in a function that it calls does not change `fake_md5`.
-- [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-  runs project code when it sources `v01_functions/`. Its rule
-  `use_scenario_lines` does not check the order of the lines.
-- The check of the rows of the data compares sizes with `nrow(d)` only.
-  A copy of the data with one row less passes.
+- `fake_md5` is the md5 of the code of the data functions of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) only.
+  A change in a function that they call, such as `get_data()`, does not
+  change `fake_md5`. `source_md5` holds the md5 of its file.
+- The check of the rows of the data compares sizes only. A copy of the
+  data with one row less passes.

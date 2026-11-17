@@ -10,8 +10,8 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 \item{version}{The version, written as \code{"v"} and two digits, for example
 \code{"v01"}.}
 
-\item{home}{The project folder. It holds \verb{<version>_run.R} and
-\verb{<version>_functions/}.}
+\item{home}{The project folder. It holds \verb{<version>_run.R},
+\verb{<version>_functions/} and the file of the rules \code{pbn.yml}.}
 
 \item{data_raw}{The folder of the real raw data, one string. The folder MAY
 be absent, for example on a computer without the real data. Only
@@ -30,6 +30,9 @@ functions folder. It MUST be the first call in every \code{vNN_run.R}.
 \details{
 \code{initialize_project()} does these steps in this order:
 \enumerate{
+\item It reads the rules of \code{\link[=check_project]{check_project()}} from \code{home/pbn.yml}. It stops
+on each error of \code{pbn.yml} that stops \code{\link[=check_project]{check_project()}}, also when the
+file is missing.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
 them in \code{manifest$source_md5}.
@@ -37,9 +40,11 @@ them in \code{manifest$source_md5}.
 exists. \code{\link[=save_results]{save_results()}} stores them in \code{manifest$data_md5} of the
 scenario \code{"real"}. A file that the run writes later is not in the list.
 \item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{folders_to_be_sourced} set to
-\verb{<version>_functions}, \code{max_loc_per_file} set to 1000 and \code{data_raw} set
-to \code{data_raw}. A data function finds the folder at
-\code{org::project$data_raw}.
+\verb{<version>_functions} and \code{data_raw} set to \code{data_raw}. A data function
+finds the folder at \code{org::project$data_raw}. \code{max_loc_per_file} is the
+\code{limit} of the rule \code{loc_per_file}, 1000 in the house set. When the rule
+is \code{warn} or \code{off}, it is \code{Inf}, because the check of org stops the run
+on a file with more lines.
 }
 
 The results folder is \verb{<home>/<version>_results}. \code{\link[=save_results]{save_results()}} creates
@@ -53,6 +58,7 @@ chooses the scenarios, and \code{\link[=add_data]{add_data()}} and \code{\link[=
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
+writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")

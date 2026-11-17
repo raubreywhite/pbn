@@ -214,6 +214,9 @@ write_data <- function(folder) {
   return(invisible(folder))
 }
 
+# The one line of the pbn.yml of a synthetic project.
+house_line <- "extends: house_2026_11_17"
+
 local_project <- function(env = parent.frame(), counter = NULL) {
   root <- tempfile("pbntest")
   dir.create(root)
@@ -254,8 +257,15 @@ local_project <- function(env = parent.frame(), counter = NULL) {
   write_lines(home, "CHANGELOG.md", "# Changelog")
   write_lines(home, "AGENTS.md", "# Agents")
   write_lines(home, ".gitignore", "v01_results/")
+  write_lines(home, "pbn.yml", house_line)
 
   return(list(home = home, root = root, data_default = data_default))
+}
+
+# Writes the pbn.yml of the project in `home`: the line of house_line, and
+# then the lines `...`.
+write_pbn_yml <- function(home, ...) {
+  return(write_lines(home, "pbn.yml", c(house_line, ...)))
 }
 
 failed_rules <- function(findings) {

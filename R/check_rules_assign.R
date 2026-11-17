@@ -13,12 +13,41 @@ local_assign_calls <- c(
 # the `:=` of data.table pass.
 local_assign_operators <- c("<<-", "->>")
 
+# The constructs of the rule no_local_assign, as its parameter forbid and its
+# findings write them: each call with (), and each operator.
+local_assign_constructs <- function() {
+  return(c(paste0(names(local_assign_calls), "()"), local_assign_operators))
+}
+
+# The detail of the PASS line of no_local_assign for the constructs
+# `forbid`, in the order of local_assign_constructs().
+local_assign_pass_detail <- function(forbid) {
+  forbid <- intersect(local_assign_constructs(), forbid)
+  calls <- sub("\\(\\)$", "", forbid[endsWith(forbid, "()")])
+  ops <- forbid[!endsWith(forbid, "()")]
+  parts <- c(
+    if (length(calls) > 0) paste("calls", or_list(calls)),
+    if (length(ops) > 0) paste("uses", or_list(ops))
+  )
+  return(paste("no .R file", paste(parts, collapse = ", or ")))
+}
+
+# The strings `x` as one list in prose: "a", "a or b", "a, b or c".
+or_list <- function(x) {
+  n <- length(x)
+  if (n == 1) {
+    return(x)
+  }
+  return(paste(paste(x[-n], collapse = ", "), "or", x[n]))
+}
+
 # The rule no_local_assign: no .R file calls a function of
 # local_assign_calls or uses an operator of local_assign_operators, at any
-# depth. It reads the files of loc_per_file. It parses each file and
+# depth, when `forbid` names it. The constructs `forbid` come from the rules
+# of the project, see read_rules(). It reads the files of loc_per_file. It parses each file and
 # evaluates nothing. A file that R cannot parse fails loc_per_file, so this
 # rule skips it.
-rule_no_local_assign <- function(path) {
+rule_no_local_assign <- function(path, forbid) {
   rule <- "no_local_assign"
   entries <- project_entries(path)
   files <- entries[
@@ -27,6 +56,7 @@ rule_no_local_assign <- function(path) {
   out <- list()
   for (f in sort(files, method = "radix")) {
     hits <- local_assign_hits(file.path(path, f))
+    hits <- hits[hits$construct %in% forbid, , drop = FALSE]
     if (nrow(hits) > 0) {
       out[[f]] <- project_row(
         rule,

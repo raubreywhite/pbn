@@ -1,0 +1,77 @@
+# The output of pbn::check_project() of pbn at commit 3fa42ee, before
+# pbn.yml, on each variant of helper-variants.R. The variant allowed had
+# its exceptions in pbn_allow.txt. Each section starts with the exit status
+# of the script check_project.R.
+## valid
+# exit status 0
+PASS  lower_case_names  no capital letter in a name
+PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
+PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
+PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
+PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
+PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
+PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
+PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
+PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
+PASS  loc_per_file  no .R file has more than 1000 code lines
+PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
+PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
+PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
+PASS  unknown_path  the house layout names every top-level path
+15 PASS, 0 WARN, 0 FAIL
+## findings
+# exit status 1
+FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter
+FAIL  run_script_initialises  v01_run.R: no call pbn::initialize_project(version = "v01")
+FAIL  version_items_complete  v02_functions/: there is no v02_run.R
+FAIL  results_contract  v01_results/real/results.qs2: exclusions_table: n_before - n_excluded != n_after on these rows: 2
+PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
+FAIL  scenario_checks  v01_results/null/check.csv: these assertions failed: one
+FAIL  manual_manuscript_names  manuscript/manual/v01_cd.docx: the name must be vNN_<INITIALS>.docx
+FAIL  manuscript_reads_real  manuscript/built/v01/tables.R: read_results() with scenario = "null". A manuscript reads only scenario "real"
+FAIL  fake_data_names  v01_results/known/output_fake_data/figure.png: a file in output_fake_data/ holds output of fake data, so its name MUST start with fake_data_
+FAIL  no_local_copy_of_pbn_function  v01_functions/tables.R: defines table1, a pbn export
+FAIL  loc_per_file  adhoc/long.R: 1001 code lines, more than 1000
+FAIL  cyclomatic_complexity  adhoc/branchy.R: tidy scores 17 (limit 15)
+FAIL  no_environment_variables  v01_functions/key.R: Sys.getenv on line 1
+FAIL  no_local_assign  adhoc/early.R:2: assign()
+FAIL  no_local_assign  adhoc/early.R:3: <<-
+WARN  unknown_path  notes.txt: the house layout does not name it
+1 PASS, 1 WARN, 14 FAIL
+## allowed
+# exit status 0
+WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed)
+PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
+PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
+PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
+PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
+PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
+PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
+PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
+PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
+PASS  loc_per_file  no .R file has more than 1000 code lines
+WARN  cyclomatic_complexity  adhoc/branchy.R: tidy scores 17 (limit 15) (allowed)
+PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
+WARN  no_local_assign  adhoc/early.R:2: assign() (allowed)
+WARN  unknown_path  notes.txt: the house layout does not name it (allowed)
+11 PASS, 4 WARN, 0 FAIL
+## git
+# exit status 1
+PASS  lower_case_names  no capital letter in a name
+PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
+PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
+PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
+FAIL  gitexclude_not_tracked  v01_results/real/table_gitexclude.csv: git tracks it, and a path with gitexclude in its name holds data for each person. Run git rm --cached on it
+PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
+PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
+PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
+PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
+PASS  loc_per_file  no .R file has more than 1000 code lines
+PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
+PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
+PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
+PASS  unknown_path  the house layout names every top-level path
+14 PASS, 0 WARN, 1 FAIL

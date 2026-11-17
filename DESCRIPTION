@@ -38,7 +38,8 @@ Imports:
     qs2,
     stats,
     tools,
-    utils
+    utils,
+    yaml
 Suggests:
     callr,
     cohort (>= 2026.11.18),

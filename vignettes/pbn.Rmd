@@ -30,7 +30,7 @@ v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
 check_project.R           one line: pbn::check_project()
-pbn_allow.txt             optional exceptions to check_project()
+pbn.yml                   the rules of check_project()
 manuscript/manual/        manuscripts that a person edits
 manuscript/built/vNN/     manuscripts that code builds from the results
 background/               documents from outside the project, with names that pbn does not check
@@ -48,6 +48,12 @@ The rest of this article builds a small fake project in a temporary folder, file
 root <- file.path(tempdir(), "pbn_get_started")
 home <- file.path(root, "project")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
+```
+
+Each project MUST have the file `pbn.yml`. It names the set of house rules that `check_project()` and `initialize_project()` use. This project uses the set as it is:
+
+```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
+extends: house_2026_11_17
 ```
 
 The real data of this fake project is a small csv file in the folder `data_raw`, next to the project folder. In a real project, this folder holds the real data, and it is outside the repository. The file has 400 rows, and the column names of a typical export.
@@ -715,7 +721,7 @@ A script with output code after the run that is not in a function MAY use `pbn::
 pbn::check_project()
 ```
 
-`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
+`check_project()` checks a project folder against the rules of `pbn.yml`. It prints the name of the set, one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
 
 ```{r}
 pbn::check_project(home)
@@ -734,6 +740,36 @@ unlink(file.path(home, "adhoc"), recursive = TRUE)
 
 ```{r, include = FALSE}
 stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "FAIL  lower_case_names  adhoc/Notes.txt")))
+```
+
+`pbn.yml` MAY change the set. Under `rules`, it changes the level or a parameter of a rule. Under `allow`, it lists the paths that a rule allows. This file raises the limit of `cyclomatic_complexity` to 25, turns `unknown_path` off, and allows one name with a capital letter:
+
+```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
+extends: house_2026_11_17
+rules:
+  cyclomatic_complexity: {limit: 25}
+  unknown_path: off
+allow:
+  lower_case_names: [adhoc/Notes.txt]
+```
+
+```{r}
+dir.create(file.path(home, "adhoc"))
+writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
+pbn::check_project(home)
+```
+
+The allowed file is now a WARN, and `unknown_path` is OFF. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
+
+```{r, include = FALSE}
+found <- pbn::check_project(home)
+stopifnot(
+  identical(found$status[found$rule == "lower_case_names"], "WARN"),
+  identical(found$status[found$rule == "unknown_path"], "OFF"),
+  !any(found$status == "FAIL")
+)
+writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
 ## Manuscripts

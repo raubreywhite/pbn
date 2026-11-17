@@ -38,7 +38,6 @@ local_copy_allowed <- "get_data"
 run_script_pattern <- "^v[0-9]{2}_run\\.R$"
 functions_pattern <- "^v[0-9]{2}_functions$"
 manual_pattern <- "^v[0-9]{2}_[A-Z]{2,4}[0-9]?\\.docx$"
-max_code_lines <- 1000
 
 # project rules ---------------------------------------------------------------
 
@@ -518,7 +517,9 @@ is_function_assignment <- function(e) {
   return(is.call(value) && identical(value[[1]], as.name("function")))
 }
 
-rule_loc_per_file <- function(path) {
+# The rule loc_per_file: no .R file has more than `limit` code lines. The
+# limit comes from the rules of the project, see read_rules().
+rule_loc_per_file <- function(path, limit) {
   rule <- "loc_per_file"
   entries <- project_entries(path)
   files <- entries[
@@ -532,30 +533,27 @@ rule_loc_per_file <- function(path) {
     )
     if (is.na(n)) {
       out[[f]] <- project_row(rule, "FAIL", f, paste0(f, ": R cannot parse it"))
-    } else if (n > max_code_lines) {
+    } else if (n > limit) {
       out[[f]] <- project_row(
         rule,
         "FAIL",
         f,
-        paste0(f, ": ", n, " code lines, more than ", max_code_lines)
+        paste0(f, ": ", n, " code lines, more than ", limit)
       )
     }
   }
   return(bind_rows(out))
 }
 
-# The largest cyclomatic complexity of one function that the rule
-# cyclomatic_complexity allows. lintr's cyclocomp_linter(15) in the gate of
-# the packages fails a score above 15 too.
-max_cyclocomp <- 15L
-
 # The rule cyclomatic_complexity: each function that a top-level assignment
 # of an .R file defines, also a function in a list of a top-level
-# assignment, scores at most max_cyclocomp. It reads the files of
+# assignment, scores at most `limit`. The limit comes from the rules of the
+# project, see read_rules(). The house limit 15 is the one of lintr's
+# cyclocomp_linter(15) in the gate of the packages. It reads the files of
 # loc_per_file. It parses each file and evaluates nothing. A function inside
 # another function counts toward that function, as in cyclocomp. A file that
 # R cannot parse fails loc_per_file, so this rule skips it.
-rule_cyclomatic_complexity <- function(path) {
+rule_cyclomatic_complexity <- function(path, limit) {
   rule <- "cyclomatic_complexity"
   entries <- project_entries(path)
   files <- entries[
@@ -564,7 +562,7 @@ rule_cyclomatic_complexity <- function(path) {
   out <- list()
   for (f in sort(files, method = "radix")) {
     scores <- function_scores(file.path(path, f))
-    scores <- sort(scores[scores > max_cyclocomp], decreasing = TRUE)
+    scores <- sort(scores[scores > limit], decreasing = TRUE)
     if (length(scores) > 0) {
       out[[f]] <- project_row(
         rule,
@@ -577,7 +575,7 @@ rule_cyclomatic_complexity <- function(path) {
           " scores ",
           scores,
           " (limit ",
-          max_cyclocomp,
+          limit,
           ")"
         )
       )
@@ -688,7 +686,7 @@ rule_unknown_path <- function(path) {
     "^AGENTS\\.md$",
     "^\\.gitignore$",
     "^\\.git$",
-    "^pbn_allow\\.txt$"
+    "^pbn\\.yml$"
   )
   entries <- project_entries(path)
   top <- top_entries(entries[!is_root_tool_file(path, entries)])
@@ -727,7 +725,8 @@ bind_rows <- function(rows) {
 }
 
 # The rules in the order that check_project() prints them, with the detail of
-# the PASS line.
+# the PASS line. A rule with parameters has a function of its entry in the
+# rules of the project, see read_rules(), that gives the detail.
 project_rules <- function() {
   return(list(
     lower_case_names = list(
@@ -779,14 +778,22 @@ project_rules <- function() {
     ),
     loc_per_file = list(
       rule_loc_per_file,
-      paste0("no .R file has more than ", max_code_lines, " code lines")
+      function(entry) {
+        return(paste0(
+          "no .R file has more than ",
+          entry$limit,
+          " code lines"
+        ))
+      }
     ),
     cyclomatic_complexity = list(
       rule_cyclomatic_complexity,
-      paste0(
-        "no function of an .R file has a cyclomatic complexity above ",
-        max_cyclocomp
-      )
+      function(entry) {
+        return(paste0(
+          "no function of an .R file has a cyclomatic complexity above ",
+          entry$limit
+        ))
+      }
     ),
     no_environment_variables = list(
       rule_no_environment_variables,
@@ -794,10 +801,7 @@ project_rules <- function() {
     ),
     no_local_assign = list(
       rule_no_local_assign,
-      paste(
-        "no .R file calls local, assign, delayedAssign, assignInNamespace",
-        "or assignInMyNamespace, or uses <<- or ->>"
-      )
+      function(entry) return(local_assign_pass_detail(entry$forbid))
     ),
     unknown_path = list(
       rule_unknown_path,

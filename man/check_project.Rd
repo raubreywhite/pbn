@@ -7,33 +7,35 @@
 check_project(path = ".")
 }
 \arguments{
-\item{path}{The project folder.}
+\item{path}{The project folder. It MUST hold the file \code{pbn.yml}.}
 }
 \value{
 Invisibly, a data.frame of the findings with the columns \code{rule},
 \code{status}, \code{path} and \code{detail}.
 }
 \description{
-\code{check_project()} checks a project folder against the house layout and
-prints one line per finding. In a non-interactive R session it quits with
-status 1 when any rule fails.
+\code{check_project()} checks a project folder against the rules of its file
+\code{pbn.yml} and prints one line per finding. In a non-interactive R session
+it quits with status 1 when any rule fails.
 }
 \details{
-A rule with no finding prints one PASS line. Each finding prints one line:
+The first line names the rule set of \code{pbn.yml}, and counts its changes
+and its allowed paths. A rule with no finding prints one PASS line, and a
+rule that is off prints one OFF line. Each finding prints one line:
 \verb{PASS|WARN|FAIL  <rule>  <detail>}. A count line comes last.
 
-Every rule reads one set of files and their folders:
+Every rule reads one list of files and their folders:
 \itemize{
-\item When \code{path} is the top folder of a git repository, the set is the output
-of \verb{git ls-files --cached --others --exclude-standard}. These are the
-tracked files, and the untracked files that git does not ignore.
-\item Otherwise, the set is every file and folder on disk.
+\item When \code{path} is the top folder of a git repository, the list is the
+output of \verb{git ls-files --cached --others --exclude-standard}. These are
+the tracked files, and the untracked files that git does not ignore.
+\item Otherwise, the list is every file and folder on disk.
 }
 
-Both sets leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
+Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules:
+The rules, with their level in the set \code{house_2026_11_17}:
 \itemize{
 \item \code{lower_case_names} (FAIL): a file or folder name has a capital letter.
 Everything under \verb{background/} is not checked. These are exempt:
@@ -83,34 +85,36 @@ another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders
 export. The one exception is \code{get_data}: a project MAY name its data
 function \code{get_data(scenario, sim)}, and a run script calls the export
 as \code{pbn::get_data()}.
-\item \code{loc_per_file} (FAIL): an \code{.R} file has more than 1000 code lines, as
-counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
-\item \code{cyclomatic_complexity} (FAIL): a function scores above 15 in
-\code{\link[cyclocomp:cyclocomp]{cyclocomp::cyclocomp()}}, the limit of the lint gate of the house
-packages. The rule reads the \code{.R} files of \code{loc_per_file}. It scores each
+\item \code{loc_per_file} (FAIL): an \code{.R} file has more than \code{limit} code lines, as
+counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}. The house \code{limit} is 1000.
+\item \code{cyclomatic_complexity} (FAIL): a function scores above \code{limit} in
+\code{\link[cyclocomp:cyclocomp]{cyclocomp::cyclocomp()}}. The house \code{limit} is 15, the limit of the lint
+gate of the house packages. The rule reads the \code{.R} files of
+\code{loc_per_file}. It scores each
 function that a top-level assignment defines, and each function in a
 \code{list()} of a top-level assignment, as \verb{<list>$<name>}. A function
 inside a function counts toward the outer function. Top-level code that
 is not a function gets no score. The rule parses each file and runs no
 code of it. It skips a file that R cannot parse, which \code{loc_per_file}
-fails. The detail gives the file, the function and its score. An entry
-of \code{pbn_allow.txt} allows each function of one file.
+fails. The detail gives the file, the function and its score. A path
+under \code{allow} allows each function of one file.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
-\item \code{no_local_assign} (FAIL): an \code{.R} file calls \code{local()}, \code{assign()},
-\code{delayedAssign()}, \code{assignInNamespace()} or \code{assignInMyNamespace()}, or
-uses \verb{<<-} or \verb{->>}, at any depth. Each of these creates or changes an
+\item \code{no_local_assign} (FAIL): an \code{.R} file uses a construct of \code{forbid} at
+any depth. The house \code{forbid} holds all seven constructs: \code{local()},
+\code{assign()}, \code{delayedAssign()}, \code{assignInNamespace()},
+\code{assignInMyNamespace()}, \verb{<<-} and \verb{->>}. Each of these creates or changes an
 object in a place other than the line where it stands. The rule reads
 the \code{.R} files of \code{loc_per_file}, parses each file and runs no code of
 it. A call with the prefix of its own package, \verb{base::} or \verb{utils::},
 counts. A call of the same name from another package passes. A variable or an argument named \code{local} or \code{assign}
 passes, and so do \verb{<-}, \verb{->}, \code{=} and \verb{:=}. The rule skips a file that R
-cannot parse. The detail gives the file, the line and the construct. An
-entry of \code{pbn_allow.txt} allows each finding of one file.
+cannot parse. The detail gives the file, the line and the construct. A
+path under \code{allow} allows each finding of one file.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
-\verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R} and
-\code{check_project.R}, among others. A top-level dotfile and a top-level
+\verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},
+\code{check_project.R} and \code{pbn.yml}, among others. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown. The rule also reads the files
 directly in \verb{vNN_results/}. There it names the run log \code{run.md}, its PDF
 \code{run.pdf} and its errors file \code{run_errors_gitexclude.md}, and no rule
@@ -122,15 +126,90 @@ warns on the folders \verb{output/} and \verb{output_fake_data/} that
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
-
-The file \code{pbn_allow.txt} in the project folder MAY list exceptions. Write
-one \verb{rule<TAB>path} per line, with the path relative to the project folder.
-An allowed finding prints as WARN, with \code{(allowed)} at the end. An entry
-that matches no finding prints as a WARN of the rule \code{pbn_allow}.
 }
+\section{The file pbn.yml}{
+
+Each project MUST have the file \code{pbn.yml} in its top folder \code{path}. pbn
+reads no other file. A file \code{pbn.yaml} stops \code{check_project()} with the
+advice to rename it. The smallest \code{pbn.yml} is one line:
+
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_17
+}\if{html}{\out{</div>}}
+
+The key \code{extends} names a house rule set. A set is a dated file in the
+folder \verb{rules/} of pbn, and pbn never changes a set after its release. A
+change to the house rules is a new set with a new date. pbn never chooses
+a set for a project. So a new version of pbn does not change the rules of
+a project. To read the set, run
+\code{readLines(system.file("rules", "house_2026_11_17.yml", package = "pbn"))}.
+
+The set gives each rule one of three levels:
+\itemize{
+\item \code{fail}: a finding is FAIL, and \code{check_project.R} ends with status 1.
+\item \code{warn}: a finding is WARN.
+\item \code{off}: the rule does not run, and its one line is OFF.
+}
+
+The parameters of the rules are \code{limit} of \code{loc_per_file}, \code{limit} of
+\code{cyclomatic_complexity} and \code{forbid} of \code{no_local_assign}. The list of
+the rules above gives their house values.
+
+The key \code{rules} MAY change the level of a rule, a parameter, or both. A
+change merges into the entry of the set. So \code{cyclomatic_complexity: {limit: 25}} keeps the level \code{fail}. The short form \code{lower_case_names: warn} changes the level only. \code{forbid} MAY list fewer constructs than the
+house set.
+
+The key \code{allow} MAY list paths for each rule, relative to \code{path}. A path
+allows the findings with exactly that path. A folder MAY end in \code{/}, and it
+does not allow the files in it. An allowed finding is WARN, with
+\code{(allowed)} at the end. A path that matches no finding is a WARN of the
+rule \code{allow}.
+
+Three rules are locked: \code{results_contract}, \code{gitexclude_not_tracked} and
+\code{fake_data_names}. The first two keep data for each person out of git. The
+third keeps the output of fake data apart from the output of real data.
+\code{pbn.yml} cannot set a locked rule to \code{warn} or \code{off}, and cannot allow a
+path for it. It cannot name a rule of \code{\link[=check_results]{check_results()}} either.
+
+This \code{pbn.yml} changes two rules and allows three paths:
+
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_17
+rules:
+  cyclomatic_complexity: \{limit: 25\}
+  unknown_path: off
+allow:
+  lower_case_names: [adhoc/Old_notes.txt, adhoc/Drafts/]
+  no_local_assign:
+    - adhoc/explore.R
+}\if{html}{\out{</div>}}
+
+\code{check_project()} and \code{\link[=initialize_project]{initialize_project()}} stop before any rule runs on
+each of these, with a message that names the key:
+\itemize{
+\item there is no \code{pbn.yml}. The message gives the one line to write.
+\item there is a file \code{pbn.yaml}, or a file \code{pbn_allow.txt}. For
+\code{pbn_allow.txt}, the message gives its lines as the YAML of the key
+\code{allow}.
+\item \code{pbn.yml} is not valid YAML. This includes a key that is there twice and
+a tab. The message holds the message of the yaml package.
+\item there is no key \code{extends}, or it names a set that pbn does not have.
+\item a key other than \code{extends}, \code{rules} and \code{allow}.
+\item a name that is not a rule. The message names the nearest rule.
+\item a parameter that the rule does not have.
+\item a level other than \code{fail}, \code{warn} and \code{off}.
+\item a \code{limit} that is not a whole number of 1 or more.
+\item a construct in \code{forbid} that the rule does not know, or an empty
+\code{forbid}. To turn the rule off, set its level to \code{off}.
+\item a value under \code{allow} that is not a path, for example \code{off}. YAML reads
+\code{off}, \code{yes} and \code{no} as booleans, so a path with such a name needs
+quotes.
+\item a change or an allowed path of a locked rule.
+}
+}
+
 \examples{
 home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
+writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
 writeLines(
   'pbn::initialize_project(version = "v01", home = ".", data_raw = "x")',
   file.path(home, "v01_run.R")

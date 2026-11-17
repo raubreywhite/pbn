@@ -9,24 +9,29 @@ state <- new.env(parent = emptyenv())
 #'
 #' @param version The version, written as `"v"` and two digits, for example
 #'   `"v01"`.
-#' @param home The project folder. It holds `<version>_run.R` and
-#'   `<version>_functions/`.
+#' @param home The project folder. It holds `<version>_run.R`,
+#'   `<version>_functions/` and the file of the rules `pbn.yml`.
 #' @param data_raw The folder of the real raw data, one string. The folder MAY
 #'   be absent, for example on a computer without the real data. Only
 #'   [save_results()] for the scenario `"real"` then stops.
 #' @param env The environment that the functions folder is sourced into.
 #' @details
 #' `initialize_project()` does these steps in this order:
-#' 1. It computes the md5 of `<version>_run.R` and of each file in
+#' 1. It reads the rules of [check_project()] from `home/pbn.yml`. It stops
+#'    on each error of `pbn.yml` that stops [check_project()], also when the
+#'    file is missing.
+#' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
 #'    them in `manifest$source_md5`.
-#' 2. It computes the md5 of each file directly in `data_raw`, when the folder
+#' 3. It computes the md5 of each file directly in `data_raw`, when the folder
 #'    exists. [save_results()] stores them in `manifest$data_md5` of the
 #'    scenario `"real"`. A file that the run writes later is not in the list.
-#' 3. It calls [org::initialize_project()] with `folders_to_be_sourced` set to
-#'    `<version>_functions`, `max_loc_per_file` set to 1000 and `data_raw` set
-#'    to `data_raw`. A data function finds the folder at
-#'    `org::project$data_raw`.
+#' 4. It calls [org::initialize_project()] with `folders_to_be_sourced` set to
+#'    `<version>_functions` and `data_raw` set to `data_raw`. A data function
+#'    finds the folder at `org::project$data_raw`. `max_loc_per_file` is the
+#'    `limit` of the rule `loc_per_file`, 1000 in the house set. When the rule
+#'    is `warn` or `off`, it is `Inf`, because the check of org stops the run
+#'    on a file with more lines.
 #'
 #' The results folder is `<home>/<version>_results`. [save_results()] creates
 #' it. `initialize_project()` creates no folder, also no folder with today's
@@ -40,6 +45,7 @@ state <- new.env(parent = emptyenv())
 #' @examples
 #' home <- file.path(tempdir(), "pbn_initialize_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
+#' writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
 #' writeLines(
 #'   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
 #'   file.path(home, "v01_functions", "_cfg.R")
@@ -76,6 +82,9 @@ initialize_project <- function(
   if (!dir.exists(folder)) {
     stop("There is no functions folder ", folder, call. = FALSE)
   }
+  # The limit of code lines that org checks comes from pbn.yml, so that
+  # check_project() and the run use one limit.
+  max_loc <- org_max_loc(read_rules(home))
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
   code_md5 <- source_md5(home, version)
@@ -96,7 +105,7 @@ initialize_project <- function(
     env = env,
     home = home,
     folders_to_be_sourced = paste0(version, "_functions"),
-    max_loc_per_file = 1000,
+    max_loc_per_file = max_loc,
     data_raw = data_raw
   )
   out <- list(

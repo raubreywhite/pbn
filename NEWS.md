@@ -103,6 +103,11 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - The section Run gives the number of the other packages. A cohort without an exclusion step gets one sentence. The section Output gives the number of warnings of the output function. The row of dashes of a table is as wide as its column.
 - New `check_project()` rule `cyclomatic_complexity`: a function of the project MUST score at most 15 in cyclocomp. pbn imports cyclocomp.
 - New `check_project()` rule `no_local_assign`: an `.R` file of the project MUST NOT call `local()`, `assign()`, `delayedAssign()`, `assignInNamespace()` or `assignInMyNamespace()`, or use `<<-` or `->>`.
+- `check_project()` reads its rules from the file `pbn.yml` in the project folder, and each project MUST have it. Its one line `extends: house_2026_11_17` names a dated house rule set, which pbn never changes after its release. So a new pbn does not change the rules of a project.
+- `pbn.yml` MAY set the level of a rule to `fail`, `warn` or `off`, and MAY change `limit` of `loc_per_file` and `cyclomatic_complexity` and `forbid` of `no_local_assign`. It lists exceptions under `allow:`. It cannot weaken `results_contract`, `gitexclude_not_tracked` or `fake_data_names`.
+- `check_project()` prints the rule set on its first line, OFF for a rule that is off, and the count of OFF on its last line.
+- pbn reads no `pbn_allow.txt`, a change from the earlier builds of this version. `check_project()` stops on the file and prints its lines as the YAML of `allow:`. Paste them into `pbn.yml`, and delete `pbn_allow.txt`.
+- `initialize_project()` stops without `pbn.yml`. It gives org the `limit` of `loc_per_file`, or `Inf` when the rule is `warn` or `off`. pbn imports `yaml`.
 
 # pbn 2026.11.22
 

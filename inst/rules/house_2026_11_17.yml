@@ -1,0 +1,85 @@
+# The house rules of pbn::check_project(), the set house_2026_11_17.
+#
+# pbn never changes this file. A change to the house rules is a new file
+# beside it, with the date of the change in its name. A project names its
+# set in pbn.yml, so a new version of pbn does not change its rules.
+#
+# Each rule has a level:
+#   fail  a finding fails, and check_project.R ends with status 1.
+#   warn  a finding is a warning.
+#   off   check_project() does not run the rule, and prints OFF.
+#
+# locked: true marks a rule that protects data for each person, or keeps
+# fake output apart from real output. pbn.yml cannot set it to warn or off,
+# and cannot allow a path for it.
+#
+# The rules are in the order that check_project() prints them.
+# ?check_project gives the details of each rule.
+
+# No capital letter in the name of a file or a folder.
+lower_case_names: fail
+
+# Each vNN_run.R calls pbn::initialize_project() with its own version.
+run_script_initialises: fail
+
+# Each vNN_run.R has a vNN_functions/ folder, and the reverse.
+version_items_complete: fail
+
+# Each results file passes pbn::check_results(). This includes the rule
+# no_row_per_person.
+results_contract:
+  level: fail
+  locked: true
+
+# git tracks no path with gitexclude in its name.
+gitexclude_not_tracked:
+  level: fail
+  locked: true
+
+# Each assertion of the fake scenarios in check.csv passes.
+scenario_checks: fail
+
+# Each file in manuscript/manual/ is named vNN_<INITIALS>.docx.
+manual_manuscript_names: fail
+
+# A manuscript in manuscript/built/ reads the real results only.
+manuscript_reads_real: fail
+
+# The output of fake data has the prefix fake_data_, and only it has.
+fake_data_names:
+  level: fail
+  locked: true
+
+# No file in vNN_functions/ defines a function with the name of a pbn
+# function.
+no_local_copy_of_pbn_function: fail
+
+# No .R file has more than `limit` code lines.
+# pbn::initialize_project() gives the same limit to org.
+loc_per_file:
+  level: fail
+  limit: 1000
+
+# No function scores above `limit` in cyclocomp::cyclocomp().
+cyclomatic_complexity:
+  level: fail
+  limit: 15
+
+# No Sys.getenv() or Sys.setenv() in a run script or a functions folder.
+no_environment_variables: fail
+
+# No .R file uses a construct of `forbid`. Each one creates or changes an
+# object in a place other than the line where it stands.
+no_local_assign:
+  level: fail
+  forbid:
+    - local()
+    - assign()
+    - delayedAssign()
+    - assignInNamespace()
+    - assignInMyNamespace()
+    - "<<-"
+    - "->>"
+
+# The house layout names each top-level file and folder.
+unknown_path: warn

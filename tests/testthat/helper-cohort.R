@@ -129,6 +129,7 @@ local_cohort_project <- function(env = parent.frame()) {
   )
   counter <- file.path(root, "calls.txt")
   write_lines(home, "v01_run.R", "# The run script.")
+  write_lines(home, "pbn.yml", house_line)
   write_lines(home, "v01_functions/_cfg.R", cohort_cfg_lines(counter))
   files <- cohort_function_files()
   for (f in names(files)) {

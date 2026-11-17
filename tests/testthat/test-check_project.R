@@ -23,15 +23,19 @@ test_that("check_project passes the valid synthetic project on every rule", {
   expect_identical(found$status, rep("PASS", length(project_rule_names)))
 })
 
-test_that("check_project prints one line per rule and a count line", {
+test_that("check_project prints the line of the rules, one line per rule and a count line", {
   p <- local_project()
   out <- capture.output(found <- check_project(p$home))
-  expect_length(out, length(project_rule_names) + 1)
+  expect_length(out, length(project_rule_names) + 2)
   expect_identical(
     out[1],
+    "Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)"
+  )
+  expect_identical(
+    out[2],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "15 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "15 PASS, 0 WARN, 0 FAIL, 0 OFF")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -333,7 +337,7 @@ test_that("cyclomatic_complexity skips a file that R cannot parse, which loc_per
   unlink(file.path(p$home, "adhoc", "broken.R"))
 
   write_lines(p$home, "adhoc/more.R", branchy_function("tidy", 16))
-  write_lines(p$home, "pbn_allow.txt", "cyclomatic_complexity\tadhoc/more.R")
+  write_pbn_yml(p$home, "allow:", "  cyclomatic_complexity: [adhoc/more.R]")
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
   row <- found[found$rule == "cyclomatic_complexity", ]
@@ -515,7 +519,7 @@ test_that("no_local_assign skips a file that R cannot parse, which loc_per_file 
     "adhoc/more.R",
     c("a <- 1", "assign(\"b\", 2)", "c <<- 3")
   )
-  write_lines(p$home, "pbn_allow.txt", "no_local_assign\tadhoc/more.R")
+  write_pbn_yml(p$home, "allow:", "  no_local_assign: [adhoc/more.R]")
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
   row <- found[found$rule == "no_local_assign", ]
@@ -524,7 +528,7 @@ test_that("no_local_assign skips a file that R cannot parse, which loc_per_file 
     row$detail,
     c("adhoc/more.R:2: assign() (allowed)", "adhoc/more.R:3: <<- (allowed)")
   )
-  expect_false(any(found$rule == "pbn_allow"))
+  expect_false(any(found$rule == "allow"))
 })
 
 test_that("unknown_path warns on a top-level path the layout does not name", {
@@ -539,7 +543,7 @@ test_that("unknown_path warns on a top-level path the layout does not name", {
 test_that("an allowed finding becomes WARN with (allowed)", {
   p <- local_project()
   write_lines(p$home, "adhoc/Notes.txt", "x")
-  write_lines(p$home, "pbn_allow.txt", "lower_case_names\tadhoc/Notes.txt")
+  write_pbn_yml(p$home, "allow:", "  lower_case_names: [adhoc/Notes.txt]")
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
   row <- found[found$rule == "lower_case_names", ]
@@ -548,17 +552,21 @@ test_that("an allowed finding becomes WARN with (allowed)", {
     row$detail,
     "adhoc/Notes.txt: the name has a capital letter (allowed)"
   )
-  expect_false("pbn_allow" %in% found$rule)
+  expect_false("allow" %in% found$rule)
 })
 
 test_that("a stale allowlist entry is a WARN", {
   p <- local_project()
-  write_lines(p$home, "pbn_allow.txt", "loc_per_file\tadhoc/gone.R")
+  write_pbn_yml(p$home, "allow:", "  loc_per_file: [adhoc/gone.R]")
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
-  stale <- found[found$rule == "pbn_allow", ]
+  stale <- found[found$rule == "allow", ]
   expect_identical(stale$status, "WARN")
-  expect_match(stale$detail, "loc_per_file<TAB>adhoc/gone.R", fixed = TRUE)
+  expect_identical(stale$path, "pbn.yml")
+  expect_identical(
+    stale$detail,
+    "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
+  )
 })
 
 test_that("check_project quits with status 1 after it prints every line", {
@@ -571,7 +579,12 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "15 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(
+    ok$stdout,
+    "Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)",
+    fixed = TRUE
+  )
+  expect_match(ok$stdout, "15 PASS, 0 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -587,7 +600,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "14 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "14 PASS, 0 WARN, 1 FAIL, 0 OFF", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {
@@ -633,10 +646,10 @@ test_that("check_project leaves out OS and editor files outside git", {
   expect_identical(found$status, rep("PASS", length(project_rule_names)))
 })
 
-test_that("unknown_path knows the check scripts and pbn_allow.txt, and warns on run_scenarios.R", {
+test_that("unknown_path knows the check scripts and pbn.yml, and warns on run_scenarios.R", {
   p <- local_project()
   write_lines(p$home, "v01_check_functions.R", "x <- 1")
-  write_lines(p$home, "pbn_allow.txt", character(0))
+  expect_true(file.exists(file.path(p$home, "pbn.yml")))
 
   found <- project_findings(p$home)
   expect_identical(found$rule, project_rule_names)

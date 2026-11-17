@@ -50,7 +50,7 @@
 <code>p &lt;- pbn::initialize_project(...)</code>, with <code>p$scenario</code>, <code>p$sim</code>, <code>p$data_raw</code> and <code>p$settings</code>
 </td>
 <td>
-<code>pbn::initialize_project(...)</code> sets the paths only. A data function reads <code>org::project$data_raw</code>, and each argset holds <code>scenario</code>, <code>sim</code> and the settings.</td>
+<code>pbn::initialize_project(...)</code> sets the paths only. A data function reads <code>pbn::folder("main")</code>, and each argset holds <code>scenario</code>, <code>sim</code> and the settings.</td>
 </tr><tr><td>
 <code>use_scenario()</code> and its commented lines in <code>vNN_run.R</code>
 </td>
@@ -80,7 +80,7 @@
 <td>Nothing. <code><a href="../reference/run_plan.html">run_plan()</a></code> prints each failed analysis with its full error.</td>
 </tr></tbody></table><ul><li>New <code><a href="../reference/scenarios.html">scenarios()</a></code>, <code><a href="../reference/add_data.html">add_data()</a></code>, <code><a href="../reference/add_analyses.html">add_analyses()</a></code>, <code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/end_unless_real.html">end_unless_real()</a></code>.</li>
 <li>
-<code><a href="../reference/initialize_project.html">initialize_project()</a></code> sets no seed and reads no command line. It creates no folder, and it stops when <code>vNN_functions/</code> is missing. <code>data_raw</code> MAY be absent: only <code><a href="../reference/save_results.html">save_results()</a></code> for <code>"real"</code> then stops.</li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> sets no seed and reads no command line. It creates no folder, and it stops when <code>vNN_functions/</code> is missing. A folder of the project MAY be absent: only <code><a href="../reference/save_results.html">save_results()</a></code> for <code>"real"</code> then stops.</li>
 <li>A data function MUST take <code>scenario</code> and <code>sim</code> without a default, or neither. <code><a href="../reference/add_data.html">add_data()</a></code> stops on a default for either and on <code>sim</code> without <code>scenario</code>, and it sets the seed to <code>sim</code> before each call.</li>
 <li>Each analysis gets its own seed in <code>argset$seed</code>, from its kind, its counter and <code>sim</code>, and never <code>sim</code> itself for sims 1 to 9999. To step through an analysis by hand, run <code>set.seed(argset$seed)</code>.</li>
 <li>With more workers, <code><a href="../reference/run_plan.html">run_plan()</a></code> gives the same results when a function reads only its arguments, the functions folder, the attached packages and the seed. R options are not copied to the workers.</li>
@@ -218,6 +218,25 @@
 <li>pbn reads no <code>pbn_allow.txt</code>, a change from the earlier builds of this version. <code><a href="../reference/check_project.html">check_project()</a></code> stops on the file and prints its lines as the YAML of <code>allow:</code>. Paste them into <code>pbn.yml</code>, and delete <code>pbn_allow.txt</code>.</li>
 <li>
 <code><a href="../reference/initialize_project.html">initialize_project()</a></code> stops without <code>pbn.yml</code>. It gives org the <code>limit</code> of <code>loc_per_file</code>, or <code>Inf</code> when the rule is <code>warn</code> or <code>off</code>. pbn imports <code>yaml</code>.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> takes <code>folders</code>, the named folders that the project reads, such as <code>c(main = "../data", lookup = "../codes")</code>, in the place of <code>data_raw</code>. One folder without a name is <code>main</code>. A call with <code>data_raw =</code> stops and gives the new argument.</li>
+<li>New <code>folder(name, ...)</code> gives the path of a folder of the project, or of a path inside it, such as <code>pbn::folder("main", "sub", "d.csv")</code>, also on a worker of <code><a href="../reference/run_plan.html">run_plan()</a></code>. A part with a leading <code>/</code>, a drive or <code>..</code> stops. pbn gives org no folder, so <code>org::project$data_raw</code> is gone.</li>
+<li>pbn reads no content of a data file. <code>manifest$data_files</code>, in the place of <code>data_md5</code>, lists each file under each folder at any depth, as <code>&lt;folder&gt;/&lt;path&gt;</code>, with its size and its modification time. A file that changed in place and kept both is not seen.</li>
+<li>The cache key holds that fingerprint and no path. So the same files in another place, copied with their modification times, give the same key and the same results. A changed, new or removed file gives the cache line “the raw data in the folder lookup changed”.</li>
+<li>The rule <code>manifest_data</code> of <code><a href="../reference/check_results.html">check_results()</a></code> needs <code>data_files</code> for <code>"real"</code>, and fails a manifest with <code>data_md5</code>.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> stops on a folder inside another, on a folder that holds or is inside the results or the cache folder, and on a broken link.</li>
+<li>The run log names the folders of the scenario <code>real</code> with their number of files. It holds no absolute path.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>no_absolute_paths</code>: no string of an <code>.R</code> file is an absolute path, and no <code><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path()</a></code> or <code><a href="https://fs.r-lib.org/reference/path.html" class="external-link">fs::path()</a></code> starts from a string, outside the arguments of <code><a href="../reference/initialize_project.html">pbn::initialize_project()</a></code> and <code><a href="../reference/to_one_file.html">pbn::to_one_file()</a></code>.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>blocks_list</code>: the object <code>blocks</code> of the functions folder is a list of named functions.</li>
+<li>The set <code>house_2026_11_17</code> gets both new rules, and its md5 changes. It had no release yet. After the first release of pbn, a new rule needs a new dated set.</li>
+<li>
+<code>run_script_initialises</code> does not count a call with an argument that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> does not have.</li>
+<li>New <code><a href="../reference/to_one_file.html">to_one_file()</a></code> writes the run of the real data as one R script, <code>vNN_one_file.R</code> in the project of the session, for a server without a network. It stops on kept code that uses a left-out <code>expect_</code> function, and on a file that does not parse. <code><a href="../reference/initialize_project.html">initialize_project()</a></code> gains the argument <code>one_file</code> for that script.</li>
+<li>New <code><a href="../reference/check_one_file.html">check_one_file()</a></code> runs that script on copies of the folders and compares its real results with those of the project.</li>
+<li>
+<code>unknown_path</code> knows <code>vNN_one_file.R</code>, and the code rules do not read it.</li>
+<li>New <code><a href="../reference/show_blocks.html">show_blocks()</a></code> and <code><a href="../reference/show_blocks.html">show_block()</a></code> print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

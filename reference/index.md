@@ -4,6 +4,8 @@
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   : Start a project version
+- [`folder()`](https://www.rwhite.no/pbn/reference/folder.md) : The path
+  of a folder of the project
 - [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md) :
   Choose the scenarios of a run
 - [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md)
@@ -50,6 +52,16 @@
   : Write the output of the real data and of chosen fake scenarios
 - [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md) :
   Mark a figure of fake data
+
+## Running on an air-gapped server
+
+- [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  : Write the run of the real data as one file for a server
+- [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  : Check the file of to_one_file() on this computer
+- [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md) :
+  Show the numbers of the manuscript, one block at a time
 
 ## Checks of the layout
 

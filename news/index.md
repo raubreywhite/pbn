@@ -8,7 +8,7 @@ each scenario. To move a project, change these items:
 
 | Removed | Use instead |
 |----|----|
-| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `org::project$data_raw`, and each argset holds `scenario`, `sim` and the settings. |
+| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `pbn::folder("main")`, and each argset holds `scenario`, `sim` and the settings. |
 | `use_scenario()` and its commented lines in `vNN_run.R` | `pbn::get_argset(p, "<scenario>", <sim>, "<name>", <i>)` and `pbn::get_data(p, "<scenario>", <sim>)` inside `if (plnr::is_run_directly())`. |
 | `run_scenarios()`, `run_scenarios.R`, `workers` and `resume` | `pbn::scenarios(CFG)`, or `pbn::scenarios(CFG, only = "null")`, and `pbn::run_plan(p, workers = 2)`. A run always runs every chosen scenario. |
 | `fake_<scenario>(dir)` and the folder `data/` of a fake run | One data function `get_data(scenario, sim)` for every scenario, added with [`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). |
@@ -24,7 +24,8 @@ each scenario. To move a project, change these items:
   [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md).
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   sets no seed and reads no command line. It creates no folder, and it
-  stops when `vNN_functions/` is missing. `data_raw` MAY be absent: only
+  stops when `vNN_functions/` is missing. A folder of the project MAY be
+  absent: only
   [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
   for `"real"` then stops.
 - A data function MUST take `scenario` and `sim` without a default, or
@@ -417,6 +418,73 @@ each scenario. To move a project, change these items:
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   stops without `pbn.yml`. It gives org the `limit` of `loc_per_file`,
   or `Inf` when the rule is `warn` or `off`. pbn imports `yaml`.
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  takes `folders`, the named folders that the project reads, such as
+  `c(main = "../data", lookup = "../codes")`, in the place of
+  `data_raw`. One folder without a name is `main`. A call with
+  `data_raw =` stops and gives the new argument.
+- New `folder(name, ...)` gives the path of a folder of the project, or
+  of a path inside it, such as `pbn::folder("main", "sub", "d.csv")`,
+  also on a worker of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md). A
+  part with a leading `/`, a drive or `..` stops. pbn gives org no
+  folder, so `org::project$data_raw` is gone.
+- pbn reads no content of a data file. `manifest$data_files`, in the
+  place of `data_md5`, lists each file under each folder at any depth,
+  as `<folder>/<path>`, with its size and its modification time. A file
+  that changed in place and kept both is not seen.
+- The cache key holds that fingerprint and no path. So the same files in
+  another place, copied with their modification times, give the same key
+  and the same results. A changed, new or removed file gives the cache
+  line “the raw data in the folder lookup changed”.
+- The rule `manifest_data` of
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  needs `data_files` for `"real"`, and fails a manifest with `data_md5`.
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  stops on a folder inside another, on a folder that holds or is inside
+  the results or the cache folder, and on a broken link.
+- The run log names the folders of the scenario `real` with their number
+  of files. It holds no absolute path.
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `no_absolute_paths`: no string of an `.R` file is an absolute
+  path, and no [`file.path()`](https://rdrr.io/r/base/file.path.html) or
+  [`fs::path()`](https://fs.r-lib.org/reference/path.html) starts from a
+  string, outside the arguments of
+  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  and
+  [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `blocks_list`: the object `blocks` of the functions folder is a
+  list of named functions.
+- The set `house_2026_11_17` gets both new rules, and its md5 changes.
+  It had no release yet. After the first release of pbn, a new rule
+  needs a new dated set.
+- `run_script_initialises` does not count a call with an argument that
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  does not have.
+- New
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  writes the run of the real data as one R script, `vNN_one_file.R` in
+  the project of the session, for a server without a network. It stops
+  on kept code that uses a left-out `expect_` function, and on a file
+  that does not parse.
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  gains the argument `one_file` for that script.
+- New
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  runs that script on copies of the folders and compares its real
+  results with those of the project.
+- `unknown_path` knows `vNN_one_file.R`, and the code rules do not read
+  it.
+- New
+  [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  print the blocks of the manuscript one page at a time, from the real
+  results on the disk. They set back each option that a block function
+  sets.
 
 ## pbn 2026.11.22
 

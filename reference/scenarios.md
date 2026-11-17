@@ -73,6 +73,7 @@ builds and runs a small fake project.
 
 Other project setup:
 [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md),
+[`folder()`](https://www.rwhite.no/pbn/reference/folder.md),
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
 
 ## Examples

@@ -8,12 +8,14 @@
 <url><loc>https://www.rwhite.no/pbn/news/index.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/add_analyses.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/add_data.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/check_one_file.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/check_project.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/check_results.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/cohort_data.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/end_unless_real.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/expect_biased.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/expect_recovers.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/folder.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/get_data.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/index.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/initialize_project.html</loc></url>
@@ -24,7 +26,9 @@
 <url><loc>https://www.rwhite.no/pbn/reference/run_plan.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/save_results.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/scenarios.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/show_blocks.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/stamp_fake.html</loc></url>
 <url><loc>https://www.rwhite.no/pbn/reference/table1.html</loc></url>
+<url><loc>https://www.rwhite.no/pbn/reference/to_one_file.html</loc></url>
 </urlset>
 

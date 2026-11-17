@@ -111,13 +111,15 @@ is valid. The seven rules:
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.
 
-- `manifest_data`: `manifest` has exactly one of `data_md5` and
-  `fake_md5`. It has `data_md5` when `scenario` is `"real"`, and
+- `manifest_data`: `manifest` has exactly one of `data_files` and
+  `fake_md5`. It has `data_files` when `scenario` is `"real"`, and
   `fake_md5` when `scenario` is another string. `fake_md5` MUST be one
-  string of 32 lower-case hex digits. `data_md5` MUST be a character
-  vector of such strings, named by file. It has length 0 when the data
-  folder has no file. A results file that pbn 2026.11.18 or older wrote
-  has `data_md5` for a fake scenario, so it fails this rule.
+  string of 32 lower-case hex digits. `data_files` MUST be a data.frame
+  with the columns `file`, `size` and `mtime`. Each `file` is a name
+  that comes once, each `size` a number of 0 or more, and each `mtime` a
+  number. It has 0 rows when the data folders have no file. A manifest
+  with `data_md5`, the md5 of the data files of an older pbn, fails this
+  rule: run the scenario again.
 
 - `manifest_source`: `manifest$source_md5` is a named character vector
   of md5 values, each a string of 32 lower-case hex digits. It names the
@@ -146,7 +148,7 @@ x <- list(
     scenario = "real",
     sim = 1L,
     sims = 1L,
-    data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    data_files = data.frame(file = "main/d.csv", size = 120, mtime = 1.8e9),
     source_md5 = c(v01_run.R = "fedcba9876543210fedcba9876543210"),
     n_rows_data = 100L
   ),
@@ -174,6 +176,6 @@ pbn::check_results(x)
 #> 3       each element is a data.frame, an atomic vector, NULL or a plain list of these
 #> 4 no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension
 #> 5                 the manifest names the scenario, the simulation and the simulations
-#> 6                the manifest has data_md5 for "real" or fake_md5 for a fake scenario
+#> 6              the manifest has data_files for "real" or fake_md5 for a fake scenario
 #> 7                         the manifest has source_md5, with the md5 of the run script
 ```

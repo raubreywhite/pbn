@@ -231,9 +231,15 @@ is the md5 of these parts:
 
 - the scenario, the simulation and the settings of the scenario.
 
-- for `"real"` only, the md5 of each file directly in `data_raw` at the
-  time of the use. pbn hashes a file again only when its size or its
-  modification time differs from the last record.
+- for `"real"` only, the fingerprint of the data at the time of the use.
+  It holds the name `<folder name>/<path in the folder>`, the size and
+  the modification time of each file under each folder of `folders` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  pbn reads no content of a data file. The path of a folder is not in
+  the key. So the same files in another place give the same key when
+  they keep their modification times. A copy with new times looks like
+  changed data, so the data is computed again. A file that changed in
+  place, and kept its size and its modification time, is not seen.
 
 - the md5 of each file of `<version>_functions/` whose name starts with
   `data_`, for example `data_raw.R`, `data_clean.R`, `data_cohort.R` and
@@ -291,11 +297,12 @@ For each scenario and simulation,
 one line with [`cat()`](https://rdrr.io/r/base/cat.html). The line says
 that the data came from the cache, with the date and time of the cache
 file. Or it says that pbn computed it, and why. The reason names each
-changed `data_*.R` file, `CFG$data`, the raw data or the settings. It
-names a changed `fn` as "the data function of add_data()", and each
-changed step as, for example, "the function given as `clean`". It can
-also name the kind of random number generator, or each package with
-another version. With `workers = 1`, the line comes before the data
+changed `data_*.R` file, `CFG$data`, or the settings. It names changed
+raw data with its folders, for example "the raw data in the folder
+lookup". It names a changed `fn` as "the data function of add_data()",
+and each changed step as, for example, "the function given as `clean`".
+It can also name the kind of random number generator, or each package
+with another version. With `workers = 1`, the line comes before the data
 function runs. With more workers,
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) prints
 the lines after the run, in the order of the plan.

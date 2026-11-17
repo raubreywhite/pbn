@@ -136,13 +136,15 @@ unstacked results. An older pbn wrote their counts as <code>NA</code>, so they
 check nothing.</p></li>
 <li><p><code>manifest_scenario</code>: <code>manifest</code> has the elements <code>scenario</code>, <code>sim</code> and
 <code>sims</code>, and <code>scenario</code> is one string.</p></li>
-<li><p><code>manifest_data</code>: <code>manifest</code> has exactly one of <code>data_md5</code> and
-<code>fake_md5</code>. It has <code>data_md5</code> when <code>scenario</code> is <code>"real"</code>, and
+<li><p><code>manifest_data</code>: <code>manifest</code> has exactly one of <code>data_files</code> and
+<code>fake_md5</code>. It has <code>data_files</code> when <code>scenario</code> is <code>"real"</code>, and
 <code>fake_md5</code> when <code>scenario</code> is another string. <code>fake_md5</code> MUST be one
-string of 32 lower-case hex digits. <code>data_md5</code> MUST be a character
-vector of such strings, named by file. It has length 0 when the data
-folder has no file. A results file that pbn 2026.11.18 or older wrote
-has <code>data_md5</code> for a fake scenario, so it fails this rule.</p></li>
+string of 32 lower-case hex digits. <code>data_files</code> MUST be a data.frame
+with the columns <code>file</code>, <code>size</code> and <code>mtime</code>. Each <code>file</code> is a name that
+comes once, each <code>size</code> a number of 0 or more, and each <code>mtime</code> a
+number. It has 0 rows when the data folders have no file. A manifest
+with <code>data_md5</code>, the md5 of the data files of an older pbn, fails this
+rule: run the scenario again.</p></li>
 <li><p><code>manifest_source</code>: <code>manifest$source_md5</code> is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script <code>&lt;version&gt;_run.R</code> of <code>manifest$version</code>, or a <code>vNN_run.R</code> when
@@ -168,7 +170,7 @@ files of <code><a href="save_results.html">save_results()</a></code>.</p>
 <span class="r-in"><span>    scenario <span class="op">=</span> <span class="st">"real"</span>,</span></span>
 <span class="r-in"><span>    sim <span class="op">=</span> <span class="fl">1L</span>,</span></span>
 <span class="r-in"><span>    sims <span class="op">=</span> <span class="fl">1L</span>,</span></span>
-<span class="r-in"><span>    data_md5 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>d.csv <span class="op">=</span> <span class="st">"0123456789abcdef0123456789abcdef"</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    data_files <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"main/d.csv"</span>, size <span class="op">=</span> <span class="fl">120</span>, mtime <span class="op">=</span> <span class="fl">1.8e9</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    source_md5 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>v01_run.R <span class="op">=</span> <span class="st">"fedcba9876543210fedcba9876543210"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    n_rows_data <span class="op">=</span> <span class="fl">100L</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
@@ -196,7 +198,7 @@ files of <code><a href="save_results.html">save_results()</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 3       each element is a data.frame, an atomic vector, NULL or a plain list of these</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 4 no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5                 the manifest names the scenario, the simulation and the simulations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6                the manifest has data_md5 for "real" or fake_md5 for a fake scenario</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6              the manifest has data_files for "real" or fake_md5 for a fake scenario</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7                         the manifest has source_md5, with the md5 of the run script</span>
 </code></pre></div>
     </div>

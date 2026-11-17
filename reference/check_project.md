@@ -52,10 +52,10 @@ The rules, with their level in the set `house_2026_11_17`:
 - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
   call
   [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  whose `version` argument is the string `"vNN"`. The detail names each
-  argument of the call that
+  whose `version` argument is the string `"vNN"`. A call with an
+  argument that
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  does not have.
+  does not have does not count, and the detail names that argument.
 
 - `version_items_complete` (FAIL): a `vNN_run.R` has no
   `vNN_functions/`, or the reverse.
@@ -121,7 +121,8 @@ The rules, with their level in the set `house_2026_11_17`:
 - `loc_per_file` (FAIL): an `.R` file has more than `limit` code lines,
   as counted by
   [`org::loc_per_file()`](https://www.rwhite.no/org/reference/loc_per_file.html).
-  The house `limit` is 1000.
+  The house `limit` is 1000. The rule reads each `.R` file of the
+  project but `vNN_one_file.R`.
 
 - `cyclomatic_complexity` (FAIL): a function scores above `limit` in
   [`cyclocomp::cyclocomp()`](https://rdrr.io/pkg/cyclocomp/man/cyclocomp.html).
@@ -156,16 +157,95 @@ The rules, with their level in the set `house_2026_11_17`:
   the file, the line and the construct. A path under `allow` allows each
   finding of one file.
 
+- `no_absolute_paths` (FAIL): a string constant of an `.R` file of
+  `loc_per_file` is an absolute path, or a path starts from a string
+  constant. The rule reads the strings from the parse data, so a comment
+  does not count. The arguments of a call
+  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  or
+  [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  are exempt, because a project declares its paths there. A string is an
+  absolute path when it starts with one of these:
+
+  - `/`, a name of letters, digits, `.`, `_` or `-` that starts with a
+    letter or `_`, and `/` again, as in `"/home/a/x.csv"` or `"/data/"`.
+
+  - `~/` or `~\`, the home folder.
+
+  - a drive letter, `:` and `/` or `\`, as in `"C:/x"`, `"C:\\x"` or
+    `"N:/durable/x"`.
+
+  - `\\` and a letter or a digit, the start of a UNC path such as
+    `"\\\\server\\share"`.
+
+  These strings pass:
+
+  - `"/"` and `"~"`.
+
+  - the regular expressions `"^/"`, `"/$"` and `"/.*$"`.
+
+  - a URL such as `"https://a.org/b"`.
+
+  - the formats `"%s/%s"` and `"%Y/%m/%d"`, and the fraction `"1/2"`.
+
+  - the formula `"y ~ x"`, and `"/month"`.
+
+  - the relative paths `"data/x.csv"`, `"./x"` and `"../x"`. A path with
+    `..` leaves the project folder, and it passes too.
+
+  - a path with one name and no second `/`, such as `"/data"`, and a
+    string of more than 1000 bytes. The rule misses these.
+
+  The rule also fails a call of
+  [`file.path()`](https://rdrr.io/r/base/file.path.html),
+  [`base::file.path()`](https://rdrr.io/r/base/file.path.html) or
+  [`fs::path()`](https://fs.r-lib.org/reference/path.html) whose first
+  argument is a string constant, for example
+  `file.path("data", "x.csv")` or `file.path("/", "data")`. A path that
+  starts from a constant is absolute, or it depends on the working
+  directory. A path to data starts from
+  [`pbn::folder()`](https://www.rwhite.no/pbn/reference/folder.md). A
+  path for output starts from the folder that pbn gives the function,
+  such as `dir` of
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md).
+  A call whose first argument is a name or a call passes, for example
+  `file.path(dir, "fig2.png")` or `file.path(tempdir(), "x")`. A path
+  that [`paste0()`](https://rdrr.io/r/base/paste.html) or
+  [`sprintf()`](https://rdrr.io/r/base/sprintf.html) builds stays
+  outside the rule.
+
+  The detail is `<file>:<line>: "<the string, cut at 40 characters>"`,
+  or
+  `<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)`.
+  A path under `allow` allows each finding of one file.
+
+- `blocks_list` (FAIL): the functions folder defines the object `blocks`
+  of
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+  and one of these is true:
+
+  - more than one top-level assignment assigns it.
+
+  - its value is not a call of
+    [`list()`](https://rdrr.io/r/base/list.html), or the list is empty.
+
+  - an element has no name, or a name comes twice.
+
+  - an element is not a `function`, or the name of a function that a
+    top-level assignment of the functions folder defines.
+
+  A project without `blocks` passes.
+
 - `unknown_path` (WARN): the house layout does not name a top-level file
   or folder. The layout names `vNN_run.R`, `vNN_functions/`,
   `vNN_results/`, `vNN_cache_gitexclude/`, `vNN_test/`,
-  `vNN_check_functions.R`, `check_project.R` and `pbn.yml`, among
-  others. A top-level dotfile and a top-level `*.Rproj` file are never
-  unknown. The rule also reads the files directly in `vNN_results/`.
-  There it names the run log `run.md`, its PDF `run.pdf` and its errors
-  file `run_errors_gitexclude.md`, and no rule needs them. It reads no
-  deeper, so it never warns on the folders `output/` and
-  `output_fake_data/` that
+  `vNN_check_functions.R`, `vNN_one_file.R`, `check_project.R` and
+  `pbn.yml`, among others. A top-level dotfile and a top-level `*.Rproj`
+  file are never unknown. The rule also reads the files directly in
+  `vNN_results/`. There it names the run log `run.md`, its PDF `run.pdf`
+  and its errors file `run_errors_gitexclude.md`, and no rule needs
+  them. It reads no deeper, so it never warns on the folders `output/`
+  and `output_fake_data/` that
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
   writes in `vNN_results/<scenario>/`, or on the folder
   `sims_gitexclude/` that
@@ -174,6 +254,13 @@ The rules, with their level in the set `house_2026_11_17`:
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
+
+`vNN_one_file.R` at the top level is the file of
+[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+It holds the paths of a server by design, and pbn writes it. So
+`loc_per_file`, `cyclomatic_complexity`, `no_local_assign` and
+`no_absolute_paths` do not read it, and no rule takes it for a run
+script. Put it in git: it is what ran on the server.
 
 ## The file pbn.yml
 
@@ -275,7 +362,7 @@ home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
 writeLines(
-  'pbn::initialize_project(version = "v01", home = ".", data_raw = "x")',
+  'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
 )
 pbn::check_project(home)
@@ -294,8 +381,10 @@ pbn::check_project(home)
 #> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
+#> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()
+#> PASS  blocks_list  blocks, when the functions folder has it, is a list of named functions
 #> PASS  unknown_path  the house layout names every top-level path
-#> 15 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 17 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

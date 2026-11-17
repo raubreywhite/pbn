@@ -100,7 +100,9 @@ Before the run, <code>run_plan()</code> gives each worker these:</p><ul><li><p>t
 for example data.table after <code><a href="https://r-datatable.com" class="external-link">library(data.table)</a></code> in the run script.</p></li>
 <li><p>the kind of random number generator of this R session, from
 <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>.</p></li>
-<li><p>the paths in <code><a href="https://www.rwhite.no/org/reference/project.html" class="external-link">org::project</a></code>, such as <code>org::project$data_raw</code>.</p></li>
+<li><p>the paths in <code><a href="https://www.rwhite.no/org/reference/project.html" class="external-link">org::project</a></code>, such as <code>org::project$home</code>.</p></li>
+<li><p>the folders of <code><a href="initialize_project.html">initialize_project()</a></code>, so that <code><a href="folder.html">folder()</a></code> works on the
+worker. A worker then loads pbn.</p></li>
 </ul><p>A future starts with an empty global environment. <code><a href="initialize_project.html">initialize_project()</a></code>
 sources the functions folder into an environment, <code>.GlobalEnv</code> by
 default. Each batch takes every object of that environment to the global
@@ -161,10 +163,10 @@ no count of the runs, so two runs of one plan can be <code><a href="https://rdrr
 <code><a href="save_results.html">save_results()</a></code> stops on a value without the stamp of its plan.</p>
 <p><code>run_plan()</code> sets <code>use_foreach</code> of the plan: <code>FALSE</code> for 1 worker and
 <code>TRUE</code> for more.</p>
-<p>After <code><a href="initialize_project.html">initialize_project()</a></code>, <code>run_plan()</code> first computes the md5 of each
-raw data file again when its size or its modification time changed. The
-value carries the md5 in its stamp, and <code><a href="save_results.html">save_results()</a></code> writes it to
-<code>manifest$data_md5</code>.</p>
+<p>After <code><a href="initialize_project.html">initialize_project()</a></code>, <code>run_plan()</code> first lists the files of the
+folders of the project again, with their sizes and modification times.
+It reads no content of a file. The value carries this fingerprint in its
+stamp, and <code><a href="save_results.html">save_results()</a></code> writes it to <code>manifest$data_files</code>.</p>
 <p>An analysis that changes the shared data or an object of the functions
 folder in place fails. An analysis that leaves a new object in the global
 environment fails too. <code><a href="add_analyses.html">add_analyses()</a></code> gives the rules.</p>

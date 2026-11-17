@@ -116,13 +116,21 @@ The `manifest` is a list with these elements:
   needs the run script in it, so `save_results()` stops when
   `<version>_run.R` did not exist.
 
-- For the scenario `"real"` only, `data_md5`, the md5 of each file
-  directly in `data_raw` when
-  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
-  started. So it names the data that the run read, also after a change
-  of a file since
+- For the scenario `"real"` only, `data_files`, the fingerprint of the
+  files under the folders of `folders` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  when [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+  started. It is a data.frame with the columns `file`, `size` and
+  `mtime`. Each `file` is `<folder name>/<path in the folder>`, for
+  example `main/sub/d.csv`, and never the path of the folder. pbn reads
+  no content of a data file. The section The fingerprint of the data of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  gives the rules. So the manifest names the data that the run read,
+  also after a change of a file since
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
-  `save_results()` stops for `"real"` when `data_raw` did not exist when
+  The same files in another place, with the same modification times,
+  give the same manifest. `save_results()` stops for `"real"` when a
+  folder did not exist when
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   ran.
 
@@ -468,9 +476,9 @@ writeLines(
   file.path(home, "v01_functions", "_cfg.R")
 )
 env <- new.env()
-pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
+pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpVfRIVS/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpaFWqJo/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

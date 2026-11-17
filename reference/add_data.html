@@ -235,9 +235,15 @@ each scenario and simulation, <code><a href="run_plan.html">run_plan()</a></code
 value is the data.table and its exclusion table for a cohort. The cache
 key goes to <code>sim_&lt;kkkk&gt;_key.qs2</code> in the same folder. The cache key is the
 md5 of these parts:</p><ul><li><p>the scenario, the simulation and the settings of the scenario.</p></li>
-<li><p>for <code>"real"</code> only, the md5 of each file directly in <code>data_raw</code> at the
-time of the use. pbn hashes a file again only when its size or its
-modification time differs from the last record.</p></li>
+<li><p>for <code>"real"</code> only, the fingerprint of the data at the time of the use.
+It holds the name <code>&lt;folder name&gt;/&lt;path in the folder&gt;</code>, the size and
+the modification time of each file under each folder of <code>folders</code> of
+<code><a href="initialize_project.html">initialize_project()</a></code>. pbn reads no content of a data file. The path
+of a folder is not in the key. So the same files in another place give
+the same key when they keep their modification times. A copy with new
+times looks like changed data, so the data is computed again. A file
+that changed in place, and kept its size and its modification time, is
+not seen.</p></li>
 <li><p>the md5 of each file of <code>&lt;version&gt;_functions/</code> whose name starts with
 <code>data_</code>, for example <code>data_raw.R</code>, <code>data_clean.R</code>, <code>data_cohort.R</code> and
 <code>data_impute.R</code>. <code><a href="initialize_project.html">initialize_project()</a></code> computes them before it sources
@@ -277,8 +283,9 @@ delete the folder <code>&lt;version&gt;_cache_gitexclude/</code>. No argument do
 <p>For each scenario and simulation, <code><a href="run_plan.html">run_plan()</a></code> prints one line with
 <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>. The line says that the data came from the cache, with the date
 and time of the cache file. Or it says that pbn computed it, and why.
-The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>, the raw data
-or the settings. It names a changed <code>fn</code> as "the data function of
+The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>, or the
+settings. It names changed raw data with its folders, for example "the
+raw data in the folder lookup". It names a changed <code>fn</code> as "the data function of
 add_data()", and each changed step as, for example, "the function given
 as <code>clean</code>". It can also name the kind of random
 number generator, or each package with another version. With <code>workers = 1</code>, the line comes before the

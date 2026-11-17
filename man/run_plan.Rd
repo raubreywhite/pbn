@@ -69,9 +69,13 @@ an action function fails that analysis, and an error in a data function
 fails each analysis that gets the data. This is the same with 1 worker and
 with more. After the run, \code{run_plan()} prints each failed analysis with its
 name and its full error message with \code{cat()}, and then it stops. R cuts an
-error message at 1000 bytes by default, and \code{cat()} does not. pbn then
-saves nothing, because \code{\link[=save_results]{save_results()}} needs the value of \code{run_plan()}.
-The results files of an earlier run stay as they are.
+error message at 1000 bytes by default, and \code{cat()} does not. The error
+message of \code{run_plan()} also names the first failed analysis in the order
+of the plan, and holds its error. pbn cuts that error to keep the message
+below 900 bytes. When 2 or more analyses fail and all have the same error,
+the message says so. pbn then saves nothing, because \code{\link[=save_results]{save_results()}}
+needs the value of \code{run_plan()}. The results files of an earlier run stay
+as they are.
 
 The value carries the attribute \code{pbn_run}, a stamp of the plan. It holds
 no count of the runs, so two runs of one plan can be \code{identical()}.

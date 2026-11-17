@@ -93,14 +93,21 @@ test_that("a failing analysis: run_plan prints every failed analysis in full and
   one <- failed_output(1)
   two <- failed_output(2)
   expect_identical(two, one)
-  expect_identical(
+  # The message names the first failed analysis and holds the start of its
+  # error, cut below 900 bytes. The errors differ, so no "All" sentence.
+  expect_true(startsWith(
     one$err,
     paste0(
       "3 of 6 analyses failed. pbn printed each failed analysis and its ",
       "error above, and saved nothing. The results files of an earlier run ",
-      "stay as they are."
+      "stay as they are. The first failed analysis is ",
+      "null__sim_0002__pbn_n_rows, with this error: \"The data function 'd' ",
+      "failed: planted data error xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     )
-  )
+  ))
+  expect_true(endsWith(one$err, "xxxx [...]\"."))
+  expect_lt(nchar(one$err, "bytes"), 900)
+  expect_no_match(one$err, "failed with this error", fixed = TRUE)
   text <- paste(one$out, collapse = "\n")
   expect_identical(
     grep("^pbn: the analysis", one$out, value = TRUE),
@@ -121,6 +128,57 @@ test_that("a failing analysis: run_plan prints every failed analysis in full and
     ),
     fixed = TRUE
   )
+})
+
+test_that("every analysis fails with one long error: the message holds it cut below 900 bytes and says all failed with it, with 1 and 2 workers", {
+  skip_if_pbn_not_installed()
+  data_fn <- function(scenario, sim) {
+    stop("one error ", strrep("z", 5000))
+  }
+  environment(data_fn) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = data_fn)
+  add_analyses(p, two_scenarios(), "a", fn = function(data, argset) 1)
+  for (workers in 1:2) {
+    utils::capture.output(
+      err <- tryCatch(run_plan(p, workers = workers), error = function(e) e)
+    )
+    msg <- conditionMessage(err)
+    expect_lt(nchar(msg, "bytes"), 900)
+    expect_match(
+      msg,
+      paste0(
+        "6 of 6 analyses failed. pbn printed each failed analysis and its ",
+        "error above, and saved nothing. The results files of an earlier ",
+        "run stay as they are. The first failed analysis is ",
+        "real__sim_0001__pbn_n_rows, with this error: \"The data function ",
+        "'d' failed: one error zzzz"
+      ),
+      fixed = TRUE
+    )
+    expect_true(endsWith(msg, "zzzz [...]\". All 6 failed with this error."))
+  }
+})
+
+test_that("failed_message cuts the first error at a whole character and adds the All sentence only for equal errors", {
+  # A name of 1 and of 2 characters, so that one of the two cuts falls
+  # inside a character of 2 bytes unless the cut keeps whole characters.
+  for (nm in c("a", "ab")) {
+    failed <- stats::setNames(paste(rep("\u00e9", 2000), collapse = ""), nm)
+    msg <- failed_message(failed, 9)
+    expect_true(validUTF8(msg), info = nm)
+    expect_lt(nchar(msg, "bytes"), 900)
+    expect_true(endsWith(msg, "\u00e9 [...]\"."), info = nm)
+    expect_no_match(msg, "failed with this error", fixed = TRUE)
+  }
+  expect_true(endsWith(
+    failed_message(c(a = "e1", b = "e1"), 2),
+    "is a, with this error: \"e1\". All 2 failed with this error."
+  ))
+  expect_true(endsWith(
+    failed_message(c(a = "e1", b = "e2"), 2),
+    "is a, with this error: \"e1\"."
+  ))
 })
 
 test_that("run_plan with workers = 2 gives results identical to workers = 1, on a PSOCK cluster that it stops", {

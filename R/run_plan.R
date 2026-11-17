@@ -52,9 +52,13 @@
 #' fails each analysis that gets the data. This is the same with 1 worker and
 #' with more. After the run, `run_plan()` prints each failed analysis with its
 #' name and its full error message with `cat()`, and then it stops. R cuts an
-#' error message at 1000 bytes by default, and `cat()` does not. pbn then
-#' saves nothing, because [save_results()] needs the value of `run_plan()`.
-#' The results files of an earlier run stay as they are.
+#' error message at 1000 bytes by default, and `cat()` does not. The error
+#' message of `run_plan()` also names the first failed analysis in the order
+#' of the plan, and holds its error. pbn cuts that error to keep the message
+#' below 900 bytes. When 2 or more analyses fail and all have the same error,
+#' the message says so. pbn then saves nothing, because [save_results()]
+#' needs the value of `run_plan()`. The results files of an earlier run stay
+#' as they are.
 #'
 #' The value carries the attribute `pbn_run`, a stamp of the plan. It holds
 #' no count of the runs, so two runs of one plan can be `identical()`.
@@ -322,12 +326,43 @@ stop_on_failed <- function(r) {
     cat("pbn: the analysis ", nm, " failed:\n", failed[[nm]], "\n", sep = "")
   }
   utils::flush.console()
-  stop(
+  stop(failed_message(failed, length(r)), call. = FALSE)
+}
+
+# The message of stop_on_failed(): the count, then the name and the error of
+# the first failed analysis. A knitr build or a log can keep the message and
+# lose the output of cat(). The error is cut so that the message holds at
+# most `max_bytes` bytes, below the 1000 bytes where R cuts it.
+failed_message <- function(failed, n, max_bytes = 899L) {
+  fixed <- paste0(
     length(failed),
     " of ",
-    length(r),
+    n,
     " analyses failed. pbn printed each failed analysis and its error above, ",
     "and saved nothing. The results files of an earlier run stay as they are.",
-    call. = FALSE
+    " The first failed analysis is ",
+    names(failed)[1],
+    ", with this error: \""
   )
+  end <- "\"."
+  if (length(failed) > 1 && length(unique(unname(failed))) == 1) {
+    end <- paste0(end, " All ", length(failed), " failed with this error.")
+  }
+  room <- max_bytes - nchar(fixed, "bytes") - nchar(end, "bytes")
+  return(paste0(fixed, cut_bytes(failed[[1]], room), end))
+}
+
+# `x` cut to at most `room` bytes, at a whole character, and marked with
+# " [...]" when it is cut.
+cut_bytes <- function(x, room) {
+  if (!validUTF8(x)) {
+    x <- iconv(x, "latin1", "UTF-8")
+  }
+  if (nchar(x, "bytes") <= room) {
+    return(x)
+  }
+  mark <- " [...]"
+  chars <- strsplit(x, "")[[1]]
+  keep <- cumsum(nchar(chars, "bytes")) <= room - nchar(mark, "bytes")
+  return(paste0(paste(chars[keep], collapse = ""), mark))
 }

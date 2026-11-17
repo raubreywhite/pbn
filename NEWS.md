@@ -53,6 +53,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `add_data()` takes the data as the steps `raw`, `clean`, `cohort` and `after_cohort`, or as one function `fn`. The data fails when `clean` changes the number of rows, or when the cohort does not start with every row. Each exclusion thus goes through the cohort, which counts it.
 - pbn puts the exclusion table of the cohort on the value of `after_cohort`, so the step needs no `keep_exclusions()`. `keep_exclusions()` is for a data function `fn`.
 - With the steps, the cache key and `fake_md5` hold each step, and the cache line names a changed step. The article Get started uses the steps.
+- The error of `run_plan()` also names the first failed analysis and holds its error. pbn cuts it so that the whole error stays below 900 bytes. A knitr build keeps this error and loses the output of `cat()`.
 
 # pbn 2026.11.22
 

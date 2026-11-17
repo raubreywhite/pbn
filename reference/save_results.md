@@ -35,7 +35,8 @@ save_results(r, p, scenarios, gitexclude = NULL)
 
 - gitexclude:
 
-  MUST be `NULL` in this version.
+  `NULL`, or the names of the analysis kinds whose results hold data for
+  each person. See the section Two files.
 
 ## Value
 
@@ -47,8 +48,16 @@ Invisibly, a data.frame of every assertion, with the columns `scenario`,
 Call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
 first. For each scenario and simulation, `save_results()` builds one
-results object, a named list. Its first element is `manifest`. Then
-comes one element for each analysis kind of
+results object, a named list. Its first element is `manifest`. When a
+data function returned a
+[`cohort::CohortPipeline`](https://www.rwhite.no/cohort/reference/CohortPipeline.html),
+the next element is `exclusions`, the exclusion tables of the cohorts
+row-bound in the order of
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). The
+column `data` names the data of each row. The section A cohort as the
+data of [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md)
+gives the columns. A plan without a cohort has no element `exclusions`.
+Then comes one element for each analysis kind of
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 under the kind name and in the order of the calls. The scenario `"real"`
 has no element of a kind with `control = TRUE`. The element of a kind
@@ -98,9 +107,13 @@ The `manifest` is a list with these elements:
 
 - For the scenario `"real"` only, `data_md5`, the md5 of each file
   directly in `data_raw` when
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+  started. So it names the data that the run read, also after a change
+  of a file since
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  `save_results()` stops for `"real"` when `data_raw` did not exist when
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  ran. `save_results()` stops for `"real"` when `data_raw` did not exist
-  then.
+  ran.
 
 - For a fake scenario only, `fake_md5`, one md5 of the code of the data
   functions of
@@ -110,14 +123,35 @@ The `manifest` is a list with these elements:
   of the files of those functions.
 
 - `n_rows_data`, a named integer vector with the number of rows of each
-  data element, or `NA` for an element that is not a data.frame. The
-  analysis `<scenario>__sim_<kkkk>__pbn_n_rows` of
+  data element. A list of data.frames with one number of rows, for
+  example a list of imputed data sets, has the rows of one of them. Each
+  other element that is not a data.frame has `NA`. The analysis
+  `<scenario>__sim_<kkkk>__pbn_n_rows` of
   [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
   counts them where the data is, also on a worker. The rule
   `no_row_per_person` reads it.
 
-- `analyses`, a data.frame with the columns `analysis` and `control`:
-  the analysis kinds in the object.
+- `n_rows_before_exclusions`, a named integer vector with the number of
+  rows given to the cohort of each data element, or `NA` for data
+  without a cohort. `no_row_per_person` reads it too.
+
+- `n_rows_after_exclusions`, the same for the rows after the exclusions:
+  `n_after` of the last step of the exclusion table. It has a number
+  also when `n_rows_data` is `NA`, for example for a `mids` object.
+
+- `analyses`, a data.frame with the columns `analysis`, `control` and
+  `file`: the analysis kinds in the object, and the file of each,
+  `"results.qs2"` or `"results_gitexclude.qs2"`.
+
+- `data_cache`, a data.frame with one row for each data element of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) and
+  the columns `data`, `cache`, `from_cache` and `cache_key`. `cache` is
+  the argument of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md).
+  `from_cache` is `TRUE` when
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) read
+  the data from the cache. `cache_key` is the md5 of the cache key, or
+  `NA` without a cache.
 
 `save_results()` does these steps in this order. It stops at the first
 step that fails:
@@ -188,9 +222,40 @@ data.frame with a column `sim`, because pbn adds that column.
 
 The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
 are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
+The columns `from_cache` and `cache_key` of `data_cache` are `NA`.
 Stacking stops when the files of the simulations are not exactly the
 simulations 1 to `sims`, for example after `sims` became smaller. Delete
 the folders of the higher simulations then.
+
+## Two files
+
+`save_results()` writes the results of the kinds in `gitexclude` to
+`results_gitexclude.qs2`, beside each `results.qs2`. `results.qs2` holds
+`manifest`, `exclusions` and every other kind. Use `gitexclude` for a
+kind with fitted models, imputations or one row for each person. The
+project's `.gitignore` MUST hold the line `*gitexclude*`, so that git
+never tracks that file.
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+reads both files.
+
+These rules apply:
+
+- `save_results()` stops before it writes anything when a name in
+  `gitexclude` is not an analysis kind of `p`.
+
+- In a git repository, it also stops when git does not ignore
+  `results_gitexclude.qs2`.
+
+- [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+  checks `results.qs2` only. So `results.qs2` MUST hold an element other
+  than `manifest`: one kind, or `exclusions`.
+
+- The simulations of the two files are stacked apart, with the rules of
+  the section Stacking.
+
+- Without kinds in `gitexclude`, `save_results()` deletes an old
+  `results_gitexclude.qs2` of the scenario and of each of its
+  simulations. It prints one line for each deleted file.
 
 ## See also
 
@@ -221,7 +286,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpZkr0Gr/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpX0Ipyw/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

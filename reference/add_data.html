@@ -54,7 +54,7 @@ gives the data to each analysis of that scenario and simulation.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">add_data</span><span class="op">(</span><span class="va">p</span>, <span class="va">name</span>, <span class="va">fn</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">add_data</span><span class="op">(</span><span class="va">p</span>, <span class="va">name</span>, <span class="va">fn</span>, cache <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
@@ -72,7 +72,13 @@ gives the data to each analysis of that scenario and simulation.</p>
 
 <dt id="arg-fn">fn<a class="anchor" aria-label="anchor" href="#arg-fn"></a></dt>
 <dd><p>The data function, normally
-<code>function(scenario, sim) get_data(scenario, sim)</code>.</p></dd>
+<code>function(scenario, sim) data_raw(scenario, sim) |&gt; data_clean() |&gt; data_cohort()</code>.</p></dd>
+
+
+<dt id="arg-cache">cache<a class="anchor" aria-label="anchor" href="#arg-cache"></a></dt>
+<dd><p><code>TRUE</code> saves the value of <code>fn</code> on disk for each scenario and
+simulation. The next run reads it while the cache key is the same. See
+the section Cache.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -109,10 +115,107 @@ only.</p>
 the data. When you call <code>p$get_data()</code> by hand, the error stops the call.</p>
     </div>
     <div class="section level2">
+    <h2 id="a-cohort-as-the-data">A cohort as the data<a class="anchor" aria-label="anchor" href="#a-cohort-as-the-data"></a></h2>
+
+
+<p><code>fn</code> MAY return a <code><a href="https://www.rwhite.no/cohort/reference/CohortPipeline.html" class="external-link">cohort::CohortPipeline</a></code> after its exclusions. The
+analyses then get <code>data[[name]]</code> as the data.table of
+<code>$get_included(&lt;cohort&gt;)</code>. <code>&lt;cohort&gt;</code> is the one cohort of the pipeline
+that no other cohort branches from. A pipeline with more than one such
+cohort fails the data. Each other value goes to the analyses as it is.</p>
+<p>A step after the cohort, such as an imputation, reads the data of the
+cohort with <code><a href="cohort_data.html">cohort_data()</a></code>. It returns its value through
+<code><a href="cohort_data.html">keep_exclusions()</a></code>, which puts the exclusion table on it. The value MAY
+be any R object, for example a list of imputed data sets.</p>
+<p>pbn keeps the exclusion table of the cohort, and <code><a href="save_results.html">save_results()</a></code> stores
+it in the element <code>exclusions</code> of the results. The table has one row for
+each exclusion step of the cohort and of the cohorts above it, in the
+order of the steps. It is a data.frame with these columns:</p><ul><li><p><code>data</code>, the name of the data.</p></li>
+<li><p><code>step</code>, the reason of <code>$exclude_and_track()</code>.</p></li>
+<li><p><code>n_before</code>, <code>n_excluded</code> and <code>n_after</code>, the number of rows before the
+step, excluded by the step, and after the step. <code>n_excluded</code> and
+<code>n_after</code> are <code>n_excluded</code> and <code>n_remaining</code> of <code>$consort()</code>.</p></li>
+</ul><p>The value carries the table in its attribute <code>pbn_exclusions</code>, and the
+number of rows given to the pipeline in its attribute <code>pbn_n_before</code>.
+<code><a href="save_results.html">save_results()</a></code> writes that number to <code>manifest$n_rows_before_exclusions</code>.
+The attributes are how both come back from a worker: the R6 object stays
+on the worker.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="cache">Cache<a class="anchor" aria-label="anchor" href="#cache"></a></h2>
+
+
+<p>With <code>cache = TRUE</code>, <code>fn</code> MUST have the arguments <code>scenario</code> and <code>sim</code>
+without a default. Call <code><a href="initialize_project.html">initialize_project()</a></code> first. For
+each scenario and simulation, <code><a href="run_plan.html">run_plan()</a></code> writes the value to
+<code>&lt;home&gt;/&lt;version&gt;_cache_gitexclude/&lt;name&gt;/&lt;scenario&gt;/sim_&lt;kkkk&gt;.qs2</code>. The
+value is the data.table and its exclusion table for a cohort. The cache
+key goes to <code>sim_&lt;kkkk&gt;_key.qs2</code> in the same folder. The cache key is the
+md5 of these parts:</p><ul><li><p>the scenario, the simulation and the settings of the scenario.</p></li>
+<li><p>for <code>"real"</code> only, the md5 of each file directly in <code>data_raw</code> at the
+time of the use. pbn hashes a file again only when its size or its
+modification time differs from the last record.</p></li>
+<li><p>the md5 of each file of <code>&lt;version&gt;_functions/</code> whose name starts with
+<code>data_</code>, for example <code>data_raw.R</code>, <code>data_clean.R</code>, <code>data_cohort.R</code> and
+<code>data_impute.R</code>. <code><a href="initialize_project.html">initialize_project()</a></code> computes them before it sources
+the files.</p></li>
+<li><p>the code of <code>fn</code>, deparsed without its source references.</p></li>
+<li><p><code>CFG$data</code>, when <code>CFG</code> has the element <code>data</code>. Put the config that the
+data code reads there. A change in another element of <code>CFG</code> does not
+change the key.</p></li>
+<li><p>the versions of R and pbn. The version of R covers the base packages.</p></li>
+<li><p>the three parts of <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>.</p></li>
+</ul><p>The key file also records the version of each package that was loaded in
+the R session that computed the value, after <code>fn</code> returned. On a worker,
+that is the worker. The record leaves out the base packages. It also
+leaves out the packages that run the plan, tests and documents: pbn, plnr, foreach,
+doParallel, iterators, qs2, digest, uuid, progress, testthat, pkgload,
+devtools, callr, processx, ps, knitr, rmarkdown and evaluate. A later use
+compares each recorded version with <code><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">utils::packageVersion()</a></code> now. A
+package with another version, or one that is not installed now, computes
+the value again.</p>
+<p>Each use of the cache stops when a <code>data_*.R</code> file on disk differs from
+the file that <code><a href="initialize_project.html">initialize_project()</a></code> hashed and sourced: changed, added or
+removed. The error names the file. Run <code><a href="initialize_project.html">initialize_project()</a></code> again. A
+file with its recorded size and modification time is not hashed again,
+so a change that keeps both is not found.</p>
+<p>Keep the data code in the files <code>data_*.R</code>. The key holds no other file.
+A function of the data code can be in another file. A change in it then
+leaves the key the same, and the run reads the old data. This is the one
+change of the data code that the cache does not find.</p>
+<p>When the key is the same, <code><a href="run_plan.html">run_plan()</a></code> reads the value from the cache and
+does not call <code>fn</code>. Each analysis sets its own seed, so its results are
+the same as with a new value. Otherwise, or when a cache file cannot be
+read, it calls <code>fn</code> and writes the cache. To compute every value again,
+delete the folder <code>&lt;version&gt;_cache_gitexclude/</code>. No argument does that.</p>
+<p>For each scenario and simulation, <code><a href="run_plan.html">run_plan()</a></code> prints one line with
+<code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>. The line says that the data came from the cache, with the date
+and time of the cache file. Or it says that pbn computed it, and why.
+The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>, the raw data,
+the code of <code>fn</code> or the settings. It can also name the kind of random
+number generator, or each package with another version. With <code>workers = 1</code>, the line comes before the
+data function runs. With more workers, <code><a href="run_plan.html">run_plan()</a></code> prints the lines after
+the run, in the order of the plan.</p>
+<p><code><a href="run_plan.html">run_plan()</a></code> writes each file to a temporary file in the same folder, and
+renames it. plnr runs the data of one scenario and simulation in one task,
+so two workers of one run never write the same file. When two runs write
+one file at the same time, the last rename wins, and each file is whole.
+The cache file holds its key too, so a cache file and a key file from two
+runs give a new computation.</p>
+<p>The cache folder holds data for each person. When the project is a git
+repository, git MUST ignore it: <code><a href="run_plan.html">run_plan()</a></code> stops before it runs anything
+when git does not ignore the cache files. Add the line <code>*gitexclude*</code> to
+the <code>.gitignore</code> of the project.</p>
+<p><code>p$get_data()</code> and <code>p$run_one()</code> by hand use the cache too, and print the
+same line. pbn computes the key at the time of the call, with the same
+rules.</p>
+    </div>
+    <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, which builds and runs a small fake project.</p>
 <p>Other plan:
 <code><a href="add_analyses.html">add_analyses()</a></code>,
+<code><a href="cohort_data.html">cohort_data()</a></code>,
 <code><a href="run_plan.html">run_plan()</a></code></p></div>
     </div>
 

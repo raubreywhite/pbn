@@ -91,13 +91,15 @@
 <div class="section level2">
 <h2 id="quick-start">Quick start<a class="anchor" aria-label="anchor" href="#quick-start"></a>
 </h2>
-<p>A project version has a run script <code>v01_run.R</code> and a folder <code>v01_functions/</code>. <code>v01_functions/_cfg.R</code> names the scenarios in <code>CFG$scenarios</code>: the real data, and fake data that the project makes itself. The run script is one <code>plnr</code> plan over every scenario and simulation:</p>
+<p>A project version has a run script <code>v01_run.R</code> and a folder <code>v01_functions/</code>. <code>v01_functions/_cfg.R</code> names the scenarios in <code>CFG$scenarios</code>: the real data, and fake data that the project makes itself. The run script is one <code>plnr</code> plan over every scenario and simulation. Its data function reads the data, cleans it and builds a <code>cohort</code>:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"/data/raw"</span><span class="op">)</span></span>
 <span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">CFG</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/add_data.html">add_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"d"</span>, fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="fu">get_data</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/add_data.html">add_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"d"</span>, fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">data_raw</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">data_clean</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">data_cohort</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="op">}</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/add_analyses.html">add_analyses</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">scenarios</span>, name <span class="op">=</span> <span class="st">"models"</span>, fn <span class="op">=</span> <span class="va">fit_models</span>, outcome <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">outcomes</span><span class="op">)</span></span>
 <span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/run_plan.html">run_plan</a></span><span class="op">(</span><span class="va">p</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">p</span>, <span class="va">scenarios</span><span class="op">)</span></span>
@@ -129,7 +131,13 @@
 </tr>
 <tr>
 <td><code><a href="reference/add_data.html">add_data()</a></code></td>
-<td>Adds a data function to a plan. plnr calls it once for each scenario and simulation.</td>
+<td>Adds a data function to a plan. plnr calls it once for each scenario and simulation. A cohort gives its data and its exclusion table, and <code>cache = TRUE</code> keeps the data on disk.</td>
+</tr>
+<tr>
+<td>
+<code><a href="reference/cohort_data.html">cohort_data()</a></code>, <code><a href="reference/cohort_data.html">keep_exclusions()</a></code>
+</td>
+<td>Give the data of a cohort to a step after it, such as an imputation, and keep the exclusion table on the value of that step.</td>
 </tr>
 <tr>
 <td><code><a href="reference/add_analyses.html">add_analyses()</a></code></td>
@@ -141,7 +149,7 @@
 </tr>
 <tr>
 <td><code><a href="reference/save_results.html">save_results()</a></code></td>
-<td>Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios.</td>
+<td>Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. <code>gitexclude</code> puts the results with data for each person in a file that git ignores.</td>
 </tr>
 <tr>
 <td><code><a href="reference/end_unless_real.html">end_unless_real()</a></code></td>
@@ -149,7 +157,7 @@
 </tr>
 <tr>
 <td><code><a href="reference/read_results.html">read_results()</a></code></td>
-<td>Reads the <code>results.qs2</code> of one scenario. The default is <code>"real"</code>.</td>
+<td>Reads the results files of one scenario. The default is <code>"real"</code>.</td>
 </tr>
 <tr>
 <td><code><a href="reference/check_results.html">check_results()</a></code></td>

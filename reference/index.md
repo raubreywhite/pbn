@@ -13,6 +13,9 @@
 
 - [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) : Add
   a data function to a plan
+- [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
+  [`keep_exclusions()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
+  : Work on the data of a cohort and keep its exclusion table
 - [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
   : Add one analysis for each scenario and simulation to a plan
 - [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) : Run

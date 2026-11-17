@@ -1,6 +1,7 @@
 # Read the results object of a project version
 
-`read_results()` reads the `results.qs2` of one scenario, the file that
+`read_results()` reads the `results.qs2` of one scenario, and the
+`results_gitexclude.qs2` beside it, the files that
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 writes. The default reads the real results.
 
@@ -52,6 +53,19 @@ can read.
 still writes such results, so that you can find the fault. The error
 names the file and how to read it with
 [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html).
+
+`read_results()` returns one list with the elements of both files. The
+order is that of a results object: `manifest`, `exclusions`, and the
+analysis kinds in the order of `manifest$analyses`. These rules apply to
+`results_gitexclude.qs2`:
+
+- When the manifest names kinds in it and the file is missing, it
+  returns the elements of `results.qs2`. A clone of the repository has
+  no such file. It gives one warning that names the missing kinds and
+  the file.
+
+- It stops when the file holds other kinds than the manifest names, also
+  when the manifest names none.
 
 A manuscript MUST read the real results only.
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

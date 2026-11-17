@@ -110,6 +110,26 @@ stops on a value without the stamp of its plan.
 `run_plan()` sets `use_foreach` of the plan: `FALSE` for 1 worker and
 `TRUE` for more.
 
+After
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+`run_plan()` first computes the md5 of each raw data file again when its
+size or its modification time changed. The value carries the md5 in its
+stamp, and
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+writes it to `manifest$data_md5`.
+
+For a data function with `cache = TRUE`, `run_plan()` needs
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+first, and it prints one line for each scenario and simulation. The
+section Cache of
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) gives
+the rules. A data function that returns a
+[`cohort::CohortPipeline`](https://www.rwhite.no/cohort/reference/CohortPipeline.html)
+runs on the worker, and only its data.table and its exclusion table come
+back. The section A cohort as the data of
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) gives
+the rules.
+
 ## See also
 
 [`vignette("pbn")`](https://www.rwhite.no/pbn/articles/pbn.md), which
@@ -117,7 +137,8 @@ builds and runs a small fake project.
 
 Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
-[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md)
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
+[`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
 
 ## Examples
 

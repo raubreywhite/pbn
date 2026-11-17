@@ -75,13 +75,16 @@ and <code>detail</code>. <code>status</code> is <code>"PASS"</code> or <code>"FA
     <p>The rule <code>element_names</code> checks that the manifest is there. The rules
 <code>manifest_scenario</code>, <code>manifest_data</code> and <code>manifest_source</code> check that it
 is valid. The seven rules:</p><ul><li><p><code>element_names</code>: <code>x</code> is a list with the element <code>manifest</code> exactly once
-and at least one other element. Each element has a name. Each name is
-syntactic, so <code><a href="https://rdrr.io/r/base/make.names.html" class="external-link">make.names()</a></code> does not change it, and no name is there
-twice.</p></li>
+and at least one other element. The other element MAY be missing when
+<code>manifest$analyses</code> puts a kind in <code>results_gitexclude.qs2</code>. Each
+element has a name. Each name is syntactic, so <code><a href="https://rdrr.io/r/base/make.names.html" class="external-link">make.names()</a></code> does not
+change it, and no name is there twice.</p></li>
 <li><p><code>exclusions_table</code>: when <code>x</code> has an element <code>exclusions</code>, it is a
 data.frame with the columns <code>step</code>, <code>n_before</code>, <code>n_excluded</code> and
-<code>n_after</code>. When <code>manifest$stacked</code> is <code>TRUE</code>, it also has the column
-<code>sim</code> that <code><a href="save_results.html">save_results()</a></code> adds when it stacks. On every row,
+<code>n_after</code>, and MAY have the column <code>data</code>. <code><a href="save_results.html">save_results()</a></code> writes
+<code>data</code> for the exclusion table of a cohort. When <code>manifest$stacked</code> is
+<code>TRUE</code>, it also has the column <code>sim</code> that <code><a href="save_results.html">save_results()</a></code> adds when it
+stacks. On every row,
 <code>n_before - n_excluded == n_after</code>. Without an element <code>exclusions</code>, the
 rule passes and says so.</p></li>
 <li><p><code>allowed_objects</code>: each element at each depth is one of these:</p><ul><li><p>a data.frame, of any class that inherits from data.frame. This
@@ -108,13 +111,16 @@ that R and data.table set: <code>names</code>, <code>dim</code>, <code>dimnames<
 <code>.internal.selfref</code>.</p></li>
 <li><p><code>no_row_per_person</code>: no element at any depth of the results has one
 value for each row of the data. <code>manifest$n_rows_data</code> holds one row
-count, or one for each data element. For each count <code>n</code> of 2 or more,
-the rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
+count, or one for each data element. For a cohort,
+<code>manifest$n_rows_before_exclusions</code> and
+<code>manifest$n_rows_after_exclusions</code> hold the rows before and after the
+exclusions too. For each count <code>n</code> of 2 or more in any of the three, the
+rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
 <li><p>an atomic vector of length <code>n</code>, also a factor, a <code>Date</code> or a
 <code>POSIXct</code>.</p></li>
 <li><p>a matrix or an array with a dimension <code>n</code>.</p></li>
 </ul><p>The walk goes into lists, the columns and list columns of data.frames,
-and attributes. It does not go into <code>manifest</code>. A count that is <code>NA</code>, 0
+and attributes. It does not go into <code>manifest</code> or <code>exclusions</code>. A count that is <code>NA</code>, 0
 or 1 checks nothing, and a <code>manifest$n_rows_data</code> without another count
 checks nothing too. A table with fewer rows than the data passes, and
 so does a vector with one value for each group.</p></li>
@@ -132,7 +138,10 @@ md5 values, each a string of 32 lower-case hex digits. It names the run
 script <code>&lt;version&gt;_run.R</code> of <code>manifest$version</code>, or a <code>vNN_run.R</code> when
 the manifest has no valid version. A results file that pbn 2026.11.20
 or older wrote has no <code>source_md5</code>, so it fails this rule.</p></li>
-</ul></div>
+</ul><p><code>check_results()</code> checks the object of <code>results.qs2</code>. The object of
+<code>results_gitexclude.qs2</code> MAY hold data for each person, and these rules do
+not apply to it. See the section Two files of <code><a href="save_results.html">save_results()</a></code>.</p>
+    </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p>Other results:

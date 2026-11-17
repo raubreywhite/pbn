@@ -77,6 +77,63 @@ each scenario. To move a project, change these items:
   `use_scenario_lines`, and it no longer starts an R session.
   `unknown_path` no longer knows `run_scenarios.R`.
 - pbn imports `plnr` (\>= 2026.11.17) again. `callr` moves to Suggests.
+- A data function MAY return a
+  [`cohort::CohortPipeline`](https://www.rwhite.no/cohort/reference/CohortPipeline.html).
+  The analyses get its data.table after the exclusions, and
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes its exclusion table to the element `exclusions`, with a column
+  `data`. `cohort` is in Suggests.
+- New argument `cache` of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). With
+  `TRUE`,
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) keeps
+  the data of each scenario and simulation in `vNN_cache_gitexclude/`,
+  and reads it again while the cache key is the same. It prints one line
+  for each scenario and simulation, with the reason of each new
+  computation.
+- In a git repository,
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) with a
+  cache and
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  with `gitexclude` stop until git ignores the files they write.
+- `save_results(gitexclude = )` writes the kinds that it names to
+  `results_gitexclude.qs2`, and deletes an old one when it names none.
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  reads both files, and gives one warning when the second is missing.
+- The manifest gains `data_cache`, and `manifest$analyses` gains the
+  column `file`.
+- [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+  stops on the kind name `exclusions`. The rule `exclusions_table`
+  allows the column `data`.
+- New
+  [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
+  and
+  [`keep_exclusions()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
+  for a step after the cohort such as `data_cohort() |> data_impute()`.
+  Its value MAY be any R object. For a list of data.frames with one
+  number of rows, `n_rows_data` is the rows of one of them.
+- The manifest gains `n_rows_before_exclusions`, the rows given to the
+  cohort. `no_row_per_person` checks it too.
+- `p$get_data()` and `p$run_one()` by hand use the cache. The cache line
+  gives the date and the time.
+- The cache key holds the md5 of the raw data at the time of the use,
+  and [`RNGkind()`](https://rdrr.io/r/base/Random.html). A use stops
+  when a `data_*.R` file changed after
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  The key file records the versions of the loaded packages, and a new
+  version computes the data again.
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+  computes the md5 of a changed raw data file again, and
+  `manifest$data_md5` names the data that the run read.
+- The manifest gains `n_rows_after_exclusions`, which
+  `no_row_per_person` checks too.
+- `element_names` passes a `results.qs2` with `manifest` only when the
+  manifest puts kinds in `results_gitexclude.qs2`.
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `gitexclude_not_tracked`. `results_contract` also checks each
+  `results_gitexclude.qs2`, and `unknown_path` knows
+  `vNN_cache_gitexclude/`.
 
 ## pbn 2026.11.22
 

@@ -104,6 +104,25 @@
 <li>
 <code><a href="../reference/check_project.html">check_project()</a></code> no longer has the rules <code>no_active_use_scenario</code> and <code>use_scenario_lines</code>, and it no longer starts an R session. <code>unknown_path</code> no longer knows <code>run_scenarios.R</code>.</li>
 <li>pbn imports <code>plnr</code> (&gt;= 2026.11.17) again. <code>callr</code> moves to Suggests.</li>
+<li>A data function MAY return a <code><a href="https://www.rwhite.no/cohort/reference/CohortPipeline.html" class="external-link">cohort::CohortPipeline</a></code>. The analyses get its data.table after the exclusions, and <code><a href="../reference/save_results.html">save_results()</a></code> writes its exclusion table to the element <code>exclusions</code>, with a column <code>data</code>. <code>cohort</code> is in Suggests.</li>
+<li>New argument <code>cache</code> of <code><a href="../reference/add_data.html">add_data()</a></code>. With <code>TRUE</code>, <code><a href="../reference/run_plan.html">run_plan()</a></code> keeps the data of each scenario and simulation in <code>vNN_cache_gitexclude/</code>, and reads it again while the cache key is the same. It prints one line for each scenario and simulation, with the reason of each new computation.</li>
+<li>In a git repository, <code><a href="../reference/run_plan.html">run_plan()</a></code> with a cache and <code><a href="../reference/save_results.html">save_results()</a></code> with <code>gitexclude</code> stop until git ignores the files they write.</li>
+<li>
+<code>save_results(gitexclude = )</code> writes the kinds that it names to <code>results_gitexclude.qs2</code>, and deletes an old one when it names none. <code><a href="../reference/read_results.html">read_results()</a></code> reads both files, and gives one warning when the second is missing.</li>
+<li>The manifest gains <code>data_cache</code>, and <code>manifest$analyses</code> gains the column <code>file</code>.</li>
+<li>
+<code><a href="../reference/add_analyses.html">add_analyses()</a></code> stops on the kind name <code>exclusions</code>. The rule <code>exclusions_table</code> allows the column <code>data</code>.</li>
+<li>New <code><a href="../reference/cohort_data.html">cohort_data()</a></code> and <code><a href="../reference/cohort_data.html">keep_exclusions()</a></code>, for a step after the cohort such as <code>data_cohort() |&gt; data_impute()</code>. Its value MAY be any R object. For a list of data.frames with one number of rows, <code>n_rows_data</code> is the rows of one of them.</li>
+<li>The manifest gains <code>n_rows_before_exclusions</code>, the rows given to the cohort. <code>no_row_per_person</code> checks it too.</li>
+<li>
+<code>p$get_data()</code> and <code>p$run_one()</code> by hand use the cache. The cache line gives the date and the time.</li>
+<li>The cache key holds the md5 of the raw data at the time of the use, and <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>. A use stops when a <code>data_*.R</code> file changed after <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. The key file records the versions of the loaded packages, and a new version computes the data again.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> computes the md5 of a changed raw data file again, and <code>manifest$data_md5</code> names the data that the run read.</li>
+<li>The manifest gains <code>n_rows_after_exclusions</code>, which <code>no_row_per_person</code> checks too.</li>
+<li>
+<code>element_names</code> passes a <code>results.qs2</code> with <code>manifest</code> only when the manifest puts kinds in <code>results_gitexclude.qs2</code>.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>gitexclude_not_tracked</code>. <code>results_contract</code> also checks each <code>results_gitexclude.qs2</code>, and <code>unknown_path</code> knows <code>vNN_cache_gitexclude/</code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

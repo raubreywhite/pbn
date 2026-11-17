@@ -29,15 +29,18 @@ The rule `element_names` checks that the manifest is there. The rules
 is valid. The seven rules:
 
 - `element_names`: `x` is a list with the element `manifest` exactly
-  once and at least one other element. Each element has a name. Each
-  name is syntactic, so
+  once and at least one other element. The other element MAY be missing
+  when `manifest$analyses` puts a kind in `results_gitexclude.qs2`. Each
+  element has a name. Each name is syntactic, so
   [`make.names()`](https://rdrr.io/r/base/make.names.html) does not
   change it, and no name is there twice.
 
 - `exclusions_table`: when `x` has an element `exclusions`, it is a
   data.frame with the columns `step`, `n_before`, `n_excluded` and
-  `n_after`. When `manifest$stacked` is `TRUE`, it also has the column
-  `sim` that
+  `n_after`, and MAY have the column `data`.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes `data` for the exclusion table of a cohort. When
+  `manifest$stacked` is `TRUE`, it also has the column `sim` that
   [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
   adds when it stacks. On every row, `n_before - n_excluded == n_after`.
   Without an element `exclusions`, the rule passes and says so.
@@ -74,7 +77,10 @@ is valid. The seven rules:
 
 - `no_row_per_person`: no element at any depth of the results has one
   value for each row of the data. `manifest$n_rows_data` holds one row
-  count, or one for each data element. For each count `n` of 2 or more,
+  count, or one for each data element. For a cohort,
+  `manifest$n_rows_before_exclusions` and
+  `manifest$n_rows_after_exclusions` hold the rows before and after the
+  exclusions too. For each count `n` of 2 or more in any of the three,
   the rule fails each of these:
 
   - a data.frame with `n` rows.
@@ -85,10 +91,11 @@ is valid. The seven rules:
   - a matrix or an array with a dimension `n`.
 
   The walk goes into lists, the columns and list columns of data.frames,
-  and attributes. It does not go into `manifest`. A count that is `NA`,
-  0 or 1 checks nothing, and a `manifest$n_rows_data` without another
-  count checks nothing too. A table with fewer rows than the data
-  passes, and so does a vector with one value for each group.
+  and attributes. It does not go into `manifest` or `exclusions`. A
+  count that is `NA`, 0 or 1 checks nothing, and a
+  `manifest$n_rows_data` without another count checks nothing too. A
+  table with fewer rows than the data passes, and so does a vector with
+  one value for each group.
 
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.
@@ -106,6 +113,11 @@ is valid. The seven rules:
   run script `<version>_run.R` of `manifest$version`, or a `vNN_run.R`
   when the manifest has no valid version. A results file that pbn
   2026.11.20 or older wrote has no `source_md5`, so it fails this rule.
+
+`check_results()` checks the object of `results.qs2`. The object of
+`results_gitexclude.qs2` MAY hold data for each person, and these rules
+do not apply to it. See the section Two files of
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
 
 ## See also
 

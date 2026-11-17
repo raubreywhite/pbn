@@ -25,8 +25,11 @@ add_analyses(p, scenarios, name, fn, ..., control = FALSE)
 
   The name of the analysis kind, for example `"models"`. It is the name
   of the element of the results object. It MUST be a syntactic name that
-  starts with a letter. It MUST NOT be `"manifest"` or start with
-  `"pbn_"`. Each kind of one plan MUST have its own name.
+  starts with a letter. It MUST NOT be `"manifest"` or `"exclusions"`,
+  and it MUST NOT start with `"pbn_"`. Each kind of one plan MUST have
+  its own name.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  names the exclusion table of a cohort `exclusions`.
 
 - fn:
 
@@ -139,6 +142,7 @@ builds and runs a small fake project.
 
 Other plan:
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
+[`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

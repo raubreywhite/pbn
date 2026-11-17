@@ -115,7 +115,8 @@ between two groups, <code>a</code> and <code>b</code>.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>The real data of this fake project is a small csv file in the folder
 <code>data_raw</code>, next to the project folder. In a real project,
-this folder holds the real data, and it is outside the repository.</p>
+this folder holds the real data, and it is outside the repository. The
+file has 400 rows, and the column names of a typical export.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">data_raw</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"data_raw"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">data_raw</span><span class="op">)</span></span>
@@ -123,6 +124,8 @@ this folder holds the real data, and it is outside the repository.</p>
 <span><span class="va">d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">400</span>, group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, <span class="fl">200</span><span class="op">)</span>, x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">50</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">d</span><span class="op">$</span><span class="va">outcome</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">1</span>, <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"b"</span>, <span class="fl">0.4</span>, <span class="fl">0.25</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">d</span><span class="op">$</span><span class="va">outcome</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">12</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="va">d</span><span class="op">$</span><span class="va">x</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">20</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="cn">NA</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Person ID"</span>, <span class="st">"Group"</span>, <span class="st">"X"</span>, <span class="st">"Outcome"</span><span class="op">)</span></span>
 <span><span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fwrite.html" class="external-link">fwrite</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">data_raw</span>, <span class="st">"d.csv"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -135,12 +138,15 @@ the real data. Here the fake scenario <code>known</code> has 1
 simulation and the fake scenario <code>null</code> has 3. Each other
 column of <code>CFG$scenarios</code> is a setting of the scenario, and
 <code><a href="../reference/scenarios.html">?scenarios</a></code> gives the rules.</p>
+<p><code>CFG$data</code> holds the config that the data code reads. The
+section Imputation is data uses it.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">CFG</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  scenarios <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
 <span>    scenario <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"real"</span>, <span class="st">"known"</span>, <span class="st">"null"</span><span class="op">)</span>,</span>
 <span>    sims <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">1</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span>  <span class="op">)</span>,</span>
+<span>  data <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>n_imp <span class="op">=</span> <span class="fl">3</span><span class="op">)</span>,</span>
 <span>  adjust <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"none"</span>, <span class="st">"x"</span><span class="op">)</span>,</span>
 <span>  vars <span class="op">=</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
 <span>    var <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"outcome"</span>, <span class="st">"x"</span><span class="op">)</span>,</span>
@@ -151,36 +157,64 @@ column of <code>CFG$scenarios</code> is a setting of the scenario, and
 <div class="section level2">
 <h2 id="the-data-function">The data function<a class="anchor" aria-label="anchor" href="#the-data-function"></a>
 </h2>
-<p><code>get_data(scenario, sim)</code> gives the data of one scenario
-and simulation. For <code>real</code>, it reads the csv file in the
-folder that <code><a href="../reference/initialize_project.html">initialize_project()</a></code> gives as
-<code>org::project$data_raw</code>. For a fake scenario, it makes the
-data. pbn sets the seed to <code>sim</code> before each call, so each
-simulation has its own data, and a second run gives the same data.</p>
+<p>The data function of the run script has three steps, and each step
+has its own file in <code>v01_functions/</code>:</p>
+<ol style="list-style-type: decimal">
+<li>
+<code>data_raw(scenario, sim)</code> reads the real file, or makes
+fake data with the same columns.</li>
+<li>
+<code>data_clean(d)</code> gives the columns clean names. It drops
+no row.</li>
+<li>
+<code>data_cohort(d)</code> applies the exclusions with
+<code>cohort</code>, and returns the cohort.</li>
+</ol>
+<p><code>data_raw()</code> reads the real file from the folder that
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> gives as
+<code>org::project$data_raw</code>. pbn sets the seed to
+<code>sim</code> before each call, so each simulation has its own data,
+and a second run gives the same data.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># known: group a has 11 rows, 2 with the outcome, 8 without, 1 missing.</span></span>
 <span><span class="co"># Group b has 11 rows, 6 with the outcome, 4 without, 1 missing.</span></span>
 <span><span class="co"># Odds ratio of b against a: (6 / 4) / (2 / 8) = 6.</span></span>
 <span><span class="co"># null: the outcome does not depend on the group.</span></span>
-<span><span class="va">get_data</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="op">{</span></span>
+<span><span class="va">data_raw</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="kw"><a href="https://rdrr.io/r/base/switch.html" class="external-link">switch</a></span><span class="op">(</span><span class="va">scenario</span>,</span>
 <span>    real <span class="op">=</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fread.html" class="external-link">fread</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu">org</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/org/reference/project.html" class="external-link">project</a></span><span class="op">$</span><span class="va">data_raw</span>, <span class="st">"d.csv"</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>    known <span class="op">=</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
-<span>      id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">22</span>,</span>
-<span>      group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>,</span>
-<span>      x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">31</span>, <span class="fl">45</span>, <span class="fl">38</span>, <span class="fl">52</span>, <span class="fl">40</span>, <span class="fl">33</span>, <span class="fl">47</span>, <span class="fl">36</span>, <span class="fl">50</span>, <span class="fl">42</span>, <span class="fl">44</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,</span>
-<span>      outcome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="cn">NA</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">8</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="cn">NA</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>      `Person ID` <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">22</span>,</span>
+<span>      Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, each <span class="op">=</span> <span class="fl">11</span><span class="op">)</span>,</span>
+<span>      X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">31</span>, <span class="fl">45</span>, <span class="fl">38</span>, <span class="fl">52</span>, <span class="fl">40</span>, <span class="fl">33</span>, <span class="fl">47</span>, <span class="fl">36</span>, <span class="fl">50</span>, <span class="fl">42</span>, <span class="fl">44</span><span class="op">)</span>, <span class="fl">2</span><span class="op">)</span>,</span>
+<span>      Outcome <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="cn">NA</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">2</span>, <span class="fl">8</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">1</span>, <span class="fl">0</span>, <span class="cn">NA</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">6</span>, <span class="fl">4</span>, <span class="fl">1</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
 <span>    <span class="op">)</span>,</span>
 <span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table</a></span><span class="op">(</span></span>
-<span>      id <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">400</span>,</span>
-<span>      group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, <span class="fl">400</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
-<span>      x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">50</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>      outcome <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">1</span>, <span class="fl">0.3</span><span class="op">)</span></span>
+<span>      `Person ID` <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">400</span>,</span>
+<span>      Group <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"a"</span>, <span class="st">"b"</span><span class="op">)</span>, <span class="fl">400</span>, replace <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>      X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/replace.html" class="external-link">replace</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">50</span>, <span class="fl">10</span><span class="op">)</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">20</span><span class="op">)</span>, <span class="cn">NA</span><span class="op">)</span>,</span>
+<span>      Outcome <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="fl">400</span>, <span class="fl">1</span>, <span class="fl">0.3</span><span class="op">)</span></span>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>The comment holds the arithmetic of <code>known</code>, so a reader
 can check each expected value without R.</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_clean</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/setattr.html" class="external-link">setnames</a></span><span class="op">(</span><span class="va">d</span>, <span class="fu">janitor</span><span class="fu">::</span><span class="fu"><a href="https://sfirke.github.io/janitor/reference/make_clean_names.html" class="external-link">make_clean_names</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">d</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">d</span><span class="op">[</span>, <span class="va">outcome</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/integer.html" class="external-link">as.integer</a></span><span class="op">(</span><span class="va">outcome</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="va">d</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_cohort</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">d</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">cp</span> <span class="op">&lt;-</span> <span class="fu">cohort</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/cohort/reference/CohortPipeline.html" class="external-link">CohortPipeline</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="va">d</span><span class="op">)</span></span>
+<span>  <span class="va">cp</span><span class="op">$</span><span class="fu">exclude_and_track</span><span class="op">(</span><span class="st">"root"</span>, <span class="st">"missing outcome"</span>, <span class="st">"is.na(outcome)"</span><span class="op">)</span></span>
+<span>  <span class="va">cp</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>The value of <code>data_cohort()</code> is a
+<code><a href="https://www.rwhite.no/cohort/reference/CohortPipeline.html" class="external-link">cohort::CohortPipeline</a></code>. The analyses get its data.table
+after the exclusions, and <code><a href="../reference/save_results.html">save_results()</a></code> stores its
+exclusion table. <code><a href="../reference/add_data.html">?add_data</a></code> gives the rules.</p>
 </div>
 <div class="section level2">
 <h2 id="the-analyses">The analyses<a class="anchor" aria-label="anchor" href="#the-analyses"></a>
@@ -190,29 +224,31 @@ as in any <code>plnr</code> plan. <code>data$d</code> is the data of the
 scenario and simulation. <code>argset</code> holds
 <code>scenario</code>, <code>sim</code>, the extra dimensions and the
 settings.</p>
-<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">make_table1</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/table1.html">table1</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">outcome</span><span class="op">)</span><span class="op">]</span>, by <span class="op">=</span> <span class="st">"group"</span>, vars <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">vars</span><span class="op">)</span></span>
-<span><span class="op">}</span></span>
-<span></span>
-<span><span class="va">fit_models</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/is_run_directly.html" class="external-link">is_run_directly</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
-<span>    <span class="va">argset</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_argset</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
-<span>    <span class="va">data</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_data</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
-<span>  <span class="op">}</span></span>
-<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">outcome</span><span class="op">)</span><span class="op">]</span></span>
-<span>  <span class="va">rhs</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">adjust</span> <span class="op">==</span> <span class="st">"none"</span><span class="op">)</span> <span class="st">"group"</span> <span class="kw">else</span> <span class="st">"group + x"</span></span>
-<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/formula.html" class="external-link">as.formula</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"outcome ~"</span>, <span class="va">rhs</span><span class="op">)</span><span class="op">)</span>, family <span class="op">=</span> <span class="st">"binomial"</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"or_group_b"</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"groupb"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/table1.html">table1</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">d</span>, by <span class="op">=</span> <span class="st">"group"</span>, vars <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">vars</span><span class="op">)</span></span>
 <span><span class="op">}</span></span>
 <span></span>
 <span><span class="co"># A negative control: with a permuted group, the true odds ratio is 1.</span></span>
 <span><span class="va">fit_permuted</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">outcome</span><span class="op">)</span><span class="op">]</span></span>
+<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">copy</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">)</span></span>
 <span>  <span class="va">d</span><span class="op">[</span>, <span class="va">group</span> <span class="op">:=</span> <span class="fu"><a href="https://rdrr.io/r/base/sample.html" class="external-link">sample</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span><span class="op">]</span></span>
 <span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">outcome</span> <span class="op">~</span> <span class="va">group</span>, family <span class="op">=</span> <span class="st">"binomial"</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"or_group_b"</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"groupb"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="op">}</span></span></code></pre></div>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_models</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="kw">if</span> <span class="op">(</span><span class="fu">plnr</span><span class="fu">::</span><span class="fu"><a href="https://www.rwhite.no/plnr/reference/is_run_directly.html" class="external-link">is_run_directly</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">argset</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_argset</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
+<span>    <span class="va">data</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_data</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="va">rhs</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">adjust</span> <span class="op">==</span> <span class="st">"none"</span><span class="op">)</span> <span class="st">"group"</span> <span class="kw">else</span> <span class="st">"group + x"</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/formula.html" class="external-link">as.formula</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"outcome ~"</span>, <span class="va">rhs</span><span class="op">)</span><span class="op">)</span>, family <span class="op">=</span> <span class="st">"binomial"</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"or_group_b"</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"groupb"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p><code>fit_permuted()</code> changes the group, so it copies the data
+first. plnr gives every analysis of one simulation the same data
+object.</p>
 </div>
 <div class="section level2">
 <h2 id="the-assertions">The assertions<a class="anchor" aria-label="anchor" href="#the-assertions"></a>
@@ -224,7 +260,7 @@ assertions on them. It MUST return a data.frame with at least one row
 and the columns <code>assertion</code>, <code>expected</code>,
 <code>observed</code> and <code>pass</code>. <code>expect_real()</code>
 is optional.</p>
-<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">expect_known</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">t1</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">$</span><span class="va">table1</span></span>
 <span>  <span class="va">m</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">$</span><span class="va">models</span></span>
@@ -287,12 +323,12 @@ chooses the scenarios of the run.</li>
 no real data.</li>
 <li>PART 3 writes the output of the real results.</li>
 </ol>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, data_raw <span class="op">=</span> <span class="st">"../data_raw"</span><span class="op">)</span></span>
 <span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">CFG</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/add_data.html">add_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"d"</span>, fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="fu">get_data</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/add_data.html">add_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"d"</span>, fn <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="fu">data_raw</span><span class="op">(</span><span class="va">scenario</span>, <span class="va">sim</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">data_clean</span><span class="op">(</span><span class="op">)</span> <span class="op">|&gt;</span> <span class="fu">data_cohort</span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/add_analyses.html">add_analyses</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">scenarios</span>, name <span class="op">=</span> <span class="st">"table1"</span>, fn <span class="op">=</span> <span class="va">make_table1</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/add_analyses.html">add_analyses</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">scenarios</span>, name <span class="op">=</span> <span class="st">"models"</span>, fn <span class="op">=</span> <span class="va">fit_models</span>, adjust <span class="op">=</span> <span class="va">CFG</span><span class="op">$</span><span class="va">adjust</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/add_analyses.html">add_analyses</a></span><span class="op">(</span><span class="va">p</span>, <span class="va">scenarios</span>, name <span class="op">=</span> <span class="st">"permuted"</span>, fn <span class="op">=</span> <span class="va">fit_permuted</span>, control <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -315,9 +351,9 @@ script runs there. In a real project, run it with
 <code>Rscript v01_run.R</code> from the project folder. Here
 <code><a href="https://rdrr.io/r/base/source.html" class="external-link">source()</a></code> with <code>chdir = TRUE</code> runs it, so the
 plan stays in this R session:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span>, chdir <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpnSszvI/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpFNSQ1w/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
 <span><span class="co">#&gt; Assertions of the scenario "known":</span></span>
 <span><span class="co">#&gt;                        assertion expected observed pass</span></span>
 <span><span class="co">#&gt;        outcome events in group b        6        6 TRUE</span></span>
@@ -325,14 +361,14 @@ plan stays in this R session:</p>
 <span><span class="co">#&gt; Assertions of the scenario "null":</span></span>
 <span><span class="co">#&gt;                     assertion    expected observed pass</span></span>
 <span><span class="co">#&gt;                   simulations           3    3.000 TRUE</span></span>
-<span><span class="co">#&gt;     mean crude log odds ratio -0.5 to 0.5    0.133 TRUE</span></span>
-<span><span class="co">#&gt;  mean permuted log odds ratio -0.5 to 0.5   -0.186 TRUE</span></span></code></pre></div>
-<p>plnr called <code>get_data()</code> once for each of the 5 scenarios
-and simulations, and gave the data to every analysis of that simulation.
-The plan has 24 analyses. pbn added the 5 analyses
+<span><span class="co">#&gt;     mean crude log odds ratio -0.5 to 0.5   -0.032 TRUE</span></span>
+<span><span class="co">#&gt;  mean permuted log odds ratio -0.5 to 0.5   -0.024 TRUE</span></span></code></pre></div>
+<p>plnr called the data function once for each of the 5 scenarios and
+simulations, and gave the data to every analysis of that simulation. The
+plan has 24 analyses. pbn added the 5 analyses
 <code>&lt;scenario&gt;__sim_&lt;kkkk&gt;__pbn_n_rows</code>, which count
 the rows of the data for the manifest.</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">analyses</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 24</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">p</span><span class="op">$</span><span class="va">analyses</span><span class="op">)</span>, <span class="fl">8</span><span class="op">)</span></span>
@@ -349,7 +385,7 @@ PSOCK cluster. pbn gives each worker the objects that
 <code>v01_functions/</code> defines and the attached packages, so the
 functions find <code>CFG</code> and each other. Each data function and
 each analysis sets its own seed, so the results are the same:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r2</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/run_plan.html">run_plan</a></span><span class="op">(</span><span class="va">p</span>, workers <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">r2</span>, <span class="va">r</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
@@ -365,7 +401,7 @@ workers.</p>
 scenario and simulation. The scenario <code>null</code> has one folder
 for each simulation, and its stacked <code>results.qs2</code>. Each fake
 scenario has <code>check.csv</code>, the table of its assertions.</p>
-<div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "known/check.csv"           "known/results.qs2"        </span></span>
 <span><span class="co">#&gt; [3] "null/check.csv"            "null/results.qs2"         </span></span>
@@ -373,38 +409,42 @@ scenario has <code>check.csv</code>, the table of its assertions.</p>
 <span><span class="co">#&gt; [7] "null/sim_0003/results.qs2" "real/results.qs2"         </span></span>
 <span><span class="co">#&gt; [9] "real/table1.csv"</span></span></code></pre></div>
 <p>A results object is a named list. The first element is
-<code>manifest</code>, and then comes one element for each analysis
+<code>manifest</code>, and the second is <code>exclusions</code>, the
+exclusion table of the cohort. Then comes one element for each analysis
 kind. The data.frames of one kind are row-bound, with the extra
 dimension <code>adjust</code> as the first column. A value that is not a
 data.frame stays as it is. <code><a href="../reference/save_results.html">?save_results</a></code> gives the
 rules.</p>
-<div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
-<span><span class="co">#&gt; [1] "manifest" "table1"   "models"</span></span>
+<span><span class="co">#&gt; [1] "manifest"   "exclusions" "table1"     "models"</span></span>
+<span><span class="va">res</span><span class="op">$</span><span class="va">exclusions</span></span>
+<span><span class="co">#&gt;   data            step n_before n_excluded n_after</span></span>
+<span><span class="co">#&gt; 1    d missing outcome      400         12     388</span></span>
 <span><span class="va">res</span><span class="op">$</span><span class="va">models</span></span>
 <span><span class="co">#&gt;   adjust       term estimate</span></span>
 <span><span class="co">#&gt; 1   none or_group_b 1.747826</span></span>
-<span><span class="co">#&gt; 2      x or_group_b 1.745184</span></span></code></pre></div>
+<span><span class="co">#&gt; 2      x or_group_b 1.965332</span></span></code></pre></div>
 <p><code><a href="../reference/read_results.html">read_results()</a></code> reads the real results by default. With
 <code>scenario</code>, it reads the results of a fake scenario, and with
 <code>sim</code> one simulation. The stacked results of
 <code>null</code> have a first column <code>sim</code>:</p>
-<div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">null</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"null"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="va">null</span><span class="op">$</span><span class="va">models</span></span>
-<span><span class="co">#&gt;   sim adjust       term estimate</span></span>
-<span><span class="co">#&gt; 1   1   none or_group_b 1.087506</span></span>
-<span><span class="co">#&gt; 2   1      x or_group_b 1.096456</span></span>
-<span><span class="co">#&gt; 3   2   none or_group_b 1.323457</span></span>
-<span><span class="co">#&gt; 4   2      x or_group_b 1.324507</span></span>
-<span><span class="co">#&gt; 5   3   none or_group_b 1.035040</span></span>
-<span><span class="co">#&gt; 6   3      x or_group_b 1.036015</span></span>
+<span><span class="co">#&gt;   sim adjust       term  estimate</span></span>
+<span><span class="co">#&gt; 1   1   none or_group_b 0.8633094</span></span>
+<span><span class="co">#&gt; 2   1      x or_group_b 0.8466263</span></span>
+<span><span class="co">#&gt; 3   2   none or_group_b 1.0701754</span></span>
+<span><span class="co">#&gt; 4   2      x or_group_b 1.0954111</span></span>
+<span><span class="co">#&gt; 5   3   none or_group_b 0.9846777</span></span>
+<span><span class="co">#&gt; 6   3      x or_group_b 0.9995009</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"null"</span>, <span class="st">"check.csv"</span><span class="op">)</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; "assertion","expected","observed","pass"</span></span>
 <span><span class="co">#&gt; "simulations","3",3,TRUE</span></span>
-<span><span class="co">#&gt; "mean crude log odds ratio","-0.5 to 0.5",0.133,TRUE</span></span>
-<span><span class="co">#&gt; "mean permuted log odds ratio","-0.5 to 0.5",-0.186,TRUE</span></span></code></pre></div>
+<span><span class="co">#&gt; "mean crude log odds ratio","-0.5 to 0.5",-0.032,TRUE</span></span>
+<span><span class="co">#&gt; "mean permuted log odds ratio","-0.5 to 0.5",-0.024,TRUE</span></span></code></pre></div>
 <p>The manifest records where the results come from. It holds the
 versions of R, pbn and the loaded packages, the date, the scenario and
 the simulation. <code>source_md5</code> holds the md5 of
@@ -412,25 +452,30 @@ the simulation. <code>source_md5</code> holds the md5 of
 For the real data, <code>data_md5</code> holds the md5 of each data
 file. For a fake scenario, <code>fake_md5</code> holds the md5 of the
 code of the data function. <code>n_rows_data</code> holds the number of
-rows of the data.</p>
-<div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">manifest</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scenario"</span>, <span class="st">"sim"</span>, <span class="st">"sims"</span>, <span class="st">"data_md5"</span>, <span class="st">"n_rows_data"</span>, <span class="st">"analyses"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span><span class="co">#&gt; List of 6</span></span>
-<span><span class="co">#&gt;  $ scenario   : chr "real"</span></span>
-<span><span class="co">#&gt;  $ sim        : int 1</span></span>
-<span><span class="co">#&gt;  $ sims       : int 1</span></span>
-<span><span class="co">#&gt;  $ data_md5   : Named chr "396527785293e765115178711b7aab75"</span></span>
+rows of the data after the exclusions, and
+<code>n_rows_before_exclusions</code> the number of rows given to the
+cohort.</p>
+<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/str.html" class="external-link">str</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">manifest</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"scenario"</span>, <span class="st">"sim"</span>, <span class="st">"sims"</span>, <span class="st">"data_md5"</span>, <span class="st">"n_rows_data"</span>, <span class="st">"n_rows_before_exclusions"</span>, <span class="st">"analyses"</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="co">#&gt; List of 7</span></span>
+<span><span class="co">#&gt;  $ scenario                : chr "real"</span></span>
+<span><span class="co">#&gt;  $ sim                     : int 1</span></span>
+<span><span class="co">#&gt;  $ sims                    : int 1</span></span>
+<span><span class="co">#&gt;  $ data_md5                : Named chr "179004ea822c9ea08e7772775a477930"</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr "d.csv"</span></span>
-<span><span class="co">#&gt;  $ n_rows_data: Named int 400</span></span>
+<span><span class="co">#&gt;  $ n_rows_data             : Named int 388</span></span>
 <span><span class="co">#&gt;   ..- attr(*, "names")= chr "d"</span></span>
-<span><span class="co">#&gt;  $ analyses   :'data.frame': 2 obs. of  2 variables:</span></span>
+<span><span class="co">#&gt;  $ n_rows_before_exclusions: Named int 400</span></span>
+<span><span class="co">#&gt;   ..- attr(*, "names")= chr "d"</span></span>
+<span><span class="co">#&gt;  $ analyses                :'data.frame':    2 obs. of  3 variables:</span></span>
 <span><span class="co">#&gt;   ..$ analysis: chr [1:2] "table1" "models"</span></span>
-<span><span class="co">#&gt;   ..$ control : logi [1:2] FALSE FALSE</span></span></code></pre></div>
+<span><span class="co">#&gt;   ..$ control : logi [1:2] FALSE FALSE</span></span>
+<span><span class="co">#&gt;   ..$ file    : chr [1:2] "results.qs2" "results.qs2"</span></span></code></pre></div>
 <p><code><a href="../reference/save_results.html">save_results()</a></code> checks each results object with
 <code><a href="../reference/check_results.html">check_results()</a></code> before it writes anything. It stops on a
-fitted model or a function in the results, and on a table with one row
-for each row of the data. That check compares sizes only, so check the
-small groups by hand.</p>
+fitted model or a function in the results. It also stops on a table with
+one row for each row of the data, before or after the exclusions. That
+check compares sizes only, so check the small groups by hand.</p>
 </div>
 <div class="section level2">
 <h2 id="stepping-through-one-analysis-by-hand">Stepping through one analysis by hand<a class="anchor" aria-label="anchor" href="#stepping-through-one-analysis-by-hand"></a>
@@ -443,7 +488,7 @@ script up to <code><a href="../reference/run_plan.html">pbn::run_plan()</a></cod
 function line by line. At the top level of the console,
 <code><a href="https://www.rwhite.no/plnr/reference/is_run_directly.html" class="external-link">plnr::is_run_directly()</a></code> is <code>TRUE</code>, so the first
 lines load that analysis:</p>
-<div class="sourceCode" id="cb16"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">argset</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_argset</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_data</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
 <span><span class="va">argset</span></span>
@@ -482,7 +527,7 @@ real data only. In an interactive R session, it stops with an error, and
 the R session stays open.</p>
 <p>Run the script for the scenario <code>null</code> only, in a new R
 session:</p>
-<div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"pbn::scenarios(CFG)"</span>, <span class="st">'pbn::scenarios(CFG, only = "null")'</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">script</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"v01_run_null.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"real"</span>, <span class="st">"table1.csv"</span><span class="op">)</span><span class="op">)</span></span>
@@ -501,17 +546,18 @@ date.</p>
 <h2 id="checking-the-project">Checking the project<a class="anchor" aria-label="anchor" href="#checking-the-project"></a>
 </h2>
 <p><code>check_project.R</code> holds one line.</p>
-<div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_project.html">check_project</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/check_project.html">check_project()</a></code> checks a project folder against the
 layout. It prints one line for each rule that passes, one line for each
 finding, and a count.</p>
-<div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; PASS  lower_case_names  no capital letter in a name</span></span>
 <span><span class="co">#&gt; PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span></span>
 <span><span class="co">#&gt; PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span></span>
 <span><span class="co">#&gt; PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2 passes check_results()</span></span>
+<span><span class="co">#&gt; PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span></span>
 <span><span class="co">#&gt; PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span></span>
 <span><span class="co">#&gt; PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_&lt;INITIALS&gt;.docx</span></span>
 <span><span class="co">#&gt; PASS  manuscript_reads_real  manuscript/built/ reads only the real results</span></span>
@@ -519,11 +565,11 @@ finding, and a count.</p>
 <span><span class="co">#&gt; PASS  loc_per_file  no .R file has more than 1000 code lines</span></span>
 <span><span class="co">#&gt; PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span></span>
 <span><span class="co">#&gt; PASS  unknown_path  the house layout names every top-level path</span></span>
-<span><span class="co">#&gt; 11 PASS, 0 WARN, 0 FAIL</span></span></code></pre></div>
+<span><span class="co">#&gt; 12 PASS, 0 WARN, 0 FAIL</span></span></code></pre></div>
 <p>In a non-interactive R session, <code><a href="../reference/check_project.html">check_project()</a></code> quits R
 with status 1 when a rule fails. Add a file with a capital letter in its
 name, and run <code>check_project.R</code> in a new R session:</p>
-<div class="sourceCode" id="cb20"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"notes"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span>, <span class="st">"Notes.txt"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"check_project.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -531,7 +577,7 @@ name, and run <code>check_project.R</code> in a new R session:</p>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"FAIL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter</span></span>
-<span><span class="co">#&gt; 10 PASS, 0 WARN, 1 FAIL</span></span>
+<span><span class="co">#&gt; 11 PASS, 0 WARN, 1 FAIL</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
@@ -541,9 +587,9 @@ name, and run <code>check_project.R</code> in a new R session:</p>
 <code>if</code> in <code>fit_models()</code>. The crude model is then
 adjusted for <code>x</code>, and the adjusted model is crude. Keep a
 copy of the file first.</p>
-<div class="sourceCode" id="cb21"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"analyses.R"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">file</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"analyses_copy.R"</span><span class="op">)</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"fit_models.R"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">file</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"fit_models_copy.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
 <span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">'"group" else "group + x"'</span>, <span class="st">'"group + x" else "group"'</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
@@ -551,7 +597,7 @@ copy of the file first.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"rhs &lt;-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "  rhs &lt;- if (argset$adjust == \"none\") \"group + x\" else \"group\""</span></span></code></pre></div>
 <p>Run the script in a new R session:</p>
-<div class="sourceCode" id="cb22"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">out</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
@@ -566,17 +612,234 @@ ratios and no error. Only the planted odds ratio shows the mistake.
 <code><a href="../reference/check_project.html">check_project()</a></code> now fails the rule
 <code>scenario_checks</code>. The results files stay, so that you can
 find the fault, but <code><a href="../reference/read_results.html">read_results()</a></code> stops on them:</p>
-<div class="sourceCode" id="cb23"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb26"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"known"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpnSszvI/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpFNSQ1w/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpFNSQ1w/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpFNSQ1w/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
 <p>Put the copy back, and run the script again. Its assertions pass.</p>
-<div class="sourceCode" id="cb24"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"analyses_copy.R"</span><span class="op">)</span>, <span class="va">file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<div class="sourceCode" id="cb27"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"fit_models_copy.R"</span><span class="op">)</span>, <span class="va">file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">out</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 0</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="imputation-is-data">Imputation is data<a class="anchor" aria-label="anchor" href="#imputation-is-data"></a>
+</h2>
+<p>A multiple imputation can take hours, and every analysis reads its
+result. So it belongs in the data function. With
+<code>cache = TRUE</code> in <code><a href="../reference/add_data.html">add_data()</a></code>,
+<code><a href="../reference/run_plan.html">run_plan()</a></code> saves the value of the data function on disk for
+each scenario and simulation. The next run reads it again while the
+cache key is the same. A change of an analysis then runs the analyses
+only.</p>
+<p><code>data_impute()</code> comes after <code>data_cohort()</code>, so
+the imputation model uses the people of the cohort only. It draws
+<code>CFG$data$n_imp</code> values for each missing <code>x</code>, from
+a linear model of <code>x</code> on <code>group</code> with a normal
+error. It writes the draws to the columns <code>x_1</code>,
+<code>x_2</code> and <code>x_3</code>, and keeps one row for each
+person. This is stochastic regression imputation. It does not draw the
+parameters of the model, so it is not a proper multiple imputation.</p>
+<div class="sourceCode" id="cb28"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">data_impute</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">cp</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">d</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/cohort_data.html">cohort_data</a></span><span class="op">(</span><span class="va">cp</span><span class="op">)</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">x</span> <span class="op">~</span> <span class="va">group</span>, data <span class="op">=</span> <span class="va">d</span><span class="op">)</span></span>
+<span>  <span class="va">miss</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/which.html" class="external-link">which</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">d</span><span class="op">$</span><span class="va">x</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="va">mu</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict</a></span><span class="op">(</span><span class="va">fit</span>, <span class="va">d</span><span class="op">[</span><span class="va">miss</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">CFG</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">n_imp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">col</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"x_"</span>, <span class="va">k</span><span class="op">)</span></span>
+<span>    <span class="va">d</span><span class="op">[</span>, <span class="op">(</span><span class="va">col</span><span class="op">)</span> <span class="op">:=</span> <span class="va">x</span><span class="op">]</span></span>
+<span>    <span class="fu">data.table</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/data.table/man/assign.html" class="external-link">set</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">miss</span>, <span class="va">col</span>, <span class="fu"><a href="https://rdrr.io/r/base/Round.html" class="external-link">round</a></span><span class="op">(</span><span class="va">mu</span> <span class="op">+</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">miss</span><span class="op">)</span>, <span class="fl">0</span>, <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/sigma.html" class="external-link">sigma</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/cohort_data.html">keep_exclusions</a></span><span class="op">(</span><span class="va">d</span>, <span class="va">cp</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p><code>pbn::cohort_data(cp)</code> gives the data of the cohort after
+its exclusions. <code>pbn::keep_exclusions(d, cp)</code> returns the
+imputed data with the exclusion table of the cohort, so
+<code><a href="../reference/save_results.html">save_results()</a></code> still writes <code>exclusions</code>. The
+value MAY be any R object, for example a list of imputed data sets.
+<code><a href="../reference/cohort_data.html">?cohort_data</a></code> gives the rules.</p>
+<p><code>fit_models()</code> now fits the model once for each
+imputation. Rubin’s rules give the pooled estimate as the mean of the
+estimates. The project computes no standard error here, so it needs no
+variance between the imputations.</p>
+<div class="sourceCode" id="cb29"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit_models</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">log_or</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/numeric.html" class="external-link">numeric</a></span><span class="op">(</span><span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="kw">for</span> <span class="op">(</span><span class="va">k</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="va">CFG</span><span class="op">$</span><span class="va">data</span><span class="op">$</span><span class="va">n_imp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
+<span>    <span class="va">rhs</span> <span class="op">&lt;-</span> <span class="kw">if</span> <span class="op">(</span><span class="va">argset</span><span class="op">$</span><span class="va">adjust</span> <span class="op">==</span> <span class="st">"none"</span><span class="op">)</span> <span class="st">"group"</span> <span class="kw">else</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0</a></span><span class="op">(</span><span class="st">"group + x_"</span>, <span class="va">k</span><span class="op">)</span></span>
+<span>    <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/formula.html" class="external-link">as.formula</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"outcome ~"</span>, <span class="va">rhs</span><span class="op">)</span><span class="op">)</span>, family <span class="op">=</span> <span class="st">"binomial"</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">)</span></span>
+<span>    <span class="va">log_or</span><span class="op">[</span><span class="va">k</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/coef.html" class="external-link">coef</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">[[</span><span class="st">"groupb"</span><span class="op">]</span><span class="op">]</span></span>
+<span>  <span class="op">}</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>term <span class="op">=</span> <span class="st">"or_group_b"</span>, estimate <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/Log.html" class="external-link">exp</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/mean.html" class="external-link">mean</a></span><span class="op">(</span><span class="va">log_or</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Add <code>data_impute()</code> and <code>cache = TRUE</code> to the
+data function of <code>v01_run.R</code>:</p>
+<div class="sourceCode" id="cb30"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">run_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span>
+<span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span></span>
+<span>  <span class="st">"data_cohort())"</span>,</span>
+<span>  <span class="st">"data_cohort() |&gt; data_impute(), cache = TRUE)"</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run_file</span><span class="op">)</span>,</span>
+<span>  fixed <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">script</span>, <span class="va">run_file</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"add_data"</span>, <span class="va">script</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "pbn::add_data(p, \"d\", fn = function(scenario, sim) data_raw(scenario, sim) |&gt; data_clean() |&gt; data_cohort() |&gt; data_impute(), cache = TRUE)"</span></span></code></pre></div>
+<p>The cache folder <code>v01_cache_gitexclude/</code> holds data for
+each person. In a git repository, <code><a href="../reference/run_plan.html">run_plan()</a></code> stops until
+git ignores it, so add the line <code>*gitexclude*</code> to
+<code>.gitignore</code>:</p>
+<pre class="text"><code>*gitexclude*</code></pre>
+<p><code><a href="../reference/run_plan.html">run_plan()</a></code> prints one line for each scenario and
+simulation. This function runs the script in a new R session and shows
+those lines:</p>
+<div class="sourceCode" id="cb32"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">run_lines</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="va">run_file</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">status</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="va">lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^pbn: data"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">lines</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/invisible.html" class="external-link">invisible</a></span><span class="op">(</span><span class="va">lines</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span><span class="va">first</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: computed, because there is no cache file.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: computed, because there is no cache file.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0001: computed, because there is no cache file.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0002: computed, because there is no cache file.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: computed, because there is no cache file.</span></span></code></pre></div>
+<p>The first run computed the data, and wrote one file for each scenario
+and simulation. The second run reads them:</p>
+<div class="sourceCode" id="cb33"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_cache_gitexclude"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt;  [1] "d/known/sim_0001_key.qs2" "d/known/sim_0001.qs2"    </span></span>
+<span><span class="co">#&gt;  [3] "d/null/sim_0001_key.qs2"  "d/null/sim_0001.qs2"     </span></span>
+<span><span class="co">#&gt;  [5] "d/null/sim_0002_key.qs2"  "d/null/sim_0002.qs2"     </span></span>
+<span><span class="co">#&gt;  [7] "d/null/sim_0003_key.qs2"  "d/null/sim_0003.qs2"     </span></span>
+<span><span class="co">#&gt;  [9] "d/real/sim_0001_key.qs2"  "d/real/sim_0001.qs2"</span></span>
+<span><span class="va">second</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0002: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: reused the cache of 2026-11-17 03:59.</span></span></code></pre></div>
+<p>Change an analysis: <code>fit_models()</code> also reports the number
+of imputations. The data comes from the cache:</p>
+<div class="sourceCode" id="cb34"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"fit_models.R"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"estimate = exp(mean(log_or)))"</span>, <span class="st">"estimate = exp(mean(log_or)), n_imp = length(log_or))"</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">code</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"fit_models.R"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">third</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0002: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">models</span></span>
+<span><span class="co">#&gt;   adjust       term estimate n_imp</span></span>
+<span><span class="co">#&gt; 1   none or_group_b 1.747826     3</span></span>
+<span><span class="co">#&gt; 2      x or_group_b 1.751888     3</span></span></code></pre></div>
+<p>Change the data code: <code>data_impute()</code> keeps one decimal of
+each draw. pbn computes the data again and names the changed file:</p>
+<div class="sourceCode" id="cb35"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_impute.R"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"round(mu + "</span>, <span class="st">"round(digits = 1, mu + "</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">code</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_impute.R"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fourth</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: computed, because v01_functions/data_impute.R changed.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: computed, because v01_functions/data_impute.R changed.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0001: computed, because v01_functions/data_impute.R changed.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0002: computed, because v01_functions/data_impute.R changed.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: computed, because v01_functions/data_impute.R changed.</span></span></code></pre></div>
+<p>A step by hand reads the cache too. Run the script up to
+<code><a href="../reference/run_plan.html">pbn::run_plan()</a></code> in this R session, and get the data of one
+analysis:</p>
+<div class="sourceCode" id="cb36"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">upto</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run_file</span><span class="op">)</span></span>
+<span><span class="va">upto</span> <span class="op">&lt;-</span> <span class="va">upto</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"run_plan"</span>, <span class="va">upto</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/eval.html" class="external-link">eval</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse</a></span><span class="op">(</span>text <span class="op">=</span> <span class="va">upto</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpFNSQ1w/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">get_data</span><span class="op">(</span><span class="st">"null__sim_0003__models__2"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "person_id" "group"     "x"         "outcome"   "x_1"       "x_2"      </span></span>
+<span><span class="co">#&gt; [7] "x_3"</span></span></code></pre></div>
+<p>The cache key holds the md5 of each <code>data_*.R</code> file of
+<code>v01_functions/</code>, and <code>CFG$data</code>. It also holds
+the code of the data function, the raw data, the settings, the versions
+of R and pbn, and <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>. Beside the key, pbn records
+the version of each package loaded when the data was computed. A new
+version of one of them computes the data again. <code><a href="../reference/add_data.html">?add_data</a></code>
+gives the full rule. Keep the data code in <code>data_*.R</code> files:
+a change in another file does not change the key. To compute every value
+again, delete <code>v01_cache_gitexclude/</code>.</p>
+</div>
+<div class="section level2">
+<h2 id="results-with-data-for-each-person">Results with data for each person<a class="anchor" aria-label="anchor" href="#results-with-data-for-each-person"></a>
+</h2>
+<p>A results file goes to git, so it MUST NOT hold one row for each
+person. Some results do: fitted models, the imputations, or a predicted
+risk for each person. <code>save_results(gitexclude = )</code> writes
+the kinds that it names to <code>results_gitexclude.qs2</code>, beside
+each <code>results.qs2</code>. The line <code>*gitexclude*</code> of
+<code>.gitignore</code> keeps that file out of git.</p>
+<p><code>predict_risk()</code> gives the predicted risk of each person,
+from the model of the first imputation:</p>
+<div class="sourceCode" id="cb37"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">predict_risk</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">argset</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">outcome</span> <span class="op">~</span> <span class="va">group</span> <span class="op">+</span> <span class="va">x_1</span>, family <span class="op">=</span> <span class="st">"binomial"</span>, data <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">)</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>person_id <span class="op">=</span> <span class="va">data</span><span class="op">$</span><span class="va">d</span><span class="op">$</span><span class="va">person_id</span>, risk <span class="op">=</span> <span class="fu">stats</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/stats/fitted.values.html" class="external-link">fitted</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>Add the kind <code>predicted</code> to <code>v01_run.R</code>, and
+name it in <code>gitexclude</code>:</p>
+<div class="sourceCode" id="cb38"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run_file</span><span class="op">)</span></span>
+<span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span></span>
+<span>  <span class="st">"r &lt;- pbn::run_plan(p)"</span>,</span>
+<span>  <span class="st">"pbn::add_analyses(p, scenarios, name = \"predicted\", fn = predict_risk)\nr &lt;- pbn::run_plan(p)"</span>,</span>
+<span>  <span class="va">script</span>,</span>
+<span>  fixed <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"save_results(r, p, scenarios)"</span>, <span class="st">"save_results(r, p, scenarios, gitexclude = \"predicted\")"</span>, <span class="va">script</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">script</span>, <span class="va">run_file</span><span class="op">)</span></span>
+<span><span class="va">fifth</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0001: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0002: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="co">#&gt; pbn: data d, null sim_0003: reused the cache of 2026-11-17 03:59.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"real"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "results_gitexclude.qs2" "results.qs2"            "table1.csv"</span></span></code></pre></div>
+<p><code><a href="../reference/read_results.html">read_results()</a></code> reads both files and returns one list.
+<code><a href="../reference/check_results.html">check_results()</a></code> and <code><a href="../reference/check_project.html">check_project()</a></code> check
+<code>results.qs2</code> only, so <code>predicted</code> passes the
+check of the rows of the data:</p>
+<div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="va">res</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] "manifest"   "exclusions" "table1"     "models"     "predicted"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">res</span><span class="op">$</span><span class="va">predicted</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 388</span></span></code></pre></div>
+<p>A coauthor who clones the repository has no
+<code>results_gitexclude.qs2</code>. <code><a href="../reference/read_results.html">read_results()</a></code> then
+returns the other elements, with one warning:</p>
+<div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">private</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"real"</span>, <span class="st">"results_gitexclude.qs2"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="va">private</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"kept.qs2"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Warning: The manifest names the analysis kinds predicted in</span></span>
+<span><span class="co">#&gt; /tmp/RtmpFNSQ1w/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,</span></span>
+<span><span class="co">#&gt; and that file is missing, for example in a clone of the repository.</span></span>
+<span><span class="co">#&gt; read_results() returns the other elements.</span></span>
+<span><span class="co">#&gt; [1] "manifest"   "exclusions" "table1"     "models"</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.rename</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"kept.qs2"</span><span class="op">)</span>, <span class="va">private</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>The <code><a href="../reference/check_project.html">check_project()</a></code> rule
+<code>gitexclude_not_tracked</code> fails when git tracks a path with
+<code>gitexclude</code> in its name.</p>
 </div>
 <div class="section level2">
 <h2 id="manuscripts">Manuscripts<a class="anchor" aria-label="anchor" href="#manuscripts"></a>
@@ -589,7 +852,7 @@ builds from the results. A built manuscript MUST read the real results
 only, and <code><a href="../reference/check_project.html">check_project()</a></code> fails a
 <code><a href="../reference/read_results.html">read_results()</a></code> call there with another scenario. A call
 without <code>scenario</code> reads the real results:</p>
-<div class="sourceCode" id="cb25"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span></code></pre></div>
 <p>The default <code>home = "."</code> is the working directory, so this
 file MUST run with the project folder as the working directory.</p>
@@ -621,10 +884,28 @@ them.</li>
 <li>
 <code>fake_md5</code> is the md5 of the code of the data functions
 of <code><a href="../reference/add_data.html">add_data()</a></code> only. A change in a function that they call,
-such as <code>get_data()</code>, does not change <code>fake_md5</code>.
+such as <code>data_raw()</code>, does not change <code>fake_md5</code>.
 <code>source_md5</code> holds the md5 of its file.</li>
 <li>The check of the rows of the data compares sizes only. A copy of the
 data with one row less passes.</li>
+<li>The cache stores the whole value of one data element for each
+scenario and simulation. A change of the code of one imputation computes
+every imputation again.</li>
+<li>The cache key holds the files <code>data_*.R</code> only. A change
+in data code in another file does not change the key, and the run uses
+the old data. This is the one change of the data code that the cache
+does not find.</li>
+<li>No argument computes the cached data again. Delete
+<code>v01_cache_gitexclude/</code> to do that.</li>
+<li>A use of the cache stops when a <code>data_*.R</code> file changed
+after <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. Run
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> again.</li>
+<li>Do not run one scenario of one version in two R sessions at the same
+time. The two runs can mix the files of their results.</li>
+<li>
+<code><a href="../reference/check_project.html">check_project()</a></code> checks only that
+<code>results_gitexclude.qs2</code> holds the kinds that the manifest
+names. It does not check what is in them.</li>
 </ul>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

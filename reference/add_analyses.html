@@ -72,8 +72,10 @@ combination of the extra dimensions in <code>...</code>.</p>
 <dt id="arg-name">name<a class="anchor" aria-label="anchor" href="#arg-name"></a></dt>
 <dd><p>The name of the analysis kind, for example <code>"models"</code>. It is
 the name of the element of the results object. It MUST be a syntactic
-name that starts with a letter. It MUST NOT be <code>"manifest"</code> or start
-with <code>"pbn_"</code>. Each kind of one plan MUST have its own name.</p></dd>
+name that starts with a letter. It MUST NOT be <code>"manifest"</code> or
+<code>"exclusions"</code>, and it MUST NOT start with <code>"pbn_"</code>. Each kind of one
+plan MUST have its own name. <code><a href="save_results.html">save_results()</a></code> names the exclusion table
+of a cohort <code>exclusions</code>.</p></dd>
 
 
 <dt id="arg-fn">fn<a class="anchor" aria-label="anchor" href="#arg-fn"></a></dt>
@@ -153,6 +155,7 @@ name is in the plan already.</p>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, which builds and runs a small fake project.</p>
 <p>Other plan:
 <code><a href="add_data.html">add_data()</a></code>,
+<code><a href="cohort_data.html">cohort_data()</a></code>,
 <code><a href="run_plan.html">run_plan()</a></code></p></div>
     </div>
 

@@ -124,13 +124,24 @@ no count of the runs, so two runs of one plan can be <code><a href="https://rdrr
 <code><a href="save_results.html">save_results()</a></code> stops on a value without the stamp of its plan.</p>
 <p><code>run_plan()</code> sets <code>use_foreach</code> of the plan: <code>FALSE</code> for 1 worker and
 <code>TRUE</code> for more.</p>
+<p>After <code><a href="initialize_project.html">initialize_project()</a></code>, <code>run_plan()</code> first computes the md5 of each
+raw data file again when its size or its modification time changed. The
+value carries the md5 in its stamp, and <code><a href="save_results.html">save_results()</a></code> writes it to
+<code>manifest$data_md5</code>.</p>
+<p>For a data function with <code>cache = TRUE</code>, <code>run_plan()</code> needs
+<code><a href="initialize_project.html">initialize_project()</a></code> first, and it prints one line for each scenario and
+simulation. The section Cache of <code><a href="add_data.html">add_data()</a></code> gives the rules. A data
+function that returns a <code><a href="https://www.rwhite.no/cohort/reference/CohortPipeline.html" class="external-link">cohort::CohortPipeline</a></code> runs on the worker, and
+only its data.table and its exclusion table come back. The section A
+cohort as the data of <code><a href="add_data.html">add_data()</a></code> gives the rules.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, which builds and runs a small fake project.</p>
 <p>Other plan:
 <code><a href="add_analyses.html">add_analyses()</a></code>,
-<code><a href="add_data.html">add_data()</a></code></p></div>
+<code><a href="add_data.html">add_data()</a></code>,
+<code><a href="cohort_data.html">cohort_data()</a></code></p></div>
     </div>
 
     <div class="section level2">

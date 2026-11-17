@@ -93,7 +93,16 @@ call <code><a href="initialize_project.html">pbn::initialize_project()</a></code
 or the reverse.</p></li>
 <li><p><code>results_contract</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/results.qs2</code> or a
 <code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> fails <code><a href="check_results.html">check_results()</a></code>,
-or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p></li>
+or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p>
+<p>The rule also reads each <code>results_gitexclude.qs2</code> beside such a file,
+also when git ignores it. It fails when the file does not hold exactly
+the analysis kinds that the manifest of <code>results.qs2</code> puts there.
+<code><a href="check_results.html">check_results()</a></code> does not check it.</p></li>
+<li><p><code>gitexclude_not_tracked</code> (FAIL): git tracks a path with <code>gitexclude</code> in
+its name, from <code>git ls-files</code> in <code>path</code>. Such a path holds data for each
+person. When git is not installed or <code>path</code> is not in a git repository,
+the rule has nothing to check. It then prints one PASS line that says
+so.</p></li>
 <li><p><code>scenario_checks</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/check.csv</code> has a
 value of <code>pass</code> that is not <code>TRUE</code>, holds no assertion, or has no column
 <code>pass</code> that R can read. <code><a href="save_results.html">save_results()</a></code> writes these files.</p></li>
@@ -113,8 +122,8 @@ counted by <code><a href="https://www.rwhite.no/org/reference/loc_per_file.html"
 folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
-<code>vNN_test/</code>, <code>vNN_check_functions.R</code> and <code>check_project.R</code>, among
-others. A top-level dotfile and a top-level
+<code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code> and
+<code>check_project.R</code>, among others. A top-level dotfile and a top-level
 <code>*.Rproj</code> file are never unknown.</p></li>
 </ul><p>The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.</p>
@@ -137,6 +146,7 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2 passes check_results()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_&lt;INITIALS&gt;.docx</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manuscript_reads_real  manuscript/built/ reads only the real results</span>
@@ -144,7 +154,7 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 11 PASS, 0 WARN, 0 FAIL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 12 PASS, 0 WARN, 0 FAIL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

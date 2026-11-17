@@ -22,9 +22,9 @@ split_save <- function(run, gitexclude = NULL) {
 private_tree <- c(
   "known/results_gitexclude.qs2",
   "null/results_gitexclude.qs2",
-  "null/sim_0001/results_gitexclude.qs2",
-  "null/sim_0002/results_gitexclude.qs2",
-  "null/sim_0003/results_gitexclude.qs2",
+  "null/sims_gitexclude/sim_0001_gitexclude.qs2",
+  "null/sims_gitexclude/sim_0002_gitexclude.qs2",
+  "null/sims_gitexclude/sim_0003_gitexclude.qs2",
   "real/results_gitexclude.qs2"
 )
 
@@ -177,9 +177,20 @@ test_that("save_results deletes an old results_gitexclude.qs2 when the new run h
     sort(deleted),
     sort(paste0(
       "pbn: deleted ",
-      file.path(folder, private_tree),
+      file.path(folder, grep("^[a-z]+/results_gitexclude", private_tree, value = TRUE)),
       ", because this run puts no analysis kind in it."
     ))
+  )
+  # The files of each simulation, with those of gitexclude, go with the
+  # folder sims_gitexclude/ of the earlier run.
+  expect_identical(
+    grep("^pbn: emptied ", out, value = TRUE),
+    paste0(
+      "pbn: emptied ",
+      file.path(folder, "null", "sims_gitexclude"),
+      "/ before it wrote the scenario \"null\": it held 6 files of an ",
+      "earlier run."
+    )
   )
   x <- read_results("v01", "null", home = p$home)
   expect_identical(names(x), c("manifest", "table1", "models", "models_crude"))
@@ -278,4 +289,35 @@ test_that("every kind in gitexclude and no cohort: results.qs2 holds the manifes
   )
   found <- project_findings(p$home)
   expect_identical(found$status[found$rule == "results_contract"], "PASS")
+})
+
+test_that("check_gitignored checks 1000 paths in one call of git, and names the first 3 that git does not ignore", {
+  p <- local_project()
+  git_in(p$home, "init", "-q")
+  write_lines(p$home, ".gitignore", "*gitexclude*")
+  rel <- paste0("v01_results/null/sims_gitexclude/sim_", sprintf("%04d", 1:1000), ".qs2")
+  calls <- 0L
+  real_ignored <- git_ignored
+  local_mocked_bindings(git_ignored = function(git, home, rel) {
+    calls <<- calls + 1L
+    return(real_ignored(git, home, rel))
+  })
+  expect_null(check_gitignored(p$home, rel, "done."))
+  expect_identical(calls, 1L)
+  open <- paste0("v01_results/null/open_", 1:5, ".qs2")
+  rel <- c(rel[1:400], open[1], rel[401:900], open[2:5], rel[901:1000])
+  expect_error(
+    check_gitignored(p$home, rel, "done."),
+    paste0(
+      "git does not ignore v01_results/null/open_1.qs2, ",
+      "v01_results/null/open_2.qs2, v01_results/null/open_3.qs2 and 2 more. ",
+      "These files hold data for each person."
+    ),
+    fixed = TRUE
+  )
+  expect_error(
+    check_gitignored(p$home, open[1], "done."),
+    "git does not ignore v01_results/null/open_1.qs2. That file holds",
+    fixed = TRUE
+  )
 })

@@ -30,6 +30,10 @@
 #'   data.frame has a column of that name already. A data.table stays a
 #'   data.table. A kind without extra dimensions has the data.frame of its one
 #'   analysis.
+#' - When each value is a list of data.frames with the same names, each name
+#'   once, the element is a named list with these names. Each of its data.frames is the data.frames of that name
+#'   row-bound, with the rule of a data.frame above. An example is
+#'   `results$sem$estimates` and `results$sem$fit`.
 #' - Otherwise, a kind without extra dimensions has the value of its one
 #'   analysis.
 #' - Otherwise, the element is a named list with one entry for each
@@ -42,7 +46,10 @@
 #' - `packages`, a named character vector. The names are the attached and
 #'   loaded packages of this R session that are not base packages, and the
 #'   values are their versions. `qs2` is always in the list, because it writes
-#'   the file.
+#'   the file. With 2 or more workers of [run_plan()], the list also holds
+#'   the packages loaded on a worker at the end of the run. An example is the
+#'   package of a model. With 2 or more workers, this R session also loads
+#'   doParallel, so the list then holds doParallel too.
 #' - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so two
 #'   runs on one day with the same inputs and packages write the same bytes.
 #' - `version`, `scenario`, `sim` and `sims`.
@@ -91,21 +98,19 @@
 #'    [run_plan()] for `p`. It stops when the settings of `scenarios` are not
 #'    the settings in the argsets of `p`. It stops when a fake scenario has no function
 #'    `expect_<scenario>(results)` in the environment of
-#'    [initialize_project()], or when an analysis of `r` failed. It writes
-#'    nothing then.
+#'    [initialize_project()], or when an analysis of `r` failed. In a git
+#'    repository, it stops when git does not ignore each file that it would
+#'    write into a folder `sims_gitexclude/`. The error names the first 3 of
+#'    the files that git does not ignore. It writes nothing then.
 #' 2. It builds every results object, and the stacked object of each scenario
 #'    with more than 1 simulation, and checks each with [check_results()]. On
 #'    a failure, it prints each failed rule with `cat()`, writes nothing and
 #'    stops.
 #' 3. For each scenario, it replaces `check.csv` with one failed assertion,
 #'    `not checked yet`, so that [read_results()] refuses the new results
-#'    until step 4 checks them. It writes
-#'    `<version>_results/<scenario>/results.qs2` for 1 simulation. For more
-#'    simulations, it writes `<version>_results/<scenario>/sim_<kkkk>/results.qs2`
-#'    for each, and then the stacked
-#'    `<version>_results/<scenario>/results.qs2`. The section Stacking gives
-#'    the rules. The files of the scenarios that are not in `scenarios` stay
-#'    as they are.
+#'    until step 4 checks them. Then it writes the files of the section The
+#'    files. The files of the scenarios that are not in `scenarios` stay as
+#'    they are.
 #' 4. For each scenario with a function `expect_<scenario>()`, it calls that
 #'    function on the results of the scenario. `expect_real()` is optional.
 #'    The function MUST return a data.frame with at least one row and the
@@ -117,9 +122,42 @@
 #'    scenarios. `save_results()` writes `check.csv` to a temporary file in
 #'    the same folder and renames it, so a reader never sees a part of it.
 #' 5. After every scenario, it stops when a value of `pass` is not `TRUE`.
-#'    The error lists the failed assertions. The files stay, so that you can
-#'    find the fault, and [read_results()] stops on them until the assertions
-#'    pass.
+#'    It prints each failed assertion in full with `cat()`, because R cuts an
+#'    error message at 1000 bytes by default. The error gives the number of
+#'    failed assertions, their scenarios and the path of `check.csv`. The
+#'    files stay, so that you can find the fault, and [read_results()] stops
+#'    on them until the assertions pass.
+#' @section The files:
+#' git gets the results of each scenario as one file, `results.qs2`, and
+#' never the results of each simulation. These are the files of
+#' `<version>_results/<scenario>/`:
+#'
+#' ```
+#' check.csv                  the assertions of expect_<scenario>()
+#' results.qs2                the results, stacked for more than 1 simulation
+#' results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
+#' sims_gitexclude/           only for more than 1 simulation
+#'   sim_<kkkk>.qs2           the results of simulation <kkkk>
+#'   sim_<kkkk>_gitexclude.qs2  the kinds of `gitexclude` of simulation <kkkk>
+#' ```
+#'
+#' A scenario with 1 simulation has no folder `sims_gitexclude/`. Its
+#' `results.qs2` is the results object of its one simulation. For more
+#' simulations, `results.qs2` holds the simulations stacked, with the rules
+#' of the section Stacking. The name of `sims_gitexclude/` holds
+#' `gitexclude`, so the line `*gitexclude*` of `.gitignore` keeps it out of
+#' git. A clone of the repository thus has no results of one simulation.
+#' [read_results()] with `sim` reads them.
+#'
+#' Before it writes a scenario, `save_results()` deletes each file in its
+#' `sims_gitexclude/`, and prints one line when there was one. So no
+#' simulation of an earlier run stays, for example after `sims` became
+#' smaller. For a scenario that now has 1 simulation, it deletes the folder.
+#'
+#' pbn 2026.11.22 and older wrote the results of each simulation to
+#' `sim_<kkkk>/results.qs2`, and git tracked them. When `save_results()`
+#' writes a scenario with more than 1 simulation, it deletes each folder
+#' `sim_<kkkk>/` of that scenario, and prints one line.
 #' @section Stacking:
 #' The stacked results hold every element of the results of simulation 1,
 #' in the same order. These rules apply at each depth:
@@ -138,14 +176,19 @@
 #'
 #' The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
 #' are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
-#' The columns `from_cache` and `cache_key` of `data_cache` are `NA`.
-#' Stacking stops when the files of the simulations are not exactly the
-#' simulations 1 to `sims`, for example after `sims` became smaller. Delete
-#' the folders of the higher simulations then.
+#' The columns `from_cache` and `cache_key` of `data_cache` are `NA`. The
+#' counts `n_rows_before_exclusions` and `n_rows_after_exclusions` are `NA`
+#' too. The element `n_rows_by_sim` holds the counts of each simulation. It
+#' is a data.frame with one row for each simulation and data element. Its
+#' columns are `sim`, `data`, `n_rows_data`, `n_rows_before_exclusions` and
+#' `n_rows_after_exclusions`. The rule `no_row_per_person` of
+#' [check_results()] reads it.
 #' @section Two files:
 #' `save_results()` writes the results of the kinds in `gitexclude` to
-#' `results_gitexclude.qs2`, beside each `results.qs2`. `results.qs2` holds
-#' `manifest`, `exclusions` and every other kind. Use `gitexclude` for a
+#' `results_gitexclude.qs2`, beside `results.qs2`, and to
+#' `sim_<kkkk>_gitexclude.qs2`, beside each `sim_<kkkk>.qs2`. The section The
+#' files shows them. `results.qs2` and `sim_<kkkk>.qs2` hold `manifest`,
+#' `exclusions` and every other kind. Use `gitexclude` for a
 #' kind with fitted models, imputations or one row for each person. The
 #' project's `.gitignore` MUST hold the line `*gitexclude*`, so that git
 #' never tracks that file. [read_results()] reads both files.
@@ -155,13 +198,14 @@
 #'   `gitexclude` is not an analysis kind of `p`.
 #' - In a git repository, it also stops when git does not ignore
 #'   `results_gitexclude.qs2`.
-#' - [check_results()] checks `results.qs2` only. So `results.qs2` MUST hold
-#'   an element other than `manifest`: one kind, or `exclusions`.
+#' - [check_results()] checks `results.qs2` and `sim_<kkkk>.qs2`, and not
+#'   the files of `gitexclude`.
 #' - The simulations of the two files are stacked apart, with the rules of
 #'   the section Stacking.
 #' - Without kinds in `gitexclude`, `save_results()` deletes an old
-#'   `results_gitexclude.qs2` of the scenario and of each of its
-#'   simulations. It prints one line for each deleted file.
+#'   `results_gitexclude.qs2` of the scenario, and prints one line. The old
+#'   `sim_<kkkk>_gitexclude.qs2` files go with the rest of
+#'   `sims_gitexclude/`, see the section The files.
 #' @return Invisibly, a data.frame of every assertion, with the columns
 #'   `scenario`, `assertion`, `expected`, `observed` and `pass`.
 #' @examples
@@ -205,6 +249,7 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
   info <- plan_info(p)
   check_run(r, p, info)
   gitexclude <- check_gitexclude(gitexclude, info, table)
+  check_sims_ignored(table, gitexclude)
   index <- analysis_index(p, info)
   check_coverage(index, table, info)
   check_settings(index, table, info)
@@ -219,9 +264,6 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
   objects <- build_objects(r, index, table, info, gitexclude, data_md5)
   check_objects(objects)
   root <- state$results
-  for (i in which(table$sims > 1)) {
-    check_sim_folders(root, table$scenario[i], table$sims[i])
-  }
   for (s in table$scenario) {
     write_scenario(objects[[s]], root, s)
   }
@@ -240,7 +282,7 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
   } else {
     do.call(rbind, unname(checks))
   }
-  stop_on_failed_checks(checks)
+  stop_on_failed_checks(checks, root)
   return(invisible(checks))
 }
 
@@ -480,7 +522,7 @@ build_object <- function(r, index, table, info, s, sim, fake_md5, data_md5) {
     list(
       pbn_version = as.character(getNamespaceVersion("pbn")),
       r_version = R.version.string,
-      packages = loaded_packages(),
+      packages = loaded_packages(info$worker_packages),
       run_date = format(Sys.Date(), "%Y-%m-%d"),
       version = state$version,
       scenario = s,
@@ -572,6 +614,15 @@ combine_kind <- function(values, argsets, kind, dims) {
   if (all(vapply(values, is.data.frame, logical(1)))) {
     return(bind_frames(values, argsets, kind, dims))
   }
+  if (is_list_of_frames(values)) {
+    nm <- names(values[[1]])
+    out <- lapply(nm, function(n) {
+      parts <- lapply(values, function(v) return(v[[n]]))
+      return(bind_frames(parts, argsets, paste0(kind, "$", n), dims))
+    })
+    names(out) <- nm
+    return(out)
+  }
   if (length(dims) == 0) {
     return(values[[1]])
   }
@@ -579,6 +630,30 @@ combine_kind <- function(values, argsets, kind, dims) {
     unname(values),
     paste0(kind, "__", seq_along(values))
   ))
+}
+
+# TRUE when each of `values` is a plain list with the same names as the
+# first, each name once and not empty, and each element is a data.frame.
+is_list_of_frames <- function(values) {
+  nm <- names(values[[1]])
+  if (length(nm) == 0 || anyNA(nm) || !all(nzchar(nm))) {
+    return(FALSE)
+  }
+  if (anyDuplicated(nm) > 0) {
+    return(FALSE)
+  }
+  return(all(vapply(values, is_frame_list, logical(1), nm = nm)))
+}
+
+# TRUE when `v` is a plain list with the names `nm`, and each element is a
+# data.frame.
+is_frame_list <- function(v, nm) {
+  if (!is.list(v) || is.data.frame(v) || !is.null(oldClass(v))) {
+    return(FALSE)
+  }
+  return(
+    identical(names(v), nm) && all(vapply(v, is.data.frame, logical(1)))
+  )
 }
 
 # The data.frames `values` row-bound, each with its extra dimensions first,
@@ -626,7 +701,7 @@ check_objects <- function(objects) {
     names(all) <- if (o$sims == 1) {
       s
     } else {
-      file.path(s, sim_folder(seq_len(o$sims)))
+      file.path(s, sim_file(seq_len(o$sims)))
     }
     if (!is.null(o$stacked)) {
       all[[paste(s, "stacked")]] <- o$stacked
@@ -667,31 +742,87 @@ write_scenario <- function(o, root, s) {
     ),
     file.path(folder, "check.csv")
   )
+  empty_sims_folder(folder, s, o$sims)
   if (o$sims == 1) {
     qs2::qs_save(o$runs[[1]], file.path(folder, "results.qs2"))
-    write_private(o$private[[1]], folder)
+    write_private(o$private[[1]], file.path(folder, gitexclude_file))
     return(invisible(NULL))
   }
   unlink(file.path(folder, "results.qs2"))
+  dir.create(file.path(folder, sims_folder), showWarnings = FALSE)
   for (sim in seq_len(o$sims)) {
-    dir.create(file.path(folder, sim_folder(sim)), showWarnings = FALSE)
-    qs2::qs_save(
-      o$runs[[sim]],
-      file.path(folder, sim_folder(sim), "results.qs2")
-    )
-    write_private(o$private[[sim]], file.path(folder, sim_folder(sim)))
+    qs2::qs_save(o$runs[[sim]], file.path(folder, sim_file(sim)))
+    write_private(o$private[[sim]], file.path(folder, sim_private_file(sim)))
   }
   stack_scenario(root, s, o$sims)
+  delete_old_layout(folder)
   return(invisible(NULL))
 }
 
-stop_on_failed_checks <- function(checks) {
+# Empties the folder sims_gitexclude/ of the scenario `s` in `folder`, so
+# that no file of an earlier run stays beside the new results: a simulation
+# above `sims`, or every simulation when the scenario now has 1. For 1
+# simulation, it deletes the folder. It prints one line when it deleted a
+# file.
+empty_sims_folder <- function(folder, s, sims) {
+  sub <- file.path(folder, sims_folder)
+  old <- list.files(sub, all.files = TRUE, no.. = TRUE, recursive = TRUE)
+  unlink(sub, recursive = TRUE)
+  if (length(old) == 0) {
+    return(invisible(NULL))
+  }
+  cat(
+    "pbn: ",
+    if (sims == 1) "deleted " else "emptied ",
+    sub,
+    "/",
+    if (sims == 1) {
+      paste0(", because the scenario \"", s, "\" now has 1 simulation")
+    } else {
+      paste0(" before it wrote the scenario \"", s, "\"")
+    },
+    ": it held ",
+    length(old),
+    if (length(old) == 1) " file" else " files",
+    " of an earlier run.\n",
+    sep = ""
+  )
+  return(invisible(old))
+}
+
+# Deletes the folders sim_<kkkk>/ of the layout of pbn 2026.11.22 and older
+# in the folder of a scenario, and prints one line. git tracked the results
+# of each simulation there.
+delete_old_layout <- function(folder) {
+  old <- list.files(folder, pattern = "^sim_[0-9]{4}$")
+  old <- old[dir.exists(file.path(folder, old))]
+  if (length(old) == 0) {
+    return(invisible(NULL))
+  }
+  unlink(file.path(folder, old), recursive = TRUE)
+  cat(
+    "pbn: deleted the ",
+    length(old),
+    " folders sim_<kkkk>/ of the old layout in ",
+    folder,
+    ". The results of each simulation are now in ",
+    sims_folder,
+    "/.\n",
+    sep = ""
+  )
+  return(invisible(old))
+}
+
+# Prints each failed assertion of `checks` with cat(), and stops when there
+# is one. R cuts an error message at 1000 bytes by default, and cat() does
+# not, so the error gives the count, the scenarios and the files only.
+stop_on_failed_checks <- function(checks, root) {
   failed <- checks[!checks$pass %in% TRUE, , drop = FALSE]
   if (nrow(failed) == 0) {
     return(invisible(NULL))
   }
-  stop(
-    "These assertions failed:\n",
+  cat("pbn: these assertions failed:\n")
+  cat(
     paste0(
       "  ",
       failed$scenario,
@@ -701,14 +832,31 @@ stop_on_failed_checks <- function(checks) {
       failed$expected,
       ", observed ",
       failed$observed,
-      ")",
-      collapse = "\n"
+      ")\n"
     ),
+    sep = ""
+  )
+  utils::flush.console()
+  scenarios <- unique(failed$scenario)
+  stop(
+    nrow(failed),
+    " of ",
+    nrow(checks),
+    " assertions failed, in the scenarios ",
+    paste(scenarios, collapse = ", "),
+    ". pbn printed each failed assertion above. Each scenario has its ",
+    "assertions in ",
+    file.path(root, "<scenario>", "check.csv"),
+    ".",
     call. = FALSE
   )
 }
 
-loaded_packages <- function() {
+# The version of each package that is not a base package: the loaded and
+# attached packages of this R session, and the packages of `workers`, a
+# named vector of versions from the workers of run_plan(). A package in both
+# has the version of this R session.
+loaded_packages <- function(workers = NULL) {
   # qs2 writes the file, so it MUST be in the package list.
   loadNamespace("qs2")
   attached <- sub("^package:", "", grep("^package:", search(), value = TRUE))
@@ -717,11 +865,13 @@ loaded_packages <- function() {
     lib.loc = .Library,
     priority = "base"
   ))
-  pkgs <- sort(setdiff(pkgs, base))
+  pkgs <- setdiff(pkgs, base)
   versions <- vapply(
     pkgs,
     function(p) return(as.character(getNamespaceVersion(p))),
     character(1)
   )
-  return(versions)
+  extra <- workers[!names(workers) %in% c(pkgs, base)]
+  versions <- c(versions, extra)
+  return(versions[order(names(versions))])
 }

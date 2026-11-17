@@ -1,36 +1,11 @@
 # Stacking: the simulations of one scenario in one results object, and the
 # assertions of the expect_<scenario>() functions.
 
-# Stops when the folder of the scenario holds the results of a simulation
-# above `sims`, for example after `sims` in CFG$scenarios became smaller.
-check_sim_folders <- function(root, scenario, sims) {
-  folder <- file.path(root, scenario)
-  present <- list.files(folder, pattern = "^sim_[0-9]+$")
-  present <- file.path(present, "results.qs2")
-  present <- present[file.exists(file.path(folder, present))]
-  extra <- setdiff(present, file.path(sim_folder(seq_len(sims)), "results.qs2"))
-  if (length(extra) > 0) {
-    stop(
-      "The scenario \"",
-      scenario,
-      "\" has ",
-      sims,
-      " simulations in CFG$scenarios, and its folder holds the results of ",
-      "other simulations: ",
-      paste(extra, collapse = ", "),
-      ". Delete those folders. pbn saved nothing.",
-      call. = FALSE
-    )
-  }
-  return(invisible(NULL))
-}
-
 # Stacks the simulation files of one scenario into
 # <root>/<scenario>/results.qs2. `root` is <home>/<version>_results.
 stack_scenario <- function(root, scenario, sims) {
   folder <- file.path(root, scenario)
-  want <- file.path(sim_folder(seq_len(sims)), "results.qs2")
-  check_sim_folders(root, scenario, sims)
+  want <- sim_file(seq_len(sims))
   missing <- want[!file.exists(file.path(folder, want))]
   if (length(missing) > 0) {
     stop(
@@ -62,14 +37,10 @@ stack_scenario <- function(root, scenario, sims) {
   # same rules.
   private <- NULL
   if (length(gitexclude_kinds(x)) > 0) {
-    private_files <- file.path(
-      folder,
-      sim_folder(seq_len(sims)),
-      "results_gitexclude.qs2"
-    )
+    private_files <- file.path(folder, sim_private_file(seq_len(sims)))
     private <- stack_element(lapply(private_files, qs2::qs_read), "x", scenario)
   }
-  write_private(private, folder)
+  write_private(private, file.path(folder, gitexclude_file))
   return(invisible(file))
 }
 
@@ -114,6 +85,7 @@ stack_results <- function(runs, scenario) {
   manifest <- runs[[1]][["manifest"]]
   manifest$sim <- NA_integer_
   manifest$sims <- length(runs)
+  manifest$n_rows_by_sim <- rows_by_sim(runs)
   manifest$n_rows_data <- NA_integer_
   for (n in c("n_rows_before_exclusions", "n_rows_after_exclusions")) {
     if (!is.null(manifest[[n]])) {
@@ -127,6 +99,40 @@ stack_results <- function(runs, scenario) {
   manifest$stacked <- TRUE
   results <- lapply(runs, function(r) return(r[names(r) != "manifest"]))
   return(c(list(manifest = manifest), stack_element(results, "x", scenario)))
+}
+
+# The row counts of the manifest of each simulation of `runs`, one row for
+# each simulation and data element, with the columns sim, data and the
+# columns of n_rows_columns. A count that a manifest does not hold is NA.
+# NULL when no manifest holds n_rows_data.
+rows_by_sim <- function(runs) {
+  parts <- lapply(seq_along(runs), function(k) {
+    m <- runs[[k]][["manifest"]]
+    n <- m[["n_rows_data"]]
+    if (!is.numeric(n) || length(n) == 0) {
+      return(NULL)
+    }
+    out <- data.frame(
+      sim = rep(k, length(n)),
+      data = if (is.null(names(n))) NA_character_ else names(n)
+    )
+    for (col in n_rows_columns) {
+      v <- m[[col]]
+      out[[col]] <- if (is.numeric(v) && length(v) == length(n)) {
+        as.integer(unname(v))
+      } else {
+        NA_integer_
+      }
+    }
+    return(out)
+  })
+  parts <- Filter(Negate(is.null), parts)
+  if (length(parts) == 0) {
+    return(NULL)
+  }
+  out <- do.call(rbind, parts)
+  rownames(out) <- NULL
+  return(out)
 }
 
 # The element at the path `where`, stacked from `values`, its value in each
@@ -353,10 +359,8 @@ check_column <- function(a, b, k, where, col, scenario) {
 check_expectations <- function(fn, root, scenario) {
   folder <- file.path(root, scenario)
   fn_name <- paste0("expect_", scenario, "()")
-  results <- merge_gitexclude(
-    qs2::qs_read(file.path(folder, "results.qs2")),
-    folder
-  )
+  main <- file.path(folder, "results.qs2")
+  results <- merge_gitexclude(qs2::qs_read(main), main)
   found <- tryCatch(fn(results), error = function(e) {
     return(failed_assertion(
       paste(fn_name, "runs without an error"),

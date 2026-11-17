@@ -242,7 +242,8 @@ is_scenario_name <- function(x) {
   )
 }
 
-# The folder of one simulation, relative to the scenario folder.
+# The name of one simulation, sim_<kkkk>, in the names of its files and
+# its analyses.
 sim_folder <- function(sim) {
   return(sprintf("sim_%04d", sim))
 }

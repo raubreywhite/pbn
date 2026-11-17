@@ -74,6 +74,7 @@ attr(pbn::keep_exclusions(imp, cp), "pbn_exclusions")
 Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=add_data]{add_data()}},
+\code{\link[=get_data]{get_data()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

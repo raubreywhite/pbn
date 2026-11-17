@@ -164,9 +164,9 @@ test_that("each row shows the observed value, the limit, the number of simulatio
   expect_identical(
     out$assertion,
     c(
-      "x: bias of estimate",
+      "x: bias of estimate against 0",
       "x: model SE of estimate against its SD",
-      "x: coverage of the 95% interval"
+      "x: coverage of 0 by the 95% interval"
     )
   )
   expect_true(all(out$pass))
@@ -417,7 +417,7 @@ test_that("an expect_ function built from expect_recovers fails a scenario with 
   plan <- build_plan(sourced, sc)
   r <- run_plan(plan)
   printed <- utils::capture.output(
-    expect_error(save_results(r, plan, sc), "These assertions failed")
+    expect_error(save_results(r, plan, sc), "6 of 8 assertions failed")
   )
   check <- utils::read.csv(file.path(
     p$home,
@@ -429,4 +429,76 @@ test_that("an expect_ function built from expect_recovers fails a scenario with 
   expect_false(any(check$pass))
   expect_true(all(grepl("too few simulations to check", check$observed)))
   expect_true(any(grepl("too few simulations to check", printed)))
+})
+
+test_that("label replaces the expression of x in the assertions, and each assertion with a truth names it", {
+  x <- one_study()
+  out <- expect_recovers(x, truth = 0.673, label = "adjusted model")
+  expect_identical(
+    out$assertion,
+    c(
+      "adjusted model: bias of estimate against 0.673",
+      "adjusted model: model SE of estimate against its SD",
+      "adjusted model: coverage of 0.673 by the 95% interval"
+    )
+  )
+  # Two calls on one object against two truths give other assertions.
+  other <- expect_recovers(x, truth = 0.5, label = "adjusted model")
+  expect_false(any(other$assertion[c(1, 3)] %in% out$assertion))
+  control <- expect_biased(x, truth = 0.673, label = "crude model")
+  expect_identical(
+    control$assertion,
+    "crude model: bias of estimate against 0.673, a control"
+  )
+  # Without label, the expression of x, as before.
+  expect_identical(
+    expect_biased(x, truth = 0.5)$assertion,
+    "x: bias of estimate against 0.5, a control"
+  )
+  for (bad in list(1, NA_character_, c("a", "b"))) {
+    expect_error(
+      expect_recovers(x, truth = 0, label = bad),
+      "`label` must be NULL or one string.",
+      fixed = TRUE
+    )
+  }
+})
+
+test_that("coverage = FALSE gives the bias and SE rows only, needs no lower and upper, and needs 100 simulations", {
+  x <- one_study()
+  full <- expect_recovers(x, truth = 0)
+  part <- expect_recovers(x, truth = 0, coverage = FALSE)
+  # The same bias and SE rows, and no coverage row.
+  expect_identical(part, full[1:2, ])
+  expect_false(any(grepl("coverage", part$assertion)))
+  no_interval <- x[c("sim", "estimate", "se")]
+  expect_identical(
+    expect_recovers(no_interval, truth = 0, coverage = FALSE, label = "x"),
+    part
+  )
+  expect_error(
+    expect_recovers(no_interval, truth = 0),
+    "`x` has no column lower, upper",
+    fixed = TRUE
+  )
+  # 150 simulations: too few for the coverage at 0.95, enough without it.
+  few <- one_study(n = 150)
+  with_cov <- expect_recovers(few, truth = 0)
+  expect_match(with_cov$observed[3], "too few simulations to check", fixed = TRUE)
+  without <- expect_recovers(few, truth = 0, coverage = FALSE)
+  expect_identical(nrow(without), 2L)
+  expect_true(all(without$pass))
+  # Two groups give two rows each.
+  two <- rbind(cbind(term = "a", x), cbind(term = "b", x))
+  expect_identical(
+    nrow(expect_recovers(two, truth = 0, by = "term", coverage = FALSE)),
+    4L
+  )
+  for (bad in list(NA, "yes", c(TRUE, FALSE))) {
+    expect_error(
+      expect_recovers(x, truth = 0, coverage = bad),
+      "`coverage` must be TRUE or FALSE.",
+      fixed = TRUE
+    )
+  }
 })

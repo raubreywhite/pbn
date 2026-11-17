@@ -29,9 +29,24 @@ max_missing <- 0.05
 #'   the estimate, its standard error and the limits of its confidence
 #'   interval.
 #' @param by `NULL`, or the names of the columns of `x` that split it into
-#'   groups, for example `"term"`. Each group gets its own three assertions.
+#'   groups, for example `"term"`. Each group gets its own assertions.
 #' @param level The level of the confidence interval of `lower` and `upper`.
+#' @param coverage `TRUE` checks the coverage of the interval. `FALSE` makes
+#'   no coverage assertion and needs no `lower` and `upper`. See the section
+#'   Without coverage.
+#' @param label `NULL`, or one string that starts the text of each
+#'   assertion. `NULL` uses the expression of `x`, for example
+#'   `"results$models"`. Give a label when `x` is not a named object, or for
+#'   two calls on one object.
 #' @details
+#' `expect_recovers()` needs a fake scenario with random data and at least 100
+#' simulations. A fixed scenario, for example one with values that a person
+#' computed by hand, MUST keep exact assertions that you write by hand.
+#'
+#' The text of each assertion holds the label, the group of `by`, the
+#' measure and the truth, for example
+#' `"results$models: bias of estimate against 0.673"`.
+#
 #' The checks work on the scale of the columns. Give a log odds ratio, its
 #' standard error and its limits on the log scale, with a truth on the log
 #' scale. Do not give odds ratios. On the scale of the odds ratio, the
@@ -92,6 +107,14 @@ max_missing <- 0.05
 #' - the coverage, on a `lower` above its `upper`.
 #' - the bias and the standard error, when all estimates are equal. The
 #'   Monte Carlo SE is then 0.
+#' @section Without coverage:
+#' With `coverage = FALSE`, `expect_recovers()` checks the bias and the
+#' standard error only. It gives no row for the coverage, so the coverage is
+#' not checked, and `x` needs no columns `lower` and `upper`. Each assertion
+#' then needs 100 simulations. Use it for a simulation that is too slow for
+#' 288 simulations, the number that the coverage of a 95% interval needs. Use
+#' it also for an analysis without a confidence interval. The bias and the standard error are the
+#' same as with `coverage = TRUE`.
 #' @section The false alarms:
 #' A false alarm is a failed assertion for a correct analysis. It stops the
 #' run, and the same seeds give it again in the next run. So `z` is large.
@@ -113,8 +136,9 @@ max_missing <- 0.05
 #'   evaluate statistical methods. Statistics in Medicine. 2019;38:2074-2102.
 #'   \doi{10.1002/sim.8086}
 #' @return A data.frame with the columns `assertion`, `expected`, `observed`
-#'   and `pass`, and three rows for each group. Give it to [rbind()] with the
-#'   other assertions of the `expect_<scenario>()` function.
+#'   and `pass`, and three rows for each group, or two with
+#'   `coverage = FALSE`. Give it to [rbind()] with the other assertions of the
+#'   `expect_<scenario>()` function.
 #' @examples
 #' set.seed(1)
 #' x <- data.frame(sim = 1:300, estimate = rnorm(300, 0.5, 0.2), se = 0.2)
@@ -132,30 +156,51 @@ expect_recovers <- function(
   lower = "lower",
   upper = "upper",
   by = NULL,
-  level = 0.95
+  level = 0.95,
+  coverage = TRUE,
+  label = NULL
 ) {
-  label <- recovery_label(substitute(x))
+  label <- recovery_label(substitute(x), label)
   check_level(level)
-  columns <- c(estimate = estimate, se = se, lower = lower, upper = upper)
+  if (!isTRUE(coverage) && !isFALSE(coverage)) {
+    stop("`coverage` must be TRUE or FALSE.", call. = FALSE)
+  }
+  columns <- c(estimate = estimate, se = se)
+  if (coverage) {
+    columns <- c(columns, lower = lower, upper = upper)
+  }
   groups <- recovery_groups(x, truth, columns, by)
   rows <- lapply(groups, function(g) {
     v <- g$values
     prefix <- paste0(label, g$label, ": ")
-    return(rbind(
+    out <- rbind(
       bias_row(
         usable(v, "estimate"),
         g$truth,
-        paste0(prefix, "bias of ", estimate)
+        paste0(prefix, "bias of ", estimate, " against ", fmt_truth(g$truth))
       ),
       se_row(
         usable(v, c("estimate", "se")),
         paste0(prefix, "model SE of ", estimate, " against its SD")
-      ),
+      )
+    )
+    if (!coverage) {
+      return(out)
+    }
+    return(rbind(
+      out,
       coverage_row(
         usable(v, c("lower", "upper")),
         g$truth,
         level,
-        paste0(prefix, "coverage of the ", 100 * level, "% interval")
+        paste0(
+          prefix,
+          "coverage of ",
+          fmt_truth(g$truth),
+          " by the ",
+          100 * level,
+          "% interval"
+        )
       )
     ))
   })
@@ -199,15 +244,29 @@ expect_recovers <- function(
 #' @seealso `vignette("pbn")`, which checks a crude model in a scenario with a
 #'   confounder.
 #' @export
-expect_biased <- function(x, truth, estimate = "estimate", by = NULL) {
-  label <- recovery_label(substitute(x))
+expect_biased <- function(
+  x,
+  truth,
+  estimate = "estimate",
+  by = NULL,
+  label = NULL
+) {
+  label <- recovery_label(substitute(x), label)
   groups <- recovery_groups(x, truth, c(estimate = estimate), by)
   rows <- lapply(groups, function(g) {
     v <- usable(g$values, "estimate")
     return(biased_row(
       v,
       g$truth,
-      paste0(label, g$label, ": bias of ", estimate, ", a control")
+      paste0(
+        label,
+        g$label,
+        ": bias of ",
+        estimate,
+        " against ",
+        fmt_truth(g$truth),
+        ", a control"
+      )
     ))
   })
   out <- do.call(rbind, unname(rows))
@@ -223,9 +282,16 @@ check_level <- function(level) {
   return(invisible(level))
 }
 
-# The expression of `x` as text for the assertions, for example
-# "results$models". A value, for example from do.call(), gives "x".
-recovery_label <- function(expr) {
+# The label of the assertions: `label` when it is given, else the
+# expression of `x` as text, for example "results$models". A value, for
+# example from do.call(), gives "x".
+recovery_label <- function(expr, label = NULL) {
+  if (!is.null(label)) {
+    if (!is.character(label) || length(label) != 1 || is.na(label)) {
+      stop("`label` must be NULL or one string.", call. = FALSE)
+    }
+    return(label)
+  }
   if (is.symbol(expr) || is.call(expr)) {
     return(deparse1(expr))
   }
@@ -507,6 +573,12 @@ gate_text <- function(v, need) {
 
 fmt <- function(x) {
   return(trimws(formatC(x, digits = 3, format = "fg")))
+}
+
+# The truth in the text of an assertion, with 6 significant digits, so that
+# two calls with other truths give other assertions.
+fmt_truth <- function(x) {
+  return(trimws(formatC(x, digits = 6, format = "fg")))
 }
 
 # The problem of estimates that are all equal, or NULL.

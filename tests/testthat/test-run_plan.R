@@ -253,3 +253,96 @@ test_that("an analysis that returns NULL keeps its place in the results", {
   expect_null(r[["null__sim_0002__a__1"]])
   expect_identical(r[["null__sim_0002__pbn_n_rows"]], c(d = 1L))
 })
+
+# A library with the package pbnprobe, whose function probe_value() returns
+# "probe". The library is in .libPaths() of this R session only: no
+# environment variable names it.
+local_probe_library <- function(env = parent.frame()) {
+  root <- tempfile("pbnprobe")
+  src <- file.path(root, "pbnprobe")
+  lib <- file.path(root, "lib")
+  dir.create(file.path(src, "R"), recursive = TRUE)
+  dir.create(lib)
+  withr::defer(unlink(root, recursive = TRUE), envir = env)
+  writeLines(
+    c(
+      "Package: pbnprobe",
+      "Version: 0.0.1",
+      "Title: A Probe",
+      "Description: A probe for the tests of pbn.",
+      "License: MIT",
+      "Authors@R: person('A', 'B', role = c('aut', 'cre'), email = 'a@b.no')"
+    ),
+    file.path(src, "DESCRIPTION")
+  )
+  writeLines("export(probe_value)", file.path(src, "NAMESPACE"))
+  writeLines(
+    "probe_value <- function() return(\"probe\")",
+    file.path(src, "R", "probe.R")
+  )
+  status <- system2(
+    file.path(R.home("bin"), "R"),
+    c("CMD", "INSTALL", "--no-test-load", "-l", shQuote(lib), shQuote(src)),
+    stdout = FALSE,
+    stderr = FALSE
+  )
+  testthat::expect_identical(status, 0L)
+  lib <- normalizePath(lib, winslash = "/")
+  withr::local_libpaths(lib, action = "prefix", .local_envir = env)
+  return(lib)
+}
+
+test_that("a worker finds a package in a library that this R session added with .libPaths()", {
+  skip_if_pbn_not_installed()
+  lib <- local_probe_library()
+  expect_false(grepl(lib, Sys.getenv("R_LIBS"), fixed = TRUE))
+  p <- plnr::Plan$new()
+  data_fn <- function(scenario, sim) {
+    return(data.frame(v = pbnprobe::probe_value()))
+  }
+  action_fn <- function(data, argset) return(data$d)
+  environment(data_fn) <- globalenv()
+  environment(action_fn) <- globalenv()
+  add_data(p, "d", fn = data_fn)
+  add_analyses(p, two_scenarios(), "a", fn = action_fn)
+  r <- run_plan(p, workers = 2)
+  expect_identical(r[["null__sim_0002__a__1"]], data.frame(v = "probe"))
+  # R_LIBS is back to its value before the run.
+  expect_false(grepl(lib, Sys.getenv("R_LIBS"), fixed = TRUE))
+  # pbnprobe was loaded on the workers only, and the manifest names it.
+  expect_false("pbnprobe" %in% loadedNamespaces())
+  expect_identical(
+    unname(plan_info(p)$worker_packages["pbnprobe"]),
+    "0.0.1"
+  )
+  expect_identical(
+    unname(loaded_packages(plan_info(p)$worker_packages)["pbnprobe"]),
+    "0.0.1"
+  )
+  # With 1 worker, this R session is the worker.
+  run_plan(p)
+  expect_null(plan_info(p)$worker_packages)
+  unloadNamespace("pbnprobe")
+})
+
+test_that("a new worker starts with the library paths of this R session", {
+  lib <- local_probe_library()
+  cl <- make_cluster(1)
+  withr::defer(parallel::stopCluster(cl))
+  first_call <- function() return(.libPaths())
+  environment(first_call) <- baseenv()
+  expect_true(lib %in% parallel::clusterCall(cl, first_call)[[1]])
+})
+
+test_that("prepare_workers() gives a worker the library paths of this R session", {
+  skip_if_pbn_not_installed()
+  lib <- local_probe_library()
+  # A cluster that starts without the library paths of this R session.
+  cl <- parallel::makePSOCKcluster(1)
+  withr::defer(parallel::stopCluster(cl))
+  ask <- function() return(.libPaths())
+  environment(ask) <- baseenv()
+  expect_false(lib %in% parallel::clusterCall(cl, ask)[[1]])
+  prepare_workers(cl)
+  expect_true(lib %in% parallel::clusterCall(cl, ask)[[1]])
+})

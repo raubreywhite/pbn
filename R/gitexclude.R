@@ -3,6 +3,33 @@
 
 gitexclude_file <- "results_gitexclude.qs2"
 
+# The folder of the results of each simulation, in the folder of a scenario
+# with more than 1 simulation. Its name holds gitexclude, so git ignores it,
+# and only the stacked results go to git.
+sims_folder <- "sims_gitexclude"
+
+# The file of the results of simulation `sim`, relative to the folder of the
+# scenario: sims_gitexclude/sim_<kkkk>.qs2.
+sim_file <- function(sim) {
+  return(file.path(sims_folder, paste0(sim_folder(sim), ".qs2")))
+}
+
+# The file of the kinds of gitexclude of simulation `sim`, relative to the
+# folder of the scenario: sims_gitexclude/sim_<kkkk>_gitexclude.qs2.
+sim_private_file <- function(sim) {
+  return(file.path(sims_folder, paste0(sim_folder(sim), "_gitexclude.qs2")))
+}
+
+# The file of the kinds of gitexclude beside the results file `file`:
+# results_gitexclude.qs2 beside results.qs2, and sim_<kkkk>_gitexclude.qs2
+# beside sim_<kkkk>.qs2.
+private_file_of <- function(file) {
+  if (basename(file) == "results.qs2") {
+    return(file.path(dirname(file), gitexclude_file))
+  }
+  return(sub("\\.qs2$", "_gitexclude.qs2", file))
+}
+
 # The argument gitexclude of save_results(), checked: a character vector of
 # analysis kinds of the plan, or character(0) for NULL. In a git repository,
 # git MUST ignore the files that it names. Stops before anything is written.
@@ -35,7 +62,6 @@ check_gitexclude <- function(gitexclude, info, table) {
   }
   if (length(gitexclude) > 0) {
     folders <- paste0(state$version, "_results/", table$scenario)
-    folders <- c(folders, paste0(folders, "/", sim_folder(1)))
     check_gitignored(
       state$home,
       paste0(folders, "/", gitexclude_file),
@@ -43,6 +69,25 @@ check_gitexclude <- function(gitexclude, info, table) {
     )
   }
   return(gitexclude)
+}
+
+# In a git repository, stops when git does not ignore each file that this
+# save writes into sims_gitexclude/: sim_<kkkk>.qs2 for each scenario of
+# `table` with more than 1 simulation, and sim_<kkkk>_gitexclude.qs2 when
+# `gitexclude` names a kind.
+check_sims_ignored <- function(table, gitexclude) {
+  multi <- table[table$sims > 1, , drop = FALSE]
+  rel <- character(0)
+  for (i in seq_len(nrow(multi))) {
+    sims <- seq_len(multi$sims[i])
+    files <- sim_file(sims)
+    if (length(gitexclude) > 0) {
+      files <- c(files, sim_private_file(sims))
+    }
+    rel <- c(rel, paste0(state$version, "_results/", multi$scenario[i], "/", files))
+  }
+  check_gitignored(state$home, rel, "pbn saved nothing.")
+  return(invisible(NULL))
 }
 
 # The results object `x` split into the object of results.qs2, `public`, and
@@ -70,11 +115,11 @@ gitexclude_kinds <- function(x) {
   return(a$analysis[a$file %in% gitexclude_file])
 }
 
-# Writes `private` to results_gitexclude.qs2 in `folder`. For NULL, it
-# deletes an old file there and prints one line, because read_results()
-# would otherwise read its old values with the new results.
-write_private <- function(private, folder) {
-  file <- file.path(folder, gitexclude_file)
+# Writes `private` to `file`, a results_gitexclude.qs2 or a
+# sim_<kkkk>_gitexclude.qs2. For NULL, it deletes an old file there and
+# prints one line, because read_results() would otherwise read its old
+# values with the new results.
+write_private <- function(private, file) {
   if (!is.null(private)) {
     qs2::qs_save(private, file)
     return(invisible(file))
@@ -91,32 +136,41 @@ write_private <- function(private, folder) {
   return(invisible(NULL))
 }
 
-# The object in results_gitexclude.qs2 beside the results object `x`, and
-# the problem with it. `file` is the path of results_gitexclude.qs2. `value`
-# is NULL when the file is missing. `problem` is character(0), or the reason
-# why the file does not belong to `x`.
-read_gitexclude <- function(x, file) {
+# The object in the file of the kinds of gitexclude beside the results
+# object `x`, and the problem with it. `file` is the path of that file,
+# results_gitexclude.qs2 or sim_<kkkk>_gitexclude.qs2, and `main` is the
+# name of the file of `x`. `value` is NULL when the file is missing.
+# `problem` is character(0), or the reason why the file does not belong to
+# `x`.
+read_gitexclude <- function(x, file, main = "results.qs2") {
   kinds <- gitexclude_kinds(x)
   out <- list(value = NULL, problem = character(0))
   if (!file.exists(file)) {
     return(out)
   }
+  private <- basename(file)
   if (length(kinds) == 0) {
-    out$problem <- paste(
-      "the manifest of results.qs2 names no analysis kind in",
-      "results_gitexclude.qs2, so the file is from another run.",
+    out$problem <- paste0(
+      "the manifest of ",
+      main,
+      " names no analysis kind in ",
+      private,
+      ", so the file is from another run. ",
       "Delete it, or run the scenario again"
     )
     return(out)
   }
   y <- tryCatch(qs2::qs_read(file), error = function(e) return(e))
   if (inherits(y, "error")) {
-    out$problem <- "qs2 cannot read results_gitexclude.qs2"
+    out$problem <- paste("qs2 cannot read", private)
   } else if (!is.list(y) || is.data.frame(y) || !identical(names(y), kinds)) {
     out$problem <- paste0(
-      "results_gitexclude.qs2 holds the elements ",
+      private,
+      " holds the elements ",
       paste(names(y), collapse = ", "),
-      ", and the manifest of results.qs2 names ",
+      ", and the manifest of ",
+      main,
+      " names ",
       paste(kinds, collapse = ", ")
     )
   } else {
@@ -125,12 +179,13 @@ read_gitexclude <- function(x, file) {
   return(out)
 }
 
-# The results object `x` of results.qs2 in `folder`, with the elements of
-# results_gitexclude.qs2, in the order of a results object. Without that
-# file, `x` and one warning when the manifest names kinds in it.
-merge_gitexclude <- function(x, folder) {
-  file <- file.path(folder, gitexclude_file)
-  got <- read_gitexclude(x, file)
+# The results object `x` of the results file `main`, with the elements of
+# the file of the kinds of gitexclude beside it, in the order of a results
+# object. Without that file, `x` and one warning when the manifest names
+# kinds in it.
+merge_gitexclude <- function(x, main) {
+  file <- private_file_of(main)
+  got <- read_gitexclude(x, file, basename(main))
   if (length(got$problem) > 0) {
     stop(file, ": ", got$problem, ".", call. = FALSE)
   }

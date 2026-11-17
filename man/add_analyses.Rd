@@ -25,9 +25,10 @@ of a cohort \code{exclusions}.}
 value, with no \code{NA} and no value twice. A vector of length 1 is a
 constant of the kind.}
 
-\item{control}{\code{TRUE} adds the analyses for the fake scenarios only, never
-for \code{"real"}. Use it for a check that is not a result, for example a
-model without adjustment that a fake scenario tests.}
+\item{control}{\code{TRUE} adds the kind to every fake scenario of
+\code{scenarios}, and never to \code{"real"}. Use it for a check that is not a
+result, for example a model without adjustment that a fake scenario
+tests.}
 }
 \value{
 Invisibly, the names of the analyses of the kind, in the order of
@@ -44,8 +45,9 @@ Each analysis gets the name
 \code{null__sim_0003__models__2}. \verb{<kkkk>} is the simulation with four digits,
 also for a scenario with 1 simulation. \verb{<i>} counts the combinations of the
 extra dimensions from 1, with the last dimension of \code{...} changing
-fastest. A kind without extra dimensions has \verb{<i>} 1. Give the name to
-\code{p$get_argset()} and \code{p$get_data()} to step through one analysis by hand.
+fastest. A kind without extra dimensions has \verb{<i>} 1. To step through one
+analysis by hand, use \code{\link[=get_argset]{get_argset()}} and \code{\link[=get_data]{get_data()}}. They take the
+scenario, the simulation, the kind and \verb{<i>}, so you do not type the name.
 
 The argset of each analysis holds these fields:
 \itemize{
@@ -122,7 +124,7 @@ pbn::add_analyses(
   },
   outcome = CFG$outcomes
 )
-p$get_argset("null__sim_0002__means__2")
+pbn::get_argset(p, "null", 2, "means", 2)
 }
 \seealso{
 \code{vignette("pbn")}, which builds and runs a small fake project.
@@ -130,6 +132,7 @@ p$get_argset("null__sim_0002__means__2")
 Other plan:
 \code{\link[=add_data]{add_data()}},
 \code{\link[=cohort_data]{cohort_data()}},
+\code{\link[=get_data]{get_data()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

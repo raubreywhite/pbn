@@ -261,8 +261,20 @@ is_values <- function(o) {
 rule_no_row_per_person <- function(x) {
   rule <- "no_row_per_person"
   m <- if (is.list(x)) x[["manifest"]] else NULL
+  # The manifest is pbn's. A vector in it, such as packages, can have n
+  # values by chance. So is exclusions, with one row for each step: k steps
+  # and k people would fail it. exclusions_table checks it, and
+  # add_analyses() refuses a kind of that name.
+  results <- if (is.list(x)) {
+    x[!names(x) %in% c("manifest", "exclusions")]
+  } else {
+    list()
+  }
+  if (is_stacked(x) && is.data.frame(m[["n_rows_by_sim"]])) {
+    return(no_row_per_person_stacked(results, m))
+  }
   # The rows of the data, and for a cohort also the rows given to the
-  # pipeline before its exclusions.
+  # pipeline before its exclusions and the rows after them.
   n <- if (is.list(m)) {
     c(
       m[["n_rows_data"]],
@@ -296,27 +308,11 @@ rule_no_row_per_person <- function(x) {
       )
     ))
   }
-  # The manifest is pbn's. A vector in it, such as packages, can have n
-  # values by chance. So is exclusions, with one row for each step: k steps
-  # and k people would fail it. exclusions_table checks it, and
-  # add_analyses() refuses a kind of that name.
-  results <- x[!names(x) %in% c("manifest", "exclusions")]
   where <- find_paths(results, "x", function(o) return(person_size(o, n)))
-  failures <- if (length(where) > 0) {
-    paste0(
-      paste0(names(where), " (", where, ")", collapse = ", "),
-      " has one value for each row of the data. Save a summary of it ",
-      "instead. If it is an aggregate that has this size by chance, change ",
-      "its shape so that the size differs, for example to a long data.frame ",
-      "with an explicit grouping column, and say so in a comment"
-    )
-  } else {
-    character(0)
-  }
   sizes <- paste(n, collapse = " or ")
   return(result_row(
     rule,
-    failures,
+    person_failures(where),
     paste0(
       "no data.frame has ",
       sizes,
@@ -325,6 +321,101 @@ rule_no_row_per_person <- function(x) {
       " values in one dimension"
     )
   ))
+}
+
+# The failure of no_row_per_person for the paths `where`, or character(0).
+person_failures <- function(where) {
+  if (length(where) == 0) {
+    return(character(0))
+  }
+  return(paste0(
+    paste0(names(where), " (", where, ")", collapse = ", "),
+    " has one value for each row of the data. Save a summary of it ",
+    "instead. If it is an aggregate that has this size by chance, change ",
+    "its shape so that the size differs, for example to a long data.frame ",
+    "with an explicit grouping column, and say so in a comment"
+  ))
+}
+
+# no_row_per_person for stacked results. The rule is about the rows of one
+# simulation, so it takes `results` apart into the value of each
+# simulation, and checks it against the row counts of the data of that
+# simulation in manifest$n_rows_by_sim. A stacked table of 400 simulations
+# with 1 row each passes when each simulation has 400 rows of data.
+no_row_per_person_stacked <- function(results, m) {
+  by_sim <- m[["n_rows_by_sim"]]
+  sims <- if (is_count(m[["sims"]])) m[["sims"]] else max(c(0, by_sim$sim))
+  slices <- unstack_value(results, sims)
+  where <- character(0)
+  checked <- 0L
+  for (k in seq_len(sims)) {
+    here <- by_sim[by_sim$sim %in% k, , drop = FALSE]
+    n <- unlist(here[intersect(names(here), n_rows_columns)], use.names = FALSE)
+    n <- unique(n[is.finite(n) & n >= 2])
+    if (length(n) == 0) {
+      next
+    }
+    checked <- checked + 1L
+    found <- find_paths(slices[[k]], "x", function(o) {
+      return(person_size(o, n))
+    })
+    names(found) <- paste0(names(found), recycle0 = TRUE, " in simulation ", k)
+    where <- c(where, found)
+  }
+  return(result_row(
+    "no_row_per_person",
+    person_failures(where),
+    if (checked == 0) {
+      "n_rows_data is NA, 0 or 1 in each simulation, so nothing to check"
+    } else {
+      paste0(
+        "in each of the ",
+        checked,
+        " simulations with 2 or more rows of data, no data.frame has the ",
+        "rows of that data, and no vector or matrix has that many values ",
+        "in one dimension"
+      )
+    }
+  ))
+}
+
+# The columns of manifest$n_rows_by_sim with a row count.
+n_rows_columns <- c(
+  "n_rows_data",
+  "n_rows_before_exclusions",
+  "n_rows_after_exclusions"
+)
+
+# The stacked value `o` taken apart into a list with the value of each of
+# the `sims` simulations. This undoes the rules of the section Stacking of
+# save_results(): a data.frame with the column sim gives its rows of each
+# simulation without that column, a list named sim_0001 to sim_<sims> gives
+# its entries, and another plain list is taken apart element by element.
+# Each other value is the same in each simulation.
+unstack_value <- function(o, sims) {
+  if (is.data.frame(o)) {
+    if (!"sim" %in% names(o)) {
+      return(rep(list(o), sims))
+    }
+    f <- as.data.frame(o)
+    keep <- setdiff(names(f), "sim")
+    rows <- split(seq_len(nrow(f)), factor(f$sim, levels = seq_len(sims)))
+    return(unname(lapply(rows, function(i) {
+      return(f[i, keep, drop = FALSE])
+    })))
+  }
+  if (!is.list(o) || !is.null(oldClass(o))) {
+    return(rep(list(o), sims))
+  }
+  if (identical(names(o), sim_folder(seq_len(sims)))) {
+    return(unname(o))
+  }
+  parts <- lapply(o, unstack_value, sims = sims)
+  return(lapply(seq_len(sims), function(k) {
+    out <- lapply(parts, function(p) return(p[[k]]))
+    names(out) <- names(o)
+    return(out)
+  }))
 }
 
 # The size of `o` when it has one value for each row of the data, for one of

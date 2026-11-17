@@ -47,13 +47,19 @@ call \code{pbn::initialize_project()} whose \code{version} argument is the strin
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
-\verb{vNN_results/<scenario>/sim_NNNN/results.qs2} fails \code{\link[=check_results]{check_results()}},
-or a \code{results.qs2} is directly in \verb{vNN_results/}.
+\verb{vNN_results/<scenario>/sim_NNNN/results.qs2} of pbn 2026.11.22 fails
+\code{\link[=check_results]{check_results()}}, or a \code{results.qs2} is directly in \verb{vNN_results/}.
 
-The rule also reads each \code{results_gitexclude.qs2} beside such a file,
-also when git ignores it. It fails when the file does not hold exactly
-the analysis kinds that the manifest of \code{results.qs2} puts there.
-\code{\link[=check_results]{check_results()}} does not check it.
+The rule also reads each \verb{vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2}
+on the disk, also when git ignores it, and fails a file that fails
+\code{\link[=check_results]{check_results()}}. A clone of the repository has none, and the rule then
+needs none.
+
+The rule also reads each \code{results_gitexclude.qs2} beside a
+\code{results.qs2}, and each \code{sim_NNNN_gitexclude.qs2} beside a
+\code{sim_NNNN.qs2}, also when git ignores it. It fails when the file does
+not hold exactly the analysis kinds that the manifest of the results
+file puts there. \code{\link[=check_results]{check_results()}} does not check it.
 \item \code{gitexclude_not_tracked} (FAIL): git tracks a path with \code{gitexclude} in
 its name, from \verb{git ls-files} in \code{path}. Such a path holds data for each
 person. When git is not installed or \code{path} is not in a git repository,
@@ -74,7 +80,9 @@ name without the prefix \code{fake_data_}, or a file with the prefix is in
 another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders.
 \item \code{no_local_copy_of_pbn_function} (FAIL): a top-level assignment in a
 \verb{vNN_functions/*.R} file defines a function with the name of a pbn
-export.
+export. The one exception is \code{get_data}: a project MAY name its data
+function \code{get_data(scenario, sim)}, and a run script calls the export
+as \code{pbn::get_data()}.
 \item \code{loc_per_file} (FAIL): an \code{.R} file has more than 1000 code lines, as
 counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
@@ -85,7 +93,8 @@ folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_resu
 \code{check_project.R}, among others. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown. The rule reads the top level only, so
 it never warns on the folders \verb{output/} and \verb{output_fake_data/} that
-\code{\link[=make_outputs]{make_outputs()}} writes in \verb{vNN_results/<scenario>/}.
+\code{\link[=make_outputs]{make_outputs()}} writes in \verb{vNN_results/<scenario>/}, or on the folder
+\verb{sims_gitexclude/} that \code{\link[=save_results]{save_results()}} writes there.
 }
 
 The R parser, not a regular expression, finds the calls, the assignments

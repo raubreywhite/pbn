@@ -31,9 +31,16 @@ foreach. It starts a PSOCK cluster of \code{workers} new R sessions with
 \code{\link[parallel:makePSOCKcluster]{parallel::makePSOCKcluster()}}, registers it with
 \code{\link[doParallel:registerDoParallel]{doParallel::registerDoParallel()}}, and calls \code{p$run_all()} with the
 foreach path of plnr. A PSOCK cluster does not fork, so it also works on
-Windows. Before the run, \code{run_plan()} gives each worker these:
+Windows.
+
+Each worker starts with the library paths of this R session, from
+\code{\link[=.libPaths]{.libPaths()}}. While it starts the cluster, \code{run_plan()} sets the
+environment variable \code{R_LIBS} to these paths, and then it sets
+\code{R_LIBS} back. So a worker also finds a library that this R session added
+with \code{.libPaths()}, for example the temporary library of \verb{R CMD build}.
+Before the run, \code{run_plan()} gives each worker these:
 \itemize{
-\item the library paths of this R session, from \code{\link[=.libPaths]{.libPaths()}}.
+\item the library paths of this R session again, with \code{\link[=.libPaths]{.libPaths()}}.
 \item the packages attached in this R session, in the order of \code{\link[=search]{search()}},
 for example data.table after \code{library(data.table)} in the run script.
 \item the kind of random number generator of this R session, from
@@ -117,6 +124,7 @@ r[["null__sim_0002__mean_x__1"]]
 Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=add_data]{add_data()}},
-\code{\link[=cohort_data]{cohort_data()}}
+\code{\link[=cohort_data]{cohort_data()}},
+\code{\link[=get_data]{get_data()}}
 }
 \concept{plan}

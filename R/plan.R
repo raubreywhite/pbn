@@ -382,8 +382,8 @@ environment(count_rows) <- baseenv()
 #' only.
 #'
 #' While [run_plan()] runs, an error in `fn` or in a step fails each
-#' analysis that gets the data. When you call `p$get_data()` by hand, the
-#' error stops the call.
+#' analysis that gets the data. When you call [get_data()] or `p$get_data()`
+#' by hand, the error stops the call.
 #' @section The steps:
 #' pbn runs the steps in the order `raw`, `clean`, `cohort` and
 #' `after_cohort`, and gives the value of each step to the next one. Each
@@ -413,6 +413,13 @@ environment(count_rows) <- baseenv()
 #'
 #' Use `fn` for data that does not fit the steps, for example data that
 #' joins two cohorts. pbn then checks no rows inside `fn`.
+#'
+#' An exclusion MAY apply to the rows of a reshape, for example one row for
+#' each person and time point. Add these rows as a second data element, with
+#' a second call of `add_data()`. Its `raw` builds the reshaped rows, and its
+#' `cohort` applies the exclusion, so the cohort counts it. Its `raw` MAY
+#' reshape the value of the `raw` of the first element. pbn sets the seed to
+#' `sim` before each data element, so both draw the same numbers.
 #' @section A cohort as the data:
 #' `fn` or the step `cohort` MAY return a `cohort::CohortPipeline` after its
 #' exclusions. The analyses then get `data[[name]]` as the data.table of
@@ -603,17 +610,19 @@ add_data <- function(
 #'   `outcome = CFG$outcomes`. Each MUST be an atomic vector with at least one
 #'   value, with no `NA` and no value twice. A vector of length 1 is a
 #'   constant of the kind.
-#' @param control `TRUE` adds the analyses for the fake scenarios only, never
-#'   for `"real"`. Use it for a check that is not a result, for example a
-#'   model without adjustment that a fake scenario tests.
+#' @param control `TRUE` adds the kind to every fake scenario of
+#'   `scenarios`, and never to `"real"`. Use it for a check that is not a
+#'   result, for example a model without adjustment that a fake scenario
+#'   tests.
 #' @details
 #' Each analysis gets the name
 #' `<scenario>__sim_<kkkk>__<name>__<i>`, for example
 #' `null__sim_0003__models__2`. `<kkkk>` is the simulation with four digits,
 #' also for a scenario with 1 simulation. `<i>` counts the combinations of the
 #' extra dimensions from 1, with the last dimension of `...` changing
-#' fastest. A kind without extra dimensions has `<i>` 1. Give the name to
-#' `p$get_argset()` and `p$get_data()` to step through one analysis by hand.
+#' fastest. A kind without extra dimensions has `<i>` 1. To step through one
+#' analysis by hand, use [get_argset()] and [get_data()]. They take the
+#' scenario, the simulation, the kind and `<i>`, so you do not type the name.
 #'
 #' The argset of each analysis holds these fields:
 #' - `scenario`, `sim`, and `analysis`, the kind `name`.
@@ -685,7 +694,7 @@ add_data <- function(
 #'   },
 #'   outcome = CFG$outcomes
 #' )
-#' p$get_argset("null__sim_0002__means__2")
+#' pbn::get_argset(p, "null", 2, "means", 2)
 #' @family plan
 #' @seealso `vignette("pbn")`, which builds and runs a small fake project.
 #' @export

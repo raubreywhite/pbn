@@ -82,6 +82,17 @@ and attributes. It does not go into \code{manifest} or \code{exclusions}. A coun
 or 1 checks nothing, and a \code{manifest$n_rows_data} without another count
 checks nothing too. A table with fewer rows than the data passes, and
 so does a vector with one value for each group.
+
+For stacked results, the rule is about the rows of one simulation. It
+takes the results apart into the value of each simulation. It uses the
+column \code{sim} of each data.frame and the entries \verb{sim_<kkkk>} of each
+other value. It checks each simulation against its own counts in
+\code{manifest$n_rows_by_sim}. So 400 simulations of a 1-row table, a
+stacked table of 400 rows, pass with 400 rows of data in each
+simulation. A table with one row for each person in one simulation
+fails. Stacked results without \code{manifest$n_rows_by_sim} get the rule of
+unstacked results. An older pbn wrote their counts as \code{NA}, so they
+check nothing.
 \item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
 \code{sims}, and \code{scenario} is one string.
 \item \code{manifest_data}: \code{manifest} has exactly one of \code{data_md5} and
@@ -98,9 +109,10 @@ the manifest has no valid version. A results file that pbn 2026.11.20
 or older wrote has no \code{source_md5}, so it fails this rule.
 }
 
-\code{check_results()} checks the object of \code{results.qs2}. The object of
-\code{results_gitexclude.qs2} MAY hold data for each person, and these rules do
-not apply to it. See the section Two files of \code{\link[=save_results]{save_results()}}.
+\code{check_results()} checks the object of \code{results.qs2} or of
+\verb{sim_<kkkk>.qs2}. The object of a file of \code{gitexclude} MAY hold data for
+each person, and these rules do not apply to it. See the section Two
+files of \code{\link[=save_results]{save_results()}}.
 }
 \examples{
 x <- list(

@@ -47,6 +47,10 @@ Each extra dimension of the kind comes first as a column, unless the
 data.frame has a column of that name already. A data.table stays a
 data.table. A kind without extra dimensions has the data.frame of its one
 analysis.
+\item When each value is a list of data.frames with the same names, each name
+once, the element is a named list with these names. Each of its data.frames is the data.frames of that name
+row-bound, with the rule of a data.frame above. An example is
+\code{results$sem$estimates} and \code{results$sem$fit}.
 \item Otherwise, a kind without extra dimensions has the value of its one
 analysis.
 \item Otherwise, the element is a named list with one entry for each
@@ -61,7 +65,10 @@ The \code{manifest} is a list with these elements:
 \item \code{packages}, a named character vector. The names are the attached and
 loaded packages of this R session that are not base packages, and the
 values are their versions. \code{qs2} is always in the list, because it writes
-the file.
+the file. With 2 or more workers of \code{\link[=run_plan]{run_plan()}}, the list also holds
+the packages loaded on a worker at the end of the run. An example is the
+package of a model. With 2 or more workers, this R session also loads
+doParallel, so the list then holds doParallel too.
 \item \code{run_date}, the date of the call as \code{YYYY-MM-DD}. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.
 \item \code{version}, \code{scenario}, \code{sim} and \code{sims}.
@@ -112,21 +119,19 @@ that fails:
 \code{\link[=run_plan]{run_plan()}} for \code{p}. It stops when the settings of \code{scenarios} are not
 the settings in the argsets of \code{p}. It stops when a fake scenario has no function
 \verb{expect_<scenario>(results)} in the environment of
-\code{\link[=initialize_project]{initialize_project()}}, or when an analysis of \code{r} failed. It writes
-nothing then.
+\code{\link[=initialize_project]{initialize_project()}}, or when an analysis of \code{r} failed. In a git
+repository, it stops when git does not ignore each file that it would
+write into a folder \verb{sims_gitexclude/}. The error names the first 3 of
+the files that git does not ignore. It writes nothing then.
 \item It builds every results object, and the stacked object of each scenario
 with more than 1 simulation, and checks each with \code{\link[=check_results]{check_results()}}. On
 a failure, it prints each failed rule with \code{cat()}, writes nothing and
 stops.
 \item For each scenario, it replaces \code{check.csv} with one failed assertion,
 \verb{not checked yet}, so that \code{\link[=read_results]{read_results()}} refuses the new results
-until step 4 checks them. It writes
-\verb{<version>_results/<scenario>/results.qs2} for 1 simulation. For more
-simulations, it writes \verb{<version>_results/<scenario>/sim_<kkkk>/results.qs2}
-for each, and then the stacked
-\verb{<version>_results/<scenario>/results.qs2}. The section Stacking gives
-the rules. The files of the scenarios that are not in \code{scenarios} stay
-as they are.
+until step 4 checks them. Then it writes the files of the section The
+files. The files of the scenarios that are not in \code{scenarios} stay as
+they are.
 \item For each scenario with a function \verb{expect_<scenario>()}, it calls that
 function on the results of the scenario. \code{expect_real()} is optional.
 The function MUST return a data.frame with at least one row and the
@@ -138,11 +143,46 @@ assertion. This rule is the same for \code{expect_real()} and for the fake
 scenarios. \code{save_results()} writes \code{check.csv} to a temporary file in
 the same folder and renames it, so a reader never sees a part of it.
 \item After every scenario, it stops when a value of \code{pass} is not \code{TRUE}.
-The error lists the failed assertions. The files stay, so that you can
-find the fault, and \code{\link[=read_results]{read_results()}} stops on them until the assertions
-pass.
+It prints each failed assertion in full with \code{cat()}, because R cuts an
+error message at 1000 bytes by default. The error gives the number of
+failed assertions, their scenarios and the path of \code{check.csv}. The
+files stay, so that you can find the fault, and \code{\link[=read_results]{read_results()}} stops
+on them until the assertions pass.
 }
 }
+\section{The files}{
+
+git gets the results of each scenario as one file, \code{results.qs2}, and
+never the results of each simulation. These are the files of
+\verb{<version>_results/<scenario>/}:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{check.csv                  the assertions of expect_<scenario>()
+results.qs2                the results, stacked for more than 1 simulation
+results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
+sims_gitexclude/           only for more than 1 simulation
+  sim_<kkkk>.qs2           the results of simulation <kkkk>
+  sim_<kkkk>_gitexclude.qs2  the kinds of `gitexclude` of simulation <kkkk>
+}\if{html}{\out{</div>}}
+
+A scenario with 1 simulation has no folder \verb{sims_gitexclude/}. Its
+\code{results.qs2} is the results object of its one simulation. For more
+simulations, \code{results.qs2} holds the simulations stacked, with the rules
+of the section Stacking. The name of \verb{sims_gitexclude/} holds
+\code{gitexclude}, so the line \verb{*gitexclude*} of \code{.gitignore} keeps it out of
+git. A clone of the repository thus has no results of one simulation.
+\code{\link[=read_results]{read_results()}} with \code{sim} reads them.
+
+Before it writes a scenario, \code{save_results()} deletes each file in its
+\verb{sims_gitexclude/}, and prints one line when there was one. So no
+simulation of an earlier run stays, for example after \code{sims} became
+smaller. For a scenario that now has 1 simulation, it deletes the folder.
+
+pbn 2026.11.22 and older wrote the results of each simulation to
+\verb{sim_<kkkk>/results.qs2}, and git tracked them. When \code{save_results()}
+writes a scenario with more than 1 simulation, it deletes each folder
+\verb{sim_<kkkk>/} of that scenario, and prints one line.
+}
+
 \section{Stacking}{
 
 The stacked results hold every element of the results of simulation 1,
@@ -164,17 +204,22 @@ data.frame with a column \code{sim}, because pbn adds that column.
 
 The \code{manifest} is that of simulation 1. In it, \code{sim} and \code{n_rows_data}
 are \code{NA}, \code{sims} is the number of simulations, and \code{stacked} is \code{TRUE}.
-The columns \code{from_cache} and \code{cache_key} of \code{data_cache} are \code{NA}.
-Stacking stops when the files of the simulations are not exactly the
-simulations 1 to \code{sims}, for example after \code{sims} became smaller. Delete
-the folders of the higher simulations then.
+The columns \code{from_cache} and \code{cache_key} of \code{data_cache} are \code{NA}. The
+counts \code{n_rows_before_exclusions} and \code{n_rows_after_exclusions} are \code{NA}
+too. The element \code{n_rows_by_sim} holds the counts of each simulation. It
+is a data.frame with one row for each simulation and data element. Its
+columns are \code{sim}, \code{data}, \code{n_rows_data}, \code{n_rows_before_exclusions} and
+\code{n_rows_after_exclusions}. The rule \code{no_row_per_person} of
+\code{\link[=check_results]{check_results()}} reads it.
 }
 
 \section{Two files}{
 
 \code{save_results()} writes the results of the kinds in \code{gitexclude} to
-\code{results_gitexclude.qs2}, beside each \code{results.qs2}. \code{results.qs2} holds
-\code{manifest}, \code{exclusions} and every other kind. Use \code{gitexclude} for a
+\code{results_gitexclude.qs2}, beside \code{results.qs2}, and to
+\verb{sim_<kkkk>_gitexclude.qs2}, beside each \verb{sim_<kkkk>.qs2}. The section The
+files shows them. \code{results.qs2} and \verb{sim_<kkkk>.qs2} hold \code{manifest},
+\code{exclusions} and every other kind. Use \code{gitexclude} for a
 kind with fitted models, imputations or one row for each person. The
 project's \code{.gitignore} MUST hold the line \verb{*gitexclude*}, so that git
 never tracks that file. \code{\link[=read_results]{read_results()}} reads both files.
@@ -185,13 +230,14 @@ These rules apply:
 \code{gitexclude} is not an analysis kind of \code{p}.
 \item In a git repository, it also stops when git does not ignore
 \code{results_gitexclude.qs2}.
-\item \code{\link[=check_results]{check_results()}} checks \code{results.qs2} only. So \code{results.qs2} MUST hold
-an element other than \code{manifest}: one kind, or \code{exclusions}.
+\item \code{\link[=check_results]{check_results()}} checks \code{results.qs2} and \verb{sim_<kkkk>.qs2}, and not
+the files of \code{gitexclude}.
 \item The simulations of the two files are stacked apart, with the rules of
 the section Stacking.
 \item Without kinds in \code{gitexclude}, \code{save_results()} deletes an old
-\code{results_gitexclude.qs2} of the scenario and of each of its
-simulations. It prints one line for each deleted file.
+\code{results_gitexclude.qs2} of the scenario, and prints one line. The old
+\verb{sim_<kkkk>_gitexclude.qs2} files go with the rest of
+\verb{sims_gitexclude/}, see the section The files.
 }
 }
 

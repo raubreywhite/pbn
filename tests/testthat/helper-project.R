@@ -372,9 +372,9 @@ expected_tree <- c(
   "known/results.qs2",
   "null/check.csv",
   "null/results.qs2",
-  "null/sim_0001/results.qs2",
-  "null/sim_0002/results.qs2",
-  "null/sim_0003/results.qs2",
+  "null/sims_gitexclude/sim_0001.qs2",
+  "null/sims_gitexclude/sim_0002.qs2",
+  "null/sims_gitexclude/sim_0003.qs2",
   "real/output.txt",
   "real/results.qs2"
 )

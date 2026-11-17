@@ -14,7 +14,7 @@ tree_md5 <- function(p) {
 # the md5 of the run script, and without packages, the loaded packages.
 # Each element of the list holds the object and the names of its packages.
 results_without_source <- function(p) {
-  files <- grep("results\\.qs2$", results_files(p), value = TRUE)
+  files <- grep("\\.qs2$", results_files(p), value = TRUE)
   out <- lapply(files, function(f) {
     x <- qs2::qs_read(file.path(p$home, "v01_results", f))
     packages <- names(x$manifest$packages)
@@ -169,13 +169,13 @@ test_that("workers = 2 gives results identical to workers = 1, with the function
   expect_identical(two$check, one$check)
   expect_identical(
     names(two$results),
-    grep("results[.]qs2$", expected_tree, value = TRUE)
+    grep("[.]qs2$", expected_tree, value = TRUE)
   )
   for (f in names(one$results)) {
     expect_identical(two$results[[f]]$x, one$results[[f]]$x, info = f)
-    # The manifest names the packages loaded in the main R session. With 2
-    # workers that session loads doParallel, and plnr calls digest on the
-    # workers only.
+    # The manifest names the packages loaded in the main R session and on
+    # the workers. With 2 workers the main session loads doParallel. plnr
+    # calls digest on the workers only, and the manifest names it too.
     expect_identical(
       setdiff(two$results[[f]]$packages, one$results[[f]]$packages),
       "doParallel",
@@ -183,7 +183,7 @@ test_that("workers = 2 gives results identical to workers = 1, with the function
     )
     expect_identical(
       setdiff(one$results[[f]]$packages, two$results[[f]]$packages),
-      "digest",
+      character(0),
       info = f
     )
   }

@@ -14,6 +14,8 @@ pbn_exports <- c(
   "end_unless_real",
   "expect_biased",
   "expect_recovers",
+  "get_argset",
+  "get_data",
   "initialize_project",
   "keep_exclusions",
   "make_outputs",
@@ -24,6 +26,12 @@ pbn_exports <- c(
   "stamp_fake",
   "table1"
 )
+
+# The pbn exports that a project MAY define in its functions folder. The
+# migration table of NEWS.md names the data function of a project
+# get_data(scenario, sim), and a run script calls the export as
+# pbn::get_data(), so the two never meet.
+local_copy_allowed <- "get_data"
 
 run_script_pattern <- "^v[0-9]{2}_run\\.R$"
 functions_pattern <- "^v[0-9]{2}_functions$"
@@ -340,6 +348,7 @@ rule_results_contract <- function(path) {
     ) &
       is_file
   ]
+  files <- union(files, sim_files_on_disk(path, entries))
   old_place <- entries[
     grepl("^v[0-9]{2}_results/results\\.qs2$", entries) & is_file
   ]
@@ -372,9 +381,9 @@ rule_results_contract <- function(path) {
     problems <- paste(failed$rule, failed$detail, sep = ": ", recycle0 = TRUE)
     # results_gitexclude.qs2 MAY hold data for each person. It MUST hold the
     # kinds that the manifest names, and nothing else. git ignores it, so it
-    # is read from the disk.
-    private <- file.path(path, dirname(f), gitexclude_file)
-    problems <- c(problems, read_gitexclude(x, private)$problem)
+    # is read from the disk. The same holds for sim_<kkkk>_gitexclude.qs2.
+    private <- private_file_of(file.path(path, f))
+    problems <- c(problems, read_gitexclude(x, private, basename(f))$problem)
     if (length(problems) > 0) {
       out[[f]] <- project_row(
         rule,
@@ -385,6 +394,24 @@ rule_results_contract <- function(path) {
     }
   }
   return(bind_rows(out))
+}
+
+# The results file of each simulation, sims_gitexclude/sim_<kkkk>.qs2, in
+# each scenario folder of vNN_results/ in `entries`, relative to `path`.
+# git ignores these files, so they are read from the disk. A clone of the
+# repository has none.
+sim_files_on_disk <- function(path, entries) {
+  inside <- entries[grepl("^v[0-9]{2}_results/[^/]+/", entries)]
+  folders <- unique(sub("^(v[0-9]{2}_results/[^/]+)/.*$", "\\1", inside))
+  out <- character(0)
+  for (folder in folders) {
+    found <- list.files(
+      file.path(path, folder, sims_folder),
+      pattern = "^sim_[0-9]{4}\\.qs2$"
+    )
+    out <- c(out, file.path(folder, sims_folder, found))
+  }
+  return(out)
 }
 
 rule_gitexclude_not_tracked <- function(path) {
@@ -454,7 +481,10 @@ rule_no_local_copy_of_pbn_function <- function(path) {
     }
     defined <- character(0)
     for (e in as.list(exprs)) {
-      if (is_function_assignment(e) && as.character(e[[2]]) %in% pbn_exports) {
+      if (
+        is_function_assignment(e) &&
+          as.character(e[[2]]) %in% setdiff(pbn_exports, local_copy_allowed)
+      ) {
         defined <- c(defined, as.character(e[[2]]))
       }
     }
@@ -608,8 +638,9 @@ project_rules <- function() {
     results_contract = list(
       rule_results_contract,
       paste(
-        "every vNN_results/<scenario>/results.qs2 and",
-        "vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()"
+        "every vNN_results/<scenario>/results.qs2 and each",
+        "vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk",
+        "passes check_results()"
       )
     ),
     gitexclude_not_tracked = list(

@@ -31,13 +31,19 @@
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
-#'   `vNN_results/<scenario>/sim_NNNN/results.qs2` fails [check_results()],
-#'   or a `results.qs2` is directly in `vNN_results/`.
+#'   `vNN_results/<scenario>/sim_NNNN/results.qs2` of pbn 2026.11.22 fails
+#'   [check_results()], or a `results.qs2` is directly in `vNN_results/`.
 #'
-#'   The rule also reads each `results_gitexclude.qs2` beside such a file,
-#'   also when git ignores it. It fails when the file does not hold exactly
-#'   the analysis kinds that the manifest of `results.qs2` puts there.
-#'   [check_results()] does not check it.
+#'   The rule also reads each `vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2`
+#'   on the disk, also when git ignores it, and fails a file that fails
+#'   [check_results()]. A clone of the repository has none, and the rule then
+#'   needs none.
+#'
+#'   The rule also reads each `results_gitexclude.qs2` beside a
+#'   `results.qs2`, and each `sim_NNNN_gitexclude.qs2` beside a
+#'   `sim_NNNN.qs2`, also when git ignores it. It fails when the file does
+#'   not hold exactly the analysis kinds that the manifest of the results
+#'   file puts there. [check_results()] does not check it.
 #' - `gitexclude_not_tracked` (FAIL): git tracks a path with `gitexclude` in
 #'   its name, from `git ls-files` in `path`. Such a path holds data for each
 #'   person. When git is not installed or `path` is not in a git repository,
@@ -58,7 +64,9 @@
 #'   another folder. [make_outputs()] writes these folders.
 #' - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
 #'   `vNN_functions/*.R` file defines a function with the name of a pbn
-#'   export.
+#'   export. The one exception is `get_data`: a project MAY name its data
+#'   function `get_data(scenario, sim)`, and a run script calls the export
+#'   as `pbn::get_data()`.
 #' - `loc_per_file` (FAIL): an `.R` file has more than 1000 code lines, as
 #'   counted by [org::loc_per_file()].
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
@@ -69,7 +77,8 @@
 #'   `check_project.R`, among others. A top-level dotfile and a top-level
 #'   `*.Rproj` file are never unknown. The rule reads the top level only, so
 #'   it never warns on the folders `output/` and `output_fake_data/` that
-#'   [make_outputs()] writes in `vNN_results/<scenario>/`.
+#'   [make_outputs()] writes in `vNN_results/<scenario>/`, or on the folder
+#'   `sims_gitexclude/` that [save_results()] writes there.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.

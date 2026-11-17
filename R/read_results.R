@@ -13,8 +13,13 @@
 #' `<home>/<version>_results/<scenario>/results.qs2`. That is the results of
 #' a scenario with 1 simulation, or the simulations that [save_results()]
 #' stacked. With a number `k`, it reads
-#' `<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2`, where
-#' `<kkkk>` is `k` with four digits.
+#' `<home>/<version>_results/<scenario>/sims_gitexclude/sim_<kkkk>.qs2`,
+#' where `<kkkk>` is `k` with four digits. git ignores that folder, so a clone
+#' of the repository has no such file. Then `read_results()` stops, and the
+#' error says to run the scenario with [run_plan()] and [save_results()].
+#' For a scenario with 1 simulation, `sim = 1` reads its `results.qs2`, the
+#' results of that simulation.
+#' The section The files of [save_results()] shows each file.
 #'
 #' `read_results()` stops when `<home>/<version>_results/<scenario>/check.csv`
 #' exists and holds a value of `pass` that is not `TRUE`, also when it reads
@@ -26,9 +31,10 @@
 #' `read_results()` returns one list with the elements of both files. The
 #' order is that of a results object: `manifest`, `exclusions`, and the
 #' analysis kinds in the order of `manifest$analyses`. These rules apply to
-#' `results_gitexclude.qs2`:
+#' `results_gitexclude.qs2`, and to `sim_<kkkk>_gitexclude.qs2` for one
+#' simulation:
 #' - When the manifest names kinds in it and the file is missing, it returns
-#'   the elements of `results.qs2`. A clone of the repository has no such
+#'   the elements of the results file. A clone of the repository has no such
 #'   file. It gives one warning that names the missing kinds and the file.
 #' - It stops when the file holds other kinds than the manifest names, also
 #'   when the manifest names none.
@@ -50,6 +56,7 @@ read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
     )
   }
   folder <- file.path(home, paste0(version, "_results"), scenario)
+  file <- file.path(folder, "results.qs2")
   if (!is.null(sim)) {
     if (!is_sim_number(sim)) {
       stop(
@@ -57,14 +64,53 @@ read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
         call. = FALSE
       )
     }
-    folder <- file.path(folder, sim_folder(sim))
+    file <- file.path(folder, sim_file(sim))
+    if (!file.exists(file) && sim == 1 && is_one_sim(folder)) {
+      # Simulation 1 of a scenario with 1 simulation is its results.qs2.
+      file <- file.path(folder, "results.qs2")
+    }
+    if (!file.exists(file)) {
+      stop_no_sim_file(file, folder, scenario, sim)
+    }
   }
-  file <- file.path(folder, "results.qs2")
   if (!file.exists(file)) {
     stop("There is no results file at ", file, call. = FALSE)
   }
-  check_assertions(file.path(home, paste0(version, "_results"), scenario), file)
-  return(merge_gitexclude(qs2::qs_read(file), folder))
+  check_assertions(folder, file)
+  return(merge_gitexclude(qs2::qs_read(file), file))
+}
+
+# TRUE when the results.qs2 of the scenario folder `folder` is the results
+# of a scenario with 1 simulation: its manifest has sims 1, and it is not
+# stacked.
+is_one_sim <- function(folder) {
+  file <- file.path(folder, "results.qs2")
+  if (!file.exists(file)) {
+    return(FALSE)
+  }
+  m <- tryCatch(qs2::qs_read(file)[["manifest"]], error = function(e) {
+    return(NULL)
+  })
+  return(is.list(m) && isTRUE(m[["sims"]] == 1) && !isTRUE(m[["stacked"]]))
+}
+
+# Stops, because the results file `file` of the simulation `sim` is missing.
+# git does not track it, so a clone of the repository has none.
+stop_no_sim_file <- function(file, folder, scenario, sim) {
+  stop(
+    "There is no results file of the simulation ",
+    sim,
+    " at ",
+    file,
+    ". git does not track the results of each simulation, so a clone of ",
+    "the repository has none. To write them, run the scenario \"",
+    scenario,
+    "\" with pbn::run_plan() and pbn::save_results(). read_results() with ",
+    "sim = NULL reads ",
+    file.path(folder, "results.qs2"),
+    ", the results of the scenario, with the simulations stacked.",
+    call. = FALSE
+  )
 }
 
 # Stops when the check.csv of the scenario folder `folder` holds an

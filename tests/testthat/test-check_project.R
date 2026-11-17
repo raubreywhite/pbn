@@ -200,6 +200,28 @@ test_that("no_local_copy_of_pbn_function passes a call to a pbn export", {
   expect_identical(failed_rules(found), character(0))
 })
 
+test_that("no_local_copy_of_pbn_function fails a local get_argset and passes the data function get_data of a project", {
+  p <- local_project()
+  # The project of local_project() defines get_data(scenario, sim).
+  expect_true(any(grepl(
+    "^get_data <- function",
+    readLines(file.path(p$home, "v01_functions", "get_data.R"))
+  )))
+  expect_identical(failed_rules(project_findings(p$home)), character(0))
+  write_lines(
+    p$home,
+    "v01_functions/step.R",
+    "get_argset <- function(p) return(1)"
+  )
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "no_local_copy_of_pbn_function")
+  expect_match(
+    found$detail[found$status == "FAIL"],
+    "v01_functions/step.R: defines get_argset, a pbn export",
+    fixed = TRUE
+  )
+})
+
 test_that("loc_per_file fails on a file with 1001 code lines and passes 1000", {
   p <- local_project()
   write_lines(p$home, "adhoc/long.R", paste0("x", seq_len(1000), " <- 1"))
@@ -410,6 +432,56 @@ test_that("results_contract checks the file of each simulation", {
     "exclusions_table",
     fixed = TRUE
   )
+})
+
+test_that("results_contract checks each file of sims_gitexclude/ that git ignores, and needs none in a clone", {
+  p <- local_project()
+  git_in(p$home, "init", "-q")
+  write_lines(p$home, ".gitignore", "*gitexclude*")
+  folder <- file.path(p$home, "v01_results", "null")
+  dir.create(file.path(folder, "sims_gitexclude"), recursive = TRUE)
+  x <- valid_results()
+  x$manifest$scenario <- "null"
+  x$manifest$data_md5 <- NULL
+  x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
+  x$manifest$sims <- 3L
+  qs2::qs_save(x, file.path(folder, "results.qs2"))
+  x$manifest$sim <- 2L
+  sim_file <- file.path(folder, "sims_gitexclude", "sim_0002.qs2")
+  qs2::qs_save(x, sim_file)
+  rule <- function() {
+    found <- project_findings(p$home)
+    return(found[found$rule == "results_contract", ])
+  }
+  expect_identical(rule()$status, "PASS")
+
+  x$exclusions$n_after[2] <- 41
+  qs2::qs_save(x, sim_file)
+  found <- rule()
+  expect_identical(found$status, "FAIL")
+  expect_identical(found$path, "v01_results/null/sims_gitexclude/sim_0002.qs2")
+  expect_match(found$detail, "exclusions_table", fixed = TRUE)
+
+  # The file of the kinds of gitexclude beside it MUST hold the kinds that
+  # its manifest names.
+  x$exclusions$n_after[2] <- 40
+  qs2::qs_save(x, sim_file)
+  qs2::qs_save(
+    list(models = 1),
+    file.path(folder, "sims_gitexclude", "sim_0002_gitexclude.qs2")
+  )
+  expect_match(
+    rule()$detail,
+    "the manifest of sim_0002.qs2 names no analysis kind in sim_0002_gitexclude.qs2",
+    fixed = TRUE
+  )
+
+  found <- project_findings(p$home)
+  expect_identical(found$status[found$rule == "unknown_path"], "PASS")
+
+  # A clone has no folder sims_gitexclude/.
+  unlink(file.path(folder, "sims_gitexclude"), recursive = TRUE)
+  expect_identical(rule()$status, "PASS")
 })
 
 write_check_csv <- function(home, scenario, pass) {

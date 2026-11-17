@@ -177,6 +177,86 @@ test_that("a kind with values other than data.frames is a list keyed by <name>__
   expect_identical(known$own, data.frame(outcome = c("Y", "Z")))
 })
 
+test_that("a kind whose analyses return a named list of data.frames is a named list of row-bound data.frames, with the dimensions first", {
+  p <- local_project()
+  sourced <- init(p)
+  sc <- scenarios(sourced$CFG)
+  plan <- build_plan(sourced, sc)
+  add_analyses(
+    plan,
+    sc,
+    "sem",
+    fn = function(data, argset) {
+      return(list(
+        estimates = data.frame(term = c("a", "b"), estimate = c(1, 2)),
+        fit = data.frame(cfi = 0.9)
+      ))
+    },
+    adjust = c("x", "none")
+  )
+  # Other names in two analyses: a list keyed by <name>__<i>, as before.
+  add_analyses(
+    plan,
+    sc,
+    "mixed",
+    fn = function(data, argset) {
+      out <- list(data.frame(v = 1))
+      names(out) <- if (argset$adjust == "x") "a" else "b"
+      return(out)
+    },
+    adjust = c("x", "none")
+  )
+  # The same names, and values that are not data.frames: as before.
+  add_analyses(
+    plan,
+    sc,
+    "counts",
+    fn = function(data, argset) return(list(n = 1L, m = 2L)),
+    adjust = c("x", "none")
+  )
+  r <- run_plan(plan)
+  utils::capture.output(save_results(r, plan, sc))
+  real <- read_results("v01", home = p$home)
+  expect_identical(
+    real$counts,
+    list(counts__1 = list(n = 1L, m = 2L), counts__2 = list(n = 1L, m = 2L))
+  )
+  expect_identical(names(real$sem), c("estimates", "fit"))
+  expect_identical(
+    real$sem$estimates,
+    data.frame(
+      adjust = rep(c("x", "none"), each = 2),
+      term = c("a", "b", "a", "b"),
+      estimate = c(1, 2, 1, 2)
+    )
+  )
+  expect_identical(
+    real$sem$fit,
+    data.frame(adjust = c("x", "none"), cfi = 0.9)
+  )
+  expect_identical(
+    real$mixed,
+    list(
+      mixed__1 = list(a = data.frame(v = 1)),
+      mixed__2 = list(b = data.frame(v = 1))
+    )
+  )
+  # The stacker adds the column sim to each data.frame of the list.
+  null <- read_results("v01", "null", home = p$home)
+  expect_identical(
+    null$sem$fit,
+    data.frame(
+      sim = rep(1:3, each = 2),
+      adjust = rep(c("x", "none"), 3),
+      cfi = 0.9
+    )
+  )
+  expect_identical(nrow(null$sem$estimates), 12L)
+  expect_identical(unique(check_results(null)$status), "PASS")
+  found <- project_findings(p$home)
+  expect_identical(found$status[found$rule == "results_contract"], "PASS")
+})
+
 test_that("a missing expect_ function for a fake scenario stops before anything is saved", {
   p <- local_project()
   run <- run_project(p)
@@ -204,10 +284,18 @@ test_that("a failed assertion stops after every scenario, and check_project then
       error = function(e) e
     )
   )
-  expect_match(
+  expect_identical(
     conditionMessage(err),
-    "These assertions failed:\n  known: events of x in group a (expected 5, observed 4)",
-    fixed = TRUE
+    paste0(
+      "1 of 4 assertions failed, in the scenarios known. pbn printed each ",
+      "failed assertion above. Each scenario has its assertions in ",
+      file.path(p$home, "v01_results", "<scenario>", "check.csv"),
+      "."
+    )
+  )
+  expect_identical(
+    out[match("pbn: these assertions failed:", out) + 1],
+    "  known: events of x in group a (expected 5, observed 4)"
   )
   # null came after known, and it was checked and written too.
   expect_identical(results_files(p), setdiff(expected_tree, "real/output.txt"))
@@ -225,6 +313,46 @@ test_that("a failed assertion stops after every scenario, and check_project then
   expect_identical(known$pass, c(FALSE, TRUE))
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), "scenario_checks")
+})
+
+test_that("save_results prints every failed assertion in full, and its error stays below 1000 bytes", {
+  long <- paste("the estimate of a model with a long name", strrep("x", 60))
+  checks <- data.frame(
+    scenario = rep(c("null", "confounded"), each = 26),
+    assertion = paste(long, 1:52),
+    expected = "0",
+    observed = "1",
+    pass = FALSE
+  )
+  out <- utils::capture.output(
+    err <- tryCatch(
+      stop_on_failed_checks(checks, "/x/v01_results"),
+      error = function(e) return(e)
+    )
+  )
+  expect_identical(
+    out,
+    c(
+      "pbn: these assertions failed:",
+      paste0(
+        "  ",
+        checks$scenario,
+        ": ",
+        checks$assertion,
+        " (expected 0, observed 1)"
+      )
+    )
+  )
+  expect_identical(
+    conditionMessage(err),
+    paste0(
+      "52 of 52 assertions failed, in the scenarios null, confounded. pbn ",
+      "printed each failed assertion above. Each scenario has its assertions ",
+      "in /x/v01_results/<scenario>/check.csv."
+    )
+  )
+  expect_lt(nchar(conditionMessage(err), "bytes"), 1000)
+  expect_null(stop_on_failed_checks(checks[0, ], "/x/v01_results"))
 })
 
 test_that("an expect_ function that errors, returns zero rows or a wrong shape is a failed assertion", {
@@ -246,7 +374,12 @@ test_that("an expect_ function that errors, returns zero rows or a wrong shape i
       paste0("expect_known <- function(results) ", bodies[[nm]])
     )
     run <- run_project(p, only = c("known", "null"))
-    expect_error(quiet_save(run), "These assertions failed", info = nm)
+    expect_error(
+      quiet_save(run),
+      "1 of 3 assertions failed, in the scenarios known.",
+      fixed = TRUE,
+      info = nm
+    )
     found <- utils::read.csv(
       file.path(p$home, "v01_results", "known", "check.csv")
     )
@@ -272,15 +405,28 @@ test_that("a result with one row for each row of the data fails no_row_per_perso
     out <- utils::capture.output(
       err <- tryCatch(save_results(r, plan, sc), error = function(e) e)
     )
+    # real, known, the 3 simulations of null and the stacked null.
     expect_match(
       conditionMessage(err),
-      "5 failures of check_results(), printed above. pbn saved nothing.",
+      "6 failures of check_results(), printed above. pbn saved nothing.",
       fixed = TRUE,
       info = paste("workers", workers)
     )
     expect_true(
       any(grepl(
-        "null/sim_0002: no_row_per_person: x$copy (a data.frame with 40 rows)",
+        "null/sims_gitexclude/sim_0002.qs2: no_row_per_person: x$copy (a data.frame with 40 rows)",
+        out,
+        fixed = TRUE
+      )),
+      info = paste("workers", workers)
+    )
+    expect_true(
+      any(grepl(
+        paste0(
+          "null stacked: no_row_per_person: x$copy in simulation 1 (a ",
+          "data.frame with 40 rows), x$copy in simulation 2 (a data.frame ",
+          "with 40 rows), x$copy in simulation 3 (a data.frame with 40 rows)"
+        ),
         out,
         fixed = TRUE
       )),
@@ -369,17 +515,166 @@ test_that("save_results stops for real when data_raw did not exist, and saves th
   expect_false(file.exists(file.path(p$home, "v01_results", "real")))
 })
 
-test_that("results of simulations above sims stop save_results before it saves anything", {
+# Sets the simulations of null in the functions folder of local_project(),
+# with an expect_null() that passes for any number of simulations.
+set_null_sims <- function(p, sims) {
+  cfg <- file.path(p$home, "v01_functions", "_cfg.R")
+  lines <- sub("sims = c(1, 1, 3)", paste0("sims = c(1, 1, ", sims, ")"), readLines(cfg), fixed = TRUE)
+  writeLines(lines, cfg)
+  write_lines(
+    p$home,
+    "v01_functions/expect_null.R",
+    "expect_null <- function(results) data.frame(assertion = 'a', expected = 1, observed = 1, pass = TRUE)"
+  )
+  return(invisible(NULL))
+}
+
+test_that("save_results empties sims_gitexclude/ of an earlier run with more simulations, and read_results then stops on the removed simulation", {
+  p <- local_project()
+  first <- run_project(p)
+  quiet_save(first)
+  folder <- file.path(p$home, "v01_results", "null", "sims_gitexclude")
+  set_null_sims(p, 2)
+  run <- run_project(p)
+  out <- utils::capture.output(save_results(run$r, run$plan, run$scenarios))
+  expect_identical(
+    grep("sims_gitexclude", out, value = TRUE),
+    paste0(
+      "pbn: emptied ",
+      folder,
+      "/ before it wrote the scenario \"null\": it held 3 files of an ",
+      "earlier run."
+    )
+  )
+  expect_identical(
+    sort(list.files(folder)),
+    c("sim_0001.qs2", "sim_0002.qs2")
+  )
+  expect_identical(read_results("v01", "null", home = p$home)$manifest$sims, 2L)
+  expect_identical(
+    read_results("v01", "null", sim = 2, home = p$home)$manifest$sims,
+    2L
+  )
+  expect_error(
+    read_results("v01", "null", sim = 3, home = p$home),
+    "There is no results file of the simulation 3",
+    fixed = TRUE
+  )
+})
+
+test_that("save_results removes sims_gitexclude/ when the scenario now has 1 simulation, and read_results(sim = 2) then stops", {
+  p <- local_project()
+  first <- run_project(p)
+  quiet_save(first)
+  folder <- file.path(p$home, "v01_results", "null", "sims_gitexclude")
+  set_null_sims(p, 1)
+  run <- run_project(p)
+  out <- utils::capture.output(save_results(run$r, run$plan, run$scenarios))
+  expect_identical(
+    grep("sims_gitexclude", out, value = TRUE),
+    paste0(
+      "pbn: deleted ",
+      folder,
+      "/, because the scenario \"null\" now has 1 simulation: it held 3 ",
+      "files of an earlier run."
+    )
+  )
+  expect_false(dir.exists(folder))
+  expect_identical(
+    read_results("v01", "null", sim = 1, home = p$home),
+    read_results("v01", "null", home = p$home)
+  )
+  expect_identical(read_results("v01", "null", home = p$home)$manifest$sims, 1L)
+  expect_error(
+    read_results("v01", "null", sim = 2, home = p$home),
+    "There is no results file of the simulation 2",
+    fixed = TRUE
+  )
+})
+
+test_that("save_results deletes the folders sim_NNNN/ of the old layout and prints one line", {
   p <- local_project()
   run <- run_project(p)
-  old <- file.path(p$home, "v01_results", "null", "sim_0004")
-  dir.create(old, recursive = TRUE)
-  qs2::qs_save(list(a = 1), file.path(old, "results.qs2"))
+  folder <- file.path(p$home, "v01_results", "null")
+  for (k in c("sim_0001", "sim_0002", "sim_0005")) {
+    dir.create(file.path(folder, k), recursive = TRUE)
+    qs2::qs_save(list(a = 1), file.path(folder, k, "results.qs2"))
+    writeLines("x", file.path(folder, k, "run.log"))
+  }
+  # A file with such a name is not a folder of the old layout.
+  writeLines("x", file.path(folder, "sim_0009"))
+  out <- utils::capture.output(save_results(run$r, run$plan, run$scenarios))
+  expect_identical(
+    grep("old layout", out, value = TRUE),
+    paste0(
+      "pbn: deleted the 3 folders sim_<kkkk>/ of the old layout in ",
+      folder,
+      ". The results of each simulation are now in sims_gitexclude/."
+    )
+  )
+  expect_identical(
+    results_files(p),
+    sort(c(setdiff(expected_tree, "real/output.txt"), "null/sim_0009"))
+  )
+  # Without an old folder, no line.
+  out <- utils::capture.output(save_results(run$r, run$plan, run$scenarios))
+  expect_identical(grep("old layout", out, value = TRUE), character(0))
+})
+
+test_that("in a git repository, save_results stops until git ignores sims_gitexclude/", {
+  p <- local_project()
+  git_in(p$home, "init", "-q")
+  write_lines(p$home, ".gitignore", "*.log")
+  run <- run_project(p)
   expect_error(
     quiet_save(run),
-    "holds the results of other simulations: sim_0004/results.qs2"
+    "git does not ignore v01_results/null/sims_gitexclude/sim_0001.qs2",
+    fixed = TRUE
   )
-  expect_identical(results_files(p), "null/sim_0004/results.qs2")
+  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  # A .gitignore that ignores the file of simulation 1 only.
+  write_lines(
+    p$home,
+    ".gitignore",
+    "v01_results/null/sims_gitexclude/sim_0001.qs2"
+  )
+  expect_error(
+    quiet_save(run),
+    paste0(
+      "git does not ignore v01_results/null/sims_gitexclude/sim_0002.qs2 ",
+      "and v01_results/null/sims_gitexclude/sim_0003.qs2."
+    ),
+    fixed = TRUE
+  )
+  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  # The files of the kinds of gitexclude of each simulation too.
+  write_lines(
+    p$home,
+    ".gitignore",
+    c("results_gitexclude.qs2", "sim_000[0-9].qs2")
+  )
+  expect_error(
+    utils::capture.output(
+      save_results(run$r, run$plan, run$scenarios, gitexclude = "models")
+    ),
+    paste0(
+      "git does not ignore v01_results/null/sims_gitexclude/sim_0001_gitexclude.qs2, ",
+      "v01_results/null/sims_gitexclude/sim_0002_gitexclude.qs2 and ",
+      "v01_results/null/sims_gitexclude/sim_0003_gitexclude.qs2."
+    ),
+    fixed = TRUE
+  )
+  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  write_lines(p$home, ".gitignore", "*gitexclude*")
+  quiet_save(run)
+  expect_identical(results_files(p), setdiff(expected_tree, "real/output.txt"))
+  # git sees the stacked file and check.csv of null, and no file of a
+  # simulation.
+  seen <- git_in(p$home, "ls-files", "--others", "--exclude-standard")
+  expect_identical(
+    sort(grep("^v01_results/null/", seen, value = TRUE)),
+    c("v01_results/null/check.csv", "v01_results/null/results.qs2")
+  )
 })
 
 test_that("a run of one scenario writes only under its folder and leaves the others byte-identical", {
@@ -456,7 +751,11 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
     fixed = TRUE
   ))
   run <- run_project(p)
-  expect_error(quiet_save(run), "These assertions failed")
+  expect_error(
+    quiet_save(run),
+    "1 of 4 assertions failed, in the scenarios null.",
+    fixed = TRUE
+  )
   file <- file.path(p$home, "v01_results", "null", "results.qs2")
   expect_true(file.exists(file))
   expect_error(
@@ -474,7 +773,7 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
   )
   expect_error(
     read_results("v01", "null", sim = 2, home = p$home),
-    "sim_0002/results.qs2. Fix the analysis",
+    "sims_gitexclude/sim_0002.qs2. Fix the analysis",
     fixed = TRUE
   )
   expect_identical(names(qs2::qs_read(file))[1], "manifest")
@@ -517,10 +816,14 @@ test_that("an expect_real() that returns zero assertions is a failed assertion, 
     "expect_real <- function(results) data.frame(assertion = character(0), expected = 1[0], observed = 1[0], pass = logical(0))"
   )
   run <- run_project(p, only = c("real", "known"))
-  expect_error(
-    quiet_save(run),
-    "real: expect_real() returns at least one assertion (expected see the assertion, observed 0 rows)",
+  out <- utils::capture.output(expect_error(
+    save_results(run$r, run$plan, run$scenarios),
+    "1 of 3 assertions failed, in the scenarios real.",
     fixed = TRUE
+  ))
+  expect_true(
+    "  real: expect_real() returns at least one assertion (expected see the assertion, observed 0 rows)" %in%
+      out
   )
   found <- utils::read.csv(file.path(p$home, "v01_results", "real", "check.csv"))
   expect_identical(found$pass, FALSE)
@@ -546,7 +849,11 @@ test_that("check.csv is written to a temporary file in its folder and renamed in
   })
   write_lines(p$home, "v01_functions/expect_known.R", expect_known_lines(5))
   run <- run_project(p, only = "known")
-  expect_error(quiet_save(run), "These assertions failed")
+  expect_error(
+    quiet_save(run),
+    "1 of 2 assertions failed, in the scenarios known.",
+    fixed = TRUE
+  )
   expect_identical(seen$to, csv)
   expect_identical(dirname(seen$from), dirname(csv))
   expect_false(identical(seen$from, csv))
@@ -558,5 +865,34 @@ test_that("check.csv is written to a temporary file in its folder and renamed in
   expect_identical(
     list.files(dirname(csv)),
     c("check.csv", "results.qs2")
+  )
+})
+
+test_that("read_results with sim = 1 reads the results.qs2 of a scenario with 1 simulation", {
+  p <- local_project()
+  run <- run_project(p)
+  quiet_save(run)
+  for (s in c("real", "known")) {
+    expect_identical(
+      read_results("v01", s, sim = 1, home = p$home),
+      read_results("v01", s, home = p$home),
+      info = s
+    )
+  }
+  expect_error(
+    read_results("v01", "known", sim = 2, home = p$home),
+    "There is no results file of the simulation 2",
+    fixed = TRUE
+  )
+  # A stacked scenario reads the file of simulation 1, and stops without it.
+  expect_identical(
+    read_results("v01", "null", sim = 1, home = p$home)$manifest$sim,
+    1L
+  )
+  unlink(file.path(p$home, "v01_results", "null", "sims_gitexclude"), recursive = TRUE)
+  expect_error(
+    read_results("v01", "null", sim = 1, home = p$home),
+    "There is no results file of the simulation 1",
+    fixed = TRUE
   )
 })

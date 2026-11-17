@@ -270,6 +270,11 @@ test_that("after run_plan, p$get_data() and p$run_one() by hand read the cache a
   expect_s3_class(d, "data.table")
   expect_identical(attr(d, "pbn_cache")$from_cache, TRUE)
   expect_identical(nrow(d), run$r[["null__sim_0002__pbn_n_rows"]][["d"]])
+  # pbn::get_data() takes the same path, with the same one line.
+  out <- utils::capture.output(short <- get_data(run$plan, "null", 2)$d)
+  expect_identical(out, cache_lines(p, rep(NA, 3))[3])
+  expect_identical(short, d)
+  expect_identical(length(calls(p)), n_calls)
 
   out <- utils::capture.output(
     one <- run$plan$run_one("real__sim_0001__means__1")

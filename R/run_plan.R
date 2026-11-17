@@ -16,8 +16,15 @@
 #' [parallel::makePSOCKcluster()], registers it with
 #' [doParallel::registerDoParallel()], and calls `p$run_all()` with the
 #' foreach path of plnr. A PSOCK cluster does not fork, so it also works on
-#' Windows. Before the run, `run_plan()` gives each worker these:
-#' - the library paths of this R session, from [.libPaths()].
+#' Windows.
+#'
+#' Each worker starts with the library paths of this R session, from
+#' [.libPaths()]. While it starts the cluster, `run_plan()` sets the
+#' environment variable `R_LIBS` to these paths, and then it sets
+#' `R_LIBS` back. So a worker also finds a library that this R session added
+#' with `.libPaths()`, for example the temporary library of `R CMD build`.
+#' Before the run, `run_plan()` gives each worker these:
+#' - the library paths of this R session again, with [.libPaths()].
 #' - the packages attached in this R session, in the order of [search()],
 #'   for example data.table after `library(data.table)` in the run script.
 #' - the kind of random number generator of this R session, from
@@ -124,11 +131,16 @@ run_plan <- function(p, workers = 1) {
   on.exit(clear_cache(info, cached), add = TRUE)
   set_catch(info, TRUE)
   on.exit(set_catch(info, FALSE), add = TRUE)
+  # The packages that the workers loaded. With 1 worker, this R session is
+  # the worker, and save_results() reads its packages.
+  info$worker_packages <- NULL
   if (workers == 1) {
     p$set_use_foreach(FALSE)
     r <- p$run_all()
   } else {
-    r <- run_on_cluster(p, workers)
+    run <- run_on_cluster(p, workers)
+    r <- run$r
+    info$worker_packages <- run$packages
   }
   r <- unbox_results(r, names(p$analyses))
   if (workers > 1 && length(cached) > 0) {
@@ -157,9 +169,11 @@ check_parallel_packages <- function() {
 }
 
 # p$run_all() with the foreach path of plnr, on a PSOCK cluster of
-# `workers` R sessions. The cluster stops on exit, also after an error.
+# `workers` R sessions. The cluster stops on exit, also after an error. The
+# value is a list: `r`, the value of p$run_all(), and `packages`, the
+# versions of the packages loaded on the workers after the run.
 run_on_cluster <- function(p, workers) {
-  cl <- parallel::makePSOCKcluster(workers)
+  cl <- make_cluster(workers)
   on.exit(
     {
       parallel::stopCluster(cl)
@@ -170,7 +184,40 @@ run_on_cluster <- function(p, workers) {
   prepare_workers(cl)
   doParallel::registerDoParallel(cl)
   p$set_use_foreach(TRUE)
-  return(repair_tables(p$run_all()))
+  r <- repair_tables(p$run_all())
+  found <- parallel::clusterCall(cl, namespace_versions)
+  packages <- unlist(unname(found))
+  packages <- packages[!duplicated(names(packages))]
+  return(list(r = r, packages = packages))
+}
+
+# The version of each loaded namespace of the R session that runs it, named
+# by the package. Its environment is the base environment, so a worker
+# needs no pbn to run it.
+namespace_versions <- function() {
+  pkgs <- loadedNamespaces()
+  return(vapply(
+    pkgs,
+    function(p) return(as.character(getNamespaceVersion(p))),
+    character(1)
+  ))
+}
+environment(namespace_versions) <- baseenv()
+
+# A PSOCK cluster of `workers` R sessions that start with the library paths
+# of this R session. A worker reads R_LIBS when it starts, before it
+# unserialises any object, so it finds a library that this R session added
+# with .libPaths() after its start, for example the temporary library of
+# R CMD build.
+make_cluster <- function(workers) {
+  old <- Sys.getenv("R_LIBS", unset = NA)
+  on.exit(
+    if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old),
+    add = TRUE
+  )
+  # R_LIBS is a transport between pbn's own processes, not a configuration.
+  Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
+  return(parallel::makePSOCKcluster(workers))
 }
 
 # requireNamespace(), in one place, so that the tests can mock it.
@@ -212,7 +259,7 @@ check_data_keys <- function(info) {
 # random number generator, the objects of the sourced environment and the
 # paths of org::project of this R session.
 prepare_workers <- function(cl) {
-  parallel::clusterCall(cl, .libPaths, .libPaths())
+  parallel::clusterCall(cl, set_lib_paths, .libPaths())
   attached <- sub("^package:", "", grep("^package:", search(), value = TRUE))
   parallel::clusterCall(cl, attach_packages, attached)
   kinds <- RNGkind()
@@ -242,6 +289,16 @@ prepare_workers <- function(cl) {
   )
   return(invisible(NULL))
 }
+
+# Sets the library paths of the R session that runs it to `paths`. A call
+# clusterCall(cl, .libPaths, paths) changes nothing on the worker: it sends
+# a copy of .libPaths() with a copy of the environment that holds the paths.
+# This function calls the .libPaths() of the worker.
+set_lib_paths <- function(paths) {
+  .libPaths(paths)
+  return(invisible(.libPaths()))
+}
+environment(set_lib_paths) <- baseenv()
 
 # Attaches the packages `pkgs`, in the order of search(), that are not
 # attached yet. library() puts each package at position 2, so the last one

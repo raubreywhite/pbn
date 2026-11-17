@@ -28,8 +28,13 @@ With \code{sim = NULL}, \code{read_results()} reads
 \verb{<home>/<version>_results/<scenario>/results.qs2}. That is the results of
 a scenario with 1 simulation, or the simulations that \code{\link[=save_results]{save_results()}}
 stacked. With a number \code{k}, it reads
-\verb{<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2}, where
-\verb{<kkkk>} is \code{k} with four digits.
+\verb{<home>/<version>_results/<scenario>/sims_gitexclude/sim_<kkkk>.qs2},
+where \verb{<kkkk>} is \code{k} with four digits. git ignores that folder, so a clone
+of the repository has no such file. Then \code{read_results()} stops, and the
+error says to run the scenario with \code{\link[=run_plan]{run_plan()}} and \code{\link[=save_results]{save_results()}}.
+For a scenario with 1 simulation, \code{sim = 1} reads its \code{results.qs2}, the
+results of that simulation.
+The section The files of \code{\link[=save_results]{save_results()}} shows each file.
 
 \code{read_results()} stops when \verb{<home>/<version>_results/<scenario>/check.csv}
 exists and holds a value of \code{pass} that is not \code{TRUE}, also when it reads
@@ -41,10 +46,11 @@ can find the fault. The error names the file and how to read it with
 \code{read_results()} returns one list with the elements of both files. The
 order is that of a results object: \code{manifest}, \code{exclusions}, and the
 analysis kinds in the order of \code{manifest$analyses}. These rules apply to
-\code{results_gitexclude.qs2}:
+\code{results_gitexclude.qs2}, and to \verb{sim_<kkkk>_gitexclude.qs2} for one
+simulation:
 \itemize{
 \item When the manifest names kinds in it and the file is missing, it returns
-the elements of \code{results.qs2}. A clone of the repository has no such
+the elements of the results file. A clone of the repository has no such
 file. It gives one warning that names the missing kinds and the file.
 \item It stops when the file holds other kinds than the manifest names, also
 when the manifest names none.

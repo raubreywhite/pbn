@@ -629,35 +629,67 @@ print_cache_lines <- function(r, info) {
 
 # Stops when `home` is in a git repository, and git does not ignore each of
 # the paths `rel`, relative to `home`. Each such path holds data for each
-# person. Without git, or outside a git repository, it checks nothing.
+# person. Without git, or outside a git repository, it checks nothing. One
+# call of git checks every path, so 1000 paths cost one process. The error
+# names the first 3 paths that git does not ignore.
 check_gitignored <- function(home, rel, done) {
   git <- git_binary()
-  if (!nzchar(git) || !in_git_repository(git, home)) {
+  if (length(rel) == 0 || !nzchar(git) || !in_git_repository(git, home)) {
     return(invisible(NULL))
   }
-  for (f in rel) {
-    status <- suppressWarnings(system2(
-      git,
-      c("-C", shQuote(home), "check-ignore", "-q", "--no-index", shQuote(f)),
-      stdout = FALSE,
-      stderr = FALSE
-    ))
-    if (!identical(as.integer(status), 0L)) {
-      stop(
-        "The project ",
-        home,
-        " is a git repository, and git does not ignore ",
-        f,
-        ". That file holds data for each person. Add the line *gitexclude* ",
-        "to ",
-        file.path(home, ".gitignore"),
-        ". ",
-        done,
-        call. = FALSE
-      )
-    }
+  missed <- setdiff(rel, git_ignored(git, home, rel))
+  if (length(missed) == 0) {
+    return(invisible(NULL))
   }
-  return(invisible(NULL))
+  shown <- missed[seq_len(min(3, length(missed)))]
+  stop(
+    "The project ",
+    home,
+    " is a git repository, and git does not ignore ",
+    if (length(missed) > 3) {
+      paste0(paste(shown, collapse = ", "), " and ", length(missed) - 3, " more")
+    } else {
+      and_list(shown)
+    },
+    ". ",
+    if (length(missed) == 1) "That file holds" else "These files hold",
+    " data for each person. Add the line *gitexclude* to ",
+    file.path(home, ".gitignore"),
+    ". ",
+    done,
+    call. = FALSE
+  )
+}
+
+# The paths of `rel` that git ignores in `home`, from one call of git. In
+# one place, so that the tests can count the calls.
+git_ignored <- function(git, home, rel) {
+  # With --stdin, git reads the paths from its input and prints each one
+  # that it ignores.
+  ignored <- suppressWarnings(system2(
+    git,
+    c("-C", shQuote(home), "-c", "core.quotePath=false", "check-ignore", "--no-index", "--stdin"),
+    input = rel,
+    stdout = TRUE,
+    stderr = FALSE
+  ))
+  status <- attr(ignored, "status")
+  if (!is.null(status) && !status %in% c(0L, 1L)) {
+    stop("git check-ignore failed in ", home, call. = FALSE)
+  }
+  return(ignored)
+}
+
+# The strings `x` as "a", "a and b" or "a, b and c".
+and_list <- function(x) {
+  if (length(x) == 1) {
+    return(x)
+  }
+  return(paste(
+    paste(x[-length(x)], collapse = ", "),
+    "and",
+    x[length(x)]
+  ))
 }
 
 # The path of git, or "" when git is not installed. In one place, so that

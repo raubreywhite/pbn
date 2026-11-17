@@ -736,3 +736,78 @@ test_that("no_row_per_person does not walk the exclusions table of a cohort, and
   expect_identical(failing(x), "no_row_per_person")
   expect_match(check_results(x)$detail[4], "x$person (a data.frame with 2 rows)", fixed = TRUE)
 })
+
+# The simulations 1 to `sims` of the fake scenario null, each with 400 rows
+# of data and a 1-row table of estimates, stacked by stack_results().
+# `person` names the simulations whose table has one row for each person,
+# and `draws` the simulations with a vector of 400 draws.
+stacked_null <- function(sims = 400, person = integer(0), draws = integer(0)) {
+  runs <- lapply(seq_len(sims), function(k) {
+    x <- valid_results()
+    x$manifest$scenario <- "null"
+    x$manifest$data_md5 <- NULL
+    x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
+    x$manifest$sim <- k
+    x$manifest$sims <- sims
+    x$manifest$n_rows_data <- c(d = 400L)
+    x$estimates <- data.frame(term = "a", estimate = k)
+    if (k %in% person) {
+      x$estimates <- data.frame(term = "a", estimate = seq_len(400))
+    }
+    x$extra$draws <- if (k %in% draws) seq_len(400) else 1:3
+    return(x)
+  })
+  return(stack_results(runs, "null"))
+}
+
+test_that("no_row_per_person checks a stacked object for each simulation: 400 simulations of a 1-row table pass, and a table with a row for each person in one simulation fails", {
+  x <- stacked_null()
+  expect_identical(nrow(x$estimates), 400L)
+  expect_identical(
+    x$manifest$n_rows_by_sim[1:2, ],
+    data.frame(
+      sim = 1:2,
+      data = "d",
+      n_rows_data = 400L,
+      n_rows_before_exclusions = NA_integer_,
+      n_rows_after_exclusions = NA_integer_
+    )
+  )
+  expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[4],
+    paste(
+      "in each of the 400 simulations with 2 or more rows of data, no",
+      "data.frame has the rows of that data, and no vector or matrix has",
+      "that many values in one dimension"
+    )
+  )
+
+  y <- stacked_null(person = 3L, draws = 7L)
+  expect_identical(failing(y), "no_row_per_person")
+  expect_match(
+    check_results(y)$detail[4],
+    paste0(
+      "x$estimates in simulation 3 (a data.frame with 400 rows), ",
+      "x$extra$draws in simulation 7 (length 400) has one value for each ",
+      "row of the data"
+    ),
+    fixed = TRUE
+  )
+})
+
+test_that("no_row_per_person checks nothing on a stacked object without n_rows_by_sim, as pbn 2026.11.22 wrote it", {
+  y <- stacked_null(sims = 3, person = 2L)
+  y$manifest$n_rows_by_sim <- NULL
+  expect_identical(failing(y), character(0))
+  expect_identical(
+    check_results(y)$detail[4],
+    "n_rows_data is NA, so nothing to check"
+  )
+  y <- stacked_null(sims = 3, person = 2L)
+  y$manifest$n_rows_by_sim$n_rows_data <- 1L
+  expect_identical(
+    check_results(y)$detail[4],
+    "n_rows_data is NA, 0 or 1 in each simulation, so nothing to check"
+  )
+})

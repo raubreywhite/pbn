@@ -142,17 +142,25 @@ test_that("fake_md5 is the same with keep.source TRUE and FALSE, and changes wit
 test_that("read_results reads the direct file, the stacked file or one simulation", {
   p <- local_project()
   folder <- file.path(p$home, "v01_results", "null")
-  dir.create(file.path(folder, "sim_0002"), recursive = TRUE)
+  dir.create(file.path(folder, "sims_gitexclude"), recursive = TRUE)
   qs2::qs_save(list(a = 1), file.path(folder, "results.qs2"))
-  qs2::qs_save(list(a = 2), file.path(folder, "sim_0002", "results.qs2"))
+  qs2::qs_save(list(a = 2), file.path(folder, "sims_gitexclude", "sim_0002.qs2"))
   expect_identical(read_results("v01", "null", home = p$home), list(a = 1))
   expect_identical(
     read_results("v01", "null", sim = 2, home = p$home),
     list(a = 2)
   )
+  # A clone of the repository has no file of a simulation.
   expect_error(
     read_results("v01", "null", sim = 3, home = p$home),
-    "There is no results file"
+    paste0(
+      "There is no results file of the simulation 3 at ",
+      file.path(folder, "sims_gitexclude", "sim_0003.qs2"),
+      ". git does not track the results of each simulation, so a clone of ",
+      "the repository has none. To write them, run the scenario \"null\" ",
+      "with pbn::run_plan() and pbn::save_results()."
+    ),
+    fixed = TRUE
   )
   expect_error(read_results("v01", "Null", home = p$home), "`scenario` must")
   expect_error(read_results("v01", "null", sim = 0, home = p$home), "`sim`")

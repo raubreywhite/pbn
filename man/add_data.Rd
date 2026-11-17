@@ -93,8 +93,8 @@ one plan MUST NOT have the same name. Add data with \code{add_data()}, not with
 only.
 
 While \code{\link[=run_plan]{run_plan()}} runs, an error in \code{fn} or in a step fails each
-analysis that gets the data. When you call \code{p$get_data()} by hand, the
-error stops the call.
+analysis that gets the data. When you call \code{\link[=get_data]{get_data()}} or \code{p$get_data()}
+by hand, the error stops the call.
 }
 \section{The steps}{
 
@@ -128,6 +128,13 @@ check the rows of \code{after_cohort}.
 
 Use \code{fn} for data that does not fit the steps, for example data that
 joins two cohorts. pbn then checks no rows inside \code{fn}.
+
+An exclusion MAY apply to the rows of a reshape, for example one row for
+each person and time point. Add these rows as a second data element, with
+a second call of \code{add_data()}. Its \code{raw} builds the reshaped rows, and its
+\code{cohort} applies the exclusion, so the cohort counts it. Its \code{raw} MAY
+reshape the value of the \code{raw} of the first element. pbn sets the seed to
+\code{sim} before each data element, so both draw the same numbers.
 }
 
 \section{A cohort as the data}{
@@ -268,6 +275,7 @@ pbn::add_data(
 Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=cohort_data]{cohort_data()}},
+\code{\link[=get_data]{get_data()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

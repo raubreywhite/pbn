@@ -4,7 +4,7 @@
 \alias{expect_biased}
 \title{Check that a control analysis shows its bias}
 \usage{
-expect_biased(x, truth, estimate = "estimate", by = NULL)
+expect_biased(x, truth, estimate = "estimate", by = NULL, label = NULL)
 }
 \arguments{
 \item{x}{The stacked results of one analysis kind, for example
@@ -19,7 +19,12 @@ row for each group.}
 \item{estimate}{The name of the column of \code{x} that holds the estimate.}
 
 \item{by}{\code{NULL}, or the names of the columns of \code{x} that split it into
-groups, for example \code{"term"}. Each group gets its own three assertions.}
+groups, for example \code{"term"}. Each group gets its own assertions.}
+
+\item{label}{\code{NULL}, or one string that starts the text of each
+assertion. \code{NULL} uses the expression of \code{x}, for example
+\code{"results$models"}. Give a label when \code{x} is not a named object, or for
+two calls on one object.}
 }
 \value{
 A data.frame with the columns \code{assertion}, \code{expected}, \code{observed}

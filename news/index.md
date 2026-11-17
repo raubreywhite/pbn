@@ -396,6 +396,27 @@ each scenario. To move a project, change these items:
   or
   [`assignInMyNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html),
   or use `<<-` or `->>`.
+- [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  reads its rules from the file `pbn.yml` in the project folder, and
+  each project MUST have it. Its one line `extends: house_2026_11_17`
+  names a dated house rule set, which pbn never changes after its
+  release. So a new pbn does not change the rules of a project.
+- `pbn.yml` MAY set the level of a rule to `fail`, `warn` or `off`, and
+  MAY change `limit` of `loc_per_file` and `cyclomatic_complexity` and
+  `forbid` of `no_local_assign`. It lists exceptions under `allow:`. It
+  cannot weaken `results_contract`, `gitexclude_not_tracked` or
+  `fake_data_names`.
+- [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  prints the rule set on its first line, OFF for a rule that is off, and
+  the count of OFF on its last line.
+- pbn reads no `pbn_allow.txt`, a change from the earlier builds of this
+  version.
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  stops on the file and prints its lines as the YAML of `allow:`. Paste
+  them into `pbn.yml`, and delete `pbn_allow.txt`.
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  stops without `pbn.yml`. It gives org the `limit` of `loc_per_file`,
+  or `Inf` when the rule is `warn` or `off`. pbn imports `yaml`.
 
 ## pbn 2026.11.22
 

@@ -64,8 +64,8 @@ functions folder. It MUST be the first call in every <code>vNN_run.R</code>.</p>
 
 
 <dt id="arg-home">home<a class="anchor" aria-label="anchor" href="#arg-home"></a></dt>
-<dd><p>The project folder. It holds <code>&lt;version&gt;_run.R</code> and
-<code>&lt;version&gt;_functions/</code>.</p></dd>
+<dd><p>The project folder. It holds <code>&lt;version&gt;_run.R</code>,
+<code>&lt;version&gt;_functions/</code> and the file of the rules <code>pbn.yml</code>.</p></dd>
 
 
 <dt id="arg-data-raw">data_raw<a class="anchor" aria-label="anchor" href="#arg-data-raw"></a></dt>
@@ -85,16 +85,21 @@ be absent, for example on a computer without the real data. Only
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>initialize_project()</code> does these steps in this order:</p><ol><li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
+    <p><code>initialize_project()</code> does these steps in this order:</p><ol><li><p>It reads the rules of <code><a href="check_project.html">check_project()</a></code> from <code>home/pbn.yml</code>. It stops
+on each error of <code>pbn.yml</code> that stops <code><a href="check_project.html">check_project()</a></code>, also when the
+file is missing.</p></li>
+<li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
 <code>&lt;version&gt;_functions/</code>, before it sources them. <code><a href="save_results.html">save_results()</a></code> stores
 them in <code>manifest$source_md5</code>.</p></li>
 <li><p>It computes the md5 of each file directly in <code>data_raw</code>, when the folder
 exists. <code><a href="save_results.html">save_results()</a></code> stores them in <code>manifest$data_md5</code> of the
 scenario <code>"real"</code>. A file that the run writes later is not in the list.</p></li>
 <li><p>It calls <code><a href="https://www.rwhite.no/org/reference/initialize_project.html" class="external-link">org::initialize_project()</a></code> with <code>folders_to_be_sourced</code> set to
-<code>&lt;version&gt;_functions</code>, <code>max_loc_per_file</code> set to 1000 and <code>data_raw</code> set
-to <code>data_raw</code>. A data function finds the folder at
-<code>org::project$data_raw</code>.</p></li>
+<code>&lt;version&gt;_functions</code> and <code>data_raw</code> set to <code>data_raw</code>. A data function
+finds the folder at <code>org::project$data_raw</code>. <code>max_loc_per_file</code> is the
+<code>limit</code> of the rule <code>loc_per_file</code>, 1000 in the house set. When the rule
+is <code>warn</code> or <code>off</code>, it is <code>Inf</code>, because the check of org stops the run
+on a file with more lines.</p></li>
 </ol><p>The results folder is <code>&lt;home&gt;/&lt;version&gt;_results</code>. <code><a href="save_results.html">save_results()</a></code> creates
 it. <code>initialize_project()</code> creates no folder, also no folder with today's
 date. It stops when <code>&lt;version&gt;_functions/</code> does not exist.</p>
@@ -114,6 +119,7 @@ chooses the scenarios, and <code><a href="add_data.html">add_data()</a></code> a
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_initialize_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_17"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="st">"CFG &lt;- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))"</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"_cfg.R"</span><span class="op">)</span></span></span>
@@ -127,9 +133,9 @@ chooses the scenarios, and <code><a href="add_data.html">add_data()</a></code> a
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmp09AsR3/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpVfRIVS/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp09AsR3/pbn_initialize_example/v01_results"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpVfRIVS/pbn_initialize_example/v01_results"</span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">$</span><span class="va">scenarios</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scenario sims</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     real    1</span>

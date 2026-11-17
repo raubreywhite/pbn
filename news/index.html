@@ -209,6 +209,15 @@
 <li>The section Run gives the number of the other packages. A cohort without an exclusion step gets one sentence. The section Output gives the number of warnings of the output function. The row of dashes of a table is as wide as its column.</li>
 <li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>cyclomatic_complexity</code>: a function of the project MUST score at most 15 in cyclocomp. pbn imports cyclocomp.</li>
 <li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>no_local_assign</code>: an <code>.R</code> file of the project MUST NOT call <code><a href="https://rdrr.io/r/base/eval.html" class="external-link">local()</a></code>, <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>, <code><a href="https://rdrr.io/r/base/delayedAssign.html" class="external-link">delayedAssign()</a></code>, <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInNamespace()</a></code> or <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInMyNamespace()</a></code>, or use <code>&lt;&lt;-</code> or <code>-&gt;&gt;</code>.</li>
+<li>
+<code><a href="../reference/check_project.html">check_project()</a></code> reads its rules from the file <code>pbn.yml</code> in the project folder, and each project MUST have it. Its one line <code>extends: house_2026_11_17</code> names a dated house rule set, which pbn never changes after its release. So a new pbn does not change the rules of a project.</li>
+<li>
+<code>pbn.yml</code> MAY set the level of a rule to <code>fail</code>, <code>warn</code> or <code>off</code>, and MAY change <code>limit</code> of <code>loc_per_file</code> and <code>cyclomatic_complexity</code> and <code>forbid</code> of <code>no_local_assign</code>. It lists exceptions under <code>allow:</code>. It cannot weaken <code>results_contract</code>, <code>gitexclude_not_tracked</code> or <code>fake_data_names</code>.</li>
+<li>
+<code><a href="../reference/check_project.html">check_project()</a></code> prints the rule set on its first line, OFF for a rule that is off, and the count of OFF on its last line.</li>
+<li>pbn reads no <code>pbn_allow.txt</code>, a change from the earlier builds of this version. <code><a href="../reference/check_project.html">check_project()</a></code> stops on the file and prints its lines as the YAML of <code>allow:</code>. Paste them into <code>pbn.yml</code>, and delete <code>pbn_allow.txt</code>.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> stops without <code>pbn.yml</code>. It gives org the <code>limit</code> of <code>loc_per_file</code>, or <code>Inf</code> when the rule is <code>warn</code> or <code>off</code>. pbn imports <code>yaml</code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

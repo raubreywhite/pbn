@@ -108,91 +108,9 @@
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">p</span>, <span class="va">scenarios</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/make_outputs.html">make_outputs</a></span><span class="op">(</span><span class="va">make_output</span>, <span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
-<p>From the project folder, run it with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
+<p>The file <code>pbn.yml</code> in the project folder names the rules of <code><a href="reference/check_project.html">pbn::check_project()</a></code>, as one line: <code>extends: house_2026_11_17</code>. From the project folder, run the script with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
 <p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> is the manual. It builds a small fake project file by file, and runs it.</p>
-</div>
-<div class="section level2">
-<h2 id="the-functions">The functions<a class="anchor" aria-label="anchor" href="#the-functions"></a>
-</h2>
-<table class="table">
-<colgroup>
-<col width="50%">
-<col width="50%">
-</colgroup>
-<thead><tr>
-<th>Function</th>
-<th>What it does</th>
-</tr></thead>
-<tbody>
-<tr>
-<td><code><a href="reference/initialize_project.html">initialize_project()</a></code></td>
-<td>Sets the paths of a project version and sources <code>vNN_functions/</code> with the house defaults of <code>org</code>.</td>
-</tr>
-<tr>
-<td><code><a href="reference/scenarios.html">scenarios()</a></code></td>
-<td>Checks <code>CFG$scenarios</code> and chooses the scenarios of a run.</td>
-</tr>
-<tr>
-<td><code><a href="reference/add_data.html">add_data()</a></code></td>
-<td>Adds the data steps to a plan. plnr runs them once for each scenario and simulation. A cohort gives its data and its exclusion table, and <code>cache = TRUE</code> keeps the data on disk.</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/cohort_data.html">cohort_data()</a></code>, <code><a href="reference/cohort_data.html">keep_exclusions()</a></code>
-</td>
-<td>Give the data of a cohort to a step after it, such as an imputation, and keep the exclusion table on the value of that step.</td>
-</tr>
-<tr>
-<td><code><a href="reference/add_analyses.html">add_analyses()</a></code></td>
-<td>Adds one analysis for each scenario, simulation and value of the extra dimensions.</td>
-</tr>
-<tr>
-<td><code><a href="reference/run_plan.html">run_plan()</a></code></td>
-<td>Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis.</td>
-</tr>
-<tr>
-<td><code><a href="reference/progress.html">progress()</a></code></td>
-<td>Shows the progress inside a long analysis.</td>
-</tr>
-<tr>
-<td><code><a href="reference/save_results.html">save_results()</a></code></td>
-<td>Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. <code>gitexclude</code> puts the results with data for each person in a file that git ignores.</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/expect_recovers.html">expect_recovers()</a></code>, <code><a href="reference/expect_biased.html">expect_biased()</a></code>
-</td>
-<td>Check the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario, and the bias of a control.</td>
-</tr>
-<tr>
-<td>
-<code><a href="reference/make_outputs.html">make_outputs()</a></code>, <code><a href="reference/stamp_fake.html">stamp_fake()</a></code>
-</td>
-<td>Write the figures and the tables of the real data and of chosen fake scenarios, with fake output marked.</td>
-</tr>
-<tr>
-<td><code><a href="reference/end_unless_real.html">end_unless_real()</a></code></td>
-<td>Ends a run script after <code><a href="reference/save_results.html">save_results()</a></code> when the run had no real data.</td>
-</tr>
-<tr>
-<td><code><a href="reference/read_results.html">read_results()</a></code></td>
-<td>Reads the results files of one scenario. The default is <code>"real"</code>.</td>
-</tr>
-<tr>
-<td><code><a href="reference/check_results.html">check_results()</a></code></td>
-<td>Checks a results object against the contract.</td>
-</tr>
-<tr>
-<td><code><a href="reference/check_project.html">check_project()</a></code></td>
-<td>Checks a project folder against the house layout, and quits with status 1 on a failure when R is not interactive.</td>
-</tr>
-<tr>
-<td><code><a href="reference/table1.html">table1()</a></code></td>
-<td>Computes the numbers of a descriptive table, with chi-square or Fisher’s exact p-values.</td>
-</tr>
-</tbody>
-</table>
-<p>The help page of each function holds its rules. The <a href="https://www.rwhite.no/pbn/reference/index.html">reference</a> lists them.</p>
+<p>The <a href="https://www.rwhite.no/pbn/reference/index.html">reference</a> lists every function, and the help page of each function holds its rules.</p>
 </div>
 </div>
   </main><aside class="rw-home-aside"><div class="links">

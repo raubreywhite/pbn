@@ -20,6 +20,7 @@ pbn_exports <- c(
   "keep_exclusions",
   "make_outputs",
   "read_results",
+  "render_run",
   "run_plan",
   "save_results",
   "scenarios",
@@ -603,13 +604,23 @@ rule_unknown_path <- function(path) {
     function(t) return(any(vapply(known, grepl, logical(1), x = t))),
     logical(1)
   )
-  unknown <- top[!matched]
+  unknown <- c(top[!matched], unknown_in_results(path, entries))
   return(project_row(
     "unknown_path",
     "WARN",
     unknown,
     paste0(unknown, ": the house layout does not name it", recycle0 = TRUE)
   ))
+}
+
+# The files directly in a folder vNN_results/ of `entries` that the house
+# layout does not name. It names the scenario folders, and the run log
+# run.md with its PDF run.pdf and its errors file. results_contract fails an old results.qs2
+# there.
+unknown_in_results <- function(path, entries) {
+  inside <- entries[grepl("^v[0-9]{2}_results/[^/]+$", entries)]
+  files <- inside[!dir.exists(file.path(path, inside))]
+  return(files[!basename(files) %in% c("run.md", "run.pdf", errors_file_name, "results.qs2")])
 }
 
 bind_rows <- function(rows) {

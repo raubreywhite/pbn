@@ -23,6 +23,7 @@ Names are lower case, with a few exceptions such as `README.md` and the initials
 v01_run.R                 the run script of version v01
 v01_functions/            the config and the functions that the run script sources
 v01_results/<scenario>/   the results and the output of each scenario
+v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
@@ -94,7 +95,7 @@ pbn::make_outputs(make_output, scenarios)
 5. `pbn::save_results()` saves the results, and checks each fake scenario.
 6. `pbn::make_outputs()` writes the figures and the tables.
 
-To look at the data at the console, run the script up to the calls of `pbn::add_analyses()`. Then get the data of one scenario and simulation, here simulation 1 of `real`:
+To look at the data at the console, run the script up to `pbn::add_data()`. Then get the data of one scenario and simulation, here simulation 1 of `real`:
 
 ```r
 d <- pbn::get_data(p, "real")$d
@@ -409,6 +410,39 @@ file.rename(file.path(root, "kept.qs2"), private)
 
 `check_results()` and `check_project()` do not check what the kinds in `gitexclude` hold, so `predicted` passes the check of the rows of the data. The `check_project()` rule `gitexclude_not_tracked` fails when git tracks a path with `gitexclude` in its name.
 
+## The run log
+
+`save_results()` writes the log of the run to `v01_results/run.md`, and `make_outputs()` adds its files to it. Each run replaces the file. The log holds these items:
+
+- the result of the run, and the failures first
+- the scenarios, the cache and the rows of the data, and the exclusion tables
+- the assertions, the output files and the results files
+- the timings
+
+It holds counts and assertions only, as `check.csv` does. It never holds the text of an error, because an error message can hold a value of the data. It gives each error a number, and `v01_results/run_errors_gitexclude.md` holds the text, out of git. `?save_results` lists the errors. These are the first sections of the log of the run above:
+
+```{r}
+log <- readLines(file.path(home, "v01_results", "run.md"))
+cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
+```
+
+```{r, include = FALSE}
+stopifnot(identical(log[1], "# Run log of `project`, version v01"), any(log == "- Result: All 9 assertions passed."))
+```
+
+The log is Markdown, so it reads well as plain text and on GitHub. Put it in git. Only the sections When and Timings change in every run, so `git diff` on the log shows the real changes of a run. The section Timings comes last. pbn measures each data step and each analysis where it runs, also on a worker. With workers, the computing seconds are the sum over the workers:
+
+```{r}
+cat(log[seq(grep("^## Timings", log), length(log))], sep = "\n")
+```
+
+`pbn::render_run("v01")` renders the log to `v01_results/run.pdf`. It needs Quarto, and no LaTeX. The PDF is made from `run.md`, so keep it out of git, for example with the line `run.pdf` in `.gitignore`:
+
+```{r, eval = nzchar(Sys.which("quarto"))}
+pdf <- withr::with_dir(home, pbn::render_run("v01"))
+file.exists(file.path(home, pdf))
+```
+
 ## The checks
 
 `save_results()` calls `expect_<scenario>()` on the results of each fake scenario, and writes the assertions to `check.csv`. It stops when one did not pass.
@@ -679,6 +713,7 @@ The default `home = "."` is the working directory, so this file MUST run with th
 - `check_project()` checks only that `results_gitexclude.qs2` holds the kinds that the manifest names. It does not check what is in them.
 - The SE of the relative error of the model SE assumes a normal estimate, and an `se` independent of the estimate.
 - `make_outputs()` cannot see a file that the output function writes outside `dir`.
+- With workers, the run log cannot give the wall seconds of one scenario. It gives the computing seconds of each scenario, and the wall seconds of the whole run.
 
 ```{r, include = FALSE}
 unlink(root, recursive = TRUE)

@@ -96,7 +96,7 @@ test_that("an unknown name in gitexclude stops save_results before it writes any
     fixed = TRUE
   )
   expect_error(split_save(run, gitexclude = c("models", "models")), "each once")
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
 })
 
 test_that("without results_gitexclude.qs2, read_results gives one warning that names the kinds and the file, and returns the other elements", {
@@ -134,7 +134,8 @@ test_that("a kind with one row for each person passes in results_gitexclude.qs2 
     "failures of check_results()"
   ))
   expect_true(any(grepl("real: no_row_per_person", out, fixed = TRUE)))
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  # No results file, and the run log with the failed rules.
+  expect_identical(results_files(p), log_files)
 
   split_save(run, gitexclude = "rows")
   x <- read_results("v01", home = p$home)
@@ -177,7 +178,10 @@ test_that("save_results deletes an old results_gitexclude.qs2 when the new run h
     sort(deleted),
     sort(paste0(
       "pbn: deleted ",
-      file.path(folder, grep("^[a-z]+/results_gitexclude", private_tree, value = TRUE)),
+      file.path(
+        folder,
+        grep("^[a-z]+/results_gitexclude", private_tree, value = TRUE)
+      ),
       ", because this run puts no analysis kind in it."
     ))
   )
@@ -217,7 +221,7 @@ test_that("in a git repository, save_results with gitexclude stops until git ign
     "git does not ignore v01_results/real/results_gitexclude.qs2",
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   write_lines(p$home, ".gitignore", "*gitexclude*")
   split_save(run, gitexclude = "models")
   expect_true(file.exists(file.path(
@@ -281,8 +285,14 @@ test_that("every kind in gitexclude and no cohort: results.qs2 holds the manifes
   run <- split_run(p)
   split_save(run, gitexclude = c("table1", "models", "models_crude"))
   folder <- file.path(p$home, "v01_results")
-  expect_identical(names(qs2::qs_read(file.path(folder, "real", "results.qs2"))), "manifest")
-  expect_identical(names(qs2::qs_read(file.path(folder, "null", "results.qs2"))), "manifest")
+  expect_identical(
+    names(qs2::qs_read(file.path(folder, "real", "results.qs2"))),
+    "manifest"
+  )
+  expect_identical(
+    names(qs2::qs_read(file.path(folder, "null", "results.qs2"))),
+    "manifest"
+  )
   expect_identical(
     names(read_results("v01", "null", home = p$home)),
     c("manifest", "table1", "models", "models_crude")
@@ -295,7 +305,11 @@ test_that("check_gitignored checks 1000 paths in one call of git, and names the 
   p <- local_project()
   git_in(p$home, "init", "-q")
   write_lines(p$home, ".gitignore", "*gitexclude*")
-  rel <- paste0("v01_results/null/sims_gitexclude/sim_", sprintf("%04d", 1:1000), ".qs2")
+  rel <- paste0(
+    "v01_results/null/sims_gitexclude/sim_",
+    sprintf("%04d", 1:1000),
+    ".qs2"
+  )
   calls <- 0L
   real_ignored <- git_ignored
   local_mocked_bindings(git_ignored = function(git, home, rel) {

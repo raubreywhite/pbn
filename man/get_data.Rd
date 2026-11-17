@@ -10,8 +10,8 @@ get_data(p, scenario = "real", sim = 1)
 get_argset(p, scenario = "real", sim = 1, name, i = 1)
 }
 \arguments{
-\item{p}{A plan from \code{plnr::Plan$new()}, with data from \code{\link[=add_data]{add_data()}} and
-analyses from \code{\link[=add_analyses]{add_analyses()}}.}
+\item{p}{A plan from \code{plnr::Plan$new()}, with data from \code{\link[=add_data]{add_data()}}.
+\code{get_argset()} also needs analyses from \code{\link[=add_analyses]{add_analyses()}}.}
 
 \item{scenario}{The scenario. The default is \code{"real"}.}
 
@@ -45,11 +45,20 @@ of \code{"real"}.
 \code{get_argset(p, "null", 3, "models", 2)} is
 \code{p$get_argset("null__sim_0003__models__2")}.
 
-Call both after \code{\link[=add_data]{add_data()}} and \code{\link[=add_analyses]{add_analyses()}}, before or after
-\code{\link[=run_plan]{run_plan()}}. Both stop on a scenario or a simulation that the plan does
-not hold, and the error names the values that it holds. \code{get_argset()}
-also stops on a kind or a counter that the plan does not hold for that
-scenario. An example is a kind with \code{control = TRUE} for \code{"real"}.
+Call \code{get_argset()} after \code{\link[=add_analyses]{add_analyses()}}. Call \code{get_data()} after
+\code{\link[=add_data]{add_data()}}, before or after \code{\link[=run_plan]{run_plan()}}. Before \code{\link[=add_analyses]{add_analyses()}},
+\code{get_data()} takes the scenarios of the last call of \code{\link[=scenarios]{scenarios()}} before
+\code{\link[=add_data]{add_data()}}. \code{\link[=initialize_project]{initialize_project()}} forgets them. It then calls each data
+function with the
+scenario, the simulation and the settings, in the same way as plnr. The
+value then has no element \code{hash}. So the line
+\code{d <- pbn::get_data(p, "real")$d} works directly after \code{\link[=add_data]{add_data()}} in a
+run script.
+
+Both stop on a scenario or a simulation that the plan does not hold, and
+the error names the values that it holds. \code{get_argset()} also stops on a
+kind or a counter that the plan does not hold for that scenario. An
+example is a kind with \code{control = TRUE} for \code{"real"}.
 
 To step through an action function by hand, put these lines first in it:
 

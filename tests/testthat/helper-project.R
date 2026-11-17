@@ -96,17 +96,20 @@ cfg_lines <- function(counter = NULL) {
 # dir.create() makes the folder <counter>.lock, or fails when it exists, in
 # one step, so one process at a time appends.
 counter_lines <- function(indent) {
-  return(paste0(indent, c(
-    "lock <- paste0(CFG$counter, \".lock\")",
-    "tries <- 0",
-    "while (!dir.create(lock, showWarnings = FALSE)) {",
-    "  tries <- tries + 1",
-    "  if (tries > 1000) stop(\"the counter stays locked: \", lock)",
-    "  Sys.sleep(0.01)",
-    "}",
-    "cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
-    "unlink(lock, recursive = TRUE)"
-  )))
+  return(paste0(
+    indent,
+    c(
+      "lock <- paste0(CFG$counter, \".lock\")",
+      "tries <- 0",
+      "while (!dir.create(lock, showWarnings = FALSE)) {",
+      "  tries <- tries + 1",
+      "  if (tries > 1000) stop(\"the counter stays locked: \", lock)",
+      "  Sys.sleep(0.01)",
+      "}",
+      "cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
+      "unlink(lock, recursive = TRUE)"
+    )
+  ))
 }
 
 # The data function. "real" reads d.csv of data_raw. "known" plants the
@@ -389,7 +392,7 @@ results_files <- function(p) {
 }
 
 # The files that the run script of local_project() writes for every
-# scenario.
+# scenario, and the run log run.md.
 expected_tree <- c(
   "known/check.csv",
   "known/results.qs2",
@@ -399,5 +402,15 @@ expected_tree <- c(
   "null/sims_gitexclude/sim_0002.qs2",
   "null/sims_gitexclude/sim_0003.qs2",
   "real/output.txt",
-  "real/results.qs2"
+  "real/results.qs2",
+  "run.md"
 )
+
+# The run log and its errors file, which a run writes also when it saves no
+# results file.
+log_files <- c("run.md", "run_errors_gitexclude.md")
+
+# The files `files` without the run log and its errors file.
+no_log <- function(files) {
+  return(setdiff(files, log_files))
+}

@@ -63,9 +63,21 @@
 #' message of `run_plan()` also names the first failed analysis in the order
 #' of the plan, and holds its error. pbn cuts that error to keep the message
 #' below 900 bytes. When 2 or more analyses fail and all have the same error,
-#' the message says so. pbn then saves nothing, because [save_results()]
+#' the message says so. pbn then saves no results, because [save_results()]
 #' needs the value of `run_plan()`. The results files of an earlier run stay
-#' as they are.
+#' as they are. After [initialize_project()], `run_plan()` writes the run log
+#' `<version>_results/run.md` with the failures before it stops. The section
+#' The run log of [save_results()] describes it.
+#'
+#' After [initialize_project()], `run_plan()` first replaces the run log with
+#' one that says that the run has not finished, and deletes the errors file
+#' `<version>_results/run_errors_gitexclude.md`. A call of `run_plan()`
+#' without [save_results()] after it leaves this log.
+#'
+#' `run_plan()` measures the elapsed time of each data step and of each
+#' analysis where it runs, also on a worker. The times go to the record of
+#' the plan, and [save_results()] writes them to the run log. They are not
+#' in the value, so two runs stay `identical()`.
 #'
 #' The value carries the attribute `pbn_run`, a stamp of the plan. It holds
 #' no count of the runs, so two runs of one plan can be `identical()`.
@@ -106,6 +118,8 @@
 #' @seealso `vignette("pbn")`, which builds and runs a small fake project.
 #' @export
 run_plan <- function(p, workers = 1) {
+  start <- proc.time()[["elapsed"]]
+  started <- Sys.time()
   check_plan(p)
   if (!is_count(workers)) {
     stop("`workers` must be one whole number of 1 or more.", call. = FALSE)
@@ -118,6 +132,9 @@ run_plan <- function(p, workers = 1) {
     )
   }
   check_data_keys(info)
+  # run.md says that this run started and has not finished, until the full
+  # log replaces it.
+  write_started_log(plan_scenarios(analysis_index(p, info)), started)
   if (workers > 1) {
     check_parallel_packages()
   }
@@ -131,6 +148,7 @@ run_plan <- function(p, workers = 1) {
   on.exit(clear_cache(info, cached), add = TRUE)
   set_catch(info, TRUE)
   on.exit(set_catch(info, FALSE), add = TRUE)
+  reset_log(info)
   # The packages that the workers loaded. With 1 worker, this R session is
   # the worker, and save_results() reads its packages.
   info$worker_packages <- NULL
@@ -142,9 +160,15 @@ run_plan <- function(p, workers = 1) {
     r <- run$r
     info$worker_packages <- run$packages
   }
-  r <- unbox_results(r, names(p$analyses))
+  # The timings leave the value here, so they never reach it.
+  taken <- unwrap_timed(r, info$log)
+  r <- unbox_results(taken$r, names(p$analyses))
   if (workers > 1 && length(cached) > 0) {
     print_cache_lines(r, info)
+  }
+  info$run <- run_record(p, info, r, taken, workers, start, started)
+  if (length(info$run$failed) > 0) {
+    write_failed_run(info$run)
   }
   stop_on_failed(r)
   # The stamp binds the value to this plan. save_results() checks it. It

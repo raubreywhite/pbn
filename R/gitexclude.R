@@ -125,7 +125,7 @@ write_private <- function(private, file) {
     return(invisible(file))
   }
   if (file.exists(file)) {
-    unlink(file)
+    delete_paths(file)
     cat(
       "pbn: deleted ",
       file,

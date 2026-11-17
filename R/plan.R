@@ -40,6 +40,8 @@ plan_info <- function(p, create = FALSE) {
     info$names <- character(0)
     info$hidden <- character(0)
     info$wrappers <- list()
+    info$data_wrappers <- list()
+    info$log <- new_log()
     plan_count$n <- plan_count$n + 1
     info$token <- paste0("plan_", plan_count$n, "_", key)
     assign(key, info, envir = plans)
@@ -63,15 +65,28 @@ registry_finalizer <- function(key, registry) {
   })
 }
 
-# .pbn_fn, .pbn_catch, .pbn_shape and .pbn_cache live in the environment of
-# each wrapper, which wrapper_env() makes.
+# .pbn_fn, .pbn_catch, .pbn_shape, .pbn_finish, .pbn_log, .pbn_drain,
+# .pbn_cache, .pbn_plan and .pbn_clock live in the environment of each
+# wrapper, which wrapper_env() and data_wrapper_env() make.
 utils::globalVariables(c(
   ".pbn_fn",
   ".pbn_catch",
   ".pbn_shape",
+  ".pbn_finish",
+  ".pbn_log",
+  ".pbn_drain",
   ".pbn_cache",
-  ".pbn_plan"
+  ".pbn_plan",
+  ".pbn_clock"
 ))
+
+# The log of the timings of the data of a plan. Each data wrapper adds one
+# record to `pending` for each call while run_plan() runs. The analysis that
+# counts the rows takes the records and gives them back with its value, so
+# they come back from a worker too. `n` counts the records of this R session.
+new_log <- function() {
+  return(list2env(list(pending = list(), n = 0), parent = emptyenv()))
+}
 
 # The key fields of a data function, as plnr reads them: its arguments
 # without a default, other than `...`.
@@ -89,10 +104,19 @@ key_fields <- function(fn) {
 
 # The environment of a wrapper. Its parent is the base environment, so a
 # PSOCK worker needs neither pbn nor an object of the main session to run
-# the wrapper. `.pbn_catch` is TRUE only while run_plan() runs.
-wrapper_env <- function(fn) {
+# the wrapper. `.pbn_catch` is TRUE only while run_plan() runs. `log` is the
+# log of the timings of the plan, or NULL. With `drain`, the wrapper takes
+# the records of that log.
+wrapper_env <- function(fn, log = NULL, drain = FALSE) {
   return(list2env(
-    list(.pbn_fn = fn, .pbn_catch = FALSE, .pbn_shape = data_shape),
+    list(
+      .pbn_fn = fn,
+      .pbn_catch = FALSE,
+      .pbn_shape = data_shape,
+      .pbn_finish = action_value,
+      .pbn_log = log,
+      .pbn_drain = drain
+    ),
     parent = baseenv()
   ))
 }
@@ -147,8 +171,9 @@ analysis_seed <- function(name, k, sim) {
 # cohort::CohortPipeline into its data, and reads or writes the cache while
 # run_plan() runs with cache = TRUE.
 # While run_plan() runs, an error becomes an object of class pbn_data_error,
-# so the error reaches each analysis that needs the data.
-data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL) {
+# so the error reaches each analysis that needs the data. `log` is the log of
+# the timings of the plan, or NULL.
+data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
   keys <- key_fields(fn)
   call <- as.call(c(
     list(as.name(".pbn_fn")),
@@ -193,7 +218,7 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL) {
       ))
     }))
   })
-  environment(wrapper) <- data_wrapper_env(fn, plan_key, steps)
+  environment(wrapper) <- data_wrapper_env(fn, plan_key, steps, log)
   return(wrapper)
 }
 
@@ -203,15 +228,26 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL) {
 # an object of class pbn_null. plnr drops a NULL in some paths. While
 # run_plan() runs, an action that changes the shape of the shared data also
 # fails.
-action_wrapper <- function(fn) {
+# While run_plan() runs, the wrapper returns an object of class pbn_timed:
+# `value`, the value above, `seconds`, the elapsed time of fn(data, argset)
+# only, and `data`, the records that it took from the log `log`. Only the
+# analysis that counts the rows gets a `log`. run_plan() takes the value out
+# again, so the timings never reach its value.
+action_wrapper <- function(fn, log = NULL) {
   wrapper <- function(data, argset) {
     if (!.pbn_catch) {
       set.seed(argset[["seed"]])
       return(.pbn_fn(data, argset))
     }
+    taken <- NULL
+    if (.pbn_drain) {
+      taken <- .pbn_log[["pending"]]
+      assign("pending", list(), envir = .pbn_log)
+    }
+    seconds <- NA_real_
     failed <- Filter(function(x) return(inherits(x, "pbn_data_error")), data)
     if (length(failed) > 0) {
-      return(structure(
+      out <- structure(
         list(
           message = paste0(
             "The data function '",
@@ -221,56 +257,72 @@ action_wrapper <- function(fn) {
           )
         ),
         class = "pbn_failed_analysis"
-      ))
+      )
+    } else {
+      before <- .pbn_shape(data)
+      set.seed(argset[["seed"]])
+      start <- proc.time()[["elapsed"]]
+      out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
+        call <- conditionCall(e)
+        return(structure(
+          list(
+            message = paste0(
+              # The call of the wrapper itself, .pbn_fn(data, argset), names
+              # nothing that the project wrote.
+              if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
+                paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
+              } else {
+                "Error: "
+              },
+              conditionMessage(e)
+            )
+          ),
+          class = "pbn_failed_analysis"
+        ))
+      })
+      seconds <- proc.time()[["elapsed"]] - start
+      out <- .pbn_finish(out, before, .pbn_shape(data))
     }
-    before <- .pbn_shape(data)
-    set.seed(argset[["seed"]])
-    out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
-      call <- conditionCall(e)
-      return(structure(
-        list(
-          message = paste0(
-            # The call of the wrapper itself, .pbn_fn(data, argset), names
-            # nothing that the project wrote.
-            if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
-              paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
-            } else {
-              "Error: "
-            },
-            conditionMessage(e)
-          )
-        ),
-        class = "pbn_failed_analysis"
-      ))
-    })
-    if (inherits(out, "pbn_failed_analysis")) {
-      return(out)
-    }
-    after <- .pbn_shape(data)
-    changed <- names(after)[!mapply(identical, before, after)]
-    if (length(changed) > 0) {
-      return(structure(
-        list(
-          message = paste0(
-            "The analysis changed the data '",
-            paste(changed, collapse = "', '"),
-            "' in place: a column, its vector or the rows changed. plnr ",
-            "gives every analysis of one scenario and simulation the same ",
-            "data object, so the next analysis would get the changed data. ",
-            "Copy the data first, for example d <- data.table::copy(data$d)."
-          )
-        ),
-        class = "pbn_failed_analysis"
-      ))
-    }
-    if (is.null(out)) {
-      return(structure(list(), class = "pbn_null"))
-    }
-    return(out)
+    return(structure(
+      list(value = out, seconds = seconds, data = taken),
+      class = "pbn_timed"
+    ))
   }
-  environment(wrapper) <- wrapper_env(fn)
+  environment(wrapper) <- wrapper_env(fn, log, drain = !is.null(log))
   return(wrapper)
 }
+
+# The value of an analysis after fn(data, argset) returned `out`: `out`, or
+# a pbn_failed_analysis when the shape of the data changed from `before` to
+# `after`, or a pbn_null for NULL. `after` is computed only when `out` did
+# not fail. Its environment is the base environment, so a worker needs no
+# pbn to run it.
+action_value <- function(out, before, after) {
+  if (inherits(out, "pbn_failed_analysis")) {
+    return(out)
+  }
+  changed <- names(after)[!mapply(identical, before, after)]
+  if (length(changed) > 0) {
+    return(structure(
+      list(
+        message = paste0(
+          "The analysis changed the data '",
+          paste(changed, collapse = "', '"),
+          "' in place: a column, its vector or the rows changed. plnr ",
+          "gives every analysis of one scenario and simulation the same ",
+          "data object, so the next analysis would get the changed data. ",
+          "Copy the data first, for example d <- data.table::copy(data$d)."
+        )
+      ),
+      class = "pbn_failed_analysis"
+    ))
+  }
+  if (is.null(out)) {
+    return(structure(list(), class = "pbn_null"))
+  }
+  return(out)
+}
+environment(action_value) <- baseenv()
 
 # The action of the analysis that counts the rows of the data: the number of
 # rows of each data element that is a data.frame. For a list whose elements
@@ -580,10 +632,15 @@ add_data <- function(
     fn,
     name,
     if (cache) data.table::address(p) else NULL,
-    steps
+    steps,
+    info$log
   )
   p$add_data(name, fn = wrapper)
   info$data[[name]] <- fn
+  info$data_wrappers[[name]] <- wrapper
+  # The scenarios of the run when the data was added, for get_data() before
+  # add_analyses().
+  info$scenarios <- state$scenarios
   info$steps[[name]] <- steps
   info$cache[[name]] <- cache
   info$data_envs[[name]] <- environment(wrapper)
@@ -737,7 +794,7 @@ add_analyses <- function(p, scenarios, name, fn, ..., control = FALSE) {
     c(hidden$name, planned$kind$name),
     c(hidden$argset, planned$kind$argset)
   )
-  count <- action_wrapper(count_rows)
+  count <- action_wrapper(count_rows, info$log)
   action <- action_wrapper(fn)
   for (i in seq_len(nrow(hidden))) {
     do.call(

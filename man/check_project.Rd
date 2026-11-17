@@ -91,8 +91,11 @@ folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R} and
 \code{check_project.R}, among others. A top-level dotfile and a top-level
-\verb{*.Rproj} file are never unknown. The rule reads the top level only, so
-it never warns on the folders \verb{output/} and \verb{output_fake_data/} that
+\verb{*.Rproj} file are never unknown. The rule also reads the files
+directly in \verb{vNN_results/}. There it names the run log \code{run.md}, its PDF
+\code{run.pdf} and its errors file \code{run_errors_gitexclude.md}, and no rule
+needs them. It reads no deeper, so it never
+warns on the folders \verb{output/} and \verb{output_fake_data/} that
 \code{\link[=make_outputs]{make_outputs()}} writes in \verb{vNN_results/<scenario>/}, or on the folder
 \verb{sims_gitexclude/} that \code{\link[=save_results]{save_results()}} writes there.
 }

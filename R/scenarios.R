@@ -50,6 +50,10 @@ reserved_fields <- c(
 #'
 #' `scenarios()` stops on a table that breaks a rule, and on a name in
 #' `only` that is not in the table. The error names the problem.
+#'
+#' pbn keeps the value of the last call of `scenarios()` in this R session,
+#' and [initialize_project()] removes it. [add_data()] gives it to the plan,
+#' and [get_data()] reads it there before [add_analyses()].
 #' @return A data.frame with the columns `scenario`, `sims`, `output` when
 #'   `cfg$scenarios` has it, and each setting column. It has one row for each
 #'   chosen scenario in the order of `cfg$scenarios`. `sims` is an integer.
@@ -73,6 +77,7 @@ scenarios <- function(cfg, only = NULL) {
     stop("CFG$scenarios must have a scenario named \"real\".", call. = FALSE)
   }
   if (is.null(only)) {
+    state$scenarios <- table
     return(table)
   }
   if (!is.character(only) || length(only) == 0 || anyNA(only)) {
@@ -93,6 +98,7 @@ scenarios <- function(cfg, only = NULL) {
   }
   out <- table[table$scenario %in% only, , drop = FALSE]
   rownames(out) <- NULL
+  state$scenarios <- out
   return(out)
 }
 

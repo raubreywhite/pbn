@@ -65,6 +65,7 @@ call in \verb{manuscript/built/} that gives a \code{scenario} other than \code{"
 \seealso{
 Other results:
 \code{\link[=check_results]{check_results()}},
+\code{\link[=render_run]{render_run()}},
 \code{\link[=save_results]{save_results()}}
 }
 \concept{results}

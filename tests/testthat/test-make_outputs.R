@@ -65,13 +65,14 @@ test_that("make_outputs writes real into output/, and each fake scenario with ou
     )
   )
   expect_true(all(file.exists(file.path(p$home, out$file))))
-  # The earlier file is gone, and pbn wrote nothing outside the folders.
+  # The earlier file is gone, and pbn wrote nothing outside the folders but
+  # the run log, which gets the section of make_outputs().
   expect_false(file.exists(file.path(results, "real", "output", "old.txt")))
   after <- file_states(results)
-  outside <- !grepl("/output(_fake_data)?/", after$file)
+  outside <- !grepl("/output(_fake_data)?/", after$file) & after$file != "run.md"
   kept <- after[outside, ]
   rownames(kept) <- NULL
-  expect_identical(kept, before)
+  expect_identical(kept, before[before$file != "run.md", ])
   # null gets its 3 simulations stacked, the others their 1 simulation.
   expect_identical(
     as.list(seen)[c("real", "known", "null")],
@@ -86,7 +87,8 @@ test_that("make_outputs writes real into output/, and each fake scenario with ou
     c(
       "pbn: the output of the scenario \"real\" is in v01_results/real/output/, which pbn emptied first: 2 files.",
       "pbn: the output of the scenario \"known\" is in v01_results/known/output_fake_data/, which pbn emptied first: 2 files.",
-      "pbn: the output of the scenario \"null\" is in v01_results/null/output_fake_data/, which pbn emptied first: 2 files."
+      "pbn: the output of the scenario \"null\" is in v01_results/null/output_fake_data/, which pbn emptied first: 2 files.",
+      "pbn: wrote the run log v01_results/run.md."
     )
   )
   found <- project_findings(p$home)

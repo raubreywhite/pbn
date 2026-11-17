@@ -70,6 +70,19 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - New argument `coverage` of `expect_recovers()`. With `FALSE`, it makes no coverage assertion, needs no `lower` and `upper`, and needs 100 simulations.
 - `read_results(sim = 1)` reads the `results.qs2` of a scenario with 1 simulation.
 - On Windows, in a git repository, `run_plan()` and `save_results()` stopped even when `.gitignore` held `*gitexclude*`. pbn now gives `git check-ignore` its paths with LF line ends, because git reads the CR of CR LF as part of a path.
+- `save_results()` writes the run log `vNN_results/run.md`. It holds the result, the failures first, the scenarios, the data, the exclusions, the assertions, the files and the timings. It also writes it when it stops on a failed assertion or a failed rule of `check_results()`.
+- Only the sections When and Timings of the run log change in every run. So the log goes to git, and `git diff` shows the real changes of a run.
+- `run_plan()` measures each data step and each analysis where it runs, also on a worker. The timings go to the run log, and not to the value of `run_plan()`, a results file or a cache key.
+- `run_plan()` writes the run log with the failed analyses when it stops on them after `initialize_project()`. At its start, it replaces the run log with one that says the run has not finished.
+- The run log never holds the text of an error. It numbers each error, and `vNN_results/run_errors_gitexclude.md` holds the text when git ignores that file.
+- `save_results()` writes the run log as failed when it stops in the checks of its arguments.
+- `make_outputs()` adds its files and its seconds to the run log of `save_results()` in the same R session.
+- New `render_run()` renders the run log to `run.pdf` with Quarto and its Typst format, without LaTeX. A run never calls it. It writes the PDF to a temporary file and renames it.
+- `unknown_path` reads the files directly in `vNN_results/`, and knows `run.md`, `run.pdf` and `run_errors_gitexclude.md` there.
+- `get_data(p, scenario, sim)` works directly after `add_data()`. It takes the scenarios of the last `scenarios()` before `add_data()`, which the plan keeps.
+- `save_results()` and `make_outputs()` stop when a file that they delete stays, for example because another program holds it open on Windows. The error names the file.
+- `make_outputs()` compares the new names of the files of a fake scenario in lower case, as Windows and macOS do.
+- pbn passes R CMD check on Windows (R-hub, R-devel).
 
 # pbn 2026.11.22
 

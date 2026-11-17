@@ -269,7 +269,7 @@ test_that("a missing expect_ function for a fake scenario stops before anything 
     ),
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   # expect_real() is optional.
   expect_null(expect_function("real"))
 })
@@ -433,7 +433,8 @@ test_that("a result with one row for each row of the data fails no_row_per_perso
       info = paste("workers", workers)
     )
     expect_true(any(grepl("real: no_row_per_person", out, fixed = TRUE)))
-    expect_false(dir.exists(file.path(p$home, "v01_results")))
+    # No results file, and the run log with the failed rules.
+    expect_identical(results_files(p), log_files)
   }
 })
 
@@ -475,7 +476,7 @@ test_that("save_results stops on bad input and saves nothing", {
     save_results(more, run$plan, run$scenarios),
     "did not add these analyses of the plan, so pbn saved nothing: mine"
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
 
   local_clean_state()
   expect_error(
@@ -631,7 +632,7 @@ test_that("in a git repository, save_results stops until git ignores sims_gitexc
     "git does not ignore v01_results/null/sims_gitexclude/sim_0001.qs2",
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   # A .gitignore that ignores the file of simulation 1 only.
   write_lines(
     p$home,
@@ -646,7 +647,7 @@ test_that("in a git repository, save_results stops until git ignores sims_gitexc
     ),
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   # The files of the kinds of gitexclude of each simulation too.
   write_lines(
     p$home,
@@ -664,7 +665,7 @@ test_that("in a git repository, save_results stops until git ignores sims_gitexc
     ),
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   write_lines(p$home, ".gitignore", "*gitexclude*")
   quiet_save(run)
   expect_identical(results_files(p), setdiff(expected_tree, "real/output.txt"))
@@ -716,7 +717,7 @@ test_that("save_results stops on a value of run_plan from another plan, or witho
     "It has no stamp of run_plan().",
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
   # The value of its own plan saves.
   quiet_save(run)
   expect_true(file.exists(file.path(p$home, "v01_results", "real", "results.qs2")))
@@ -739,7 +740,7 @@ test_that("save_results stops when the settings of `scenarios` are not those of 
     "in the argsets: real, known, null.",
     fixed = TRUE
   )
-  expect_false(dir.exists(file.path(p$home, "v01_results")))
+  expect_identical(no_log(results_files(p)), character(0))
 })
 
 test_that("read_results stops on results whose check.csv holds a failed assertion, and names how to read them", {

@@ -23,14 +23,23 @@ output_state <- new.env(parent = emptyenv())
 #' - A fake scenario with `output = TRUE`: it calls `fn` with
 #'   `dir = <version>_results/<scenario>/output_fake_data/`. Then it renames
 #'   each file in `dir` that `fn` wrote, so that the name starts with
-#'   `fake_data_`. The results of a scenario with more than 1 simulation are
-#'   the stacked results, with a column `sim` in each data.frame.
+#'   `fake_data_`. It stops when a new name equals the name of another file
+#'   in `dir`. It ignores the case of the letters, as Windows and macOS do.
+#'   The results of a scenario with more than 1 simulation are the stacked
+#'   results, with a column `sim` in each data.frame.
 #' - A fake scenario without `output = TRUE`: nothing.
 #'
 #' Before it calls `fn`, `make_outputs()` deletes the folder `dir` and
 #' creates it again. So no file of an earlier run stays. Keep no other file
-#' in that folder. After each scenario, it prints one line with the folder and
-#' the number of files.
+#' in that folder. It stops when the folder is still there afterwards, for
+#' example because another program holds a file open on Windows. After each
+#' scenario, it prints one line with the folder and the number of files.
+#'
+#' After [save_results()] in the same R session, `make_outputs()` adds its
+#' files and its seconds for each scenario to the run log
+#' `<version>_results/run.md`. When it stops, the result of the log says so,
+#' and the errors file of the log holds the error. In another R session it
+#' does not change the run log.
 #'
 #' `make_outputs()` skips a scenario with one printed line when its
 #' `results.qs2` does not exist, or when its `check.csv` holds an assertion
@@ -71,34 +80,53 @@ make_outputs <- function(fn, scenarios) {
     stop("`fn` must be a function(results, dir).", call. = FALSE)
   }
   table <- check_scenario_table(scenarios, "`scenarios`")
-  out <- list()
+  done <- list(files = list(), notes = list(), seconds = numeric(0))
+  failed <- NULL
   for (i in seq_len(nrow(table))) {
     s <- table$scenario[i]
     if (s == "real" || isTRUE(table$output[i])) {
-      out[[s]] <- output_scenario(fn, s)
+      start <- proc.time()[["elapsed"]]
+      got <- tryCatch(output_scenario(fn, s), error = function(e) return(e))
+      done$seconds[[s]] <- elapsed_since(start)
+      if (inherits(got, "error")) {
+        # The run log gets the number of the error, and the errors file its
+        # text.
+        done$failed <- list(scenario = s, message = conditionMessage(got))
+        failed <- got
+        break
+      }
+      done$files[[s]] <- got$files
+      done$notes[s] <- list(got$note)
     }
+  }
+  log_outputs(done)
+  if (!is.null(failed)) {
+    stop(failed)
   }
   out <- do.call(
     rbind,
-    c(list(data.frame(scenario = character(0), file = character(0))), out)
+    c(list(data.frame(scenario = character(0), file = character(0))), done$files)
   )
   rownames(out) <- NULL
   return(invisible(out))
 }
 
 # The output of one scenario: calls fn, renames the files of a fake scenario,
-# and prints one line. Returns the files written, relative to the project.
+# and prints one line. Returns a list: `files`, the files written relative
+# to the project, and `note`, the printed line when pbn skipped the scenario,
+# or NULL.
 output_scenario <- function(fn, s) {
   fake <- s != "real"
   folder <- file.path(state$results, s)
   sub <- if (fake) "output_fake_data" else "output"
   dir <- file.path(folder, sub)
   rel <- file.path(paste0(state$version, "_results"), s, sub)
-  if (skip_scenario(folder, dir, rel, s)) {
-    return(NULL)
+  note <- skip_scenario(folder, dir, rel, s)
+  if (!is.null(note)) {
+    return(list(files = NULL, note = note))
   }
   results <- read_results(state$version, s, home = state$home)
-  unlink(dir, recursive = TRUE)
+  delete_paths(dir, recursive = TRUE)
   dir.create(dir, recursive = TRUE)
   skip <- file.path(s, sub)
   before <- if (fake) hash_recent(results_listing(state$results, skip))
@@ -129,11 +157,18 @@ output_scenario <- function(fn, s) {
     if (length(files) == 1) " file.\n" else " files.\n",
     sep = ""
   )
-  return(data.frame(scenario = rep(s, length(files)), file = file.path(rel, files)))
+  return(list(
+    files = data.frame(
+      scenario = rep(s, length(files)),
+      file = file.path(rel, files)
+    ),
+    note = NULL
+  ))
 }
 
-# TRUE, with one printed line, when the scenario has no results.qs2, or when
-# its check.csv holds a failure. Then it also deletes the output folder `dir`.
+# The printed line, when the scenario has no results.qs2, or when its
+# check.csv holds a failure. Then it also deletes the output folder `dir`.
+# NULL otherwise.
 skip_scenario <- function(folder, dir, rel, s) {
   reason <- if (!file.exists(file.path(folder, "results.qs2"))) {
     "it has no results.qs2. Run the scenario first"
@@ -141,16 +176,20 @@ skip_scenario <- function(folder, dir, rel, s) {
     paste0("its check.csv ", assertion_problem(folder))
   }
   if (is.null(reason)) {
-    return(FALSE)
+    return(NULL)
   }
   existed <- dir.exists(dir)
-  unlink(dir, recursive = TRUE)
-  cat("pbn: no output for the scenario \"", s, "\", because ", reason,
+  delete_paths(dir, recursive = TRUE)
+  line <- paste0(
+    "pbn: no output for the scenario \"",
+    s,
+    "\", because ",
+    reason,
     if (existed) paste0(". pbn deleted ", rel, "/, so no earlier output stays"),
-    ".\n",
-    sep = ""
+    "."
   )
-  return(TRUE)
+  cat(line, "\n", sep = "")
+  return(line)
 }
 
 # The path, the size and the modification time of each file under `root`,
@@ -196,7 +235,7 @@ check_outside <- function(root, before, skip, rel, s) {
   if (length(c(added, removed, changed)) == 0) {
     return(invisible(NULL))
   }
-  unlink(file.path(root, added))
+  delete_paths(file.path(root, added))
   show <- function(x) {
     x <- file.path(basename(root), x)
     return(if (length(x) == 0) "none" else paste(x, collapse = ", "))
@@ -243,7 +282,10 @@ prefix_fake <- function(dir, files, scenario) {
   new <- files
   new[todo] <- file.path(dirname(files[todo]), paste0("fake_data_", name[todo]))
   new <- sub("^\\./", "", new)
-  clash <- new[todo][new[todo] %in% files | duplicated(new)[todo]]
+  # A file system on Windows or macOS ignores the case of a name, so the
+  # names are compared in lower case.
+  low <- tolower(new)
+  clash <- new[todo][low[todo] %in% tolower(files) | duplicated(low)[todo]]
   if (length(clash) > 0) {
     stop(
       "The output function wrote files for the scenario \"",

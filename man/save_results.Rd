@@ -25,8 +25,8 @@ Invisibly, a data.frame of every assertion, with the columns
 \description{
 \code{save_results()} writes one results object for each scenario and
 simulation of a run, and stacks the simulations. It checks the fake
-scenarios with their \code{expect_} functions, and writes nothing when an
-object fails \code{\link[=check_results]{check_results()}}.
+scenarios with their \code{expect_} functions, and writes no results file when
+an object fails \code{\link[=check_results]{check_results()}}.
 }
 \details{
 Call \code{\link[=initialize_project]{initialize_project()}} first. For each scenario and simulation,
@@ -122,11 +122,12 @@ the settings in the argsets of \code{p}. It stops when a fake scenario has no fu
 \code{\link[=initialize_project]{initialize_project()}}, or when an analysis of \code{r} failed. In a git
 repository, it stops when git does not ignore each file that it would
 write into a folder \verb{sims_gitexclude/}. The error names the first 3 of
-the files that git does not ignore. It writes nothing then.
+the files that git does not ignore. It writes no results file then,
+and it writes the run log with its error.
 \item It builds every results object, and the stacked object of each scenario
 with more than 1 simulation, and checks each with \code{\link[=check_results]{check_results()}}. On
-a failure, it prints each failed rule with \code{cat()}, writes nothing and
-stops.
+a failure, it prints each failed rule with \code{cat()}, writes no results
+file and stops.
 \item For each scenario, it replaces \code{check.csv} with one failed assertion,
 \verb{not checked yet}, so that \code{\link[=read_results]{read_results()}} refuses the new results
 until step 4 checks them. Then it writes the files of the section The
@@ -142,6 +143,8 @@ and prints it. For \code{"real"} without \code{expect_real()}, it deletes
 assertion. This rule is the same for \code{expect_real()} and for the fake
 scenarios. \code{save_results()} writes \code{check.csv} to a temporary file in
 the same folder and renames it, so a reader never sees a part of it.
+\item It writes the run log \verb{<version>_results/run.md}, also after a stop in
+step 2, 3 or 4. The section The run log gives its content.
 \item After every scenario, it stops when a value of \code{pass} is not \code{TRUE}.
 It prints each failed assertion in full with \code{cat()}, because R cuts an
 error message at 1000 bytes by default. The error gives the number of
@@ -150,6 +153,69 @@ files stay, so that you can find the fault, and \code{\link[=read_results]{read_
 on them until the assertions pass.
 }
 }
+\section{The run log}{
+
+\code{\link[=run_plan]{run_plan()}} replaces the run log at its start with a short log that says
+that the run has not finished. A run that ends before the next log, for
+example when R stops, leaves that log. \code{\link[=run_plan]{run_plan()}} also writes the full
+log when it stops on failed analyses, and \code{\link[=make_outputs]{make_outputs()}} adds its files
+to it in the same R session. Each run replaces the file. The log is GitHub-flavoured Markdown in ASCII, with
+these sections in this order:
+\itemize{
+\item \code{When}: the date and the time of the start of the run.
+\item \code{Run}: the result in one sentence and the scenarios of the run. Then the
+run date of each other scenario on the disk, from its manifest. Then the
+versions of R, pbn, plnr and cohort, and the number of workers.
+\item \code{Failures}, only after a failure: the failed analyses with their errors,
+the failed assertions, and the failed rules of \code{\link[=check_results]{check_results()}}.
+\item \code{Scenarios}: the simulations and the analyses of each scenario.
+\item \code{Data}: the cache and the rows of each data element.
+\item \code{Exclusions}: the exclusion table of simulation 1 of each scenario.
+\item \code{Assertions}: the count for each scenario, and its assertions. For more
+than 30 assertions, the failed ones only.
+\item \code{Output} and \code{Files}: the files of \code{\link[=make_outputs]{make_outputs()}} and the results
+files, with their sizes.
+\item \code{Timings}: the seconds of each data step, of each analysis kind, and of
+each step of the main session.
+}
+
+The log holds counts, exclusion tables and the rows of \code{check.csv}. It
+never holds the text of an error, because an error message can hold a
+value of the data. These errors get a number in the log:
+\itemize{
+\item the error of each failed analysis or data step, one number for each
+message,
+\item the error of an \code{expect_} function that stopped,
+\item the detail of each failed rule of \code{\link[=check_results]{check_results()}}, which can quote a
+name of the project,
+\item the error of \code{save_results()} itself, also in the checks of its
+arguments,
+\item the error of the output function of \code{\link[=make_outputs]{make_outputs()}}.
+}
+
+The file \verb{<version>_results/run_errors_gitexclude.md} holds the full text
+of each error under its number. In a git repository, pbn writes it only
+when git ignores it, as the line \verb{*gitexclude*} of \code{.gitignore} does.
+Otherwise the log says that the file is missing. Each run deletes the old
+file, and pbn writes it only when the run has an error.
+
+A project string outside a table, for example a file name of
+\code{\link[=make_outputs]{make_outputs()}}, is on one line as a code span. A string in a table cell
+is on one line too. So a line end in a string cannot start a heading or a
+list item.
+
+Only the sections \code{When} and \code{Timings} change in every run. Two runs of the
+same code on one day, with the same data and cache, give the same other
+lines. So put \code{run.md} in git, and \verb{git diff} shows the real changes of a
+run. \code{\link[=render_run]{render_run()}} renders the log to a PDF.
+
+pbn measures each time with \code{proc.time()} in the R session that does the
+work, also on a worker. A data step gets the time of its function. Data
+from the cache gets the time of the read. An analysis gets the time of its
+action function. No timing goes to the value of \code{\link[=run_plan]{run_plan()}}, a results
+file, \code{check.csv} or a cache key.
+}
+
 \section{The files}{
 
 git gets the results of each scenario as one file, \code{results.qs2}, and
@@ -176,6 +242,10 @@ Before it writes a scenario, \code{save_results()} deletes each file in its
 \verb{sims_gitexclude/}, and prints one line when there was one. So no
 simulation of an earlier run stays, for example after \code{sims} became
 smaller. For a scenario that now has 1 simulation, it deletes the folder.
+
+\code{save_results()} stops when a file or a folder that it deletes is still
+there afterwards, for example because another program holds it open on
+Windows. The error names the file.
 
 pbn 2026.11.22 and older wrote the results of each simulation to
 \verb{sim_<kkkk>/results.qs2}, and git tracked them. When \code{save_results()}
@@ -278,6 +348,7 @@ unlink(home, recursive = TRUE)
 
 Other results:
 \code{\link[=check_results]{check_results()}},
-\code{\link[=read_results]{read_results()}}
+\code{\link[=read_results]{read_results()}},
+\code{\link[=render_run]{render_run()}}
 }
 \concept{results}

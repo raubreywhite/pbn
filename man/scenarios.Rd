@@ -45,6 +45,10 @@ syntactic. Its name MUST NOT be one of \code{scenario}, \code{sim}, \code{analys
 
 \code{scenarios()} stops on a table that breaks a rule, and on a name in
 \code{only} that is not in the table. The error names the problem.
+
+pbn keeps the value of the last call of \code{scenarios()} in this R session,
+and \code{\link[=initialize_project]{initialize_project()}} removes it. \code{\link[=add_data]{add_data()}} gives it to the plan,
+and \code{\link[=get_data]{get_data()}} reads it there before \code{\link[=add_analyses]{add_analyses()}}.
 }
 \examples{
 CFG <- list(

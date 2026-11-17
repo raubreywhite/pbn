@@ -10,6 +10,9 @@
 # data wrapper.
 worker_functions <- c(
   "data_value",
+  "data_compute",
+  "timed_compute",
+  "log_data",
   "cohort_value",
   "cohort_lineage",
   "cohort_leaf",
@@ -40,9 +43,12 @@ worker_functions <- c(
 # run_plan() sets .pbn_cache for a data function with cache = TRUE, and sets
 # it back to NULL after the run. For the steps form, `steps` holds the steps
 # that add_data() got, and the environment holds each step after raw as
-# .pbn_<step>, NULL when it was not given, and .pbn_step_args.
-data_wrapper_env <- function(fn, plan_key = NULL, steps = NULL) {
-  e <- wrapper_env(fn)
+# .pbn_<step>, NULL when it was not given, and .pbn_step_args. `log` is the
+# log of the timings of the plan, or NULL. .pbn_clock holds the timings and
+# the cache line of the current call of the data.
+data_wrapper_env <- function(fn, plan_key = NULL, steps = NULL, log = NULL) {
+  e <- wrapper_env(fn, log)
+  assign(".pbn_clock", new.env(parent = emptyenv()), envir = e)
   assign(".pbn_cache", NULL, envir = e)
   assign(".pbn_plan", plan_key, envir = e)
   for (s in setdiff(step_names, "raw")) {
@@ -64,14 +70,76 @@ data_wrapper_env <- function(fn, plan_key = NULL, steps = NULL) {
 # example in p$get_data() by hand, `ctx` is NULL, and pbn builds it from the
 # state of the project at the time of the call. That happens in the main
 # session only, where pbn is loaded.
+# While run_plan() runs, it adds one record of the timings to the log of the
+# plan, also when the data fails.
 data_value <- function(compute, name, where, ctx, plan = NULL) {
   if (is.null(ctx) && !is.null(plan)) {
     ctx <- get("hand_cache_context", envir = asNamespace("pbn"))(plan, name)
   }
+  if (!.pbn_catch || !is.environment(.pbn_log)) {
+    return(data_compute(compute, name, where, ctx))
+  }
+  for (field in c("steps", "line", "reused")) {
+    assign(field, NULL, envir = .pbn_clock)
+  }
+  start <- proc.time()[["elapsed"]]
+  done <- FALSE
+  on.exit(log_data(name, where, done, start), add = TRUE)
+  value <- data_compute(compute, name, where, ctx)
+  done <- TRUE
+  return(value)
+}
+
+# The value of the data: from the cache with a context `ctx`, and from
+# compute() otherwise.
+data_compute <- function(compute, name, where, ctx) {
   if (is.null(ctx)) {
-    return(cohort_value(compute(), name))
+    return(cohort_value(timed_compute(compute), name))
   }
   return(cache_value(compute, name, where, ctx))
+}
+
+# compute(), with its elapsed time as the one step `fn` in .pbn_clock. For
+# the steps form, run_steps() records the time of each step instead.
+timed_compute <- function(compute) {
+  start <- proc.time()[["elapsed"]]
+  value <- compute()
+  if (is.null(.pbn_clock[["steps"]])) {
+    assign(
+      "steps",
+      c(fn = proc.time()[["elapsed"]] - start),
+      envir = .pbn_clock
+    )
+  }
+  return(value)
+}
+
+# Adds the record of one call of the data `name` to the log of the plan: the
+# scenario and simulation, the seconds of each step, the elapsed seconds of
+# the whole call since `start`, whether the data came from the cache, the
+# cache line, and whether the call failed (`done` is FALSE). The id names
+# the R session and the record, so that run_plan() keeps one copy of a
+# record that two workers got with the log.
+log_data <- function(name, where, done, start) {
+  n <- .pbn_log[["n"]] + 1
+  record <- list(
+    id = paste0(Sys.getpid(), "_", n),
+    data = name,
+    scenario = if (is.null(where)) NA_character_ else where[["scenario"]],
+    sim = if (is.null(where)) NA_integer_ else as.integer(where[["sim"]]),
+    steps = .pbn_clock[["steps"]],
+    seconds = proc.time()[["elapsed"]] - start,
+    reused = isTRUE(.pbn_clock[["reused"]]),
+    line = if (is.null(.pbn_clock[["line"]])) {
+      NA_character_
+    } else {
+      .pbn_clock[["line"]]
+    },
+    failed = !done
+  )
+  assign("n", n, envir = .pbn_log)
+  assign("pending", c(.pbn_log[["pending"]], list(record)), envir = .pbn_log)
+  return(invisible(NULL))
 }
 
 # `x`, or for a cohort::CohortPipeline the data.table of its one cohort
@@ -187,12 +255,14 @@ cache_value <- function(compute, name, where, ctx) {
   }
   from_cache <- is.null(reason)
   line <- cache_line(name, where, reason, file)
+  assign("line", line, envir = .pbn_clock)
+  assign("reused", from_cache, envir = .pbn_clock)
   if (isTRUE(ctx[["print_now"]])) {
     cat(line, "\n", sep = "")
     utils::flush.console()
   }
   if (!from_cache) {
-    value <- cohort_value(compute(), name)
+    value <- cohort_value(timed_compute(compute), name)
     if (is.null(value)) {
       stop(
         "The data function \"",
@@ -647,7 +717,12 @@ check_gitignored <- function(home, rel, done) {
     home,
     " is a git repository, and git does not ignore ",
     if (length(missed) > 3) {
-      paste0(paste(shown, collapse = ", "), " and ", length(missed) - 3, " more")
+      paste0(
+        paste(shown, collapse = ", "),
+        " and ",
+        length(missed) - 3,
+        " more"
+      )
     } else {
       and_list(shown)
     },
@@ -673,7 +748,15 @@ git_ignored <- function(git, home, rel) {
   write_lf_lines(rel, input)
   ignored <- suppressWarnings(system2(
     git,
-    c("-C", shQuote(home), "-c", "core.quotePath=false", "check-ignore", "--no-index", "--stdin"),
+    c(
+      "-C",
+      shQuote(home),
+      "-c",
+      "core.quotePath=false",
+      "check-ignore",
+      "--no-index",
+      "--stdin"
+    ),
     stdin = input,
     stdout = TRUE,
     stderr = FALSE

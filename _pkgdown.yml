@@ -37,6 +37,7 @@ reference:
     - save_results
     - read_results
     - check_results
+    - render_run
 
 - title: "Checks of fake scenarios"
   contents:

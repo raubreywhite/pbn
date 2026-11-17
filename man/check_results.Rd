@@ -138,6 +138,7 @@ pbn::check_results(x)
 \seealso{
 Other results:
 \code{\link[=read_results]{read_results()}},
+\code{\link[=render_run]{render_run()}},
 \code{\link[=save_results]{save_results()}}
 }
 \concept{results}

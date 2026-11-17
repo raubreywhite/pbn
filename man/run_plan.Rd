@@ -80,9 +80,21 @@ error message at 1000 bytes by default, and \code{cat()} does not. The error
 message of \code{run_plan()} also names the first failed analysis in the order
 of the plan, and holds its error. pbn cuts that error to keep the message
 below 900 bytes. When 2 or more analyses fail and all have the same error,
-the message says so. pbn then saves nothing, because \code{\link[=save_results]{save_results()}}
+the message says so. pbn then saves no results, because \code{\link[=save_results]{save_results()}}
 needs the value of \code{run_plan()}. The results files of an earlier run stay
-as they are.
+as they are. After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} writes the run log
+\verb{<version>_results/run.md} with the failures before it stops. The section
+The run log of \code{\link[=save_results]{save_results()}} describes it.
+
+After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} first replaces the run log with
+one that says that the run has not finished, and deletes the errors file
+\verb{<version>_results/run_errors_gitexclude.md}. A call of \code{run_plan()}
+without \code{\link[=save_results]{save_results()}} after it leaves this log.
+
+\code{run_plan()} measures the elapsed time of each data step and of each
+analysis where it runs, also on a worker. The times go to the record of
+the plan, and \code{\link[=save_results]{save_results()}} writes them to the run log. They are not
+in the value, so two runs stay \code{identical()}.
 
 The value carries the attribute \code{pbn_run}, a stamp of the plan. It holds
 no count of the runs, so two runs of one plan can be \code{identical()}.

@@ -124,25 +124,38 @@ data_function_md5 <- function(info, name) {
 # The worker functions ------------------------------------------------------
 
 # The value of the steps of the data `name`. `x` is the value of the step
-# raw. The step clean MUST keep the number of rows of a data.frame, and the
-# step cohort MUST give its cohort every row that it gets. The value of the
-# step after_cohort gets the exclusion table of the cohort from pbn.
+# raw, a promise that run_steps() forces first. The step clean MUST keep the
+# number of rows of a data.frame, and the step cohort MUST give its cohort
+# every row that it gets. The value of the step after_cohort gets the
+# exclusion table of the cohort from pbn. The elapsed seconds of each step
+# that ran go to .pbn_clock as `steps`, also when a step fails.
 run_steps <- function(x, name) {
+  start <- proc.time()[["elapsed"]]
+  force(x)
+  seconds <- c(raw = proc.time()[["elapsed"]] - start)
+  on.exit(assign("steps", seconds, envir = .pbn_clock), add = TRUE)
   if (!is.null(.pbn_clean)) {
     n <- if (is.data.frame(x)) nrow(x) else NULL
+    start <- proc.time()[["elapsed"]]
     x <- call_step("clean", x)
+    seconds[["clean"]] <- proc.time()[["elapsed"]] - start
     check_clean_rows(x, n, name)
   }
   if (is.null(.pbn_cohort)) {
     return(x)
   }
   n <- if (is.data.frame(x)) nrow(x) else NULL
+  start <- proc.time()[["elapsed"]]
   cp <- call_step("cohort", x)
+  seconds[["cohort"]] <- proc.time()[["elapsed"]] - start
   check_cohort_rows(cp, n, name)
   if (is.null(.pbn_after_cohort)) {
     return(cp)
   }
-  return(keep_cohort_table(call_step("after_cohort", cp), cp, name))
+  start <- proc.time()[["elapsed"]]
+  x <- call_step("after_cohort", cp)
+  seconds[["after_cohort"]] <- proc.time()[["elapsed"]] - start
+  return(keep_cohort_table(x, cp, name))
 }
 
 # `x`, the value of the step after_cohort, with the exclusion table of the

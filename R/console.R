@@ -4,8 +4,8 @@
 #' simulation of the plan `p` get as `data`. `get_argset()` returns the argset
 #' of one analysis, so you do not type the name of the analysis.
 #'
-#' @param p A plan from `plnr::Plan$new()`, with data from [add_data()] and
-#'   analyses from [add_analyses()].
+#' @param p A plan from `plnr::Plan$new()`, with data from [add_data()].
+#'   `get_argset()` also needs analyses from [add_analyses()].
 #' @param scenario The scenario. The default is `"real"`.
 #' @param sim The simulation, a whole number from 1 to the number of
 #'   simulations of the scenario.
@@ -25,11 +25,20 @@
 #' `get_argset(p, "null", 3, "models", 2)` is
 #' `p$get_argset("null__sim_0003__models__2")`.
 #'
-#' Call both after [add_data()] and [add_analyses()], before or after
-#' [run_plan()]. Both stop on a scenario or a simulation that the plan does
-#' not hold, and the error names the values that it holds. `get_argset()`
-#' also stops on a kind or a counter that the plan does not hold for that
-#' scenario. An example is a kind with `control = TRUE` for `"real"`.
+#' Call `get_argset()` after [add_analyses()]. Call `get_data()` after
+#' [add_data()], before or after [run_plan()]. Before [add_analyses()],
+#' `get_data()` takes the scenarios of the last call of [scenarios()] before
+#' [add_data()]. [initialize_project()] forgets them. It then calls each data
+#' function with the
+#' scenario, the simulation and the settings, in the same way as plnr. The
+#' value then has no element `hash`. So the line
+#' `d <- pbn::get_data(p, "real")$d` works directly after [add_data()] in a
+#' run script.
+#'
+#' Both stop on a scenario or a simulation that the plan does not hold, and
+#' the error names the values that it holds. `get_argset()` also stops on a
+#' kind or a counter that the plan does not hold for that scenario. An
+#' example is a kind with `control = TRUE` for `"real"`.
 #'
 #' To step through an action function by hand, put these lines first in it:
 #' ```
@@ -59,8 +68,53 @@
 #' @seealso `vignette("pbn")`, which steps through one analysis by hand.
 #' @export
 get_data <- function(p, scenario = "real", sim = 1) {
+  check_plan(p)
+  info <- plan_info(p)
+  if (!is.null(info) && length(info$hidden) == 0 && length(info$data) > 0) {
+    return(data_before_analyses(info, scenario, sim))
+  }
   name <- console_name(p, scenario, sim, n_rows_kind, NULL)
   return(p$get_data(name))
+}
+
+# The data of one scenario and simulation of a plan that has data and no
+# analysis yet. The scenarios come from the last call of scenarios(). Each
+# data wrapper gets the scenario, the simulation and the settings that its
+# arguments name, as plnr gives them, so the path is that of p$get_data():
+# the seed, the steps and the cache with its line.
+data_before_analyses <- function(info, scenario, sim) {
+  table <- info$scenarios
+  if (is.null(table)) {
+    stop(
+      "The plan has no analysis yet, so pbn::get_data() needs the scenarios ",
+      "of the run. Call pbn::scenarios(CFG) before pbn::add_data().",
+      call. = FALSE
+    )
+  }
+  check_console_where(table$scenario, table$sims, scenario, sim)
+  argset <- c(
+    list(scenario = scenario, sim = as.integer(sim)),
+    settings_of(table, scenario)
+  )
+  out <- list()
+  for (nm in names(info$data)) {
+    wrapper <- info$data_wrappers[[nm]]
+    keys <- names(formals(wrapper))
+    absent <- setdiff(keys, names(argset))
+    if (length(absent) > 0) {
+      stop(
+        "The data function \"",
+        nm,
+        "\" has the arguments ",
+        paste(absent, collapse = ", "),
+        " without a default. pbn allows only scenario, sim and the setting ",
+        "columns of CFG$scenarios.",
+        call. = FALSE
+      )
+    }
+    out[nm] <- list(do.call(wrapper, argset[keys], quote = TRUE))
+  }
+  return(out)
 }
 
 #' @rdname get_data
@@ -91,6 +145,16 @@ console_name <- function(p, scenario, sim, kind, i) {
   args <- lapply(info$hidden, function(n) return(p$analyses[[n]][["argset"]]))
   have <- vapply(args, function(a) return(a[["scenario"]]), character(1))
   sims <- vapply(args, function(a) return(as.integer(a[["sim"]])), integer(1))
+  check_console_where(have, sims, scenario, sim)
+  if (is.null(i)) {
+    return(analysis_name(scenario, sim, kind))
+  }
+  return(kind_name(p, info, scenario, sim, kind, i))
+}
+
+# Stops when `scenario` is not one of `have`, or when `sim` is not a
+# simulation of it. `sims` holds the simulation of each element of `have`.
+check_console_where <- function(have, sims, scenario, sim) {
   if (!is_one_string(scenario) || !scenario %in% have) {
     stop(
       "`scenario` must be one of the scenarios of the plan: ",
@@ -110,10 +174,7 @@ console_name <- function(p, scenario, sim, kind, i) {
       call. = FALSE
     )
   }
-  if (is.null(i)) {
-    return(analysis_name(scenario, sim, kind))
-  }
-  return(kind_name(p, info, scenario, sim, kind, i))
+  return(invisible(NULL))
 }
 
 # The name of the analysis of the kind `kind` with the counter `i`. Stops

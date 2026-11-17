@@ -415,6 +415,31 @@ rename_file <- function(from, to) {
   return(file.rename(from, to))
 }
 
+# Deletes the files or folders `paths`, and stops when one of them is still
+# there. On Windows a file that another program holds open stays, and
+# unlink() does not say so. A stale file would then stay beside the new
+# results.
+delete_paths <- function(paths, recursive = FALSE) {
+  remove_paths(paths, recursive)
+  left <- paths[file.exists(paths)]
+  if (length(left) > 0) {
+    stop(
+      "pbn could not delete ",
+      paste(left, collapse = ", "),
+      ". Another program may hold it open, for example a viewer or an ",
+      "editor. Close that program, and run the call again.",
+      call. = FALSE
+    )
+  }
+  return(invisible(paths))
+}
+
+# unlink(), in one place, so that the tests can make it fail.
+remove_paths <- function(paths, recursive) {
+  unlink(paths, recursive = recursive)
+  return(invisible(NULL))
+}
+
 failed_assertion <- function(assertion, observed) {
   return(data.frame(
     assertion = assertion,

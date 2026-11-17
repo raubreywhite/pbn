@@ -2,8 +2,8 @@
 #'
 #' `save_results()` writes one results object for each scenario and
 #' simulation of a run, and stacks the simulations. It checks the fake
-#' scenarios with their `expect_` functions, and writes nothing when an
-#' object fails [check_results()].
+#' scenarios with their `expect_` functions, and writes no results file when
+#' an object fails [check_results()].
 #'
 #' @param r The value of [run_plan()] for the plan `p`.
 #' @param p The plan, with data from [add_data()] and analyses from
@@ -101,11 +101,12 @@
 #'    [initialize_project()], or when an analysis of `r` failed. In a git
 #'    repository, it stops when git does not ignore each file that it would
 #'    write into a folder `sims_gitexclude/`. The error names the first 3 of
-#'    the files that git does not ignore. It writes nothing then.
+#'    the files that git does not ignore. It writes no results file then,
+#'    and it writes the run log with its error.
 #' 2. It builds every results object, and the stacked object of each scenario
 #'    with more than 1 simulation, and checks each with [check_results()]. On
-#'    a failure, it prints each failed rule with `cat()`, writes nothing and
-#'    stops.
+#'    a failure, it prints each failed rule with `cat()`, writes no results
+#'    file and stops.
 #' 3. For each scenario, it replaces `check.csv` with one failed assertion,
 #'    `not checked yet`, so that [read_results()] refuses the new results
 #'    until step 4 checks them. Then it writes the files of the section The
@@ -121,12 +122,70 @@
 #'    assertion. This rule is the same for `expect_real()` and for the fake
 #'    scenarios. `save_results()` writes `check.csv` to a temporary file in
 #'    the same folder and renames it, so a reader never sees a part of it.
-#' 5. After every scenario, it stops when a value of `pass` is not `TRUE`.
+#' 5. It writes the run log `<version>_results/run.md`, also after a stop in
+#'    step 2, 3 or 4. The section The run log gives its content.
+#' 6. After every scenario, it stops when a value of `pass` is not `TRUE`.
 #'    It prints each failed assertion in full with `cat()`, because R cuts an
 #'    error message at 1000 bytes by default. The error gives the number of
 #'    failed assertions, their scenarios and the path of `check.csv`. The
 #'    files stay, so that you can find the fault, and [read_results()] stops
 #'    on them until the assertions pass.
+#' @section The run log:
+#' [run_plan()] replaces the run log at its start with a short log that says
+#' that the run has not finished. A run that ends before the next log, for
+#' example when R stops, leaves that log. [run_plan()] also writes the full
+#' log when it stops on failed analyses, and [make_outputs()] adds its files
+#' to it in the same R session. Each run replaces the file. The log is GitHub-flavoured Markdown in ASCII, with
+#' these sections in this order:
+#' - `When`: the date and the time of the start of the run.
+#' - `Run`: the result in one sentence and the scenarios of the run. Then the
+#'   run date of each other scenario on the disk, from its manifest. Then the
+#'   versions of R, pbn, plnr and cohort, and the number of workers.
+#' - `Failures`, only after a failure: the failed analyses with their errors,
+#'   the failed assertions, and the failed rules of [check_results()].
+#' - `Scenarios`: the simulations and the analyses of each scenario.
+#' - `Data`: the cache and the rows of each data element.
+#' - `Exclusions`: the exclusion table of simulation 1 of each scenario.
+#' - `Assertions`: the count for each scenario, and its assertions. For more
+#'   than 30 assertions, the failed ones only.
+#' - `Output` and `Files`: the files of [make_outputs()] and the results
+#'   files, with their sizes.
+#' - `Timings`: the seconds of each data step, of each analysis kind, and of
+#'   each step of the main session.
+#'
+#' The log holds counts, exclusion tables and the rows of `check.csv`. It
+#' never holds the text of an error, because an error message can hold a
+#' value of the data. These errors get a number in the log:
+#' - the error of each failed analysis or data step, one number for each
+#'   message,
+#' - the error of an `expect_` function that stopped,
+#' - the detail of each failed rule of [check_results()], which can quote a
+#'   name of the project,
+#' - the error of `save_results()` itself, also in the checks of its
+#'   arguments,
+#' - the error of the output function of [make_outputs()].
+#'
+#' The file `<version>_results/run_errors_gitexclude.md` holds the full text
+#' of each error under its number. In a git repository, pbn writes it only
+#' when git ignores it, as the line `*gitexclude*` of `.gitignore` does.
+#' Otherwise the log says that the file is missing. Each run deletes the old
+#' file, and pbn writes it only when the run has an error.
+#'
+#' A project string outside a table, for example a file name of
+#' [make_outputs()], is on one line as a code span. A string in a table cell
+#' is on one line too. So a line end in a string cannot start a heading or a
+#' list item.
+#'
+#' Only the sections `When` and `Timings` change in every run. Two runs of the
+#' same code on one day, with the same data and cache, give the same other
+#' lines. So put `run.md` in git, and `git diff` shows the real changes of a
+#' run. [render_run()] renders the log to a PDF.
+#'
+#' pbn measures each time with `proc.time()` in the R session that does the
+#' work, also on a worker. A data step gets the time of its function. Data
+#' from the cache gets the time of the read. An analysis gets the time of its
+#' action function. No timing goes to the value of [run_plan()], a results
+#' file, `check.csv` or a cache key.
 #' @section The files:
 #' git gets the results of each scenario as one file, `results.qs2`, and
 #' never the results of each simulation. These are the files of
@@ -153,6 +212,10 @@
 #' `sims_gitexclude/`, and prints one line when there was one. So no
 #' simulation of an earlier run stays, for example after `sims` became
 #' smaller. For a scenario that now has 1 simulation, it deletes the folder.
+#'
+#' `save_results()` stops when a file or a folder that it deletes is still
+#' there afterwards, for example because another program holds it open on
+#' Windows. The error names the file.
 #'
 #' pbn 2026.11.22 and older wrote the results of each simulation to
 #' `sim_<kkkk>/results.qs2`, and git tracked them. When `save_results()`
@@ -243,30 +306,76 @@
 #' @seealso `vignette("pbn")`, which builds and runs a small fake project.
 #' @export
 save_results <- function(r, p, scenarios, gitexclude = NULL) {
+  start <- proc.time()[["elapsed"]]
   check_state("save_results")
-  check_plan(p)
-  table <- check_scenario_table(scenarios, "`scenarios`")
-  info <- plan_info(p)
-  check_run(r, p, info)
-  gitexclude <- check_gitexclude(gitexclude, info, table)
-  check_sims_ignored(table, gitexclude)
-  index <- analysis_index(p, info)
-  check_coverage(index, table, info)
-  check_settings(index, table, info)
-  check_inputs(table)
+  # A stop in the checks of the arguments writes the run log as failed, so
+  # run.md never keeps the result of an earlier run.
+  info <- NULL
+  failed <- tryCatch(
+    {
+      check_plan(p)
+      table <- check_scenario_table(scenarios, "`scenarios`")
+      info <- plan_info(p)
+      check_run(r, p, info)
+      gitexclude <- check_gitexclude(gitexclude, info, table)
+      check_sims_ignored(table, gitexclude)
+      index <- analysis_index(p, info)
+      check_coverage(index, table, info)
+      check_settings(index, table, info)
+      check_inputs(table)
+      NULL
+    },
+    error = function(e) return(e)
+  )
+  if (!is.null(failed)) {
+    write_preflight_log(info, failed)
+    stop(failed)
+  }
 
+  # From here on, save_results() writes the run log, also when it stops.
+  done <- new.env(parent = emptyenv())
+  done$seconds <- c(write = 0, contract = 0, expect = 0)
+  checks <- tryCatch(
+    save_steps(r, index, table, info, gitexclude, done),
+    error = function(e) return(e)
+  )
+  run <- info$run
+  if (is.null(run)) {
+    run <- run_record(p, info, r, NULL, 1, start, Sys.time())
+  }
+  write_run_log(saved_log(run, table, done, checks, elapsed_since(start)))
+  if (inherits(checks, "error")) {
+    stop(checks)
+  }
+  stop_on_failed_checks(checks, state$results)
+  return(invisible(checks))
+}
+
+# Steps 2 to 4 of save_results(): builds, checks and writes the results, and
+# returns the assertions of the expect_ functions. The environment `done`
+# gets the seconds of each part, the failed rules of check_results() and the
+# assertions.
+save_steps <- function(r, index, table, info, gitexclude, done) {
   # The md5 of the raw data that run_plan() read, from its stamp.
   stamp <- attr(r, "pbn_run", exact = TRUE)
   data_md5 <- stamp[["data_md5"]]
   if (is.null(data_md5)) {
     data_md5 <- state$data_md5
   }
+  start <- proc.time()[["elapsed"]]
   objects <- build_objects(r, index, table, info, gitexclude, data_md5)
-  check_objects(objects)
+  done$seconds[["write"]] <- elapsed_since(start)
+  start <- proc.time()[["elapsed"]]
+  done$contract <- contract_failures(objects)
+  done$seconds[["contract"]] <- elapsed_since(start)
+  stop_on_contract(done$contract)
   root <- state$results
+  start <- proc.time()[["elapsed"]]
   for (s in table$scenario) {
     write_scenario(objects[[s]], root, s)
   }
+  done$seconds[["write"]] <- done$seconds[["write"]] + elapsed_since(start)
+  start <- proc.time()[["elapsed"]]
   checks <- list()
   for (s in table$scenario) {
     fn <- expect_function(s)
@@ -274,7 +383,7 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
       checks[[s]] <- check_expectations(fn, root, s)
     } else {
       # Only "real" MAY have no expect_ function.
-      unlink(file.path(root, s, "check.csv"))
+      delete_paths(file.path(root, s, "check.csv"))
     }
   }
   checks <- if (length(checks) == 0) {
@@ -282,8 +391,9 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
   } else {
     do.call(rbind, unname(checks))
   }
-  stop_on_failed_checks(checks, root)
-  return(invisible(checks))
+  done$seconds[["expect"]] <- elapsed_since(start)
+  done$checks <- checks
+  return(checks)
 }
 
 # Stops when the plan has no data or analysis of pbn, or when `r` is not the
@@ -694,6 +804,13 @@ bind_frames <- function(values, argsets, kind, dims) {
 # Prints each failed rule of each object with cat(), and stops when there is
 # one.
 check_objects <- function(objects) {
+  stop_on_contract(contract_failures(objects))
+  return(invisible(NULL))
+}
+
+# Each failed rule of check_results() of each object, as
+# "<object>: <rule>: <detail>".
+contract_failures <- function(objects) {
   failures <- character(0)
   for (s in names(objects)) {
     o <- objects[[s]]
@@ -715,6 +832,11 @@ check_objects <- function(objects) {
       )
     }
   }
+  return(failures)
+}
+
+# Prints each failed rule `failures` with cat(), and stops when there is one.
+stop_on_contract <- function(failures) {
   if (length(failures) == 0) {
     return(invisible(NULL))
   }
@@ -748,7 +870,7 @@ write_scenario <- function(o, root, s) {
     write_private(o$private[[1]], file.path(folder, gitexclude_file))
     return(invisible(NULL))
   }
-  unlink(file.path(folder, "results.qs2"))
+  delete_paths(file.path(folder, "results.qs2"))
   dir.create(file.path(folder, sims_folder), showWarnings = FALSE)
   for (sim in seq_len(o$sims)) {
     qs2::qs_save(o$runs[[sim]], file.path(folder, sim_file(sim)))
@@ -767,7 +889,7 @@ write_scenario <- function(o, root, s) {
 empty_sims_folder <- function(folder, s, sims) {
   sub <- file.path(folder, sims_folder)
   old <- list.files(sub, all.files = TRUE, no.. = TRUE, recursive = TRUE)
-  unlink(sub, recursive = TRUE)
+  delete_paths(sub, recursive = TRUE)
   if (length(old) == 0) {
     return(invisible(NULL))
   }
@@ -799,7 +921,7 @@ delete_old_layout <- function(folder) {
   if (length(old) == 0) {
     return(invisible(NULL))
   }
-  unlink(file.path(folder, old), recursive = TRUE)
+  delete_paths(file.path(folder, old), recursive = TRUE)
   cat(
     "pbn: deleted the ",
     length(old),

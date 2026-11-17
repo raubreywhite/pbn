@@ -1,9 +1,10 @@
 # The run script of the synthetic project in new R sessions, as a project
 # runs it. org sources the functions folder into the global environment.
 
-# Every file under v01_results/ with its md5.
+# Every file under v01_results/ with its md5, without the run log run.md,
+# which holds the date and the timings of the run.
 tree_md5 <- function(p) {
-  files <- results_files(p)
+  files <- setdiff(results_files(p), "run.md")
   return(stats::setNames(
     md5_of(file.path(p$home, "v01_results", files)),
     files
@@ -85,7 +86,7 @@ test_that("the script run twice in new R sessions gives byte-identical results.q
   unlink(file.path(p$home, "v01_results"), recursive = TRUE)
   second_run <- run_script(p$home)
   expect_identical(second_run$status, 0L, info = second_run$stdout)
-  expect_identical(names(first), expected_tree)
+  expect_identical(names(first), setdiff(expected_tree, "run.md"))
   expect_identical(tree_md5(p), first)
 })
 
@@ -212,7 +213,8 @@ test_that("a failing analysis in the run script lists every failure in full and 
     )
     res <- run_script(p$home)
     expect_identical(res$status, 1L, info = res$stdout)
-    expect_false(dir.exists(file.path(p$home, "v01_results")))
+    # No results file, and the run log with the failed analysis.
+    expect_identical(results_files(p), log_files)
     expect_match(
       res$stdout,
       paste0(

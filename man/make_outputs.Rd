@@ -32,15 +32,24 @@ Call \code{\link[=initialize_project]{initialize_project()}} first. For each sce
 \item A fake scenario with \code{output = TRUE}: it calls \code{fn} with
 \verb{dir = <version>_results/<scenario>/output_fake_data/}. Then it renames
 each file in \code{dir} that \code{fn} wrote, so that the name starts with
-\code{fake_data_}. The results of a scenario with more than 1 simulation are
-the stacked results, with a column \code{sim} in each data.frame.
+\code{fake_data_}. It stops when a new name equals the name of another file
+in \code{dir}. It ignores the case of the letters, as Windows and macOS do.
+The results of a scenario with more than 1 simulation are the stacked
+results, with a column \code{sim} in each data.frame.
 \item A fake scenario without \code{output = TRUE}: nothing.
 }
 
 Before it calls \code{fn}, \code{make_outputs()} deletes the folder \code{dir} and
 creates it again. So no file of an earlier run stays. Keep no other file
-in that folder. After each scenario, it prints one line with the folder and
-the number of files.
+in that folder. It stops when the folder is still there afterwards, for
+example because another program holds a file open on Windows. After each
+scenario, it prints one line with the folder and the number of files.
+
+After \code{\link[=save_results]{save_results()}} in the same R session, \code{make_outputs()} adds its
+files and its seconds for each scenario to the run log
+\verb{<version>_results/run.md}. When it stops, the result of the log says so,
+and the errors file of the log holds the error. In another R session it
+does not change the run log.
 
 \code{make_outputs()} skips a scenario with one printed line when its
 \code{results.qs2} does not exist, or when its \code{check.csv} holds an assertion

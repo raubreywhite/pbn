@@ -1,3 +1,19 @@
+# pbn 2026.11.22
+
+- `save_results(..., d)` saves each named argument as one result under its name. A call with the names `exclusions`, `estimates`, `tables` and `extra` works as before.
+- `save_results()` stops on a result named `manifest`, an unnamed result, a repeated or non-syntactic name, and a call with no result.
+- `d` is required, so a call of `save_results()` without `d` stops. Pass `d = d`, or `d = NULL` when the run has no single data table. Before, `d` was `NULL` by default.
+- `exclusions` is optional. When it is there, the rule `exclusions_table` checks it as before. `estimates` no longer has to be a data.frame, and `tables` no longer has to be a list of data.frames.
+- A result MAY be a data.frame, an atomic vector, `NULL`, or a list of these to any depth. The new rule `allowed_objects` replaces `no_fitted_models`. It also fails a function, an environment, an S4 or R6 object, a formula and a list with a class outside a fixed set. The detail names the path and the class.
+- The new rule `element_names` replaces `top_level_names`. The rules `exclusions_table`, `no_row_per_person`, `manifest_scenario`, `manifest_data` and `manifest_source` keep their names.
+- `run_scenarios()` stacks every element of the results. Before, it dropped `extra`. A data.frame gets a first column `sim`, and a list is stacked element by element. Each other value becomes a list with one entry for each simulation.
+- Stacking stops when two simulations differ in the structure at one path, and the error names the path and the two simulations.
+- `no_row_per_person` also fails an atomic vector of length `n_rows_data` and a matrix or an array with a dimension `n_rows_data`, for example `fitted(fit)`. It does not look in `manifest`, and it checks nothing when `n_rows_data` is 0 or 1. Before, a 1-row table failed when the data had 1 row.
+- `allowed_objects` and `no_row_per_person` also walk the attributes of each object, so the `terms` attribute of a model frame fails. They skip the attributes that R and data.table set, for example `names` and `.internal.selfref`.
+- The detail of `allowed_objects` gives a fix for a model, a formula, an `htest`, a `POSIXlt`, a `package_version` and an `sf` geometry.
+- Stacking stops on a nested list that is unnamed or partly named, and on `NULL` in the place of a value. It also stops on a data.frame column of another class, a factor column with other levels, and a data.frame with a column `sim`.
+- A results file that pbn 2026.11.21 wrote passes the new rules, unless it holds an object that `allowed_objects` or `no_row_per_person` fails.
+
 # pbn 2026.11.21
 
 - `run_scenarios()` writes the stdout and the stderr of each run to `run.log` in the results folder of the simulation. For a failed run, it prints the whole log, and the error names the run and the log. Before, the output was in the error message, and R cuts an error message at 1000 bytes by default.

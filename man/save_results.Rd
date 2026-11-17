@@ -4,20 +4,23 @@
 \alias{save_results}
 \title{Save the results object of a project version}
 \usage{
-save_results(exclusions, estimates, tables, extra = list(), d = NULL)
+save_results(..., d)
 }
 \arguments{
-\item{exclusions}{A data.frame with the columns \code{step}, \code{n_before},
-\code{n_excluded} and \code{n_after}, one row per exclusion step. Zero rows are
-allowed.}
+\item{...}{The results, each as a named argument, for example
+\code{estimates = e} or \code{p_interaction = 0.04}. Give at least one. Each name
+MUST be syntactic and MUST be there once. A result named \code{manifest} is
+an error, because pbn writes that element. An element MAY be a data.frame, an atomic vector, a factor, a date,
+\code{NULL}, or a list of these to any depth. \code{\link[=check_results]{check_results()}} lists every
+allowed object. An element named \code{exclusions} MUST be the table of the
+exclusion steps, with the columns \code{step}, \code{n_before}, \code{n_excluded} and
+\code{n_after}. It MAY have zero rows.}
 
-\item{estimates}{A data.frame of estimates.}
-
-\item{tables}{A named list of data.frames.}
-
-\item{extra}{A list of other results.}
-
-\item{d}{The analysis data, or \code{NULL}. pbn stores only its number of rows.}
+\item{d}{The analysis data, or \code{NULL}. You MUST give \code{d}. pbn stores only
+its number of rows. It then refuses a data.frame with that number of
+rows at any depth of the results. It also refuses a vector or a matrix
+with that number of values in one dimension. Give \code{d = NULL} when the
+run has no one table of the data.}
 }
 \value{
 Invisibly, the path of the results file.
@@ -33,9 +36,9 @@ element that \code{\link[=initialize_project]{initialize_project()}} returns. It
 \verb{<home>/<version>_results/<scenario>/} for a scenario with 1 simulation,
 and \verb{<home>/<version>_results/<scenario>/sim_<kkkk>/} otherwise.
 
-The object is a named list with exactly these top-level names:
-\code{manifest}, \code{exclusions}, \code{estimates}, \code{tables} and \code{extra}. pbn builds the
-\code{manifest}, a list with these elements:
+The object is a named list. Its first element is \code{manifest}, and the
+results follow in the order of the call. pbn builds the \code{manifest}, a
+list with these elements:
 \itemize{
 \item \code{pbn_version} and \code{r_version}.
 \item \code{packages}, a named character vector. The names are the attached and
@@ -86,7 +89,9 @@ pbn::save_results(
     n_after = 96
   ),
   estimates = data.frame(term = "x", estimate = 1.2),
-  tables = list(counts = data.frame(grp = c("a", "b"), n = c(50, 46)))
+  counts = list(by_group = data.frame(grp = c("a", "b"), n = c(50, 46))),
+  p_interaction = 0.04,
+  d = NULL
 )
 names(pbn::read_results("v01", home = home))
 

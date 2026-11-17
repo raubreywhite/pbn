@@ -8,9 +8,9 @@ test_that("check_results passes a valid object on every rule", {
   expect_identical(
     found$rule,
     c(
-      "top_level_names",
+      "element_names",
       "exclusions_table",
-      "no_fitted_models",
+      "allowed_objects",
       "no_row_per_person",
       "manifest_scenario",
       "manifest_data",
@@ -27,14 +27,66 @@ test_that("check_results passes an exclusions table with zero rows", {
   expect_identical(failing(x), character(0))
 })
 
-test_that("top_level_names fails on an extra or a missing name", {
+test_that("element_names passes any unique syntactic names besides manifest", {
   x <- valid_results()
-  x$plots <- list()
-  expect_identical(failing(x), "top_level_names")
+  x <- c(x["manifest"], list(p_value = 0.03, counts = c(a = 1L, b = 2L)))
+  expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[1],
+    "manifest, and each other element with a unique syntactic name"
+  )
+})
 
+test_that("element_names fails a missing or second manifest, no other element, a missing, non-syntactic or repeated name", {
+  m <- valid_results()["manifest"]
+  cases <- list(
+    no_manifest = list(
+      x = list(estimates = data.frame(a = 1)),
+      detail = "manifest MUST be there exactly once"
+    ),
+    two_manifests = list(
+      x = c(m, m, list(a = 1)),
+      detail = "manifest MUST be there exactly once; more than once: manifest"
+    ),
+    manifest_only = list(
+      x = m,
+      detail = "there is no element other than manifest"
+    ),
+    unnamed = list(
+      x = c(m, list(a = 1, 2)),
+      detail = "these elements have no name: 3"
+    ),
+    not_syntactic = list(
+      x = c(m, list(`my table` = data.frame(a = 1), `if` = 1)),
+      detail = "these names are not syntactic: \"my table\", \"if\""
+    ),
+    twice = list(
+      x = c(m, list(a = 1, a = 2)),
+      detail = "more than once: a"
+    ),
+    not_a_list = list(
+      x = data.frame(a = 1),
+      detail = "the object is not a list"
+    )
+  )
+  for (nm in names(cases)) {
+    found <- check_results(cases[[nm]]$x)
+    expect_true("element_names" %in% failing(cases[[nm]]$x), info = nm)
+    expect_identical(found$detail[1], cases[[nm]]$detail, info = nm)
+  }
+})
+
+test_that("exclusions_table passes and says so when there is no element exclusions", {
   x <- valid_results()
-  x$extra <- NULL
-  expect_identical(failing(x), "top_level_names")
+  x$exclusions <- NULL
+  expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[2],
+    "there is no element exclusions, so nothing to check"
+  )
+  # Any other data.frame MAY have any columns.
+  x$flow <- data.frame(stage = "screened", n = 50)
+  expect_identical(failing(x), character(0))
 })
 
 test_that("exclusions_table fails on a missing column", {
@@ -60,16 +112,192 @@ test_that("exclusions_table fails when exclusions is not a data.frame", {
   expect_identical(failing(x), "exclusions_table")
 })
 
-test_that("no_fitted_models fails on a model anywhere in the object", {
+test_that("allowed_objects fails each disallowed object with its path and class", {
+  fit_data <- data.frame(u = 1:5, w = c(2, 4, 5, 4, 5))
+  bad <- list(
+    lm = list(value = stats::lm(w ~ u, data = fit_data), class = "lm"),
+    glm = list(value = stats::glm(w ~ u, data = fit_data), class = "glm/lm"),
+    fn = list(value = function(x) return(x), class = "function"),
+    env = list(value = new.env(), class = "environment"),
+    classed_list = list(
+      value = structure(list(a = 1), class = "my_summary"),
+      class = "my_summary"
+    ),
+    formula = list(value = w ~ u, class = "formula"),
+    # asS4() sets the S4 bit, as on an object of an S4 class that contains
+    # numeric. Without the bit, this vector passes.
+    s4 = list(
+      value = asS4(structure(c(1, 2), class = "fake_s4")),
+      class = "fake_s4"
+    ),
+    # An object of an S4 class, such as a merMod fit, has the type S4.
+    s4_type = list(
+      value = methods::setClass(
+        "pbn_fake_fit",
+        representation(beta = "numeric"),
+        where = new.env()
+      )(),
+      class = "pbn_fake_fit"
+    )
+  )
+  for (nm in names(bad)) {
+    x <- valid_results()
+    x$extra$item <- bad[[nm]]$value
+    expect_identical(failing(x), "allowed_objects", info = nm)
+    expect_match(
+      check_results(x)$detail[3],
+      paste0("not allowed: x$extra$item (class ", bad[[nm]]$class, ")"),
+      fixed = TRUE,
+      info = nm
+    )
+    advice <- if (nm %in% c("lm", "glm")) {
+      "save its table of coefficients as a data.frame"
+    } else if (nm == "formula") {
+      "save it as text with deparse()"
+    } else {
+      "convert it to a data.frame or a plain list"
+    }
+    expect_identical(
+      check_results(x)$detail[3],
+      paste0(
+        "not allowed: x$extra$item (class ",
+        bad[[nm]]$class,
+        "): ",
+        advice
+      ),
+      info = nm
+    )
+  }
+})
+
+test_that("allowed_objects gives the advice for each common object", {
+  cases <- list(
+    htest = list(
+      value = stats::t.test(c(1, 2, 4, 3)),
+      advice = "(class htest): save data.frame(statistic = , p_value = , ...) of the test"
+    ),
+    posixlt = list(
+      value = as.POSIXlt("2026-01-01", tz = "UTC"),
+      advice = "(class POSIXlt/POSIXt): convert it with as.POSIXct()"
+    ),
+    version = list(
+      value = package_version("1.2.3"),
+      advice = "(class package_version/numeric_version): convert it with as.character()"
+    ),
+    # The geometry column of an sf table: a list with the class sfc.
+    geometry = list(
+      value = structure(list(c(1, 2)), class = c("sfc_POINT", "sfc")),
+      advice = "(class sfc_POINT/sfc): drop the geometry with sf::st_drop_geometry()"
+    ),
+    other = list(
+      value = structure(list(a = 1), class = "my_summary"),
+      advice = "(class my_summary): convert it to a data.frame or a plain list"
+    )
+  )
+  for (nm in names(cases)) {
+    x <- valid_results()
+    x$extra$item <- cases[[nm]]$value
+    expect_identical(
+      check_results(x)$detail[3],
+      paste("not allowed: x$extra$item", cases[[nm]]$advice),
+      info = nm
+    )
+  }
+})
+
+test_that("allowed_objects walks attributes: a terms attribute, a function and an environment in an attribute fail", {
   fit_data <- data.frame(u = 1:5, w = c(2, 4, 5, 4, 5))
   x <- valid_results()
-  x$extra$deep <- list(fit = stats::lm(w ~ u, data = fit_data))
-  expect_identical(failing(x), "no_fitted_models")
-  expect_match(check_results(x)$detail[3], "x$extra$deep$fit", fixed = TRUE)
+  x$extra$frame <- stats::model.frame(w ~ u, data = fit_data)
+  x$extra$v <- structure(1, f = function() return(1))
+  x$extra$w <- structure("a", meta = list(where = new.env()))
+  expect_identical(failing(x), "allowed_objects")
+  expect_identical(
+    check_results(x)$detail[3],
+    paste0(
+      "not allowed: attr(x$extra$frame, \"terms\") (class terms/formula): ",
+      "save it as text with deparse(); attr(x$extra$v, \"f\") (class ",
+      "function): convert it to a data.frame or a plain list; ",
+      "attr(x$extra$w, \"meta\")$where (class environment): convert it to a ",
+      "data.frame or a plain list"
+    )
+  )
+})
 
+test_that("allowed_objects fails a model three levels deep and in a list column, and names each path", {
+  fit_data <- data.frame(u = 1:5, w = c(2, 4, 5, 4, 5))
   x <- valid_results()
-  x$tables$fit <- stats::glm(w ~ u, data = fit_data)
-  expect_identical(failing(x), "no_fitted_models")
+  x$models <- list(
+    outcome_a = list(adjusted = list(fit = stats::lm(w ~ u, data = fit_data)))
+  )
+  x$tables$fits <- data.table::data.table(
+    outcome = "b",
+    fit = list(stats::lm(w ~ u, data = fit_data))
+  )
+  expect_identical(failing(x), "allowed_objects")
+  expect_identical(
+    check_results(x)$detail[3],
+    paste0(
+      "not allowed: x$tables$fits$fit[[1]] (class lm): save its table of ",
+      "coefficients as a data.frame; x$models$outcome_a$adjusted$fit (class ",
+      "lm): save its table of coefficients as a data.frame"
+    )
+  )
+})
+
+test_that("allowed_objects fails an R6 object", {
+  skip_if_not_installed("R6")
+  counter <- R6::R6Class("counter", public = list(n = 0))
+  x <- valid_results()
+  x$extra$counter <- counter$new()
+  expect_identical(failing(x), "allowed_objects")
+  expect_match(
+    check_results(x)$detail[3],
+    "x$extra$counter (class counter/R6)",
+    fixed = TRUE
+  )
+})
+
+test_that("allowed_objects passes each allowed object", {
+  x <- valid_results()
+  x <- c(
+    x,
+    list(
+      # A key and an index give the attributes sorted and index, and each
+      # data.table has .internal.selfref, an external pointer.
+      a_data_table = data.table::setindex(
+        data.table::setkey(data.table::data.table(a = 2:1, b = 3:4), a),
+        b
+      ),
+      # A column read from an SPSS file carries label and format.spss.
+      a_labelled_frame = data.frame(
+        score = structure(c(1, 2), label = "Score", format.spss = "F8.2")
+      ),
+      a_tibble = structure(
+        data.frame(a = 1:2),
+        class = c("tbl_df", "tbl", "data.frame")
+      ),
+      a_zero_row_frame = data.frame(a = numeric(0)),
+      a_scalar = 0.03,
+      a_named_vector = c(n = 40L, n_women = 21L),
+      an_empty_vector = character(0),
+      a_matrix = matrix(1:4, 2, dimnames = list(c("a", "b"), c("c", "d"))),
+      an_array = array(1:8, c(2, 2, 2)),
+      a_factor = factor(c("a", "b")),
+      an_ordered_factor = factor(c("low", "high"), ordered = TRUE),
+      a_date = as.Date("2026-01-01"),
+      a_time = as.POSIXct("2026-01-01 12:00:00", tz = "UTC"),
+      a_difftime = as.difftime(3, units = "days"),
+      a_table = table(c("a", "b", "b")),
+      a_noquote = noquote("a"),
+      an_integer64 = structure(0, class = "integer64"),
+      a_classed_vector = structure(c(1, 2), class = c("fit.vector", "numeric")),
+      an_asis_list = I(list(1, "a")),
+      a_null = NULL,
+      a_nested_list = list(list(a = list(b = data.frame(c = 1))), "d")
+    )
+  )
+  expect_identical(failing(x), character(0))
 })
 
 test_that("no_row_per_person fails on a data.frame with n_rows_data rows", {
@@ -77,6 +305,74 @@ test_that("no_row_per_person fails on a data.frame with n_rows_data rows", {
   x$tables$people <- data.frame(id = 1:40)
   expect_identical(failing(x), "no_row_per_person")
   expect_match(check_results(x)$detail[4], "x$tables$people", fixed = TRUE)
+})
+
+test_that("no_row_per_person fails a data.frame with n_rows_data rows three levels deep, and names its path", {
+  x <- valid_results()
+  x$by_outcome <- list(a = list(raw = list(people = data.frame(id = 1:40))))
+  expect_identical(failing(x), "no_row_per_person")
+  expect_identical(
+    check_results(x)$detail[4],
+    paste(
+      "x$by_outcome$a$raw$people (a data.frame with 40 rows) has one value",
+      "for each row of the data. Save a summary of it instead. If it is an",
+      "aggregate that has this size by chance, change its shape so that the",
+      "size differs, for example to a long data.frame with an explicit",
+      "grouping column, and say so in a comment"
+    )
+  )
+  # 39 rows pass.
+  x$by_outcome$a$raw$people <- data.frame(id = 1:39)
+  expect_identical(failing(x), character(0))
+})
+
+test_that("no_row_per_person fails a vector, a factor, a date, a matrix and an array with n_rows_data values in one dimension, at any depth", {
+  x <- valid_results()
+  x$fitted <- stats::setNames(seq(0.1, 4, by = 0.1), 1:40)
+  x$by_group <- list(a = list(sex = factor(rep(c("f", "m"), 20))))
+  x$visits <- data.frame(id = 1:2)
+  x$visits$dates <- list(as.Date("2026-01-01") + 0:39, as.Date("2026-01-01"))
+  x$design <- matrix(0, 40, 2)
+  x$cube <- array(0, c(2, 3, 40))
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(
+    check_results(x)$detail[4],
+    paste0(
+      "^x\\$fitted \\(length 40\\), x\\$by_group\\$a\\$sex \\(length 40\\), ",
+      "x\\$visits\\$dates\\[\\[1\\]\\] \\(length 40\\), x\\$design \\(dimensions ",
+      "40x2\\), x\\$cube \\(dimensions 2x3x40\\) has one value for each row"
+    )
+  )
+  # 39 values pass, and so do the vectors of the manifest.
+  x <- valid_results()
+  x$fitted <- seq_len(39)
+  x$design <- matrix(0, 39, 2)
+  x$manifest$packages <- stats::setNames(rep("1.0", 40), paste0("p", 1:40))
+  expect_identical(failing(x), character(0))
+})
+
+test_that("no_row_per_person checks nothing when n_rows_data is 0 or 1, and checks from 2", {
+  for (n in 0:1) {
+    x <- valid_results()
+    x$manifest$n_rows_data <- n
+    x$one <- 0.5
+    x$table_of_one <- data.frame(a = 1)
+    x$empty <- numeric(0)
+    expect_identical(failing(x), character(0), info = n)
+    expect_identical(
+      check_results(x)$detail[4],
+      paste0("n_rows_data is ", n, ", less than 2, so nothing to check"),
+      info = n
+    )
+  }
+  x <- valid_results()
+  x$manifest$n_rows_data <- 2L
+  x$tables$counts <- NULL
+  x$estimates <- NULL
+  x$exclusions <- NULL
+  x$pair <- c(0.1, 0.2)
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(check_results(x)$detail[4], "x$pair (length 2)", fixed = TRUE)
 })
 
 test_that("no_row_per_person checks nothing when n_rows_data is NA", {

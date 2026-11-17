@@ -1,7 +1,8 @@
 # A fake project with the scenarios real (1 simulation) and pool (4).
 # The setting `pause` is the number of seconds that each run of pool sleeps.
-# Each run appends "<scenario> <sim>" to runs.txt, records the time of its
-# start and of its end in `extra`, and stops when its simulation is in
+# Each run appends "<scenario> <sim>" to runs.txt, writes the time of its
+# start and of its end to times.txt in its results folder, and stops when its
+# simulation is in
 # fail.txt. A line "<scenario> <sim> <mode>" in plant.txt plants a fault in
 # that run:
 # - empty: quit with status 0 before save_results().
@@ -86,12 +87,16 @@ local_pool_project <- function(pause = 0, env = parent.frame()) {
       "d <- utils::read.csv(file.path(p$data_raw, \"d.csv\"))",
       "Sys.sleep(p$settings$pause)",
       "ended <- as.numeric(Sys.time())",
+      # The times go to a file beside results.qs2. Stacking keeps every
+      # result, so times in the results would make the stacked file differ
+      # between two runs of the same code.
+      "writeLines(sprintf(\"%.6f\", c(started, ended)), file.path(p$results, \"times.txt\"))",
       "pbn::save_results(",
       "  exclusions = data.frame(step = character(0), n_before = numeric(0),",
       "    n_excluded = numeric(0), n_after = numeric(0)),",
       "  estimates = data.frame(term = \"mean_x\", estimate = mean(d$x)),",
       "  tables = list(),",
-      "  extra = list(started = started, ended = ended)",
+      "  d = NULL",
       ")",
       "if (mode == \"late\") stop(\"planted failure after save_results\")",
       "if (mode == \"hang\") {",
@@ -114,12 +119,12 @@ pool_folder <- function(p, sim = NULL) {
 # The time of the start and of the end of each simulation of pool.
 pool_times <- function(p) {
   x <- lapply(1:4, function(k) {
-    return(qs2::qs_read(file.path(pool_folder(p, k), "results.qs2"))$extra)
+    return(as.numeric(readLines(file.path(pool_folder(p, k), "times.txt"))))
   })
   return(data.frame(
     sim = 1:4,
-    started = vapply(x, function(e) return(e$started), numeric(1)),
-    ended = vapply(x, function(e) return(e$ended), numeric(1))
+    started = vapply(x, function(e) return(e[1]), numeric(1)),
+    ended = vapply(x, function(e) return(e[2]), numeric(1))
   ))
 }
 
@@ -450,8 +455,8 @@ test_that("a run that quits with status 0 without results.qs2, or with a results
     res$error,
     paste0(
       "The run of scenario \"real\", simulation 1, stopped with status 0, ",
-      "but results.qs2 fails check_results(): top_level_names, ",
-      "exclusions_table, manifest_scenario, manifest_data, manifest_source: ",
+      "but results.qs2 fails check_results(): element_names, ",
+      "manifest_scenario, manifest_data, manifest_source: ",
       file.path(real, "results.qs2"),
       ". Its log: ",
       file.path(real, "run.log")

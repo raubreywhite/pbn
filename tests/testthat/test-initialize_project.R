@@ -1,37 +1,3 @@
-# Starts a scenario in this R session as a person who steps through the run
-# script by hand: use_scenario(), then initialize_project().
-# The choice lasts for the R session, so init() empties it when the calling
-# test ends.
-init <- function(
-  p,
-  scenario = "real",
-  data_raw = p$data_default,
-  sim = 1,
-  env = parent.frame()
-) {
-  local_clean_session(env)
-  testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
-  utils::capture.output(use_scenario(scenario, sim))
-  out <- NULL
-  utils::capture.output(
-    out <- suppressMessages(initialize_project(
-      "v01",
-      p$home,
-      data_raw,
-      env = new.env()
-    ))
-  )
-  return(out)
-}
-
-results_files <- function(p) {
-  return(sort(list.files(
-    file.path(p$home, "v01_results"),
-    recursive = TRUE,
-    all.files = TRUE
-  )))
-}
-
 test_that("run_arg, choose_scenario and choose_sim read the trailing arguments", {
   expect_identical(choose_scenario("real", character(0)), "real")
   expect_identical(choose_scenario("real", c("--x", "scenario=null")), "null")
@@ -211,7 +177,8 @@ test_that("save_results stops on an object that fails check_results", {
         n_after = 10
       ),
       estimates = data.frame(term = "x", estimate = 1),
-      tables = list()
+      tables = list(),
+      d = NULL
     ),
     "exclusions_table"
   )
@@ -542,7 +509,8 @@ save_and_read_manifest <- function(out) {
       n_after = numeric(0)
     ),
     estimates = data.frame(term = "x", estimate = 1),
-    tables = list()
+    tables = list(),
+    d = NULL
   ))
   return(qs2::qs_read(file.path(out$results, "results.qs2"))$manifest)
 }

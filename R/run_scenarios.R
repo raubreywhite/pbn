@@ -62,15 +62,7 @@
 #'    not exactly the simulations 1 to `sims`. After `sims` in
 #'    `CFG$scenarios` becomes smaller, the folders of the higher simulations
 #'    stay. Stacking then stops, and the error names their files. Delete
-#'    those folders to stack again. `estimates`, `exclusions` and
-#'    each data.frame in `tables` get a first column `sim`. Each keeps the
-#'    class of its object in simulation 1, so a data.table stays a
-#'    data.table. `extra` is an empty list. The `manifest` is that of
-#'    simulation 1. In it, `sim` and `n_rows_data` are `NA`, `sims` is the
-#'    number of simulations, and `stacked` is `TRUE`. For a fake scenario, it
-#'    stops when a simulation has no valid `manifest$fake_md5`, or when the
-#'    simulations do not have one value of it. It also stops when the
-#'    simulations do not have one value of `manifest$settings`.
+#'    those folders to stack again. The section Stacking gives the rules.
 #' 6. For each scenario that has a function `expect_<scenario>()` in
 #'    `<version>_functions/`, it calls that function on the results of the
 #'    scenario in a new R session. `expect_real()` is optional. The function
@@ -88,6 +80,39 @@
 #'
 #' After every scenario is done, `run_scenarios()` stops when a value of
 #' `pass` is not `TRUE`. The error lists the failed assertions.
+#' @section Stacking:
+#' The stacked results hold every element of the results of simulation 1,
+#' in the same order. These rules apply at each depth:
+#' - A data.frame gets a first column `sim`, and the rows of the simulations
+#'   in order. It keeps the class of simulation 1, so a data.table stays a
+#'   data.table.
+#' - A list is stacked element by element, and pbn matches the elements by
+#'   name. So each element of a list MUST have its own name. An unnamed or
+#'   partly named list stops stacking. A scenario with 1 simulation MAY hold
+#'   such a list.
+#' - Each other element becomes a list with one entry for each simulation,
+#'   named `sim_0001`, `sim_0002` and so on. This includes an atomic vector,
+#'   a matrix, a factor, a date and `NULL`.
+#'
+#' Stacking stops when two simulations differ in the structure at one path.
+#' The error names the path and the two simulations. Examples:
+#' - a list with other names or another length.
+#' - a data.frame with other columns, a column of another class, or a factor
+#'   column with other levels.
+#' - a list in the place of a data.frame, or `NULL` in the place of a value.
+#'
+#' Stacking also stops on a data.frame with a column `sim`, because pbn adds
+#' that column.
+#'
+#' The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
+#' are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
+#' For a fake scenario, stacking stops when a simulation has no valid
+#' `manifest$fake_md5`, or when the simulations do not have one value of it.
+#' It also stops when the simulations do not have one value of
+#' `manifest$settings`.
+#'
+#' A scenario with 1 simulation is not stacked. Its `results.qs2` is the file
+#' that the run wrote.
 #' @section Workers:
 #' Each simulation depends only on its scenario and its number, so `workers`
 #' does not change the results files or `check.csv`. Only the order of the
@@ -142,16 +167,17 @@
 #'     'p <- pbn::initialize_project("v01", home = ".", data_raw = "data")',
 #'     "d <- utils::read.csv(file.path(p$data_raw, 'd.csv'))",
 #'     "pbn::save_results(",
-#'     "  exclusions = data.frame(step = character(0), n_before = numeric(0),",
-#'     "    n_excluded = numeric(0), n_after = numeric(0)),",
 #'     "  estimates = data.frame(term = 'mean_x', estimate = mean(d$x)),",
-#'     "  tables = list()",
+#'     "  n_rows = nrow(d),",
+#'     "  d = d",
 #'     ")"
 #'   ),
 #'   file.path(home, "v01_run.R")
 #' )
 #' pbn::run_scenarios("v01", home = home)
-#' pbn::read_results("v01", scenario = "null", home = home)$estimates
+#' stacked <- pbn::read_results("v01", scenario = "null", home = home)
+#' stacked$estimates
+#' stacked$n_rows
 #'
 #' unlink(home, recursive = TRUE)
 #' }
@@ -345,17 +371,6 @@ stack_scenario <- function(home, version, scenario, sims) {
 
 # Simulation k of `runs` is simulation k of the scenario.
 stack_results <- function(runs, scenario) {
-  table_names <- names(runs[[1]][["tables"]])
-  for (k in seq_along(runs)) {
-    if (!identical(names(runs[[k]][["tables"]]), table_names)) {
-      stop(
-        "The simulations of the scenario \"",
-        scenario,
-        "\" do not have the same tables, so pbn cannot stack them.",
-        call. = FALSE
-      )
-    }
-  }
   # The stacked manifest is that of simulation 1, so its fake_md5 MUST be the
   # fake_md5 of each simulation.
   fake <- lapply(runs, function(r) return(r[["manifest"]][["fake_md5"]]))
@@ -392,30 +407,124 @@ stack_results <- function(runs, scenario) {
       call. = FALSE
     )
   }
-  part <- function(name) {
-    return(stack_frames(lapply(runs, function(r) return(r[[name]]))))
-  }
-  tables <- lapply(table_names, function(nm) {
-    return(stack_frames(lapply(runs, function(r) return(r[["tables"]][[nm]]))))
-  })
-  names(tables) <- table_names
   manifest <- runs[[1]][["manifest"]]
   manifest$sim <- NA_integer_
   manifest$sims <- length(runs)
   manifest$n_rows_data <- NA_integer_
   manifest$stacked <- TRUE
-  return(list(
-    manifest = manifest,
-    exclusions = part("exclusions"),
-    estimates = part("estimates"),
-    tables = tables,
-    extra = list()
+  results <- lapply(runs, function(r) return(r[names(r) != "manifest"]))
+  return(c(list(manifest = manifest), stack_element(results, "x", scenario)))
+}
+
+# The element at the path `where`, stacked from `values`, its value in each
+# simulation. A data.frame gets a first column sim. A list is stacked element
+# by element. Each other value becomes a list with one entry for each
+# simulation, named sim_0001, sim_0002 and so on.
+stack_element <- function(values, where, scenario) {
+  kinds <- vapply(values, stack_kind, character(1))
+  k <- match(TRUE, kinds != kinds[1])
+  if (!is.na(k)) {
+    stop_structure(scenario, where, k, kinds[1], kinds[k])
+  }
+  if (kinds[1] == "a data.frame") {
+    return(stack_frames(values, where, scenario))
+  }
+  if (kinds[1] == "a list") {
+    return(stack_list(values, where, scenario))
+  }
+  return(stats::setNames(values, sim_folder(seq_along(values))))
+}
+
+stack_kind <- function(o) {
+  if (is.null(o)) {
+    return("NULL")
+  }
+  if (is.data.frame(o)) {
+    return("a data.frame")
+  }
+  if (is.list(o)) {
+    return("a list")
+  }
+  return("a value")
+}
+
+# The lists `values` stacked element by element and matched by name. Each
+# list MUST have a unique name for each element, so that no element of one
+# simulation is stacked with another element of another simulation.
+stack_list <- function(values, where, scenario) {
+  first <- values[[1]]
+  nm <- names(first)
+  for (k in seq_along(values)) {
+    nm_k <- names(values[[k]])
+    named <- length(values[[k]]) == 0 ||
+      (!is.null(nm_k) && all(nzchar(nm_k)) && !anyDuplicated(nm_k))
+    if (!named) {
+      stop(
+        "pbn cannot stack the scenario \"",
+        scenario,
+        "\": in simulation ",
+        k,
+        ", the list at ",
+        where,
+        " has an element without a name or a name twice. Give each ",
+        "element of the list its own name, for example list(a = 1, b = 2).",
+        call. = FALSE
+      )
+    }
+    if (!setequal(nm_k, nm) || length(values[[k]]) != length(first)) {
+      stop_structure(
+        scenario,
+        where,
+        k,
+        list_shape(first),
+        list_shape(values[[k]])
+      )
+    }
+  }
+  out <- lapply(seq_along(first), function(i) {
+    parts <- lapply(values, function(v) return(v[[nm[[i]]]]))
+    return(stack_element(parts, child_path(first, i, where), scenario))
+  })
+  names(out) <- nm
+  return(out)
+}
+
+list_shape <- function(o) {
+  if (is.null(names(o))) {
+    return(paste("a list of length", length(o)))
+  }
+  return(paste(
+    "a list with the names",
+    paste(dQuote(names(o), FALSE), collapse = ", ")
   ))
+}
+
+# Stops, because simulation k is `found` at the path `where`, and simulation 1
+# is `want`. `advice` is NULL or a sentence that says how to fix it.
+stop_structure <- function(scenario, where, k, want, found, advice = NULL) {
+  stop(
+    "The simulations 1 and ",
+    k,
+    " of the scenario \"",
+    scenario,
+    "\" differ at ",
+    where,
+    ": it is ",
+    want,
+    " in simulation 1 and ",
+    found,
+    " in simulation ",
+    k,
+    ", so pbn cannot stack them.",
+    if (!is.null(advice)) paste0(" ", advice),
+    call. = FALSE
+  )
 }
 
 # The frames with a first column sim, in one object of the class of
 # frames[[1]]. A data.table stays a data.table.
-stack_frames <- function(frames) {
+stack_frames <- function(frames, where, scenario) {
+  check_frames(frames, where, scenario)
   parts <- lapply(seq_along(frames), function(k) {
     f <- as.data.frame(frames[[k]])
     return(data.frame(sim = rep(k, nrow(f)), f, check.names = FALSE))
@@ -432,6 +541,98 @@ stack_frames <- function(frames) {
     class(out) <- cls
   }
   return(out)
+}
+
+# Stops when the frames of the simulations at the path `where` cannot be
+# row-bound without a change: a column sim, other columns, a column of
+# another class, or a factor column with other levels.
+check_frames <- function(frames, where, scenario) {
+  columns <- names(frames[[1]])
+  for (k in seq_along(frames)) {
+    repeated <- unique(names(frames[[k]])[duplicated(names(frames[[k]]))])
+    if (length(repeated) > 0) {
+      stop(
+        "pbn cannot stack the scenario \"",
+        scenario,
+        "\": in simulation ",
+        k,
+        ", the data.frame at ",
+        where,
+        " has more than one column named ",
+        paste(repeated, collapse = ", "),
+        ". Give each column its own name.",
+        call. = FALSE
+      )
+    }
+    if ("sim" %in% names(frames[[k]])) {
+      stop(
+        "pbn cannot stack the scenario \"",
+        scenario,
+        "\": in simulation ",
+        k,
+        ", the data.frame at ",
+        where,
+        " has a column sim. pbn adds that column when it stacks the ",
+        "simulations, so give the column another name.",
+        call. = FALSE
+      )
+    }
+    if (
+      ncol(frames[[k]]) != length(columns) ||
+        !setequal(names(frames[[k]]), columns)
+    ) {
+      stop_structure(
+        scenario,
+        where,
+        k,
+        paste("a data.frame with the columns", paste(columns, collapse = ", ")),
+        paste(
+          "a data.frame with the columns",
+          paste(names(frames[[k]]), collapse = ", ")
+        )
+      )
+    }
+    for (col in columns) {
+      check_column(
+        frames[[1]][[col]],
+        frames[[k]][[col]],
+        k,
+        where,
+        col,
+        scenario
+      )
+    }
+  }
+  return(invisible(NULL))
+}
+
+# Stops when the column `col` of simulation k, `b`, has another class than in
+# simulation 1, `a`, or other factor levels.
+check_column <- function(a, b, k, where, col, scenario) {
+  at <- paste0(where, ", column ", col)
+  if (!identical(class(a), class(b))) {
+    stop_structure(
+      scenario,
+      at,
+      k,
+      paste("of the class", paste(class(a), collapse = "/")),
+      paste("of the class", paste(class(b), collapse = "/"))
+    )
+  }
+  if (is.factor(a) && !identical(levels(a), levels(b))) {
+    stop_structure(
+      scenario,
+      at,
+      k,
+      paste("a factor with the levels", paste(levels(a), collapse = ", ")),
+      paste("a factor with the levels", paste(levels(b), collapse = ", ")),
+      paste(
+        "Convert the column to character, or give the factor the same",
+        "levels in each simulation in the analysis."
+      )
+    )
+  }
+  return(invisible(NULL))
 }
 
 # Calls expect_<scenario>() in a new R session on the results of the

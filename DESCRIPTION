@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.11.21
+Version: 2026.11.22
 Authors@R:
     c(
       person(
@@ -32,6 +32,7 @@ Imports:
     tools,
     utils
 Suggests:
+    R6,
     rmarkdown,
     testthat (>= 3.0.0),
     withr

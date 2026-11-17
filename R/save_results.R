@@ -4,22 +4,28 @@
 #' the project version. It stops before it writes when [check_results()]
 #' finds a failure.
 #'
-#' @param exclusions A data.frame with the columns `step`, `n_before`,
-#'   `n_excluded` and `n_after`, one row per exclusion step. Zero rows are
-#'   allowed.
-#' @param estimates A data.frame of estimates.
-#' @param tables A named list of data.frames.
-#' @param extra A list of other results.
-#' @param d The analysis data, or `NULL`. pbn stores only its number of rows.
+#' @param ... The results, each as a named argument, for example
+#'   `estimates = e` or `p_interaction = 0.04`. Give at least one. Each name
+#'   MUST be syntactic and MUST be there once. A result named `manifest` is
+#'   an error, because pbn writes that element. An element MAY be a data.frame, an atomic vector, a factor, a date,
+#'   `NULL`, or a list of these to any depth. [check_results()] lists every
+#'   allowed object. An element named `exclusions` MUST be the table of the
+#'   exclusion steps, with the columns `step`, `n_before`, `n_excluded` and
+#'   `n_after`. It MAY have zero rows.
+#' @param d The analysis data, or `NULL`. You MUST give `d`. pbn stores only
+#'   its number of rows. It then refuses a data.frame with that number of
+#'   rows at any depth of the results. It also refuses a vector or a matrix
+#'   with that number of values in one dimension. Give `d = NULL` when the
+#'   run has no one table of the data.
 #' @details
 #' Call [initialize_project()] first. The results folder is the `results`
 #' element that [initialize_project()] returns. It is
 #' `<home>/<version>_results/<scenario>/` for a scenario with 1 simulation,
 #' and `<home>/<version>_results/<scenario>/sim_<kkkk>/` otherwise.
 #'
-#' The object is a named list with exactly these top-level names:
-#' `manifest`, `exclusions`, `estimates`, `tables` and `extra`. pbn builds the
-#' `manifest`, a list with these elements:
+#' The object is a named list. Its first element is `manifest`, and the
+#' results follow in the order of the call. pbn builds the `manifest`, a
+#' list with these elements:
 #' - `pbn_version` and `r_version`.
 #' - `packages`, a named character vector. The names are the attached and
 #'   loaded packages that are not base packages, and the values are their
@@ -68,35 +74,37 @@
 #'     n_after = 96
 #'   ),
 #'   estimates = data.frame(term = "x", estimate = 1.2),
-#'   tables = list(counts = data.frame(grp = c("a", "b"), n = c(50, 46)))
+#'   counts = list(by_group = data.frame(grp = c("a", "b"), n = c(50, 46))),
+#'   p_interaction = 0.04,
+#'   d = NULL
 #' )
 #' names(pbn::read_results("v01", home = home))
 #'
 #' unlink(home, recursive = TRUE)
 #' @family results
 #' @export
-save_results <- function(
-  exclusions,
-  estimates,
-  tables,
-  extra = list(),
-  d = NULL
-) {
+save_results <- function(..., d) {
   if (is.null(state$results)) {
     stop(
       "Call pbn::initialize_project() before pbn::save_results().",
       call. = FALSE
     )
   }
-  check_save_args(estimates, tables, extra, d)
+  if (missing(d)) {
+    stop(
+      "save_results() needs `d`. Pass the analysis data as `d = d` so pbn ",
+      "can refuse a table with one row for each row of the data, or pass ",
+      "`d = NULL` if the run has no single data table.",
+      call. = FALSE
+    )
+  }
+  if (!is.null(d) && !is.data.frame(d)) {
+    stop("`d` must be a data.frame or NULL.", call. = FALSE)
+  }
+  results <- list(...)
+  check_result_names(names(results), length(results))
 
-  x <- list(
-    manifest = build_manifest(d),
-    exclusions = exclusions,
-    estimates = estimates,
-    tables = tables,
-    extra = extra
-  )
+  x <- c(list(manifest = build_manifest(d)), results)
   findings <- check_results(x)
   failed <- findings[findings$status == "FAIL", , drop = FALSE]
   if (nrow(failed) > 0) {
@@ -111,33 +119,37 @@ save_results <- function(
   return(invisible(file))
 }
 
-check_save_args <- function(estimates, tables, extra, d) {
-  if (!is.data.frame(estimates)) {
-    stop("`estimates` must be a data.frame.", call. = FALSE)
+# Stops when the names `nm` of the `n` results of a save_results() call
+# break the contract.
+check_result_names <- function(nm, n) {
+  if (n == 0) {
+    stop(
+      "save_results() needs at least one named result, for example ",
+      "`estimates = e`.",
+      call. = FALSE
+    )
   }
-  if (!is_named_list_of_data_frames(tables)) {
-    stop("`tables` must be a named list of data.frames.", call. = FALSE)
+  if (is.null(nm)) {
+    nm <- rep("", n)
   }
-  if (!is.list(extra) || is.data.frame(extra)) {
-    stop("`extra` must be a list.", call. = FALSE)
+  if ("manifest" %in% nm) {
+    stop(
+      "`manifest` is the name of the element that pbn writes. Give that ",
+      "result another name.",
+      call. = FALSE
+    )
   }
-  if (!is.null(d) && !is.data.frame(d)) {
-    stop("`d` must be a data.frame or NULL.", call. = FALSE)
+  failures <- name_failures(nm)
+  if (length(failures) > 0) {
+    stop(
+      "Each result of save_results() MUST have a syntactic name, once, as ",
+      "in `estimates = e`. In this call, ",
+      paste(failures, collapse = "; "),
+      ".",
+      call. = FALSE
+    )
   }
   return(invisible(NULL))
-}
-
-is_named_list_of_data_frames <- function(x) {
-  if (!is.list(x) || is.data.frame(x)) {
-    return(FALSE)
-  }
-  if (length(x) == 0) {
-    return(TRUE)
-  }
-  if (is.null(names(x)) || !all(nzchar(names(x)))) {
-    return(FALSE)
-  }
-  return(all(vapply(x, is.data.frame, logical(1))))
 }
 
 build_manifest <- function(d) {

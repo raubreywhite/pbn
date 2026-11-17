@@ -90,15 +90,7 @@ of each failed run. It stacks and checks no scenario.
 not exactly the simulations 1 to \code{sims}. After \code{sims} in
 \code{CFG$scenarios} becomes smaller, the folders of the higher simulations
 stay. Stacking then stops, and the error names their files. Delete
-those folders to stack again. \code{estimates}, \code{exclusions} and
-each data.frame in \code{tables} get a first column \code{sim}. Each keeps the
-class of its object in simulation 1, so a data.table stays a
-data.table. \code{extra} is an empty list. The \code{manifest} is that of
-simulation 1. In it, \code{sim} and \code{n_rows_data} are \code{NA}, \code{sims} is the
-number of simulations, and \code{stacked} is \code{TRUE}. For a fake scenario, it
-stops when a simulation has no valid \code{manifest$fake_md5}, or when the
-simulations do not have one value of it. It also stops when the
-simulations do not have one value of \code{manifest$settings}.
+those folders to stack again. The section Stacking gives the rules.
 \item For each scenario that has a function \verb{expect_<scenario>()} in
 \verb{<version>_functions/}, it calls that function on the results of the
 scenario in a new R session. \code{expect_real()} is optional. The function
@@ -120,6 +112,46 @@ four columns.
 After every scenario is done, \code{run_scenarios()} stops when a value of
 \code{pass} is not \code{TRUE}. The error lists the failed assertions.
 }
+\section{Stacking}{
+
+The stacked results hold every element of the results of simulation 1,
+in the same order. These rules apply at each depth:
+\itemize{
+\item A data.frame gets a first column \code{sim}, and the rows of the simulations
+in order. It keeps the class of simulation 1, so a data.table stays a
+data.table.
+\item A list is stacked element by element, and pbn matches the elements by
+name. So each element of a list MUST have its own name. An unnamed or
+partly named list stops stacking. A scenario with 1 simulation MAY hold
+such a list.
+\item Each other element becomes a list with one entry for each simulation,
+named \code{sim_0001}, \code{sim_0002} and so on. This includes an atomic vector,
+a matrix, a factor, a date and \code{NULL}.
+}
+
+Stacking stops when two simulations differ in the structure at one path.
+The error names the path and the two simulations. Examples:
+\itemize{
+\item a list with other names or another length.
+\item a data.frame with other columns, a column of another class, or a factor
+column with other levels.
+\item a list in the place of a data.frame, or \code{NULL} in the place of a value.
+}
+
+Stacking also stops on a data.frame with a column \code{sim}, because pbn adds
+that column.
+
+The \code{manifest} is that of simulation 1. In it, \code{sim} and \code{n_rows_data}
+are \code{NA}, \code{sims} is the number of simulations, and \code{stacked} is \code{TRUE}.
+For a fake scenario, stacking stops when a simulation has no valid
+\code{manifest$fake_md5}, or when the simulations do not have one value of it.
+It also stops when the simulations do not have one value of
+\code{manifest$settings}.
+
+A scenario with 1 simulation is not stacked. Its \code{results.qs2} is the file
+that the run wrote.
+}
+
 \section{Workers}{
 
 Each simulation depends only on its scenario and its number, so \code{workers}
@@ -180,16 +212,17 @@ writeLines(
     'p <- pbn::initialize_project("v01", home = ".", data_raw = "data")',
     "d <- utils::read.csv(file.path(p$data_raw, 'd.csv'))",
     "pbn::save_results(",
-    "  exclusions = data.frame(step = character(0), n_before = numeric(0),",
-    "    n_excluded = numeric(0), n_after = numeric(0)),",
     "  estimates = data.frame(term = 'mean_x', estimate = mean(d$x)),",
-    "  tables = list()",
+    "  n_rows = nrow(d),",
+    "  d = d",
     ")"
   ),
   file.path(home, "v01_run.R")
 )
 pbn::run_scenarios("v01", home = home)
-pbn::read_results("v01", scenario = "null", home = home)$estimates
+stacked <- pbn::read_results("v01", scenario = "null", home = home)
+stacked$estimates
+stacked$n_rows
 
 unlink(home, recursive = TRUE)
 }

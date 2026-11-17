@@ -19,19 +19,61 @@ and \code{detail}. \code{status} is \code{"PASS"} or \code{"FAIL"}.
 nothing.
 }
 \details{
-The seven rules:
+The rule \code{element_names} checks that the manifest is there. The rules
+\code{manifest_scenario}, \code{manifest_data} and \code{manifest_source} check that it
+is valid. The seven rules:
 \itemize{
-\item \code{top_level_names}: the names are \code{manifest}, \code{exclusions}, \code{estimates},
-\code{tables} and \code{extra}, each once, and there are no others.
-\item \code{exclusions_table}: \code{exclusions} is a data.frame with the columns \code{step},
-\code{n_before}, \code{n_excluded} and \code{n_after}. When \code{manifest$stacked} is
-\code{TRUE}, it also has the column \code{sim} that \code{\link[=run_scenarios]{run_scenarios()}} adds. On every
-row, \code{n_before - n_excluded == n_after}.
-\item \code{no_fitted_models}: no element anywhere in \code{x} inherits from \code{lm}, \code{glm},
-\code{gam}, \code{merMod}, \code{brmsfit}, \code{coxph} or \code{lavaan}.
-\item \code{no_row_per_person}: no data.frame anywhere in \code{x} has
-\code{manifest$n_rows_data} rows. When \code{n_rows_data} is \code{NA}, this rule checks
-nothing.
+\item \code{element_names}: \code{x} is a list with the element \code{manifest} exactly once
+and at least one other element. Each element has a name. Each name is
+syntactic, so \code{make.names()} does not change it, and no name is there
+twice.
+\item \code{exclusions_table}: when \code{x} has an element \code{exclusions}, it is a
+data.frame with the columns \code{step}, \code{n_before}, \code{n_excluded} and
+\code{n_after}. When \code{manifest$stacked} is \code{TRUE}, it also has the column
+\code{sim} that \code{\link[=run_scenarios]{run_scenarios()}} adds. On every row,
+\code{n_before - n_excluded == n_after}. Without an element \code{exclusions}, the
+rule passes and says so.
+\item \code{allowed_objects}: each element at each depth is one of these:
+\itemize{
+\item a data.frame, of any class that inherits from data.frame. This
+includes a data.table and a tibble.
+\item an atomic vector of any length and of any class, including a matrix,
+an array, a factor, a \code{Date} and a \code{POSIXct}.
+\item \code{NULL}.
+\item a list of such elements, named or not. The list has no class, or
+only classes from this set: \code{list}, \code{AsIs}, \code{table}, \code{noquote},
+\code{difftime}, \code{Date}, \code{POSIXct}, \code{factor} and \code{integer64}.
+}
+
+Each other element fails, and the detail names its path, its class and
+a fix. This includes a function, an environment, an S4 object, an R6
+object, a formula and each other list with a class. A fitted model of
+the class \code{lm}, \code{glm}, \code{gam}, \code{merMod}, \code{brmsfit}, \code{coxph} or \code{lavaan}
+fails too. The detail has a fix for a model, a formula, an \code{htest}, a
+\code{POSIXlt}, a \code{package_version} and an \code{sf} geometry. For each other
+object, convert it to a data.frame or a plain list.
+
+The walk goes into the columns of a data.frame, so a model in a list
+column fails too. It also goes into the attributes of each object, and
+it writes the path of an attribute as \code{attr(x$a, "terms")}. So the
+\code{terms} attribute of a model frame fails. The walk skips the attributes
+that R and data.table set: \code{names}, \code{dim}, \code{dimnames}, \code{row.names},
+\code{class}, \code{levels}, \code{tzone}, \code{units}, \code{comment}, \code{sorted}, \code{index} and
+\code{.internal.selfref}.
+\item \code{no_row_per_person}: no element at any depth of the results has one
+value for each row of the data. When \code{n} is \code{manifest$n_rows_data}, the
+rule fails each of these:
+\itemize{
+\item a data.frame with \code{n} rows.
+\item an atomic vector of length \code{n}, also a factor, a \code{Date} or a
+\code{POSIXct}.
+\item a matrix or an array with a dimension \code{n}.
+}
+
+The walk goes into lists, the columns and list columns of data.frames,
+and attributes. It does not go into \code{manifest}. When \code{n_rows_data} is
+\code{NA}, 0 or 1, this rule checks nothing. A table with fewer rows than the
+data passes, and so does a vector with one value for each group.
 \item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
 \code{sims}, and \code{scenario} is one string.
 \item \code{manifest_data}: \code{manifest} has exactly one of \code{data_md5} and
@@ -65,8 +107,7 @@ x <- list(
     n_after = 97
   ),
   estimates = data.frame(term = "x", estimate = 1.2),
-  tables = list(),
-  extra = list()
+  p_interaction = 0.04
 )
 pbn::check_results(x)
 }

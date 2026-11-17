@@ -284,3 +284,37 @@ local_clean_session <- function(env = parent.frame()) {
   withr::defer(clean(), envir = env)
   return(invisible(NULL))
 }
+
+# Starts a scenario in this R session as a person who steps through the run
+# script by hand: use_scenario(), then initialize_project().
+# The choice lasts for the R session, so init() empties it when the calling
+# test ends.
+init <- function(
+  p,
+  scenario = "real",
+  data_raw = p$data_default,
+  sim = 1,
+  env = parent.frame()
+) {
+  local_clean_session(env)
+  testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
+  utils::capture.output(use_scenario(scenario, sim))
+  out <- NULL
+  utils::capture.output(
+    out <- suppressMessages(initialize_project(
+      "v01",
+      p$home,
+      data_raw,
+      env = new.env()
+    ))
+  )
+  return(out)
+}
+
+results_files <- function(p) {
+  return(sort(list.files(
+    file.path(p$home, "v01_results"),
+    recursive = TRUE,
+    all.files = TRUE
+  )))
+}

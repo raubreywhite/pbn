@@ -120,6 +120,19 @@ The rules:
   counted by
   [`org::loc_per_file()`](https://www.rwhite.no/org/reference/loc_per_file.html).
 
+- `cyclomatic_complexity` (FAIL): a function scores above 15 in
+  [`cyclocomp::cyclocomp()`](https://rdrr.io/pkg/cyclocomp/man/cyclocomp.html),
+  the limit of the lint gate of the house packages. The rule reads the
+  `.R` files of `loc_per_file`. It scores each function that a top-level
+  assignment defines, and each function in a
+  [`list()`](https://rdrr.io/r/base/list.html) of a top-level
+  assignment, as `<list>$<name>`. A function inside a function counts
+  toward the outer function. Top-level code that is not a function gets
+  no score. The rule parses each file and runs no code of it. It skips a
+  file that R cannot parse, which `loc_per_file` fails. The detail gives
+  the file, the function and its score. An entry of `pbn_allow.txt`
+  allows each function of one file.
+
 - `no_environment_variables` (FAIL): a run script or a file in a
   functions folder uses `Sys.getenv` or `Sys.setenv`.
 
@@ -169,9 +182,10 @@ pbn::check_project(home)
 #> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
+#> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  unknown_path  the house layout names every top-level path
-#> 13 PASS, 0 WARN, 0 FAIL
+#> 14 PASS, 0 WARN, 0 FAIL
 
 unlink(home, recursive = TRUE)
 ```

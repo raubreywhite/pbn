@@ -155,7 +155,12 @@ checks each object that the functions folder made or changed when
 before and after the analysis. That finds a new value, a new element and
 a new attribute. It compares them before and after each data function or
 data step too. A data function that changes such an object fails each
-analysis that gets its data.</p>
+analysis that gets its data. The error names the first top-level element
+that changed, for example <code>CFG$table</code>. It also says how: a new attribute
+such as the index of a data.table, a new or a gone element, or another
+value. The
+output function of <code><a href="make_outputs.html">make_outputs()</a></code> and each <code>expect_</code> function of
+<code><a href="save_results.html">save_results()</a></code> get the same check in this R session.</p>
 <p>While <code><a href="run_plan.html">run_plan()</a></code> runs, two more parts of the state of an R session
 cannot pass from one analysis to the next:</p><ul><li><p>An analysis fails when it leaves a new object in the global
 environment, for example with <code>&lt;&lt;-</code> or <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>. <code>.Random.seed</code> does
@@ -174,9 +179,8 @@ function after some calls.</p></li>
 example that of a formula. It does not call an active binding.</p></li>
 <li><p>It does not see a change of an object that already was in the global
 environment, other than an object of the functions folder.</p></li>
-<li><p>The analysis that made the change fails, and the change stays for the
-later analyses of that R session. With more workers, each batch of a
-worker gets its own copy, so one analysis of each batch can fail.</p></li>
+<li><p>The analysis that made the change fails, and the change stays in that
+R session. The run stops at that failure, see <code><a href="run_plan.html">run_plan()</a></code>.</p></li>
 <li><p>Without <code><a href="initialize_project.html">initialize_project()</a></code>, pbn checks no object.</p></li>
 </ul><p>The check costs time in proportion to the size of the objects. One
 computer took about 45 microseconds for each analysis with a <code>CFG</code> of 49

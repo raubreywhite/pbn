@@ -141,7 +141,14 @@ compares the bytes of
 before and after the analysis. That finds a new value, a new element and
 a new attribute. It compares them before and after each data function or
 data step too. A data function that changes such an object fails each
-analysis that gets its data.
+analysis that gets its data. The error names the first top-level element
+that changed, for example `CFG$table`. It also says how: a new attribute
+such as the index of a data.table, a new or a gone element, or another
+value. The output function of
+[`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+and each `expect_` function of
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+get the same check in this R session.
 
 While [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 runs, two more parts of the state of an R session cannot pass from one
@@ -178,9 +185,9 @@ The check has these limits:
 - It does not see a change of an object that already was in the global
   environment, other than an object of the functions folder.
 
-- The analysis that made the change fails, and the change stays for the
-  later analyses of that R session. With more workers, each batch of a
-  worker gets its own copy, so one analysis of each batch can fail.
+- The analysis that made the change fails, and the change stays in that
+  R session. The run stops at that failure, see
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md).
 
 - Without
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),

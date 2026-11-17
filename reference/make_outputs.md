@@ -58,10 +58,21 @@ scenario, it prints one line with the folder and the number of files.
 
 After
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-in the same R session, `make_outputs()` adds its files and its seconds
-for each scenario to the run log `<version>_results/run.md`. When it
-stops, the result of the log says so, and the errors file of the log
-holds the error. In another R session it does not change the run log.
+in the same R session, `make_outputs()` adds its files, its seconds and
+the number of warnings of `fn` for each scenario to the run log
+`<version>_results/run.md`. A warning still reaches the console, and the
+log holds no text of it. When `make_outputs()` stops, the result of the
+log says so, and the errors file of the log holds the error. In another
+R session it does not change the run log.
+
+`fn` MUST NOT change an object of the functions folder in place, for
+example with the index that a data.table subset `CFG$table[x == 1]`
+adds. The next call of `fn` or of an `expect_` function in this R
+session would see the change. `make_outputs()` compares these objects
+before and after each call of `fn`, with the rules of the check of
+[`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
+A change fails the scenario, with the first element that changed, for
+example `CFG$table`.
 
 `make_outputs()` skips a scenario with one printed line when its
 `results.qs2` does not exist, or when its `check.csv` holds an assertion

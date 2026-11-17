@@ -1,8 +1,8 @@
 # Run a plan
 
 `run_plan()` runs every analysis of the plnr plan `p`, in this R session
-or on `workers` new R sessions. It stops when an analysis fails, and
-then it prints each failed analysis with its error.
+or on `workers` new R sessions. It stops the run at the first failed
+analysis, and then it prints each failed analysis with its error.
 
 ## Usage
 
@@ -114,20 +114,20 @@ column of a data.frame. Such a value MAY differ in
 [`identical()`](https://rdrr.io/r/base/identical.html) between 1 worker
 and more.
 
-`run_plan()` runs every analysis, also after an analysis fails. An error
-in an action function fails that analysis, and an error in a data
-function fails each analysis that gets the data. This is the same with 1
-worker and with more. After the run, `run_plan()` prints each failed
-analysis with its name and its full error message with
+An error in an action function fails that analysis, and an error in a
+data function fails each analysis that gets the data. pbn saves no
+results of a run with a failed analysis, so the first failed analysis
+stops the run. The section Stop at the first failure gives the rules.
+After the run, `run_plan()` prints each failed analysis with its name
+and its full error message with
 [`cat()`](https://rdrr.io/r/base/cat.html), and then it stops. R cuts an
 error message at 1000 bytes by default, and
 [`cat()`](https://rdrr.io/r/base/cat.html) does not. The error message
-of `run_plan()` also names the first failed analysis in the order of the
-plan, and holds its error. pbn cuts that error to keep the message below
-900 bytes. When 2 or more analyses fail and all have the same error, the
-message says so. pbn then saves no results, because
-[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-needs the value of `run_plan()`. The results files of an earlier run
+of `run_plan()` gives the number of failed analyses and of the analyses
+that did not run. It also names the first failed analysis in the order
+of the plan, and holds its error. pbn cuts that error to keep the
+message below 900 bytes. When 2 or more analyses fail and all have the
+same error, the message says so. The results files of an earlier run
 stay as they are. After
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
 `run_plan()` writes the run log `<version>_results/run.md` with the
@@ -145,8 +145,8 @@ without
 after it leaves this log.
 
 `run_plan()` measures the elapsed time of each data step and of each
-analysis where it runs, also on a worker. The times go to the record of
-the plan, and
+analysis where it runs, also on a worker, and the time of the clock of
+the computer at its end. The times go to the record of the plan, and
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 writes them to the run log. They are not in the value, so two runs stay
 [`identical()`](https://rdrr.io/r/base/identical.html).
@@ -195,23 +195,57 @@ back. The section A cohort as the data of
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) gives
 the rules.
 
+## Stop at the first failure
+
+A failed data function makes each analysis of its scenario and
+simulation fail, and
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+needs a run without a failed analysis. So no analysis after the first
+failure can give a result, and `run_plan()` stops the run there. There
+is no option to run on. These are the rules:
+
+- After the first failed analysis, no new data function and no new
+  analysis starts. An analysis whose data failed fails at once, also
+  after the stop, without a call of its action function.
+
+- With 1 worker, the stop comes directly after the failed analysis.
+
+- With workers, the failed analysis creates a folder in the temporary
+  folder of this R session. Each worker looks for it before each data
+  function, and at most every 0.5 seconds before an analysis. pbn does
+  not stop an analysis that runs. So the longest delay is the rest of
+  the longest analysis that runs at the time of the failure, plus 0.5
+  seconds. The batches that did not start still go to the workers, and
+  each of them ends at once.
+
+- Each analysis that did not run counts as not run. It is not a failure.
+
+The display shows the stop at once, and the run log says that the run
+stopped early and how many analyses did not run.
+
 ## Progress
 
 `run_plan()` shows one line for each scenario: its finished analyses of
-all its analyses, the time since its start, and a note. The note is one
-of these:
+all its analyses, the failed ones among them, the time since its start,
+and a note. The note is one of these:
 
 - `"waiting"` before the scenario starts, and `"done"` at its end.
+
+- `"stopping"` after the first failed analysis of the run, and
+  `"stopped early"` with the analyses that did not run at the end.
 
 - the last text of
   [`progress()`](https://www.rwhite.no/pbn/reference/progress.md) from
   an analysis of the scenario, while that analysis runs.
 
-- otherwise the time left, from the finished analyses of the scenario,
-  after at least 3 and at least 10% of them.
+- otherwise the time left, from the analyses of the scenario that ended
+  without a failure, after at least 3 and at least 10% of them.
 
 The analyses that count the rows do not count. The display replaces the
-progress bar of plnr.
+progress bar of plnr. The header of the display in a terminal gives the
+time since the start of the run. So does the start of each line of a
+log, for example
+`pbn: [12m 05s] null 522/1200 analyses, 8m 53s, about 12m left`.
 
 In an interactive terminal, the display draws its lines again in place.
 In RStudio and in another console without ANSI codes, it draws one line
@@ -222,7 +256,11 @@ warnings, and shows them above it.
 Without an interactive session, for example with `Rscript` into a log,
 in knitr and in testthat, the display only adds lines:
 
-- nothing in the first 60 seconds of the run. A short run adds no line.
+- nothing in the first 60 seconds of the run, other than the line of the
+  first failed analysis. A short run without a failure adds no line.
+
+- one line at once when the first analysis fails, also in the first 60
+  seconds.
 
 - after 60 seconds, a header, and one line for each scenario that
   started.

@@ -192,7 +192,10 @@ columns <code>assertion</code>, <code>expected</code>, <code>observed</code> and
 <code>save_results()</code> writes it to <code>&lt;version&gt;_results/&lt;scenario&gt;/check.csv</code>
 and prints it. For <code>"real"</code> without <code>expect_real()</code>, it deletes
 <code>check.csv</code>. An error, zero rows or another shape is one failed
-assertion. This rule is the same for <code>expect_real()</code> and for the fake
+assertion. A change of an object of the functions folder in place, for
+example <code>CFG</code>, adds one failed assertion that names the first element
+that changed. The section on these objects in <code><a href="add_analyses.html">add_analyses()</a></code> gives
+the rules. This rule is the same for <code>expect_real()</code> and for the fake
 scenarios. <code>save_results()</code> writes <code>check.csv</code> to a temporary file in
 the same folder and renames it, so a reader never sees a part of it.</p></li>
 <li><p>It writes the run log <code>&lt;version&gt;_results/run.md</code>, also after a stop in
@@ -212,22 +215,35 @@ on them until the assertions pass.</p></li>
 that the run has not finished. A run that ends before the next log, for
 example when R stops, leaves that log. <code><a href="run_plan.html">run_plan()</a></code> also writes the full
 log when it stops on failed analyses, and <code><a href="make_outputs.html">make_outputs()</a></code> adds its files
-to it in the same R session. Each run replaces the file. The log is GitHub-flavoured Markdown in ASCII, with
-these sections in this order:</p><ul><li><p><code>When</code>: the date and the time of the start of the run.</p></li>
+to it in the same R session. Each run replaces the file, and carries its
+section <code>History</code> forward. The log is GitHub-flavoured Markdown in ASCII,
+with these sections in this order:</p><ul><li><p><code>When</code>: the date and the time of the start of the run.</p></li>
 <li><p><code>Run</code>: the result in one sentence and the scenarios of the run. Then the
 run date of each other scenario on the disk, from its manifest. Then the
-versions of R, pbn, plnr and cohort, and the number of workers.</p></li>
+versions of R, pbn, plnr and cohort, the number of the other packages,
+and the number of workers. The manifest of each results file lists the
+other packages.</p></li>
 <li><p><code>Failures</code>, only after a failure: the failed analyses with their errors,
-the failed assertions, and the failed rules of <code><a href="check_results.html">check_results()</a></code>.</p></li>
+the number of analyses that did not run after the stop of the run, the
+failed assertions, and the failed rules of <code><a href="check_results.html">check_results()</a></code>.</p></li>
 <li><p><code>Scenarios</code>: the simulations and the analyses of each scenario.</p></li>
 <li><p><code>Data</code>: the cache and the rows of each data element.</p></li>
-<li><p><code>Exclusions</code>: the exclusion table of simulation 1 of each scenario.</p></li>
+<li><p><code>Exclusions</code>: the exclusion table of simulation 1 of each scenario. A
+cohort without an exclusion step gets one sentence instead.</p></li>
 <li><p><code>Assertions</code>: the count for each scenario, and its assertions. For more
 than 30 assertions, the failed ones only.</p></li>
-<li><p><code>Output</code> and <code>Files</code>: the files of <code><a href="make_outputs.html">make_outputs()</a></code> and the results
-files, with their sizes.</p></li>
-<li><p><code>Timings</code>: the seconds of each data step, of each analysis kind, and of
-each step of the main session.</p></li>
+<li><p><code>Output</code> and <code>Files</code>: the files of <code><a href="make_outputs.html">make_outputs()</a></code> and the number of
+warnings of the output function for each scenario, without their text.
+Then the results files, with their sizes.</p></li>
+<li><p><code>Timings</code>: seconds on the clock. The wall seconds of each step of the
+main session, and of each scenario. Then the calls of each data step and
+analysis kind of each scenario, with the median and the maximum seconds
+of one call. The share gives its part of the seconds of all data steps
+and analyses.</p></li>
+<li><p><code>History</code>: one line for each run of this version, oldest first. Each
+line gives the start and the result in a few words. It also gives the
+scenarios, the workers, the wall seconds of <code><a href="run_plan.html">run_plan()</a></code>,
+<code>save_results()</code> and <code><a href="make_outputs.html">make_outputs()</a></code>, and the version of pbn.</p></li>
 </ul><p>The log holds counts, exclusion tables and the rows of <code>check.csv</code>. It
 never holds the text of an error, because an error message can hold a
 value of the data. These errors get a number in the log:</p><ul><li><p>the error of each failed analysis or data step, one number for each
@@ -247,15 +263,26 @@ file, and pbn writes it only when the run has an error.</p>
 <code><a href="make_outputs.html">make_outputs()</a></code>, is on one line as a code span. A string in a table cell
 is on one line too. So a line end in a string cannot start a heading or a
 list item.</p>
-<p>Only the sections <code>When</code> and <code>Timings</code> change in every run. Two runs of the
-same code on one day, with the same data and cache, give the same other
-lines. So put <code>run.md</code> in git, and <code>git diff</code> shows the real changes of a
-run. <code><a href="render_run.html">render_run()</a></code> renders the log to a PDF.</p>
+<p>Only the sections <code>When</code>, <code>Timings</code> and <code>History</code> change in every run. Two
+runs of the same code on one day, with the same data and cache, give the
+same other lines. So put <code>run.md</code> in git, and <code>git diff</code> shows the real
+changes of a run. <code><a href="render_run.html">render_run()</a></code> renders the log to a PDF.</p>
 <p>pbn measures each time with <code><a href="https://rdrr.io/r/base/proc.time.html" class="external-link">proc.time()</a></code> in the R session that does the
 work, also on a worker. A data step gets the time of its function. Data
 from the cache gets the time of the read. An analysis gets the time of its
-action function. No timing goes to the value of <code><a href="run_plan.html">run_plan()</a></code>, a results
-file, <code>check.csv</code> or a cache key.</p>
+action function. Each one also records the time of the clock of the
+computer at its end. A scenario runs from the start of its first data step
+or analysis to the end of its last one. All workers run on this computer,
+so their clocks are one clock. With workers, the scenarios overlap, so
+their seconds do not add up to those of <code><a href="run_plan.html">run_plan()</a></code>. No timing goes to
+the value of <code><a href="run_plan.html">run_plan()</a></code>, a results file, <code>check.csv</code> or a cache key.</p>
+<p>The history is in <code>run.md</code> only. The log at the start of <code><a href="run_plan.html">run_plan()</a></code>
+adds the line "did not finish" for the run. The full log replaces that
+line, so each run has one line. A run that R stops keeps its line "did not
+finish". pbn reads the history from the <code>run.md</code> on the disk. When it
+cannot read a line, for example after a hand edit, it leaves the line out
+and prints one line. The run goes on. A deleted <code>run.md</code> starts the
+history again.</p>
     </div>
     <div class="section level2">
     <h2 id="the-files">The files<a class="anchor" aria-label="anchor" href="#the-files"></a></h2>
@@ -368,7 +395,7 @@ the section Stacking.</p></li>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span>, env <span class="op">=</span> <span class="va">env</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpSE2Nsf/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpbNywL7/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>

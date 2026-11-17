@@ -98,10 +98,18 @@ in that folder. It stops when the folder is still there afterwards, for
 example because another program holds a file open on Windows. After each
 scenario, it prints one line with the folder and the number of files.</p>
 <p>After <code><a href="save_results.html">save_results()</a></code> in the same R session, <code>make_outputs()</code> adds its
-files and its seconds for each scenario to the run log
-<code>&lt;version&gt;_results/run.md</code>. When it stops, the result of the log says so,
-and the errors file of the log holds the error. In another R session it
-does not change the run log.</p>
+files, its seconds and the number of warnings of <code>fn</code> for each scenario to
+the run log <code>&lt;version&gt;_results/run.md</code>. A warning still reaches the
+console, and the log holds no text of it. When <code>make_outputs()</code> stops, the
+result of the log says so, and the errors file of the log holds the error.
+In another R session it does not change the run log.</p>
+<p><code>fn</code> MUST NOT change an object of the functions folder in place, for
+example with the index that a data.table subset <code>CFG$table[x == 1]</code> adds.
+The next call of <code>fn</code> or of an <code>expect_</code> function in this R session would
+see the change. <code>make_outputs()</code> compares these objects before and after
+each call of <code>fn</code>, with the rules of the check of <code><a href="add_analyses.html">add_analyses()</a></code>. A
+change fails the scenario, with the first element that changed, for
+example <code>CFG$table</code>.</p>
 <p><code>make_outputs()</code> skips a scenario with one printed line when its
 <code>results.qs2</code> does not exist, or when its <code>check.csv</code> holds an assertion
 that did not pass. Then it deletes the output folder of the scenario, so

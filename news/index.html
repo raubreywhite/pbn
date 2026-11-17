@@ -199,6 +199,15 @@
 <li>The data functions and the analyses set the kind of random number generator of the run before each seed. An analysis that calls <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code> then changes no later draw.</li>
 <li>
 <code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/save_results.html">save_results()</a></code> read the argsets of a plan in one pass. Before, the time grew with the square of the number of analyses.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> stops the run at its first failed analysis, because pbn saves nothing from a run with a failure. No new data function or analysis starts, and the error and the run log give the number of analyses that did not run. Before, every analysis ran.</li>
+<li>With workers, a worker sees the stop before its next data function, or within 0.5 seconds before its next analysis. pbn does not stop an analysis that runs.</li>
+<li>The display counts the failed analyses of each scenario, and the time left comes from the analyses without a failure. A scenario whose data failed shows its time. The header and each line of a log give the time since the start of the run.</li>
+<li>The section Timings of the run log gives seconds on the clock only, and no longer sums seconds over the workers. It gives the wall seconds of each scenario. Each data step and analysis kind gets its calls, the median and the maximum of one call, and its share.</li>
+<li>The run log ends with the section History, one line for each run of this version, also for a run that did not finish. A deleted <code>run.md</code> starts the history again.</li>
+<li>The check of the objects of the functions folder names the first element that changed, for example <code>CFG$vars</code>, and how. The output function of <code><a href="../reference/make_outputs.html">make_outputs()</a></code> and each <code>expect_</code> function get the same check.</li>
+<li>The section Run gives the number of the other packages. A cohort without an exclusion step gets one sentence. The section Output gives the number of warnings of the output function. The row of dashes of a table is as wide as its column.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>cyclomatic_complexity</code>: a function of the project MUST score at most 15 in cyclocomp. pbn imports cyclocomp.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

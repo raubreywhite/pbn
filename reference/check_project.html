@@ -128,6 +128,16 @@ function <code>get_data(scenario, sim)</code>, and a run script calls the export
 as <code><a href="get_data.html">pbn::get_data()</a></code>.</p></li>
 <li><p><code>loc_per_file</code> (FAIL): an <code>.R</code> file has more than 1000 code lines, as
 counted by <code><a href="https://www.rwhite.no/org/reference/loc_per_file.html" class="external-link">org::loc_per_file()</a></code>.</p></li>
+<li><p><code>cyclomatic_complexity</code> (FAIL): a function scores above 15 in
+<code><a href="https://rdrr.io/pkg/cyclocomp/man/cyclocomp.html" class="external-link">cyclocomp::cyclocomp()</a></code>, the limit of the lint gate of the house
+packages. The rule reads the <code>.R</code> files of <code>loc_per_file</code>. It scores each
+function that a top-level assignment defines, and each function in a
+<code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code> of a top-level assignment, as <code>&lt;list&gt;$&lt;name&gt;</code>. A function
+inside a function counts toward the outer function. Top-level code that
+is not a function gets no score. The rule parses each file and runs no
+code of it. It skips a file that R cannot parse, which <code>loc_per_file</code>
+fails. The detail gives the file, the function and its score. An entry
+of <code>pbn_allow.txt</code> allows each function of one file.</p></li>
 <li><p><code>no_environment_variables</code> (FAIL): a run script or a file in a functions
 folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
@@ -169,9 +179,10 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 13 PASS, 0 WARN, 0 FAIL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 14 PASS, 0 WARN, 0 FAIL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

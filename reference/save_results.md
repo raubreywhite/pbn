@@ -201,10 +201,15 @@ step that fails:
     `save_results()` writes it to
     `<version>_results/<scenario>/check.csv` and prints it. For `"real"`
     without `expect_real()`, it deletes `check.csv`. An error, zero rows
-    or another shape is one failed assertion. This rule is the same for
-    `expect_real()` and for the fake scenarios. `save_results()` writes
-    `check.csv` to a temporary file in the same folder and renames it,
-    so a reader never sees a part of it.
+    or another shape is one failed assertion. A change of an object of
+    the functions folder in place, for example `CFG`, adds one failed
+    assertion that names the first element that changed. The section on
+    these objects in
+    [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
+    gives the rules. This rule is the same for `expect_real()` and for
+    the fake scenarios. `save_results()` writes `check.csv` to a
+    temporary file in the same folder and renames it, so a reader never
+    sees a part of it.
 
 5.  It writes the run log `<version>_results/run.md`, also after a stop
     in step 2, 3 or 4. The section The run log gives its content.
@@ -227,36 +232,51 @@ leaves that log.
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) also
 writes the full log when it stops on failed analyses, and
 [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
-adds its files to it in the same R session. Each run replaces the file.
-The log is GitHub-flavoured Markdown in ASCII, with these sections in
-this order:
+adds its files to it in the same R session. Each run replaces the file,
+and carries its section `History` forward. The log is GitHub-flavoured
+Markdown in ASCII, with these sections in this order:
 
 - `When`: the date and the time of the start of the run.
 
 - `Run`: the result in one sentence and the scenarios of the run. Then
   the run date of each other scenario on the disk, from its manifest.
-  Then the versions of R, pbn, plnr and cohort, and the number of
-  workers.
+  Then the versions of R, pbn, plnr and cohort, the number of the other
+  packages, and the number of workers. The manifest of each results file
+  lists the other packages.
 
 - `Failures`, only after a failure: the failed analyses with their
-  errors, the failed assertions, and the failed rules of
+  errors, the number of analyses that did not run after the stop of the
+  run, the failed assertions, and the failed rules of
   [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
 
 - `Scenarios`: the simulations and the analyses of each scenario.
 
 - `Data`: the cache and the rows of each data element.
 
-- `Exclusions`: the exclusion table of simulation 1 of each scenario.
+- `Exclusions`: the exclusion table of simulation 1 of each scenario. A
+  cohort without an exclusion step gets one sentence instead.
 
 - `Assertions`: the count for each scenario, and its assertions. For
   more than 30 assertions, the failed ones only.
 
 - `Output` and `Files`: the files of
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
-  and the results files, with their sizes.
+  and the number of warnings of the output function for each scenario,
+  without their text. Then the results files, with their sizes.
 
-- `Timings`: the seconds of each data step, of each analysis kind, and
-  of each step of the main session.
+- `Timings`: seconds on the clock. The wall seconds of each step of the
+  main session, and of each scenario. Then the calls of each data step
+  and analysis kind of each scenario, with the median and the maximum
+  seconds of one call. The share gives its part of the seconds of all
+  data steps and analyses.
+
+- `History`: one line for each run of this version, oldest first. Each
+  line gives the start and the result in a few words. It also gives the
+  scenarios, the workers, the wall seconds of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md),
+  `save_results()` and
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
+  and the version of pbn.
 
 The log holds counts, exclusion tables and the rows of `check.csv`. It
 never holds the text of an error, because an error message can hold a
@@ -288,10 +308,10 @@ A project string outside a table, for example a file name of
 is on one line as a code span. A string in a table cell is on one line
 too. So a line end in a string cannot start a heading or a list item.
 
-Only the sections `When` and `Timings` change in every run. Two runs of
-the same code on one day, with the same data and cache, give the same
-other lines. So put `run.md` in git, and `git diff` shows the real
-changes of a run.
+Only the sections `When`, `Timings` and `History` change in every run.
+Two runs of the same code on one day, with the same data and cache, give
+the same other lines. So put `run.md` in git, and `git diff` shows the
+real changes of a run.
 [`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md)
 renders the log to a PDF.
 
@@ -299,9 +319,24 @@ pbn measures each time with
 [`proc.time()`](https://rdrr.io/r/base/proc.time.html) in the R session
 that does the work, also on a worker. A data step gets the time of its
 function. Data from the cache gets the time of the read. An analysis
-gets the time of its action function. No timing goes to the value of
+gets the time of its action function. Each one also records the time of
+the clock of the computer at its end. A scenario runs from the start of
+its first data step or analysis to the end of its last one. All workers
+run on this computer, so their clocks are one clock. With workers, the
+scenarios overlap, so their seconds do not add up to those of
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md). No
+timing goes to the value of
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md), a
 results file, `check.csv` or a cache key.
+
+The history is in `run.md` only. The log at the start of
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) adds the
+line "did not finish" for the run. The full log replaces that line, so
+each run has one line. A run that R stops keeps its line "did not
+finish". pbn reads the history from the `run.md` on the disk. When it
+cannot read a line, for example after a hand edit, it leaves the line
+out and prints one line. The run goes on. A deleted `run.md` starts the
+history again.
 
 ## The files
 
@@ -434,7 +469,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpSE2Nsf/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpbNywL7/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

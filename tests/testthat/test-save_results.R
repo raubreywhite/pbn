@@ -78,7 +78,7 @@ test_that("the manifest names the run, the data, the rows of the data and the an
       "sims",
       "settings",
       "source_md5",
-      "data_md5",
+      "data_files",
       "n_rows_data",
       "n_rows_before_exclusions",
       "n_rows_after_exclusions",
@@ -102,9 +102,14 @@ test_that("the manifest names the run, the data, the rows of the data and the an
     )
   )
   expect_identical(m$settings, list(n_boot = 200))
+  csv <- file.path(p$data_default, "d.csv")
   expect_identical(
-    m$data_md5,
-    c(d.csv = md5_of(file.path(p$data_default, "d.csv")))
+    m$data_files,
+    data.frame(
+      file = "main/d.csv",
+      size = as.numeric(file.size(csv)),
+      mtime = as.numeric(file.mtime(csv))
+    )
   )
   expect_identical(m$n_rows_data, c(d = 10L))
   expect_identical(
@@ -121,7 +126,7 @@ test_that("the manifest names the run, the data, the rows of the data and the an
   )
 
   f <- read_results("v01", "null", sim = 3, home = p$home)$manifest
-  expect_false("data_md5" %in% names(f))
+  expect_false("data_files" %in% names(f))
   expect_identical(f$fake_md5, function_md5(plan_info(run$plan)$data))
   expect_identical(f$n_rows_data, c(d = 40L))
   expect_identical(f$sim, 3L)
@@ -486,9 +491,10 @@ test_that("save_results stops on bad input and saves nothing", {
   )
 })
 
-test_that("save_results stops for real when data_raw did not exist, and saves the fake scenarios", {
+test_that("save_results stops for real when a folder did not exist, names it, and saves the fake scenarios", {
   p <- local_project()
-  sourced <- init(p, data_raw = file.path(p$root, "absent"))
+  absent <- file.path(p$root, "absent")
+  sourced <- init(p, folders = c(main = p$data_default, lookup = absent))
   sc <- scenarios(sourced$CFG)
   plan <- build_plan(sourced, scenarios(sourced$CFG, only = c("known", "null")))
   r <- run_plan(plan)
@@ -510,7 +516,12 @@ test_that("save_results stops for real when data_raw did not exist, and saves th
   add_analyses(plan3, real_only, "a", fn = function(data, argset) 1)
   expect_error(
     save_results(run_plan(plan3), plan3, real_only),
-    "did not exist when initialize_project() ran, so pbn cannot save the scenario \"real\"",
+    paste0(
+      "The folder lookup (",
+      absent,
+      ") did not exist when initialize_project() ran, so pbn cannot save ",
+      "the scenario \"real\". pbn saved nothing."
+    ),
     fixed = TRUE
   )
   expect_false(file.exists(file.path(p$home, "v01_results", "real")))

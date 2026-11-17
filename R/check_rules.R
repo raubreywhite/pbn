@@ -8,12 +8,14 @@
 pbn_exports <- c(
   "add_analyses",
   "add_data",
+  "check_one_file",
   "check_project",
   "check_results",
   "cohort_data",
   "end_unless_real",
   "expect_biased",
   "expect_recovers",
+  "folder",
   "get_argset",
   "get_data",
   "initialize_project",
@@ -25,8 +27,11 @@ pbn_exports <- c(
   "run_plan",
   "save_results",
   "scenarios",
+  "show_block",
+  "show_blocks",
   "stamp_fake",
-  "table1"
+  "table1",
+  "to_one_file"
 )
 
 # The pbn exports that a project MAY define in its functions folder. The
@@ -243,7 +248,11 @@ rule_run_script_initialises <- function(path) {
       return(identical(cl[[1]], quote(pbn::initialize_project)))
     })
     versions <- vapply(calls, init_version, character(1))
-    unknown <- unlist(lapply(calls, init_unknown_args))
+    unknown <- lapply(calls, init_unknown_args)
+    # A call with an argument that initialize_project() does not have stops
+    # in its `...`, so it does not count.
+    versions <- versions[lengths(unknown) == 0]
+    unknown <- unlist(unknown)
     if (!version %in% versions) {
       detail <- paste0(
         s,
@@ -521,10 +530,7 @@ is_function_assignment <- function(e) {
 # limit comes from the rules of the project, see read_rules().
 rule_loc_per_file <- function(path, limit) {
   rule <- "loc_per_file"
-  entries <- project_entries(path)
-  files <- entries[
-    grepl("\\.[rR]$", entries) & !dir.exists(file.path(path, entries))
-  ]
+  files <- code_files(path)
   out <- list()
   for (f in files) {
     n <- tryCatch(
@@ -555,10 +561,7 @@ rule_loc_per_file <- function(path, limit) {
 # R cannot parse fails loc_per_file, so this rule skips it.
 rule_cyclomatic_complexity <- function(path, limit) {
   rule <- "cyclomatic_complexity"
-  entries <- project_entries(path)
-  files <- entries[
-    grepl("\\.[rR]$", entries) & !dir.exists(file.path(path, entries))
-  ]
+  files <- code_files(path)
   out <- list()
   for (f in sort(files, method = "radix")) {
     scores <- function_scores(file.path(path, f))
@@ -672,6 +675,7 @@ rule_unknown_path <- function(path) {
   known <- c(
     run_script_pattern,
     functions_pattern,
+    one_file_pattern,
     "^v[0-9]{2}_results$",
     "^v[0-9]{2}_cache_gitexclude$",
     "^v[0-9]{2}_test$",
@@ -802,6 +806,18 @@ project_rules <- function() {
     no_local_assign = list(
       rule_no_local_assign,
       function(entry) return(local_assign_pass_detail(entry$forbid))
+    ),
+    no_absolute_paths = list(
+      rule_no_absolute_paths,
+      paste(
+        "no .R file has an absolute path or a file.path() from a string,",
+        "outside the arguments of pbn::initialize_project() and",
+        "pbn::to_one_file()"
+      )
+    ),
+    blocks_list = list(
+      rule_blocks_list,
+      "blocks, when the functions folder has it, is a list of named functions"
     ),
     unknown_path = list(
       rule_unknown_path,

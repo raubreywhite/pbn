@@ -327,7 +327,7 @@ test_that("the steps form gives results, exclusions, counts and manifests identi
 
     expect_identical(unstamped(steps$r), unstamped(free$r))
     expect_identical(hand_steps, hand_free)
-    # The real manifest holds data_md5 and no fake_md5, so it is the same.
+    # The real manifest holds data_files and no fake_md5, so it is the same.
     expect_identical(steps_real, free_real)
     expect_identical(steps_real$manifest$n_rows_before_exclusions, c(d = 8L))
     expect_identical(steps_real$manifest$n_rows_after_exclusions, c(d = 6L))

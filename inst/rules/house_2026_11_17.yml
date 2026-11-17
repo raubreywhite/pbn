@@ -81,5 +81,15 @@ no_local_assign:
     - "<<-"
     - "->>"
 
+# No string in an .R file is an absolute path, such as "/home/a/x",
+# "~/x", "C:/x" or "\\server\x", and no file.path() or fs::path() starts
+# from a string, such as file.path("data", "x.csv"). The arguments of
+# pbn::initialize_project() and pbn::to_one_file() are exempt.
+no_absolute_paths: fail
+
+# The object blocks of the functions folder, when it is there, is one
+# list() of named functions with names that come once.
+blocks_list: fail
+
 # The house layout names each top-level file and folder.
 unknown_path: warn

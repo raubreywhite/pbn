@@ -49,10 +49,7 @@ or_list <- function(x) {
 # rule skips it.
 rule_no_local_assign <- function(path, forbid) {
   rule <- "no_local_assign"
-  entries <- project_entries(path)
-  files <- entries[
-    grepl("\\.[rR]$", entries) & !dir.exists(file.path(path, entries))
-  ]
+  files <- code_files(path)
   out <- list()
   for (f in sort(files, method = "radix")) {
     hits <- local_assign_hits(file.path(path, f))

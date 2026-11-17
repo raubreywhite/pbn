@@ -189,9 +189,15 @@ key goes to \verb{sim_<kkkk>_key.qs2} in the same folder. The cache key is the
 md5 of these parts:
 \itemize{
 \item the scenario, the simulation and the settings of the scenario.
-\item for \code{"real"} only, the md5 of each file directly in \code{data_raw} at the
-time of the use. pbn hashes a file again only when its size or its
-modification time differs from the last record.
+\item for \code{"real"} only, the fingerprint of the data at the time of the use.
+It holds the name \verb{<folder name>/<path in the folder>}, the size and
+the modification time of each file under each folder of \code{folders} of
+\code{\link[=initialize_project]{initialize_project()}}. pbn reads no content of a data file. The path
+of a folder is not in the key. So the same files in another place give
+the same key when they keep their modification times. A copy with new
+times looks like changed data, so the data is computed again. A file
+that changed in place, and kept its size and its modification time, is
+not seen.
 \item the md5 of each file of \verb{<version>_functions/} whose name starts with
 \code{data_}, for example \code{data_raw.R}, \code{data_clean.R}, \code{data_cohort.R} and
 \code{data_impute.R}. \code{\link[=initialize_project]{initialize_project()}} computes them before it sources
@@ -237,8 +243,9 @@ delete the folder \verb{<version>_cache_gitexclude/}. No argument does that.
 For each scenario and simulation, \code{\link[=run_plan]{run_plan()}} prints one line with
 \code{cat()}. The line says that the data came from the cache, with the date
 and time of the cache file. Or it says that pbn computed it, and why.
-The reason names each changed \code{data_*.R} file, \code{CFG$data}, the raw data
-or the settings. It names a changed \code{fn} as "the data function of
+The reason names each changed \code{data_*.R} file, \code{CFG$data}, or the
+settings. It names changed raw data with its folders, for example "the
+raw data in the folder lookup". It names a changed \code{fn} as "the data function of
 add_data()", and each changed step as, for example, "the function given
 as \code{clean}". It can also name the kind of random
 number generator, or each package with another version. With \code{workers = 1}, the line comes before the

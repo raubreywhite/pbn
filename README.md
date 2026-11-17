@@ -30,7 +30,7 @@ The run script is one `plnr` plan over every scenario and simulation. Its
 data steps read the data, clean it and build a `cohort`:
 
 ```r
-pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
+pbn::initialize_project(version = "v01", home = ".", folders = c(main = "../data"))
 scenarios <- pbn::scenarios(CFG)
 
 p <- plnr::Plan$new()
@@ -45,7 +45,12 @@ pbn::make_outputs(make_output, scenarios)
 The file `pbn.yml` in the project folder names the rules of
 `pbn::check_project()`, as one line: `extends: house_2026_11_17`. From the
 project folder, run the script with `Rscript v01_run.R`, and check the layout
-with `pbn::check_project()`.
+with `pbn::check_project()`. The data code finds the folder `main` with
+`pbn::folder("main")`.
+
+For a server without a network, `pbn::to_one_file()` writes the run of the
+real data as one file to paste there, and `pbn::show_block()` shows the
+numbers of the manuscript one page at a time.
 
 The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html) is the
 manual. It builds a small fake project file by file, and runs it.

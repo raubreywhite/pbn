@@ -21,6 +21,7 @@ reference:
 - title: "Run a project version"
   contents:
     - initialize_project
+    - folder
     - scenarios
     - end_unless_real
 
@@ -49,6 +50,12 @@ reference:
   contents:
     - make_outputs
     - stamp_fake
+
+- title: "Running on an air-gapped server"
+  contents:
+    - to_one_file
+    - check_one_file
+    - show_blocks
 
 - title: "Checks of the layout"
   contents:

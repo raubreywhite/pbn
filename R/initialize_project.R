@@ -11,10 +11,17 @@ state <- new.env(parent = emptyenv())
 #'   `"v01"`.
 #' @param home The project folder. It holds `<version>_run.R`,
 #'   `<version>_functions/` and the file of the rules `pbn.yml`.
-#' @param data_raw The folder of the real raw data, one string. The folder MAY
-#'   be absent, for example on a computer without the real data. Only
-#'   [save_results()] for the scenario `"real"` then stops.
+#' @param folders The folders outside the project that the project reads, as
+#'   a named character vector, for example
+#'   `c(main = "../data", lookup = "../codes")`. One folder MAY have no name,
+#'   and it then gets the name `main`. Each name MUST be a syntactic R name,
+#'   once. A folder MAY be absent, for example on a computer without the real
+#'   data. Only [save_results()] for the scenario `"real"` then stops.
 #' @param env The environment that the functions folder is sourced into.
+#' @param one_file `NULL`. The file of [to_one_file()] gives a value here. Do
+#'   not write it by hand. See the section One file.
+#' @param ... Nothing. A call with the removed argument `data_raw` stops, and
+#'   the error says how to use `folders`.
 #' @details
 #' `initialize_project()` does these steps in this order:
 #' 1. It reads the rules of [check_project()] from `home/pbn.yml`. It stops
@@ -23,15 +30,24 @@ state <- new.env(parent = emptyenv())
 #' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
 #'    them in `manifest$source_md5`.
-#' 3. It computes the md5 of each file directly in `data_raw`, when the folder
-#'    exists. [save_results()] stores them in `manifest$data_md5` of the
-#'    scenario `"real"`. A file that the run writes later is not in the list.
+#' 3. It lists each file under each folder of `folders` that exists, at any
+#'    depth, with its size and its modification time. This is the
+#'    fingerprint of the data. pbn never reads the content of a data file, so
+#'    a file of 60 GB costs what a small file costs. [save_results()] stores
+#'    the fingerprint in `manifest$data_files` of the scenario `"real"`. A
+#'    file that the run writes later is not in the list. The section The
+#'    fingerprint of the data gives the rules.
 #' 4. It calls [org::initialize_project()] with `folders_to_be_sourced` set to
-#'    `<version>_functions` and `data_raw` set to `data_raw`. A data function
-#'    finds the folder at `org::project$data_raw`. `max_loc_per_file` is the
-#'    `limit` of the rule `loc_per_file`, 1000 in the house set. When the rule
-#'    is `warn` or `off`, it is `Inf`, because the check of org stops the run
-#'    on a file with more lines.
+#'    `<version>_functions`. `max_loc_per_file` is the `limit` of the rule
+#'    `loc_per_file`, 1000 in the house set. When the rule is `warn` or
+#'    `off`, it is `Inf`, because the check of org stops the run on a file
+#'    with more lines. pbn gives org no folder of `folders`, so
+#'    `org::project` holds `home`, `computer_id` and `env` only.
+#'
+#' Project code finds a folder with [folder()], for example
+#' `file.path(pbn::folder("main"), "d.csv")`. Call [folder()] inside a
+#' function: a top-level call in a file of the functions folder runs before
+#' `initialize_project()` sets the folders, and it stops.
 #'
 #' The results folder is `<home>/<version>_results`. [save_results()] creates
 #' it. `initialize_project()` creates no folder, also no folder with today's
@@ -40,8 +56,44 @@ state <- new.env(parent = emptyenv())
 #' `initialize_project()` reads no scenario, no simulation, no command-line
 #' argument and no environment variable, and it sets no seed. [scenarios()]
 #' chooses the scenarios, and [add_data()] and [add_analyses()] set the seeds.
+#' @section The fingerprint of the data:
+#' The fingerprint is a data.frame with one row for each file, sorted by
+#' `file` in the C locale:
+#' - `file`, the name `<folder name>/<path in the folder>` with `/`, for
+#'   example `main/sub/d.csv`. It never holds the path of the folder.
+#' - `size`, the size in bytes.
+#' - `mtime`, the modification time in seconds since 1970-01-01 UTC, with
+#'   the fraction of a second that the file system keeps.
+#'
+#' Hidden files count. A link to a file gives the size and the time of its
+#' target, and [list.files()] follows a link to a folder. A broken link stops
+#' `initialize_project()`. It also stops when a folder of `folders` is inside
+#' another or is the same folder. It stops when a folder holds or is inside
+#' `<version>_results/` or `<version>_cache_gitexclude/`, because pbn writes
+#' there in each run. A folder elsewhere inside `home` is allowed.
+#'
+#' A file that changed in place, and kept its size and its modification
+#' time, is not seen. A copy that does not keep the modification times looks
+#' like changed data, so the cache computes the data again. `file.copy(...,
+#' copy.date = TRUE)` keeps them.
+#' @section One file:
+#' The file of [to_one_file()] calls `initialize_project()` with `one_file`, a
+#' list with these elements:
+#' - `project`, the name of the project folder on the computer that made the
+#'   file. The run log names the project with it.
+#' - `source_md5`, the md5 of the run script and of each file of the
+#'   functions folder on that computer. The manifest stores it.
+#' - `code`, the code of the functions folder as one quoted block, in the
+#'   order that org sources the files.
+#'
+#' With `one_file`, `initialize_project()` reads no `pbn.yml`, needs no
+#' functions folder, and checks no code lines. It evaluates `code` in `env`
+#' in the place of the source of the functions folder. A use of the cache then
+#' does not check the `data_*.R` files on the disk, because the code is in the
+#' file.
 #' @return Invisibly, a list with `version`, `home`, `results` and
-#'   `data_raw`. `results` is the results folder.
+#'   `folders`. `results` is the results folder, and `folders` the named
+#'   paths of the folders.
 #' @examples
 #' home <- file.path(tempdir(), "pbn_initialize_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
@@ -55,10 +107,11 @@ state <- new.env(parent = emptyenv())
 #' p <- pbn::initialize_project(
 #'   version = "v01",
 #'   home = home,
-#'   data_raw = file.path(home, "data"),
+#'   folders = c(main = file.path(home, "data")),
 #'   env = env
 #' )
 #' p$results
+#' pbn::folder("main")
 #' env$CFG$scenarios
 #'
 #' unlink(home, recursive = TRUE)
@@ -68,14 +121,73 @@ state <- new.env(parent = emptyenv())
 initialize_project <- function(
   version,
   home,
-  data_raw,
-  env = .GlobalEnv
+  folders,
+  env = .GlobalEnv,
+  one_file = NULL,
+  ...
 ) {
   # The state stays empty until the last step sets it. A call that stops
   # leaves no project for run_plan() or save_results().
   rm(list = ls(state, all.names = TRUE), envir = state)
-  check_init_args(version, home, data_raw, env)
+  check_no_dots(...names(), ...length())
+  folders <- check_init_args(version, home, folders, env, one_file)
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
+  if (is.null(one_file)) {
+    code <- functions_folder_code(version, home)
+  } else {
+    code <- list(md5 = one_file$source_md5, stat = NULL)
+  }
+  found <- folders_listing(folders, home, version)
+  # The objects that the folder defines are the new ones and those with a
+  # new address. run_plan() fails an analysis that changes one of them.
+  before <- object_addresses(env)
+  if (is.null(one_file)) {
+    # results = NULL: org then creates no folder, also no folder with today's
+    # date.
+    org::initialize_project(
+      env = env,
+      home = home,
+      folders_to_be_sourced = paste0(version, "_functions"),
+      max_loc_per_file = code$max_loc
+    )
+  } else {
+    org::initialize_project(
+      env = env,
+      home = home,
+      folders_to_be_sourced = character(0)
+    )
+    eval(one_file$code, envir = env)
+  }
+  out <- list(
+    version = version,
+    home = home,
+    results = file.path(home, paste0(version, "_results")),
+    folders = found$folders
+  )
+  # Every step that can stop is above this line.
+  list2env(
+    c(
+      out,
+      list(
+        folders_absent = found$absent,
+        data_files = found$files,
+        source_md5 = code$md5,
+        source_stat = code$stat,
+        one_file = !is.null(one_file),
+        project = if (is.null(one_file)) basename(home) else one_file$project,
+        env = env,
+        sourced = defined_names(env, before)
+      )
+    ),
+    envir = state
+  )
+  return(invisible(out))
+}
+
+# The md5 and the size and mtime of the run script and of each file of the
+# functions folder of `version` in `home`, and the limit of code lines of
+# pbn.yml for org. Stops on a missing functions folder or a bad pbn.yml.
+functions_folder_code <- function(version, home) {
   # org creates a missing folder with a warning. pbn stops instead, so that a
   # wrong `home` or `version` leaves no folder.
   folder <- file.path(home, paste0(version, "_functions"))
@@ -87,63 +199,76 @@ initialize_project <- function(
   max_loc <- org_max_loc(read_rules(home))
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
-  code_md5 <- source_md5(home, version)
-  code_stat <- file_stat(file.path(home, names(code_md5)), names(code_md5))
-  real_md5 <- NULL
-  real_stat <- NULL
-  if (dir.exists(data_raw)) {
-    data_raw <- normalizePath(data_raw, winslash = "/", mustWork = TRUE)
-    real_md5 <- data_md5(data_raw)
-    real_stat <- file_stat(file.path(data_raw, names(real_md5)), names(real_md5))
-  }
-  # The objects that the folder defines are the new ones and those with a
-  # new address. run_plan() fails an analysis that changes one of them.
-  before <- object_addresses(env)
-  # results = NULL: org then creates no folder, also no folder with today's
-  # date, and it does not create data_raw.
-  org::initialize_project(
-    env = env,
-    home = home,
-    folders_to_be_sourced = paste0(version, "_functions"),
-    max_loc_per_file = max_loc,
-    data_raw = data_raw
-  )
-  out <- list(
-    version = version,
-    home = home,
-    results = file.path(home, paste0(version, "_results")),
-    data_raw = data_raw
-  )
-  # Every step that can stop is above this line.
-  list2env(
-    c(
-      out,
-      list(
-        data_md5 = real_md5,
-        data_stat = real_stat,
-        source_md5 = code_md5,
-        source_stat = code_stat,
-        env = env,
-        sourced = defined_names(env, before)
-      )
-    ),
-    envir = state
-  )
-  return(invisible(out))
+  md5 <- source_md5(home, version)
+  return(list(
+    md5 = md5,
+    stat = file_stat(file.path(home, names(md5)), names(md5)),
+    max_loc = max_loc
+  ))
 }
 
-check_init_args <- function(version, home, data_raw, env) {
+# Stops on an argument in `...` of initialize_project(), with the names
+# `names` and the count `n`. The removed argument data_raw gets the way to
+# the new argument folders.
+check_no_dots <- function(names, n) {
+  if (n == 0) {
+    return(invisible(NULL))
+  }
+  if ("data_raw" %in% names) {
+    stop(
+      "pbn::initialize_project() has no argument data_raw. Give the folder ",
+      "as folders = c(main = \"<the folder>\"), and read it in the data code ",
+      "with pbn::folder(\"main\") in the place of org::project$data_raw.",
+      call. = FALSE
+    )
+  }
+  named <- names[!is.na(names) & nzchar(names)]
+  stop(
+    "pbn::initialize_project() has no argument ",
+    if (length(named) > 0) named[1] else "after one_file",
+    ".",
+    call. = FALSE
+  )
+}
+
+check_init_args <- function(version, home, folders, env, one_file) {
   check_version(version)
   if (!is_one_string(home) || !dir.exists(home)) {
     stop("`home` must be the path of one existing folder.", call. = FALSE)
   }
-  if (!is_one_string(data_raw) || !nzchar(data_raw)) {
-    stop("`data_raw` must be the path of one folder.", call. = FALSE)
-  }
+  folders <- check_folders(folders)
   if (!is.environment(env)) {
     stop("`env` must be an environment.", call. = FALSE)
   }
+  check_one_file_arg(one_file)
+  return(folders)
+}
+
+# Stops when `one_file` is not NULL and not the list that the file of
+# to_one_file() writes: `project`, `source_md5` and `code`.
+check_one_file_arg <- function(one_file) {
+  if (is.null(one_file)) {
+    return(invisible(NULL))
+  }
+  shape <- is.list(one_file) &&
+    identical(names(one_file), c("project", "source_md5", "code"))
+  ok <- shape &&
+    is_one_string(one_file$project) &&
+    is_data_md5(one_file$source_md5) &&
+    is_block_call(one_file$code)
+  if (!ok) {
+    stop(
+      "`one_file` is for the file of pbn::to_one_file() only. Generate the ",
+      "file again with pbn::to_one_file().",
+      call. = FALSE
+    )
+  }
   return(invisible(NULL))
+}
+
+# TRUE when `x` is a call of `{`, the block of quote({ ... }).
+is_block_call <- function(x) {
+  return(is.call(x) && identical(x[[1]], as.name("{")))
 }
 
 # One whole number of 1 or more, and not Inf.
@@ -168,7 +293,8 @@ check_state <- function(caller) {
 }
 
 # The size and the modification time of each of the files `files`, under the
-# names `names`. pbn hashes a file again only when one of them changed.
+# names `names`. pbn hashes a source file again only when one of them
+# changed.
 file_stat <- function(files, names) {
   return(data.frame(
     file = names,
@@ -177,19 +303,11 @@ file_stat <- function(files, names) {
   ))
 }
 
-# tools::md5sum() of the files `files`, without names. In one place, so that
-# the tests can count the files that pbn hashes.
+# tools::md5sum() of the source files `files`, without names. In one place,
+# so that the tests can count the files that pbn hashes. pbn hashes no data
+# file.
 hash_files <- function(files) {
   return(unname(tools::md5sum(files)))
-}
-
-# The md5 of each file directly in `folder`, named by the file.
-data_md5 <- function(folder) {
-  files <- list.files(folder, full.names = TRUE, all.files = TRUE, no.. = TRUE)
-  files <- files[!dir.exists(files)]
-  md5 <- unname(tools::md5sum(files))
-  names(md5) <- basename(files)
-  return(md5)
 }
 
 # The md5 of the deparsed code of the functions `fns`, named by the names of

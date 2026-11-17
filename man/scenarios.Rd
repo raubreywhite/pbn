@@ -66,6 +66,7 @@ pbn::scenarios(CFG, only = "null")
 
 Other project setup:
 \code{\link[=end_unless_real]{end_unless_real()}},
+\code{\link[=folder]{folder()}},
 \code{\link[=initialize_project]{initialize_project()}}
 }
 \concept{project setup}

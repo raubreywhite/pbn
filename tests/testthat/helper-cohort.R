@@ -26,7 +26,7 @@ cohort_function_files <- function() {
       "data_raw <- function(scenario, sim) {",
       counter_lines("  "),
       "  if (scenario == \"real\") {",
-      "    return(utils::read.csv(file.path(org::project$data_raw, \"d.csv\")))",
+      "    return(utils::read.csv(pbn::folder(\"main\", \"d.csv\")))",
       "  }",
       "  data.frame(",
       "    Age = sample(15:60, 30, replace = TRUE),",
@@ -208,9 +208,9 @@ cohort_plan <- function(
 cohort_script_lines <- function(p, tail) {
   return(c(
     paste0(
-      "pbn::initialize_project(version = \"v01\", home = \".\", data_raw = \"",
+      "pbn::initialize_project(version = \"v01\", home = \".\", folders = c(main = \"",
       p$data_default,
-      "\")"
+      "\"))"
     ),
     "scenarios <- pbn::scenarios(CFG)",
     "p <- plnr::Plan$new()",

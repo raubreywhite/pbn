@@ -129,7 +129,7 @@ test_that("each part of the cache key computes the data again with its reason, a
   )
 
   write_cohort_data(p$data_default, age = c(16, 16, 16, 30, 40, 50, 60, 25))
-  s <- step(c("the raw data changed", NA, NA))
+  s <- step(c("the raw data in the folder main changed", NA, NA))
   expect_identical(s$new_calls, "real 1")
 
   edit("_cfg.R", cohort_cfg_lines(p$counter, age_min = 17, n_boot_null = 6))
@@ -351,7 +351,7 @@ test_that("in a new R session, the run script up to the add_ calls and p$get_dat
   expect_length(calls(p), 3)
 })
 
-test_that("a raw data file changed after initialize_project() changes the key and the manifest, and an unchanged file is not hashed again", {
+test_that("a raw data file changed after initialize_project() changes the key and the manifest, and pbn hashes no data file", {
   skip_if_not_installed("cohort")
   p <- local_cohort_project()
   run <- cohort_run(p)
@@ -361,38 +361,39 @@ test_that("a raw data file changed after initialize_project() changes the key an
     hashed$files <- c(hashed$files, basename(files))
     return(unname(tools::md5sum(files)))
   })
-  # No change: the raw data is not hashed again.
   out <- utils::capture.output(r <- run_plan(run$plan))
   expect_identical(out, cache_lines(p, rep(NA, 3)))
-  expect_identical(hashed$files, character(0))
 
   csv <- file.path(p$data_default, "d.csv")
   write_cohort_data(p$data_default, age = c(16, 16, 16, 30, 40, 50, 60, 25))
   Sys.setFileTime(csv, Sys.time() + 10)
   out <- utils::capture.output(r <- run_plan(run$plan))
-  expect_identical(out, cache_lines(p, c("the raw data changed", NA, NA)))
-  expect_identical(hashed$files, "d.csv")
+  expect_identical(
+    out,
+    cache_lines(p, c("the raw data in the folder main changed", NA, NA))
+  )
   expect_identical(
     attr(r[["real__sim_0001__pbn_n_rows"]], "exclusions")$d$n_excluded,
     3L
   )
-  read_md5 <- md5_of(csv)
+  read_stat <- c(size = file.size(csv), mtime = as.numeric(file.mtime(csv)))
   # The file changes again after the run, and a step by hand reads it. The
   # manifest of the run still names the data that the run read.
   write_cohort_data(p$data_default, age = c(16, 16, 16, 16, 40, 50, 60, 25))
   Sys.setFileTime(csv, Sys.time() + 15)
   utils::capture.output(run$plan$get_data("real__sim_0001__means__1"))
-  expect_false(identical(md5_of(csv), read_md5))
   utils::capture.output(save_results(r, run$plan, run$scenarios))
   m <- read_results("v01", home = p$home)$manifest
-  expect_identical(m$data_md5, c(d.csv = read_md5))
-
-  # A new mtime with the same bytes: hashed once, and the cache is used.
-  hashed$files <- character(0)
-  Sys.setFileTime(csv, Sys.time() + 25)
-  out <- utils::capture.output(run_plan(run$plan))
-  expect_identical(out, cache_lines(p, rep(NA, 3)))
-  expect_identical(hashed$files, "d.csv")
+  expect_identical(
+    m$data_files,
+    data.frame(
+      file = "main/d.csv",
+      size = read_stat[["size"]],
+      mtime = read_stat[["mtime"]]
+    )
+  )
+  # No data file was hashed in any of these steps.
+  expect_identical(hashed$files, character(0))
 })
 
 test_that("a data_*.R file changed after initialize_project() stops run_plan and p$get_data() with its name", {

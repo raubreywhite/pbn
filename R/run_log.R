@@ -54,8 +54,9 @@ write_failed_run <- function(run, error = NULL) {
 base_log <- function(run, scenarios) {
   return(list(
     stage = "finished",
-    folder = basename(state$home),
+    folder = state$project,
     version = state$version,
+    folders = folders_table(),
     started = run$started,
     workers = run$workers,
     r_version = R.version.string,
@@ -72,6 +73,19 @@ base_log <- function(run, scenarios) {
     files = NULL,
     outputs = NULL,
     timing = list(run = run$seconds, save = NULL, outputs = NULL)
+  ))
+}
+
+# The folders of the project for the run log: the name, the number of files
+# of each folder at the last listing, and whether it was absent at
+# initialize_project(). It holds no path.
+folders_table <- function() {
+  nm <- names(state$folders)
+  counted <- sub("/.*$", "", state$data_files$file)
+  return(data.frame(
+    name = nm,
+    files = vapply(nm, function(n) return(sum(counted == n)), integer(1), USE.NAMES = FALSE),
+    absent = nm %in% state$folders_absent
   ))
 }
 
@@ -313,7 +327,7 @@ write_started_log <- function(scenarios, started, workers = NULL) {
   delete_paths(file.path(root, errors_file_name))
   log <- list(
     stage = "started",
-    folder = basename(state$home),
+    folder = state$project,
     version = state$version,
     started = started,
     workers = workers,

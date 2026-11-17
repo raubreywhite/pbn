@@ -33,7 +33,9 @@
 #'   for example data.table after `library(data.table)` in the run script.
 #' - the kind of random number generator of this R session, from
 #'   [RNGkind()].
-#' - the paths in `org::project`, such as `org::project$data_raw`.
+#' - the paths in `org::project`, such as `org::project$home`.
+#' - the folders of [initialize_project()], so that [folder()] works on the
+#'   worker. A worker then loads pbn.
 #'
 #' A future starts with an empty global environment. [initialize_project()]
 #' sources the functions folder into an environment, `.GlobalEnv` by
@@ -104,10 +106,10 @@
 #' `run_plan()` sets `use_foreach` of the plan: `FALSE` for 1 worker and
 #' `TRUE` for more.
 #'
-#' After [initialize_project()], `run_plan()` first computes the md5 of each
-#' raw data file again when its size or its modification time changed. The
-#' value carries the md5 in its stamp, and [save_results()] writes it to
-#' `manifest$data_md5`.
+#' After [initialize_project()], `run_plan()` first lists the files of the
+#' folders of the project again, with their sizes and modification times.
+#' It reads no content of a file. The value carries this fingerprint in its
+#' stamp, and [save_results()] writes it to `manifest$data_files`.
 #'
 #' An analysis that changes the shared data or an object of the functions
 #' folder in place fails. An analysis that leaves a new object in the global
@@ -231,12 +233,12 @@ run_plan <- function(p, workers = 1) {
   # run.md says that this run started and has not finished, until the full
   # log replaces it.
   write_started_log(plan_scenarios(index), started, workers)
-  # The md5 of the raw data of this run, also after a change of a file since
-  # initialize_project(). The stamp carries it to the manifest.
+  # The fingerprint of the raw data of this run, also after a change of a
+  # file since initialize_project(). The stamp carries it to the manifest.
   if (!is.null(state$results)) {
-    refresh_data_md5()
+    refresh_data_files()
   }
-  data_md5 <- state$data_md5
+  data_files <- state$data_files
   cached <- set_cache(p, info, workers)
   on.exit(clear_cache(info, cached), add = TRUE)
   set_catch(info, TRUE)
@@ -269,7 +271,7 @@ run_plan <- function(p, workers = 1) {
   stop_on_failed(r)
   # The stamp binds the value to this plan. save_results() checks it. It
   # holds no count of the runs, so two runs of one plan stay identical().
-  attr(r, "pbn_run") <- list(plan = info$token, data_md5 = data_md5)
+  attr(r, "pbn_run") <- list(plan = info$token, data_files = data_files)
   return(invisible(r))
 }
 
@@ -502,8 +504,8 @@ check_data_keys <- function(info) {
 }
 
 # Gives each worker of the cluster `cl` the library paths, the attached
-# packages, the kind of random number generator and the paths of
-# org::project of this R session. These stay for each future of the worker.
+# packages, the kind of random number generator, the paths of org::project
+# and the folders of the project of this R session. These stay for each future of the worker.
 # A future empties the global environment of the worker, so the objects of
 # the sourced environment go with each future instead, see run_enter().
 prepare_workers <- function(cl) {
@@ -524,6 +526,10 @@ prepare_workers <- function(cl) {
     },
     paths
   )
+  folders <- worker_folders()
+  if (!is.null(folders)) {
+    parallel::clusterCall(cl, set_worker_folders, folders)
+  }
   return(invisible(NULL))
 }
 

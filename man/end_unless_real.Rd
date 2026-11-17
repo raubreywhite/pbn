@@ -36,6 +36,7 @@ pbn::end_unless_real(pbn::scenarios(CFG))
 \code{vignette("pbn")}, which builds and runs a small fake project.
 
 Other project setup:
+\code{\link[=folder]{folder()}},
 \code{\link[=initialize_project]{initialize_project()}},
 \code{\link[=scenarios]{scenarios()}}
 }

@@ -23,6 +23,9 @@ worker_functions <- c(
   "cache_reason",
   "changed_parts",
   "part_change",
+  "raw_data_change",
+  "fingerprint_keys",
+  "and_list",
   "differing_names",
   "cache_read",
   "cache_save",
@@ -395,16 +398,47 @@ part_change <- function(nm, a, b) {
   if (nm == "data_files") {
     return(differing_names(a, b))
   }
+  if (nm == "raw_data") {
+    return(raw_data_change(a, b))
+  }
   labels <- c(
     scenario = "the scenario",
     sim = "the simulation",
     settings = "the settings of the scenario",
-    raw_data = "the raw data",
     data_function = "the data function of add_data()",
     cfg_data = "CFG$data",
     rng = "the kind of random number generator"
   )
   return(labels[[nm]])
+}
+
+# The change of the raw data from the fingerprint `a` to `b`: "the raw data
+# in the folder lookup", or in the folders that changed. A new, a removed
+# and a changed file count. A key of a build of pbn that kept the md5 of
+# each file, named <folder name>/<file>, works too. A key without folder
+# names gives "the raw data".
+raw_data_change <- function(a, b) {
+  changed <- differing_names(fingerprint_keys(a), fingerprint_keys(b))
+  folders <- unique(sub("/.*$", "", changed[grepl("/", changed, fixed = TRUE)]))
+  if (length(folders) == 0) {
+    return("the raw data")
+  }
+  return(paste0(
+    "the raw data in the ",
+    if (length(folders) == 1) "folder " else "folders ",
+    and_list(folders)
+  ))
+}
+
+# The fingerprint `x` as one string for each file, the size and the time,
+# named by the file. Any other value stays as it is.
+fingerprint_keys <- function(x) {
+  if (!is.data.frame(x)) {
+    return(x)
+  }
+  out <- paste(sprintf("%.17g", x$size), sprintf("%.17g", x$mtime))
+  names(out) <- x$file
+  return(out)
 }
 
 # The names of the named vectors `a` and `b` whose values differ, also a
@@ -494,14 +528,14 @@ set_cache <- function(p, info, workers) {
 # The cache context of the data `name` of a plan, from the state of the
 # project now. The md5 of the data_*.R files comes from initialize_project(),
 # which computed it before it sourced them, and check_data_code() stops when
-# a file on disk differs from it. The md5 of the raw data is that of the last
-# refresh_data_md5(). `skip` names the packages that the record of the
+# a file on disk differs from it. The fingerprint of the raw data is that of
+# the last refresh_data_files(). `skip` names the packages that the record of the
 # loaded packages leaves out, and `memo` keeps the installed version of each
 # package that a use of the cache looked up.
 cache_context <- function(info, name, print_now) {
   return(list(
     settings = info$scenario_settings,
-    raw_data = state$data_md5,
+    raw_data = state$data_files,
     data_files = data_files_md5(state$source_md5),
     cfg_data = cfg_data(state$env),
     versions = cache_versions(),
@@ -537,7 +571,7 @@ hand_cache_context <- function(plan, name) {
   }
   check_cache_ignored(name, "pbn computed nothing.")
   check_data_code("pbn computed nothing.")
-  refresh_data_md5()
+  refresh_data_files()
   return(cache_context(info, name, print_now = TRUE))
 }
 
@@ -582,8 +616,12 @@ record_skip <- function() {
 
 # Stops when a data_*.R file of the functions folder is not the file that
 # initialize_project() hashed and sourced: changed, added or removed. A file
-# with the size and mtime of the record is not hashed again.
+# with the size and mtime of the record is not hashed again. The file of
+# to_one_file() holds the code, so there it checks nothing.
 check_data_code <- function(done) {
+  if (isTRUE(state$one_file)) {
+    return(invisible(NULL))
+  }
   folder <- paste0(state$version, "_functions")
   inner <- list.files(
     file.path(state$home, folder),
@@ -621,29 +659,16 @@ same_stat <- function(home, rel, stat) {
   return(same %in% TRUE)
 }
 
-# Sets state$data_md5 to the md5 of the files in data_raw now. A file with
-# the size and mtime of the record keeps its md5, and each other file is
-# hashed again. Nothing happens when data_raw did not exist at
-# initialize_project().
-refresh_data_md5 <- function() {
-  if (is.null(state$data_md5)) {
+# Sets state$data_files to the fingerprint of the files in the folders of
+# the project now, see folder_files(): the listing again, with no content of
+# a file. A folder that did not exist at initialize_project() stays out.
+refresh_data_files <- function() {
+  if (is.null(state$data_files)) {
     return(invisible(NULL))
   }
-  files <- list.files(
-    state$data_raw,
-    full.names = TRUE,
-    all.files = TRUE,
-    no.. = TRUE
-  )
-  files <- files[!dir.exists(files)]
-  rel <- basename(files)
-  keep <- same_stat(state$data_raw, rel, state$data_stat)
-  md5 <- unname(state$data_md5[rel])
-  md5[!keep] <- hash_files(files[!keep])
-  names(md5) <- rel
-  state$data_md5 <- md5
-  state$data_stat <- file_stat(files, rel)
-  return(invisible(md5))
+  present <- state$folders[!names(state$folders) %in% state$folders_absent]
+  state$data_files <- folder_files(present)
+  return(invisible(state$data_files))
 }
 
 # Stops when git does not ignore the cache folders of the data `cached`.

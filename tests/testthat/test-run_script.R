@@ -135,6 +135,12 @@ test_that("workers = 2 gives results identical to workers = 1, with the function
   skip_if_pbn_not_installed()
   run_with <- function(workers) {
     p <- local_project(env = parent.frame())
+    # Each run has a project of its own. pbn reads the size and the time of
+    # a data file, so both data files get one time.
+    Sys.setFileTime(
+      file.path(p$data_default, "d.csv"),
+      as.POSIXct("2026-01-01 12:00:00", tz = "UTC")
+    )
     r_file <- file.path(p$root, "r.qs2")
     write_lines(
       p$home,

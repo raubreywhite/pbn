@@ -4,7 +4,14 @@
 \alias{initialize_project}
 \title{Start a project version}
 \usage{
-initialize_project(version, home, data_raw, env = .GlobalEnv)
+initialize_project(
+  version,
+  home,
+  folders,
+  env = .GlobalEnv,
+  one_file = NULL,
+  ...
+)
 }
 \arguments{
 \item{version}{The version, written as \code{"v"} and two digits, for example
@@ -13,15 +20,25 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 \item{home}{The project folder. It holds \verb{<version>_run.R},
 \verb{<version>_functions/} and the file of the rules \code{pbn.yml}.}
 
-\item{data_raw}{The folder of the real raw data, one string. The folder MAY
-be absent, for example on a computer without the real data. Only
-\code{\link[=save_results]{save_results()}} for the scenario \code{"real"} then stops.}
+\item{folders}{The folders outside the project that the project reads, as
+a named character vector, for example
+\code{c(main = "../data", lookup = "../codes")}. One folder MAY have no name,
+and it then gets the name \code{main}. Each name MUST be a syntactic R name,
+once. A folder MAY be absent, for example on a computer without the real
+data. Only \code{\link[=save_results]{save_results()}} for the scenario \code{"real"} then stops.}
 
 \item{env}{The environment that the functions folder is sourced into.}
+
+\item{one_file}{\code{NULL}. The file of \code{\link[=to_one_file]{to_one_file()}} gives a value here. Do
+not write it by hand. See the section One file.}
+
+\item{...}{Nothing. A call with the removed argument \code{data_raw} stops, and
+the error says how to use \code{folders}.}
 }
 \value{
 Invisibly, a list with \code{version}, \code{home}, \code{results} and
-\code{data_raw}. \code{results} is the results folder.
+\code{folders}. \code{results} is the results folder, and \code{folders} the named
+paths of the folders.
 }
 \description{
 \code{initialize_project()} sets the paths of a project version and sources its
@@ -36,16 +53,25 @@ file is missing.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
 them in \code{manifest$source_md5}.
-\item It computes the md5 of each file directly in \code{data_raw}, when the folder
-exists. \code{\link[=save_results]{save_results()}} stores them in \code{manifest$data_md5} of the
-scenario \code{"real"}. A file that the run writes later is not in the list.
+\item It lists each file under each folder of \code{folders} that exists, at any
+depth, with its size and its modification time. This is the
+fingerprint of the data. pbn never reads the content of a data file, so
+a file of 60 GB costs what a small file costs. \code{\link[=save_results]{save_results()}} stores
+the fingerprint in \code{manifest$data_files} of the scenario \code{"real"}. A
+file that the run writes later is not in the list. The section The
+fingerprint of the data gives the rules.
 \item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{folders_to_be_sourced} set to
-\verb{<version>_functions} and \code{data_raw} set to \code{data_raw}. A data function
-finds the folder at \code{org::project$data_raw}. \code{max_loc_per_file} is the
-\code{limit} of the rule \code{loc_per_file}, 1000 in the house set. When the rule
-is \code{warn} or \code{off}, it is \code{Inf}, because the check of org stops the run
-on a file with more lines.
+\verb{<version>_functions}. \code{max_loc_per_file} is the \code{limit} of the rule
+\code{loc_per_file}, 1000 in the house set. When the rule is \code{warn} or
+\code{off}, it is \code{Inf}, because the check of org stops the run on a file
+with more lines. pbn gives org no folder of \code{folders}, so
+\code{org::project} holds \code{home}, \code{computer_id} and \code{env} only.
 }
+
+Project code finds a folder with \code{\link[=folder]{folder()}}, for example
+\code{file.path(pbn::folder("main"), "d.csv")}. Call \code{\link[=folder]{folder()}} inside a
+function: a top-level call in a file of the functions folder runs before
+\code{initialize_project()} sets the folders, and it stops.
 
 The results folder is \verb{<home>/<version>_results}. \code{\link[=save_results]{save_results()}} creates
 it. \code{initialize_project()} creates no folder, also no folder with today's
@@ -55,6 +81,50 @@ date. It stops when \verb{<version>_functions/} does not exist.
 argument and no environment variable, and it sets no seed. \code{\link[=scenarios]{scenarios()}}
 chooses the scenarios, and \code{\link[=add_data]{add_data()}} and \code{\link[=add_analyses]{add_analyses()}} set the seeds.
 }
+\section{The fingerprint of the data}{
+
+The fingerprint is a data.frame with one row for each file, sorted by
+\code{file} in the C locale:
+\itemize{
+\item \code{file}, the name \verb{<folder name>/<path in the folder>} with \code{/}, for
+example \code{main/sub/d.csv}. It never holds the path of the folder.
+\item \code{size}, the size in bytes.
+\item \code{mtime}, the modification time in seconds since 1970-01-01 UTC, with
+the fraction of a second that the file system keeps.
+}
+
+Hidden files count. A link to a file gives the size and the time of its
+target, and \code{\link[=list.files]{list.files()}} follows a link to a folder. A broken link stops
+\code{initialize_project()}. It also stops when a folder of \code{folders} is inside
+another or is the same folder. It stops when a folder holds or is inside
+\verb{<version>_results/} or \verb{<version>_cache_gitexclude/}, because pbn writes
+there in each run. A folder elsewhere inside \code{home} is allowed.
+
+A file that changed in place, and kept its size and its modification
+time, is not seen. A copy that does not keep the modification times looks
+like changed data, so the cache computes the data again. \code{file.copy(..., copy.date = TRUE)} keeps them.
+}
+
+\section{One file}{
+
+The file of \code{\link[=to_one_file]{to_one_file()}} calls \code{initialize_project()} with \code{one_file}, a
+list with these elements:
+\itemize{
+\item \code{project}, the name of the project folder on the computer that made the
+file. The run log names the project with it.
+\item \code{source_md5}, the md5 of the run script and of each file of the
+functions folder on that computer. The manifest stores it.
+\item \code{code}, the code of the functions folder as one quoted block, in the
+order that org sources the files.
+}
+
+With \code{one_file}, \code{initialize_project()} reads no \code{pbn.yml}, needs no
+functions folder, and checks no code lines. It evaluates \code{code} in \code{env}
+in the place of the source of the functions folder. A use of the cache then
+does not check the \code{data_*.R} files on the disk, because the code is in the
+file.
+}
+
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
@@ -68,10 +138,11 @@ env <- new.env()
 p <- pbn::initialize_project(
   version = "v01",
   home = home,
-  data_raw = file.path(home, "data"),
+  folders = c(main = file.path(home, "data")),
   env = env
 )
 p$results
+pbn::folder("main")
 env$CFG$scenarios
 
 unlink(home, recursive = TRUE)
@@ -81,6 +152,7 @@ unlink(home, recursive = TRUE)
 
 Other project setup:
 \code{\link[=end_unless_real]{end_unless_real()}},
+\code{\link[=folder]{folder()}},
 \code{\link[=scenarios]{scenarios()}}
 }
 \concept{project setup}

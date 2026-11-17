@@ -49,7 +49,9 @@ Before the run, \code{run_plan()} gives each worker these:
 for example data.table after \code{library(data.table)} in the run script.
 \item the kind of random number generator of this R session, from
 \code{\link[=RNGkind]{RNGkind()}}.
-\item the paths in \code{org::project}, such as \code{org::project$data_raw}.
+\item the paths in \code{org::project}, such as \code{org::project$home}.
+\item the folders of \code{\link[=initialize_project]{initialize_project()}}, so that \code{\link[=folder]{folder()}} works on the
+worker. A worker then loads pbn.
 }
 
 A future starts with an empty global environment. \code{\link[=initialize_project]{initialize_project()}}
@@ -120,10 +122,10 @@ no count of the runs, so two runs of one plan can be \code{identical()}.
 \code{run_plan()} sets \code{use_foreach} of the plan: \code{FALSE} for 1 worker and
 \code{TRUE} for more.
 
-After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} first computes the md5 of each
-raw data file again when its size or its modification time changed. The
-value carries the md5 in its stamp, and \code{\link[=save_results]{save_results()}} writes it to
-\code{manifest$data_md5}.
+After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} first lists the files of the
+folders of the project again, with their sizes and modification times.
+It reads no content of a file. The value carries this fingerprint in its
+stamp, and \code{\link[=save_results]{save_results()}} writes it to \code{manifest$data_files}.
 
 An analysis that changes the shared data or an object of the functions
 folder in place fails. An analysis that leaves a new object in the global

@@ -4,7 +4,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 
 | Removed | Use instead |
 |---|---|
-| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `org::project$data_raw`, and each argset holds `scenario`, `sim` and the settings. |
+| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `pbn::folder("main")`, and each argset holds `scenario`, `sim` and the settings. |
 | `use_scenario()` and its commented lines in `vNN_run.R` | `pbn::get_argset(p, "<scenario>", <sim>, "<name>", <i>)` and `pbn::get_data(p, "<scenario>", <sim>)` inside `if (plnr::is_run_directly())`. |
 | `run_scenarios()`, `run_scenarios.R`, `workers` and `resume` | `pbn::scenarios(CFG)`, or `pbn::scenarios(CFG, only = "null")`, and `pbn::run_plan(p, workers = 2)`. A run always runs every chosen scenario. |
 | `fake_<scenario>(dir)` and the folder `data/` of a fake run | One data function `get_data(scenario, sim)` for every scenario, added with `pbn::add_data()`. |
@@ -14,7 +14,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 | `run.log` and `run.ok` | Nothing. `run_plan()` prints each failed analysis with its full error. |
 
 - New `scenarios()`, `add_data()`, `add_analyses()`, `run_plan()` and `end_unless_real()`.
-- `initialize_project()` sets no seed and reads no command line. It creates no folder, and it stops when `vNN_functions/` is missing. `data_raw` MAY be absent: only `save_results()` for `"real"` then stops.
+- `initialize_project()` sets no seed and reads no command line. It creates no folder, and it stops when `vNN_functions/` is missing. A folder of the project MAY be absent: only `save_results()` for `"real"` then stops.
 - A data function MUST take `scenario` and `sim` without a default, or neither. `add_data()` stops on a default for either and on `sim` without `scenario`, and it sets the seed to `sim` before each call.
 - Each analysis gets its own seed in `argset$seed`, from its kind, its counter and `sim`, and never `sim` itself for sims 1 to 9999. To step through an analysis by hand, run `set.seed(argset$seed)`.
 - With more workers, `run_plan()` gives the same results when a function reads only its arguments, the functions folder, the attached packages and the seed. R options are not copied to the workers.
@@ -108,6 +108,21 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `check_project()` prints the rule set on its first line, OFF for a rule that is off, and the count of OFF on its last line.
 - pbn reads no `pbn_allow.txt`, a change from the earlier builds of this version. `check_project()` stops on the file and prints its lines as the YAML of `allow:`. Paste them into `pbn.yml`, and delete `pbn_allow.txt`.
 - `initialize_project()` stops without `pbn.yml`. It gives org the `limit` of `loc_per_file`, or `Inf` when the rule is `warn` or `off`. pbn imports `yaml`.
+- `initialize_project()` takes `folders`, the named folders that the project reads, such as `c(main = "../data", lookup = "../codes")`, in the place of `data_raw`. One folder without a name is `main`. A call with `data_raw =` stops and gives the new argument.
+- New `folder(name, ...)` gives the path of a folder of the project, or of a path inside it, such as `pbn::folder("main", "sub", "d.csv")`, also on a worker of `run_plan()`. A part with a leading `/`, a drive or `..` stops. pbn gives org no folder, so `org::project$data_raw` is gone.
+- pbn reads no content of a data file. `manifest$data_files`, in the place of `data_md5`, lists each file under each folder at any depth, as `<folder>/<path>`, with its size and its modification time. A file that changed in place and kept both is not seen.
+- The cache key holds that fingerprint and no path. So the same files in another place, copied with their modification times, give the same key and the same results. A changed, new or removed file gives the cache line "the raw data in the folder lookup changed".
+- The rule `manifest_data` of `check_results()` needs `data_files` for `"real"`, and fails a manifest with `data_md5`.
+- `initialize_project()` stops on a folder inside another, on a folder that holds or is inside the results or the cache folder, and on a broken link.
+- The run log names the folders of the scenario `real` with their number of files. It holds no absolute path.
+- New `check_project()` rule `no_absolute_paths`: no string of an `.R` file is an absolute path, and no `file.path()` or `fs::path()` starts from a string, outside the arguments of `pbn::initialize_project()` and `pbn::to_one_file()`.
+- New `check_project()` rule `blocks_list`: the object `blocks` of the functions folder is a list of named functions.
+- The set `house_2026_11_17` gets both new rules, and its md5 changes. It had no release yet. After the first release of pbn, a new rule needs a new dated set.
+- `run_script_initialises` does not count a call with an argument that `initialize_project()` does not have.
+- New `to_one_file()` writes the run of the real data as one R script, `vNN_one_file.R` in the project of the session, for a server without a network. It stops on kept code that uses a left-out `expect_` function, and on a file that does not parse. `initialize_project()` gains the argument `one_file` for that script.
+- New `check_one_file()` runs that script on copies of the folders and compares its real results with those of the project.
+- `unknown_path` knows `vNN_one_file.R`, and the code rules do not read it.
+- New `show_blocks()` and `show_block()` print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.
 
 # pbn 2026.11.22
 

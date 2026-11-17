@@ -442,7 +442,7 @@ test_that("manifest_scenario fails when scenario is not one string", {
 test_that("manifest_scenario passes a fake scenario and a stacked manifest", {
   x <- valid_results()
   x$manifest$scenario <- "null"
-  x$manifest$data_md5 <- NULL
+  x$manifest$data_files <- NULL
   x$manifest$fake_md5 <- "0123456789abcdef0123456789abcdef"
   x$manifest$sim <- NA_integer_
   x$manifest$sims <- 3L
@@ -496,21 +496,21 @@ test_that("a stacked object without the sim column fails exclusions_table", {
 })
 
 # A valid results object of the fake scenario null: fake_md5 in the place of
-# data_md5.
+# data_files.
 fake_results <- function() {
   x <- valid_results()
   x$manifest$scenario <- "null"
-  x$manifest$data_md5 <- NULL
+  x$manifest$data_files <- NULL
   x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
   return(x)
 }
 
-test_that("manifest_data passes data_md5 for real and fake_md5 for a fake scenario", {
+test_that("manifest_data passes data_files for real and fake_md5 for a fake scenario", {
   expect_identical(failing(valid_results()), character(0))
   expect_identical(failing(fake_results()), character(0))
-  # A real data folder with no file gives an empty data_md5.
+  # Data folders with no file give data_files with 0 rows.
   x <- valid_results()
-  x$manifest$data_md5 <- stats::setNames(character(0), character(0))
+  x$manifest$data_files <- x$manifest$data_files[0, ]
   expect_identical(failing(x), character(0))
   # A stacked fake manifest.
   x <- fake_results()
@@ -521,13 +521,13 @@ test_that("manifest_data passes data_md5 for real and fake_md5 for a fake scenar
   expect_identical(failing(x), character(0))
 })
 
-test_that("manifest_data fails a manifest with neither or both of data_md5 and fake_md5", {
+test_that("manifest_data fails a manifest with neither or both of data_files and fake_md5, and the data_md5 of an older pbn", {
   x <- valid_results()
-  x$manifest$data_md5 <- NULL
+  x$manifest$data_files <- NULL
   expect_identical(failing(x), "manifest_data")
   expect_identical(
     check_results(x)$detail[6],
-    "manifest has neither data_md5 nor fake_md5"
+    "manifest has neither data_files nor fake_md5"
   )
 
   x <- fake_results()
@@ -537,37 +537,43 @@ test_that("manifest_data fails a manifest with neither or both of data_md5 and f
   for (scenario in c("real", "null")) {
     x <- fake_results()
     x$manifest$scenario <- scenario
-    x$manifest$data_md5 <- c(d.csv = "0123456789abcdef0123456789abcdef")
+    x$manifest$data_files <- valid_results()$manifest$data_files
     expect_identical(failing(x), "manifest_data", info = scenario)
     expect_identical(
       check_results(x)$detail[6],
-      "manifest has both data_md5 and fake_md5",
+      "manifest has both data_files and fake_md5",
       info = scenario
     )
   }
+  # The md5 of the data files, as an older pbn wrote them.
+  x <- valid_results()
+  x$manifest$data_files <- NULL
+  x$manifest$data_md5 <- c(d.csv = "0123456789abcdef0123456789abcdef")
+  expect_identical(failing(x), "manifest_data")
+  expect_identical(
+    check_results(x)$detail[6],
+    paste(
+      "manifest has data_md5, the md5 of the data files that an older pbn",
+      "wrote. pbn now writes data_files: run the scenario again"
+    )
+  )
 })
 
-test_that("manifest_data fails fake_md5 for real and data_md5 for a fake scenario", {
+test_that("manifest_data fails fake_md5 for real and data_files for a fake scenario", {
   x <- fake_results()
   x$manifest$scenario <- "real"
   expect_identical(failing(x), "manifest_data")
   expect_identical(
     check_results(x)$detail[6],
-    "manifest has fake_md5, but the scenario \"real\" needs data_md5"
+    "manifest has fake_md5, but the scenario \"real\" needs data_files"
   )
-
-  # The manifest of a fake scenario that pbn 2026.11.18 wrote.
   x <- valid_results()
   x$manifest$scenario <- "null"
   expect_identical(failing(x), "manifest_data")
   expect_identical(
     check_results(x)$detail[6],
-    "manifest has data_md5, but the fake scenario \"null\" needs fake_md5"
+    "manifest has data_files, but the fake scenario \"null\" needs fake_md5"
   )
-  # An empty data_md5 is there too.
-  x$manifest$data_md5 <- character(0)
-  x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
-  expect_identical(failing(x), "manifest_data")
 })
 
 test_that("manifest_data fails a fake_md5 that is not one md5", {
@@ -592,34 +598,37 @@ test_that("manifest_data fails a fake_md5 that is not one md5", {
   }
 })
 
-test_that("manifest_data fails a data_md5 that is not a named vector of md5 values", {
-  md5 <- "0123456789abcdef0123456789abcdef"
+test_that("manifest_data fails data_files that is not a fingerprint of files", {
+  good <- data.frame(
+    file = c("main/a.csv", "lookup/sub/b.sav"),
+    size = c(120, 0),
+    mtime = c(1.8e9, 1.8e9 + 0.25)
+  )
   bad <- list(
-    no_names = md5,
-    no_names_empty = character(0),
-    na = c(d.csv = NA_character_),
-    upper = c(d.csv = toupper(md5)),
-    empty_name = stats::setNames(md5, ""),
-    na_name = stats::setNames(md5, NA_character_),
-    number = c(d.csv = 1)
+    vector = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    no_mtime = good[, c("file", "size")],
+    other_order = good[, c("file", "mtime", "size")],
+    na_file = transform(good, file = c(NA, "x")),
+    empty_file = transform(good, file = c("", "x")),
+    twice = transform(good, file = c("main/a.csv", "main/a.csv")),
+    negative = transform(good, size = c(-1, 0)),
+    na_size = transform(good, size = c(NA, 0)),
+    text_size = transform(good, size = c("1", "0")),
+    na_mtime = transform(good, mtime = c(NA, 1))
   )
   for (nm in names(bad)) {
     x <- valid_results()
-    x$manifest$data_md5 <- bad[[nm]]
+    x$manifest$data_files <- bad[[nm]]
     expect_identical(failing(x), "manifest_data", info = nm)
     expect_match(
       check_results(x)$detail[6],
-      "manifest$data_md5 is not a named character vector of md5 values",
+      "manifest$data_files is not a data.frame with the columns file, size",
       fixed = TRUE,
       info = nm
     )
   }
-  # Two files pass.
   x <- valid_results()
-  x$manifest$data_md5 <- c(
-    a.csv = md5,
-    b.sav = "fedcba9876543210fedcba9876543210"
-  )
+  x$manifest$data_files <- good
   expect_identical(failing(x), character(0))
 })
 
@@ -745,7 +754,7 @@ stacked_null <- function(sims = 400, person = integer(0), draws = integer(0)) {
   runs <- lapply(seq_len(sims), function(k) {
     x <- valid_results()
     x$manifest$scenario <- "null"
-    x$manifest$data_md5 <- NULL
+    x$manifest$data_files <- NULL
     x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
     x$manifest$sim <- k
     x$manifest$sims <- sims

@@ -95,13 +95,15 @@ unstacked results. An older pbn wrote their counts as \code{NA}, so they
 check nothing.
 \item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
 \code{sims}, and \code{scenario} is one string.
-\item \code{manifest_data}: \code{manifest} has exactly one of \code{data_md5} and
-\code{fake_md5}. It has \code{data_md5} when \code{scenario} is \code{"real"}, and
+\item \code{manifest_data}: \code{manifest} has exactly one of \code{data_files} and
+\code{fake_md5}. It has \code{data_files} when \code{scenario} is \code{"real"}, and
 \code{fake_md5} when \code{scenario} is another string. \code{fake_md5} MUST be one
-string of 32 lower-case hex digits. \code{data_md5} MUST be a character
-vector of such strings, named by file. It has length 0 when the data
-folder has no file. A results file that pbn 2026.11.18 or older wrote
-has \code{data_md5} for a fake scenario, so it fails this rule.
+string of 32 lower-case hex digits. \code{data_files} MUST be a data.frame
+with the columns \code{file}, \code{size} and \code{mtime}. Each \code{file} is a name that
+comes once, each \code{size} a number of 0 or more, and each \code{mtime} a
+number. It has 0 rows when the data folders have no file. A manifest
+with \code{data_md5}, the md5 of the data files of an older pbn, fails this
+rule: run the scenario again.
 \item \code{manifest_source}: \code{manifest$source_md5} is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script \verb{<version>_run.R} of \code{manifest$version}, or a \code{vNN_run.R} when
@@ -120,7 +122,7 @@ x <- list(
     scenario = "real",
     sim = 1L,
     sims = 1L,
-    data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+    data_files = data.frame(file = "main/d.csv", size = 120, mtime = 1.8e9),
     source_md5 = c(v01_run.R = "fedcba9876543210fedcba9876543210"),
     n_rows_data = 100L
   ),

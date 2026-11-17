@@ -4,7 +4,7 @@ three_runs <- function(as_class) {
   return(lapply(1:3, function(k) {
     x <- valid_results()
     x$manifest$scenario <- "null"
-    x$manifest$data_md5 <- NULL
+    x$manifest$data_files <- NULL
     x$manifest$fake_md5 <- "fedcba9876543210fedcba9876543210"
     x$manifest$sim <- k
     x$manifest$sims <- 3L
@@ -70,7 +70,7 @@ test_that("stack_results stops when a simulation of a fake scenario has no valid
       info = paste(format(bad), collapse = "")
     )
   }
-  # A real scenario with simulations has data_md5 and no fake_md5.
+  # A real scenario with simulations has data_files and no fake_md5.
   runs <- lapply(1:2, function(k) {
     x <- valid_results()
     x$manifest$sim <- k
@@ -78,7 +78,7 @@ test_that("stack_results stops when a simulation of a fake scenario has no valid
     return(x)
   })
   x <- stack_results(runs, "real")
-  expect_identical(x$manifest$data_md5, runs[[1]]$manifest$data_md5)
+  expect_identical(x$manifest$data_files, runs[[1]]$manifest$data_files)
   expect_false("fake_md5" %in% names(x$manifest))
 })
 

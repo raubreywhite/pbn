@@ -518,7 +518,7 @@ rule_manifest_data <- function(x) {
   return(result_row(
     rule,
     manifest_data_failure(m),
-    "the manifest has data_md5 for \"real\" or fake_md5 for a fake scenario"
+    "the manifest has data_files for \"real\" or fake_md5 for a fake scenario"
   ))
 }
 
@@ -568,24 +568,38 @@ source_md5_failure <- function(m) {
 # character(0). When the scenario is not one string, manifest_scenario fails,
 # and this rule checks only that one of the two elements is there.
 manifest_data_failure <- function(m) {
+  if (!is.null(m[["data_md5"]])) {
+    return(paste(
+      "manifest has data_md5, the md5 of the data files that an older pbn",
+      "wrote. pbn now writes data_files: run the scenario again"
+    ))
+  }
+  return(data_element_failure(m))
+}
+
+# The failure of manifest_data on the elements data_files and fake_md5 of
+# the manifest `m`, or character(0).
+data_element_failure <- function(m) {
   has <- c(
-    data_md5 = !is.null(m[["data_md5"]]),
+    data_files = !is.null(m[["data_files"]]),
     fake_md5 = !is.null(m[["fake_md5"]])
   )
   if (all(has)) {
-    return("manifest has both data_md5 and fake_md5")
+    return("manifest has both data_files and fake_md5")
   }
   if (!any(has)) {
-    return("manifest has neither data_md5 nor fake_md5")
+    return("manifest has neither data_files nor fake_md5")
   }
   scenario <- m[["scenario"]]
   real <- is_one_string(scenario) && scenario == "real"
-  if (is_one_string(scenario) && !has[[if (real) "data_md5" else "fake_md5"]]) {
+  if (is_one_string(scenario) && !has[[if (real) "data_files" else "fake_md5"]]) {
     if (real) {
-      return("manifest has fake_md5, but the scenario \"real\" needs data_md5")
+      return(
+        "manifest has fake_md5, but the scenario \"real\" needs data_files"
+      )
     }
     return(paste0(
-      "manifest has data_md5, but the fake scenario \"",
+      "manifest has data_files, but the fake scenario \"",
       scenario,
       "\" needs fake_md5"
     ))
@@ -601,13 +615,40 @@ md5_failure <- function(m, has) {
       "manifest$fake_md5 is not one md5: a string of 32 lower-case hex digits"
     )
   }
-  if (has[["data_md5"]] && !is_data_md5(m[["data_md5"]])) {
+  if (has[["data_files"]] && !is_data_files(m[["data_files"]])) {
     return(paste(
-      "manifest$data_md5 is not a named character vector of md5 values,",
-      "each a string of 32 lower-case hex digits"
+      "manifest$data_files is not a data.frame with the columns file, size",
+      "and mtime: each file once and named, each size a number of 0 or more,",
+      "and each mtime a number"
     ))
   }
   return(character(0))
+}
+
+# TRUE for a fingerprint of the files of the data folders, see
+# folder_files(). A folder with no file gives 0 rows.
+is_data_files <- function(x) {
+  if (!is.data.frame(x) || !identical(names(x), c("file", "size", "mtime"))) {
+    return(FALSE)
+  }
+  return(
+    is_file_names(x$file) &&
+      is_numbers(x$size) &&
+      all(x$size >= 0) &&
+      is_numbers(x$mtime)
+  )
+}
+
+# TRUE for a character vector of names that are not empty, each once.
+is_file_names <- function(x) {
+  return(
+    is.character(x) && !anyNA(x) && all(nzchar(x)) && anyDuplicated(x) == 0
+  )
+}
+
+# TRUE for a numeric vector of finite numbers.
+is_numbers <- function(x) {
+  return(is.numeric(x) && all(is.finite(x)))
 }
 
 # One md5 as tools::md5sum() writes it.
@@ -615,8 +656,7 @@ is_md5 <- function(x) {
   return(is_one_string(x) && grepl("^[0-9a-f]{32}$", x))
 }
 
-# The md5 of each file of a data folder, named by the file. A folder with no
-# file gives a named character vector of length 0.
+# A named character vector of md5 values, as `source_md5`.
 is_data_md5 <- function(x) {
   nm <- names(x)
   return(

@@ -812,7 +812,7 @@ test_that("the section History holds one line for each run, oldest first: a full
   utils::capture.output(try(run_plan(bad), silent = TRUE))
   # A run in a new R session that R stops while it runs.
   write_lines(p$home, "v01_slow.R", c(
-    paste0("pbn::initialize_project(version = \"v01\", home = \".\", data_raw = \"", p$data_default, "\")"),
+    paste0("pbn::initialize_project(version = \"v01\", home = \".\", folders = c(main = \"", p$data_default, "\"))"),
     "p <- plnr::Plan$new()",
     "pbn::add_data(p, \"d\", fn = function(scenario, sim) return(data.frame(x = 1)))",
     "pbn::add_analyses(p, pbn::scenarios(CFG), \"a\", fn = function(data, argset) Sys.sleep(60))",

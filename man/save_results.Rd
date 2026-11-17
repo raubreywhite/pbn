@@ -80,10 +80,17 @@ an empty list when there are none.
 \code{\link[=initialize_project]{initialize_project()}} computes it before it sources the files. The
 rule \code{manifest_source} needs the run script in it, so \code{save_results()}
 stops when \verb{<version>_run.R} did not exist.
-\item For the scenario \code{"real"} only, \code{data_md5}, the md5 of each file directly
-in \code{data_raw} when \code{\link[=run_plan]{run_plan()}} started. So it names the data that the
-run read, also after a change of a file since \code{\link[=initialize_project]{initialize_project()}}.
-\code{save_results()} stops for \code{"real"} when \code{data_raw} did not exist when
+\item For the scenario \code{"real"} only, \code{data_files}, the fingerprint of the
+files under the folders of \code{folders} of \code{\link[=initialize_project]{initialize_project()}} when
+\code{\link[=run_plan]{run_plan()}} started. It is a data.frame with the columns \code{file}, \code{size}
+and \code{mtime}. Each \code{file} is \verb{<folder name>/<path in the folder>}, for
+example \code{main/sub/d.csv}, and never the path of the folder. pbn reads no
+content of a data file. The section The fingerprint of the data of
+\code{\link[=initialize_project]{initialize_project()}} gives the rules. So the manifest names the data
+that the run read, also after a change of a file since
+\code{\link[=initialize_project]{initialize_project()}}. The same files in another place, with the same
+modification times, give the same manifest.
+\code{save_results()} stops for \code{"real"} when a folder did not exist when
 \code{\link[=initialize_project]{initialize_project()}} ran.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
 functions of \code{\link[=add_data]{add_data()}}, without their source references: each \code{fn},
@@ -357,7 +364,7 @@ writeLines(
   file.path(home, "v01_functions", "_cfg.R")
 )
 env <- new.env()
-pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
+pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

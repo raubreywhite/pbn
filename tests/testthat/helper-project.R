@@ -25,9 +25,9 @@ run_script_lines <- function(
     paste0(
       "pbn::initialize_project(version = \"",
       version,
-      "\", home = \".\", data_raw = \"",
+      "\", home = \".\", folders = c(main = \"",
       data_raw,
-      "\")"
+      "\"))"
     ),
     if (is.null(only)) {
       "scenarios <- pbn::scenarios(CFG)"
@@ -59,7 +59,7 @@ run_script_lines <- function(
     "",
     "# PART 3 -- OUTPUT ====",
     "res <- pbn::read_results(\"v01\")",
-    "writeLines(\"output\", file.path(\"v01_results\", \"real\", \"output.txt\"))"
+    "writeLines(\"output\", file.path(org::project$home, \"v01_results\", \"real\", \"output.txt\"))"
   ))
 }
 
@@ -112,7 +112,7 @@ counter_lines <- function(indent) {
   ))
 }
 
-# The data function. "real" reads d.csv of data_raw. "known" plants the
+# The data function. "real" reads d.csv of the folder main. "known" plants the
 # values by hand: group a holds 4 ones of x, and the mean of y is 1 in group
 # a and 3 in group b. "null" draws with the seed that pbn sets.
 get_data_lines <- function() {
@@ -122,7 +122,7 @@ get_data_lines <- function() {
     counter_lines("    "),
     "  }",
     "  if (scenario == \"real\") {",
-    "    return(utils::read.csv(file.path(org::project$data_raw, \"d.csv\")))",
+    "    return(utils::read.csv(pbn::folder(\"main\", \"d.csv\")))",
     "  }",
     "  if (scenario == \"known\") {",
     "    return(data.frame(",
@@ -322,7 +322,7 @@ valid_results <- function() {
       scenario = "real",
       sim = 1L,
       sims = 1L,
-      data_md5 = c(d.csv = "0123456789abcdef0123456789abcdef"),
+      data_files = data.frame(file = "main/d.csv", size = 120, mtime = 1.8e9),
       source_md5 = c(
         "v01_functions/_cfg.R" = "00112233445566778899aabbccddeeff",
         v01_run.R = "ffeeddccbbaa99887766554433221100"
@@ -355,12 +355,12 @@ local_clean_state <- function(env = parent.frame()) {
 # Starts the project in this R session, as the first line of the run script
 # does, with the functions folder sourced into a new environment. Returns
 # that environment.
-init <- function(p, data_raw = p$data_default, env = parent.frame()) {
+init <- function(p, folders = p$data_default, env = parent.frame()) {
   local_clean_state(env)
   # The parent is the global environment, as for a project. An environment
   # of the test would go to each worker with the functions.
   sourced <- new.env(parent = globalenv())
-  suppressMessages(initialize_project("v01", p$home, data_raw, env = sourced))
+  suppressMessages(initialize_project("v01", p$home, folders, env = sourced))
   return(sourced)
 }
 

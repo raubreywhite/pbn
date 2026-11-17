@@ -44,8 +44,8 @@ Everything under \verb{background/} is not checked. These are exempt:
 extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}.
 \item \code{run_script_initialises} (FAIL): a \code{vNN_run.R} at the top level has no
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
-\code{"vNN"}. The detail names each argument of the call that
-\code{\link[=initialize_project]{initialize_project()}} does not have.
+\code{"vNN"}. A call with an argument that \code{\link[=initialize_project]{initialize_project()}} does not
+have does not count, and the detail names that argument.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
@@ -86,7 +86,8 @@ export. The one exception is \code{get_data}: a project MAY name its data
 function \code{get_data(scenario, sim)}, and a run script calls the export
 as \code{pbn::get_data()}.
 \item \code{loc_per_file} (FAIL): an \code{.R} file has more than \code{limit} code lines, as
-counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}. The house \code{limit} is 1000.
+counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}. The house \code{limit} is 1000. The rule
+reads each \code{.R} file of the project but \code{vNN_one_file.R}.
 \item \code{cyclomatic_complexity} (FAIL): a function scores above \code{limit} in
 \code{\link[cyclocomp:cyclocomp]{cyclocomp::cyclocomp()}}. The house \code{limit} is 15, the limit of the lint
 gate of the house packages. The rule reads the \code{.R} files of
@@ -111,10 +112,65 @@ counts. A call of the same name from another package passes. A variable or an ar
 passes, and so do \verb{<-}, \verb{->}, \code{=} and \verb{:=}. The rule skips a file that R
 cannot parse. The detail gives the file, the line and the construct. A
 path under \code{allow} allows each finding of one file.
+\item \code{no_absolute_paths} (FAIL): a string constant of an \code{.R} file of
+\code{loc_per_file} is an absolute path, or a path starts from a string
+constant. The rule reads the strings from the
+parse data, so a comment does not count. The arguments of a call
+\code{pbn::initialize_project()} or \code{pbn::to_one_file()} are exempt, because
+a project declares its paths there. A string is an absolute path when it
+starts with one of these:
+\itemize{
+\item \code{/}, a name of letters, digits, \code{.}, \verb{_} or \code{-} that starts with a
+letter or \verb{_}, and \code{/} again, as in \code{"/home/a/x.csv"} or \code{"/data/"}.
+\item \verb{~/} or \verb{~\\}, the home folder.
+\item a drive letter, \code{:} and \code{/} or \verb{\\}, as in \code{"C:/x"}, \code{"C:\\\\x"} or
+\code{"N:/durable/x"}.
+\item \verb{\\\\} and a letter or a digit, the start of a UNC path such as
+\code{"\\\\\\\\server\\\\share"}.
+}
+
+These strings pass:
+\itemize{
+\item \code{"/"} and \code{"~"}.
+\item the regular expressions \code{"^/"}, \code{"/$"} and \code{"/.*$"}.
+\item a URL such as \code{"https://a.org/b"}.
+\item the formats \code{"\%s/\%s"} and \code{"\%Y/\%m/\%d"}, and the fraction \code{"1/2"}.
+\item the formula \code{"y ~ x"}, and \code{"/month"}.
+\item the relative paths \code{"data/x.csv"}, \code{"./x"} and \code{"../x"}. A path with
+\code{..} leaves the project folder, and it passes too.
+\item a path with one name and no second \code{/}, such as \code{"/data"}, and a
+string of more than 1000 bytes. The rule misses these.
+}
+
+The rule also fails a call of \code{file.path()}, \code{base::file.path()} or
+\code{fs::path()} whose first argument is a string constant, for example
+\code{file.path("data", "x.csv")} or \code{file.path("/", "data")}. A path that
+starts from a constant is absolute, or it depends on the working
+directory. A path to data starts from \code{pbn::folder()}. A path for output
+starts from the folder that pbn gives the function, such as \code{dir} of
+\code{\link[=make_outputs]{make_outputs()}}. A call whose first argument is a name or a
+call passes, for example \code{file.path(dir, "fig2.png")} or
+\code{file.path(tempdir(), "x")}. A path that \code{paste0()} or \code{sprintf()}
+builds stays outside the rule.
+
+The detail is \verb{<file>:<line>: "<the string, cut at 40 characters>"}, or
+\verb{<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)}. A path under \code{allow} allows each finding of one
+file.
+\item \code{blocks_list} (FAIL): the functions folder defines the object \code{blocks}
+of \code{\link[=show_block]{show_block()}}, and one of these is true:
+\itemize{
+\item more than one top-level assignment assigns it.
+\item its value is not a call of \code{list()}, or the list is empty.
+\item an element has no name, or a name comes twice.
+\item an element is not a \code{function}, or the name of a function that a
+top-level assignment of the functions folder defines.
+}
+
+A project without \code{blocks} passes.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},
-\code{check_project.R} and \code{pbn.yml}, among others. A top-level dotfile and a top-level
+\code{vNN_one_file.R}, \code{check_project.R} and \code{pbn.yml}, among others. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown. The rule also reads the files
 directly in \verb{vNN_results/}. There it names the run log \code{run.md}, its PDF
 \code{run.pdf} and its errors file \code{run_errors_gitexclude.md}, and no rule
@@ -126,6 +182,12 @@ warns on the folders \verb{output/} and \verb{output_fake_data/} that
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
+
+\code{vNN_one_file.R} at the top level is the file of \code{\link[=to_one_file]{to_one_file()}}. It holds
+the paths of a server by design, and pbn writes it. So \code{loc_per_file},
+\code{cyclomatic_complexity}, \code{no_local_assign} and \code{no_absolute_paths} do not
+read it, and no rule takes it for a run script. Put it in git: it is what
+ran on the server.
 }
 \section{The file pbn.yml}{
 
@@ -211,7 +273,7 @@ home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
 writeLines(
-  'pbn::initialize_project(version = "v01", home = ".", data_raw = "x")',
+  'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
 )
 pbn::check_project(home)

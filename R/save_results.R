@@ -61,10 +61,17 @@
 #'   [initialize_project()] computes it before it sources the files. The
 #'   rule `manifest_source` needs the run script in it, so `save_results()`
 #'   stops when `<version>_run.R` did not exist.
-#' - For the scenario `"real"` only, `data_md5`, the md5 of each file directly
-#'   in `data_raw` when [run_plan()] started. So it names the data that the
-#'   run read, also after a change of a file since [initialize_project()].
-#'   `save_results()` stops for `"real"` when `data_raw` did not exist when
+#' - For the scenario `"real"` only, `data_files`, the fingerprint of the
+#'   files under the folders of `folders` of [initialize_project()] when
+#'   [run_plan()] started. It is a data.frame with the columns `file`, `size`
+#'   and `mtime`. Each `file` is `<folder name>/<path in the folder>`, for
+#'   example `main/sub/d.csv`, and never the path of the folder. pbn reads no
+#'   content of a data file. The section The fingerprint of the data of
+#'   [initialize_project()] gives the rules. So the manifest names the data
+#'   that the run read, also after a change of a file since
+#'   [initialize_project()]. The same files in another place, with the same
+#'   modification times, give the same manifest.
+#'   `save_results()` stops for `"real"` when a folder did not exist when
 #'   [initialize_project()] ran.
 #' - For a fake scenario only, `fake_md5`, one md5 of the code of the data
 #'   functions of [add_data()], without their source references: each `fn`,
@@ -317,7 +324,7 @@
 #'   file.path(home, "v01_functions", "_cfg.R")
 #' )
 #' env <- new.env()
-#' pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
+#' pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #'
 #' scenarios <- pbn::scenarios(env$CFG)
 #' p <- plnr::Plan$new()
@@ -386,14 +393,14 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
 # gets the seconds of each part, the failed rules of check_results() and the
 # assertions.
 save_steps <- function(r, index, table, info, gitexclude, done) {
-  # The md5 of the raw data that run_plan() read, from its stamp.
+  # The fingerprint of the raw data that run_plan() read, from its stamp.
   stamp <- attr(r, "pbn_run", exact = TRUE)
-  data_md5 <- stamp[["data_md5"]]
-  if (is.null(data_md5)) {
-    data_md5 <- state$data_md5
+  data_files <- stamp[["data_files"]]
+  if (is.null(data_files)) {
+    data_files <- state$data_files
   }
   start <- proc.time()[["elapsed"]]
-  objects <- build_objects(r, index, table, info, gitexclude, data_md5)
+  objects <- build_objects(r, index, table, info, gitexclude, data_files)
   done$seconds[["write"]] <- elapsed_since(start)
   start <- proc.time()[["elapsed"]]
   done$contract <- contract_failures(objects)
@@ -559,8 +566,9 @@ check_settings <- function(index, table, info) {
   return(invisible(NULL))
 }
 
-# Stops when the run script is not in source_md5, when "real" has no
-# data_md5, or when a fake scenario has no expect_ function.
+# Stops when the run script is not in source_md5, when a folder of the
+# project did not exist for "real", or when a fake scenario has no expect_
+# function.
 check_inputs <- function(table) {
   script <- paste0(state$version, "_run.R")
   if (!script %in% names(state$source_md5)) {
@@ -574,10 +582,17 @@ check_inputs <- function(table) {
       call. = FALSE
     )
   }
-  if ("real" %in% table$scenario && is.null(state$data_md5)) {
+  absent <- state$folders_absent
+  if ("real" %in% table$scenario && length(absent) > 0) {
     stop(
-      "The data_raw folder ",
-      state$data_raw,
+      if (length(absent) == 1) "The folder " else "The folders ",
+      paste0(
+        absent,
+        " (",
+        state$folders[absent],
+        ")",
+        collapse = ", "
+      ),
       " did not exist when initialize_project() ran, so pbn cannot save ",
       "the scenario \"real\". pbn saved nothing.",
       call. = FALSE
@@ -616,13 +631,13 @@ expect_function <- function(scenario) {
 # results.qs2 of each simulation in `runs`, the object of
 # results_gitexclude.qs2 or NULL of each simulation in `private`, and, for
 # more than 1 simulation, the stacked object of results.qs2.
-build_objects <- function(r, index, table, info, gitexclude, data_md5) {
+build_objects <- function(r, index, table, info, gitexclude, data_files) {
   fake_md5 <- function_md5(data_code(info))
   out <- list()
   for (i in seq_len(nrow(table))) {
     s <- table$scenario[i]
     runs <- lapply(seq_len(table$sims[i]), function(sim) {
-      x <- build_object(r, index, table, info, s, sim, fake_md5, data_md5)
+      x <- build_object(r, index, table, info, s, sim, fake_md5, data_files)
       return(split_results(x, gitexclude))
     })
     out[[s]] <- list(
@@ -639,7 +654,7 @@ build_objects <- function(r, index, table, info, gitexclude, data_md5) {
 
 # The results object of one scenario and simulation, with every element.
 # split_results() splits it into the two files.
-build_object <- function(r, index, table, info, s, sim, fake_md5, data_md5) {
+build_object <- function(r, index, table, info, s, sim, fake_md5, data_files) {
   here <- index[index$scenario == s & index$sim == sim, , drop = FALSE]
   kinds <- info$kinds
   if (s == "real") {
@@ -675,7 +690,7 @@ build_object <- function(r, index, table, info, s, sim, fake_md5, data_md5) {
       source_md5 = state$source_md5
     ),
     if (s == "real") {
-      list(data_md5 = data_md5)
+      list(data_files = data_files)
     } else {
       list(fake_md5 = fake_md5)
     },

@@ -24,9 +24,9 @@ test_that("each shipped set names every rule of check_project() in its order, an
   levels <- vapply(rules, function(r) return(r$level), character(1))
   expect_identical(
     unname(levels),
-    c(rep("fail", 14), "warn")
+    c(rep("fail", 16), "warn")
   )
-  expect_identical(names(levels)[15], "unknown_path")
+  expect_identical(names(levels)[15:17], c("no_absolute_paths", "blocks_list", "unknown_path"))
   expect_identical(rules$loc_per_file$limit, 1000L)
   expect_identical(rules$cyclomatic_complexity$limit, 15L)
   expect_identical(rules$no_local_assign$forbid, local_assign_constructs())
@@ -61,7 +61,10 @@ test_that("the bytes of each shipped set are pinned", {
   # every project that names it. A change to the house rules is a new set.
   # The md5 is of the bytes without CR, so that a checkout with CR LF line
   # ends, as git can make on Windows, gives the same md5.
-  pinned <- c(house_2026_11_17 = "c3be3eafdb6509f63f8cec80181148c7")
+  # house_2026_11_17 got the rules no_absolute_paths and blocks_list, and then
+  # the file.path() part of no_absolute_paths, before the first release of
+  # pbn, which had no tag and no build. Those were the changes of its md5.
+  pinned <- c(house_2026_11_17 = "0720f433848a0fb2b08d8f74372ac420")
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")
   md5 <- vapply(
@@ -502,6 +505,10 @@ test_that("pbn.yml cannot weaken or allow a locked rule, or a rule of check_resu
   expect_identical(read_rules(p$home)$rules$results_contract$level, "fail")
 })
 
+# The rules of the house set that came after the output of the fixture
+# check_project_before_rules.txt.
+rules_after_fixture <- c("no_absolute_paths", "blocks_list")
+
 test_that("a project with only extends gives the output of pbn before pbn.yml, with the line of the rules and the count of OFF", {
   fixture <- test_path("fixtures", "check_project_before_rules.txt")
   for (name in project_variant_names) {
@@ -529,14 +536,29 @@ test_that("a project with only extends gives the output of pbn before pbn.yml, w
       ),
       info = name
     )
+    # The rules that came after the fixture pass on each variant, and the
+    # other lines are those of the fixture.
+    body <- as.character(out[-c(1, length(out))])
+    later <- sub("^[A-Z]+  ([a-z_]+)  .*$", "\\1", body) %in% rules_after_fixture
+    expect_identical(body[!later], before[2:(n - 1)], info = name)
     expect_identical(
-      as.character(out[-c(1, length(out))]),
-      before[2:(n - 1)],
+      body[later],
+      paste0("PASS  ", rules_after_fixture, "  ", vapply(
+        project_rules()[rules_after_fixture],
+        function(d) return(d[[2]]),
+        character(1),
+        USE.NAMES = FALSE
+      )),
       info = name
     )
+    passed <- as.integer(sub(" PASS.*$", "", before[n]))
     expect_identical(
       out[length(out)],
-      paste0(before[n], ", 0 OFF"),
+      paste0(
+        passed + length(rules_after_fixture),
+        sub("^[0-9]+", "", before[n]),
+        ", 0 OFF"
+      ),
       info = name
     )
     status <- if (attr(out, "counts")[["FAIL"]] > 0) 1 else 0
@@ -572,7 +594,7 @@ test_that("off runs no rule and prints OFF, and warn turns each FAIL of a rule i
     "Rules: house_2026_11_17, 2 overrides, 0 allowed paths (pbn.yml)"
   )
   expect_identical(out[12], "OFF  loc_per_file  off in pbn.yml")
-  expect_identical(out[length(out)], "13 PASS, 1 WARN, 0 FAIL, 1 OFF")
+  expect_identical(out[length(out)], "15 PASS, 1 WARN, 0 FAIL, 1 OFF")
 
   # A rule that is off does not run: its function is never called.
   calls <- 0
@@ -719,7 +741,7 @@ test_that("check_project.R ends with status 0 when pbn.yml turns each FAIL into 
     "WARN  lower_case_names  adhoc/Notes.txt",
     fixed = TRUE
   )
-  expect_match(res$stdout, "14 PASS, 1 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
+  expect_match(res$stdout, "16 PASS, 1 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
 })
 
 test_that("initialize_project gives org the limit of loc_per_file, and Inf when the rule warns or is off", {

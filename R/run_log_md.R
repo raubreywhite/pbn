@@ -331,7 +331,38 @@ md_data <- function(log) {
       ""
     )
   }
-  return(c(lines, md_cache_lines(records, scen$scenario, data)))
+  return(c(
+    lines,
+    md_folders(log$folders, scen$scenario),
+    md_cache_lines(records, scen$scenario, data)
+  ))
+}
+
+# The folders that the scenario real reads, by name with their number of
+# files, when "real" is one of `scenarios`. `folders` is a data.frame with
+# the columns `name`, `files` and `absent`, or NULL. The log never holds the
+# path of a folder.
+md_folders <- function(folders, scenarios) {
+  if (NROW(folders) == 0 || !"real" %in% scenarios) {
+    return(character(0))
+  }
+  cells <- paste0(
+    md_inline(folders$name),
+    ifelse(
+      folders$absent,
+      " (absent)",
+      paste0(" (", folders$files, ifelse(folders$files == 1, " file)", " files)"))
+    )
+  )
+  return(c(
+    paste0(
+      "The scenario real reads the ",
+      if (nrow(folders) == 1) "folder " else "folders ",
+      and_list(cells),
+      "."
+    ),
+    ""
+  ))
 }
 
 # How the data of one data element and scenario came, from its records:

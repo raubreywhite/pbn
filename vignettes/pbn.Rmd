@@ -454,7 +454,7 @@ script[2]
 run_lines <- function(status = 0) {
   out <- callr::rscript(run_file, wd = home, show = FALSE, fail_on_status = FALSE)
   stopifnot(out$status == status)
-  lines <- grep("^pbn: data", strsplit(out$stdout, "\n")[[1]], value = TRUE)
+  lines <- grep("^pbn: data", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE)
   cat(lines, sep = "\n")
   invisible(lines)
 }

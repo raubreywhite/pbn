@@ -162,9 +162,19 @@ run_rscript <- function(file, log) {
   )
   # R_LIBS is a transport between pbn's own processes, not a configuration.
   Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
+  # The new session also sets the library paths itself. Under R CMD check on
+  # Windows the start-up of R sets other paths, so R_LIBS alone is not enough.
+  launcher <- file.path(dirname(log), "launch_one_file.R")
+  writeLines(
+    c(
+      paste0(".libPaths(", paste(deparse(.libPaths()), collapse = ""), ")"),
+      paste0("source(", encodeString(file, quote = "\""), ")")
+    ),
+    launcher
+  )
   status <- suppressWarnings(system2(
     rscript,
-    shQuote(file),
+    shQuote(launcher),
     stdout = log,
     stderr = log
   ))

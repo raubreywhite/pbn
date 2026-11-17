@@ -10,6 +10,13 @@ policy package of the family. `org` (paths), `cohort` (exclusions) and
 This is a trial version. It holds the smallest set of functions that one
 real project can use.
 
+## For an AI agent
+
+Read <https://www.rwhite.no/pbn/articles/pbn.md> before you write or
+change the run script of an analysis project. It is the manual of pbn as
+one worked example, in plain Markdown, built for an agent to read in one
+piece. <https://www.rwhite.no/pbn/llms.txt> lists every other page.
+
 ## Installation
 
 ``` r
@@ -42,7 +49,7 @@ layout with
 [`pbn::check_project()`](https://www.rwhite.no/pbn/reference/check_project.md).
 
 The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html)
-builds a small fake project file by file, and runs it. Read it first.
+is the manual. It builds a small fake project file by file, and runs it.
 
 ## The functions
 

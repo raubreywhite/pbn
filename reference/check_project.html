@@ -140,6 +140,16 @@ fails. The detail gives the file, the function and its score. An entry
 of <code>pbn_allow.txt</code> allows each function of one file.</p></li>
 <li><p><code>no_environment_variables</code> (FAIL): a run script or a file in a functions
 folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
+<li><p><code>no_local_assign</code> (FAIL): an <code>.R</code> file calls <code><a href="https://rdrr.io/r/base/eval.html" class="external-link">local()</a></code>, <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>,
+<code><a href="https://rdrr.io/r/base/delayedAssign.html" class="external-link">delayedAssign()</a></code>, <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInNamespace()</a></code> or <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInMyNamespace()</a></code>, or
+uses <code>&lt;&lt;-</code> or <code>-&gt;&gt;</code>, at any depth. Each of these creates or changes an
+object in a place other than the line where it stands. The rule reads
+the <code>.R</code> files of <code>loc_per_file</code>, parses each file and runs no code of
+it. A call with the prefix of its own package, <code>base::</code> or <code>utils::</code>,
+counts. A call of the same name from another package passes. A variable or an argument named <code>local</code> or <code>assign</code>
+passes, and so do <code>&lt;-</code>, <code>-&gt;</code>, <code>=</code> and <code>:=</code>. The rule skips a file that R
+cannot parse. The detail gives the file, the line and the construct. An
+entry of <code>pbn_allow.txt</code> allows each finding of one file.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code> and
@@ -181,8 +191,9 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 14 PASS, 0 WARN, 0 FAIL</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 15 PASS, 0 WARN, 0 FAIL</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

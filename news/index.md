@@ -386,6 +386,16 @@ each scenario. To move a project, change these items:
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
   rule `cyclomatic_complexity`: a function of the project MUST score at
   most 15 in cyclocomp. pbn imports cyclocomp.
+- New
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  rule `no_local_assign`: an `.R` file of the project MUST NOT call
+  [`local()`](https://rdrr.io/r/base/eval.html),
+  [`assign()`](https://rdrr.io/r/base/assign.html),
+  [`delayedAssign()`](https://rdrr.io/r/base/delayedAssign.html),
+  [`assignInNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html)
+  or
+  [`assignInMyNamespace()`](https://rdrr.io/r/utils/getFromNamespace.html),
+  or use `<<-` or `->>`.
 
 ## pbn 2026.11.22
 

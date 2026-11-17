@@ -83,6 +83,11 @@
 <p>pbn (“paint by numbers”) holds the house layout of an analysis project, the checks of that layout, and a few shared helpers. It is the one policy package of the family. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) are mechanism packages without opinions.</p>
 <p>This is a trial version. It holds the smallest set of functions that one real project can use.</p>
 <div class="section level2">
+<h2 id="for-an-ai-agent">For an AI agent<a class="anchor" aria-label="anchor" href="#for-an-ai-agent"></a>
+</h2>
+<p>Read <a href="https://www.rwhite.no/pbn/articles/pbn.md" class="uri">https://www.rwhite.no/pbn/articles/pbn.md</a> before you write or change the run script of an analysis project. It is the manual of pbn as one worked example, in plain Markdown, built for an agent to read in one piece. <a href="https://www.rwhite.no/pbn/llms.txt" class="uri">https://www.rwhite.no/pbn/llms.txt</a> lists every other page.</p>
+</div>
+<div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -104,7 +109,7 @@
 <span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/make_outputs.html">make_outputs</a></span><span class="op">(</span><span class="va">make_output</span>, <span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
 <p>From the project folder, run it with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
-<p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> builds a small fake project file by file, and runs it. Read it first.</p>
+<p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> is the manual. It builds a small fake project file by file, and runs it.</p>
 </div>
 <div class="section level2">
 <h2 id="the-functions">The functions<a class="anchor" aria-label="anchor" href="#the-functions"></a>

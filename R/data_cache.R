@@ -665,11 +665,16 @@ check_gitignored <- function(home, rel, done) {
 # one place, so that the tests can count the calls.
 git_ignored <- function(git, home, rel) {
   # With --stdin, git reads the paths from its input and prints each one
-  # that it ignores.
+  # that it ignores. git keeps a CR at the end of a line as part of the
+  # path, and system2(input = ) ends each line in CR LF on Windows. So pbn
+  # writes the input file itself, with LF line ends on each platform.
+  input <- tempfile("pbn_paths_")
+  on.exit(unlink(input), add = TRUE)
+  write_lf_lines(rel, input)
   ignored <- suppressWarnings(system2(
     git,
     c("-C", shQuote(home), "-c", "core.quotePath=false", "check-ignore", "--no-index", "--stdin"),
-    input = rel,
+    stdin = input,
     stdout = TRUE,
     stderr = FALSE
   ))
@@ -678,6 +683,14 @@ git_ignored <- function(git, home, rel) {
     stop("git check-ignore failed in ", home, call. = FALSE)
   }
   return(ignored)
+}
+
+# Writes the strings `x` to `file` as UTF-8, each followed by LF. A file
+# connection in text mode writes CR LF on Windows, so this one writes bytes.
+write_lf_lines <- function(x, file) {
+  bytes <- charToRaw(paste0(enc2utf8(x), "\n", collapse = ""))
+  writeBin(bytes, file)
+  return(invisible(file))
 }
 
 # The strings `x` as "a", "a and b" or "a, b and c".

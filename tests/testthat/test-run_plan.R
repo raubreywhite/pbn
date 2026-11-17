@@ -329,9 +329,21 @@ test_that("a new worker starts with the library paths of this R session", {
   lib <- local_probe_library()
   cl <- make_cluster(1)
   withr::defer(parallel::stopCluster(cl))
-  first_call <- function() return(.libPaths())
+  first_call <- function() {
+    return(list(paths = .libPaths(), r_libs = Sys.getenv("R_LIBS")))
+  }
   environment(first_call) <- baseenv()
-  expect_true(lib %in% parallel::clusterCall(cl, first_call)[[1]])
+  seen <- parallel::clusterCall(cl, first_call)[[1]]
+  # The worker reports what it saw, so that a failure on another platform
+  # shows whether R_LIBS reached the worker.
+  expect_true(
+    lib %in% seen$paths,
+    info = paste0(
+      "lib: ", lib,
+      "\nR_LIBS of the worker: ", seen$r_libs,
+      "\n.libPaths() of the worker: ", paste(seen$paths, collapse = "; ")
+    )
+  )
 })
 
 test_that("prepare_workers() gives a worker the library paths of this R session", {

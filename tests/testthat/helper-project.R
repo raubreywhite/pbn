@@ -89,6 +89,26 @@ cfg_lines <- function(counter = NULL) {
   ))
 }
 
+# The R code, with the indent `indent`, that appends the line
+# "<scenario> <sim>" to the file CFG$counter. Two workers can append at the
+# same time. On Windows an append finds the end of the file and then writes,
+# in two steps, so the second process can write over the line of the first.
+# dir.create() makes the folder <counter>.lock, or fails when it exists, in
+# one step, so one process at a time appends.
+counter_lines <- function(indent) {
+  return(paste0(indent, c(
+    "lock <- paste0(CFG$counter, \".lock\")",
+    "tries <- 0",
+    "while (!dir.create(lock, showWarnings = FALSE)) {",
+    "  tries <- tries + 1",
+    "  if (tries > 1000) stop(\"the counter stays locked: \", lock)",
+    "  Sys.sleep(0.01)",
+    "}",
+    "cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
+    "unlink(lock, recursive = TRUE)"
+  )))
+}
+
 # The data function. "real" reads d.csv of data_raw. "known" plants the
 # values by hand: group a holds 4 ones of x, and the mean of y is 1 in group
 # a and 3 in group b. "null" draws with the seed that pbn sets.
@@ -96,8 +116,7 @@ get_data_lines <- function() {
   return(c(
     "get_data <- function(scenario, sim) {",
     "  if (!is.null(CFG$counter)) {",
-    "    # One string, so one write for each call, also from two workers.",
-    "    cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
+    counter_lines("    "),
     "  }",
     "  if (scenario == \"real\") {",
     "    return(utils::read.csv(file.path(org::project$data_raw, \"d.csv\")))",
@@ -251,15 +270,19 @@ skip_if_pbn_not_installed <- function() {
   return(invisible(TRUE))
 }
 
-# Runs a script of the project in a new R session.
+# Runs a script of the project in a new R session. On Windows each line of
+# the output of a new R session ends in CR LF, so the output here ends each
+# line in LF, as on the other platforms.
 run_script <- function(home, script = "v01_run.R") {
-  return(callr::rscript(
+  res <- callr::rscript(
     file.path(home, script),
     wd = home,
     show = FALSE,
     stderr = "2>&1",
     fail_on_status = FALSE
-  ))
+  )
+  res$stdout <- gsub("\r\n", "\n", res$stdout, fixed = TRUE)
+  return(res)
 }
 
 md5_of <- function(file) {

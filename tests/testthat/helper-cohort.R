@@ -24,7 +24,7 @@ cohort_function_files <- function() {
   return(list(
     "data_raw.R" = c(
       "data_raw <- function(scenario, sim) {",
-      "  cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
+      counter_lines("  "),
       "  if (scenario == \"real\") {",
       "    return(utils::read.csv(file.path(org::project$data_raw, \"d.csv\")))",
       "  }",

@@ -321,3 +321,22 @@ test_that("check_gitignored checks 1000 paths in one call of git, and names the 
     fixed = TRUE
   )
 })
+
+test_that("git_ignored gives git each path on a line that ends in LF, also on Windows, so that a CR never becomes part of a path", {
+  file <- withr::local_tempfile()
+  write_lf_lines(c("a/b.qs2", "c_gitexclude/\u00e6.qs2"), file)
+  expect_identical(
+    readBin(file, "raw", 100),
+    charToRaw(enc2utf8("a/b.qs2\nc_gitexclude/\u00e6.qs2\n"))
+  )
+
+  # git reads "sim_0001.qs2\r" as a path that *.qs2 does not match.
+  p <- local_project()
+  git_in(p$home, "init", "-q")
+  write_lines(p$home, ".gitignore", "*.qs2")
+  rel <- c(
+    "v01_results/null/sims_gitexclude/sim_0001.qs2",
+    "v01_results/real/results_gitexclude.qs2"
+  )
+  expect_identical(git_ignored(git_binary(), p$home, rel), rel)
+})

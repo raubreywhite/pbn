@@ -504,7 +504,7 @@ file.copy(clean_file, file.path(root, "data_clean_copy.R"))
 code <- sub("^  d$", "  d[!is.na(outcome)]", readLines(clean_file))
 writeLines(code, clean_file)
 out <- callr::rscript(run_file, wd = home, show = FALSE, fail_on_status = FALSE)
-lines <- strsplit(out$stdout, "\n")[[1]]
+lines <- strsplit(out$stdout, "\r?\n")[[1]]
 cat(lines[grep(" failed:$", lines)[1] + 0:1], sep = "\n")
 ```
 
@@ -635,12 +635,12 @@ dir.create(file.path(home, "adhoc"))
 writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
 out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
 out$status
-cat(grep("FAIL", strsplit(out$stdout, "\n")[[1]], value = TRUE), sep = "\n")
+cat(grep("FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
 ```{r, include = FALSE}
-stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\n")[[1]], "FAIL  lower_case_names  adhoc/Notes.txt")))
+stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "FAIL  lower_case_names  adhoc/Notes.txt")))
 ```
 
 ## Manuscripts

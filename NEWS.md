@@ -69,6 +69,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - New `get_data(p, scenario, sim)` and `get_argset(p, scenario, sim, name, i)` give the data and the argset of one analysis without its name. An example is `pbn::get_data(p, "real")$d`. `no_local_copy_of_pbn_function` allows a project function `get_data`.
 - New argument `coverage` of `expect_recovers()`. With `FALSE`, it makes no coverage assertion, needs no `lower` and `upper`, and needs 100 simulations.
 - `read_results(sim = 1)` reads the `results.qs2` of a scenario with 1 simulation.
+- On Windows, in a git repository, `run_plan()` and `save_results()` stopped even when `.gitignore` held `*gitexclude*`. pbn now gives `git check-ignore` its paths with LF line ends, because git reads the CR of CR LF as part of a path.
 
 # pbn 2026.11.22
 

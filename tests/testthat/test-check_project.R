@@ -168,12 +168,14 @@ test_that("results_contract fails on a results file without the scenario in its 
 
 test_that("manual_manuscript_names fails on a name outside the pattern", {
   p <- local_project()
-  write_lines(p$home, "manuscript/manual/v01_ab.docx", "")
+  # Not v01_ab.docx: where file names ignore case, as on Windows, that name
+  # is the file v01_AB.docx of local_project().
+  write_lines(p$home, "manuscript/manual/v01_cd.docx", "")
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), "manual_manuscript_names")
   expect_identical(
     found$path[found$status == "FAIL"],
-    "manuscript/manual/v01_ab.docx"
+    "manuscript/manual/v01_cd.docx"
   )
 })
 

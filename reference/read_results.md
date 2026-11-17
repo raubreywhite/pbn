@@ -85,6 +85,7 @@ fails a call in `manuscript/built/` that gives a `scenario` other than
 
 Other results:
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md),
+[`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md),
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 
 ## Examples

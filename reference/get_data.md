@@ -17,8 +17,8 @@ get_argset(p, scenario = "real", sim = 1, name, i = 1)
 - p:
 
   A plan from `plnr::Plan$new()`, with data from
-  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) and
-  analyses from
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md).
+  `get_argset()` also needs analyses from
   [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
 
 - scenario:
@@ -61,13 +61,26 @@ is the data `d` of `"real"`.
 `get_argset(p, "null", 3, "models", 2)` is
 `p$get_argset("null__sim_0003__models__2")`.
 
-Call both after
-[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) and
+Call `get_argset()` after
+[`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
+Call `get_data()` after
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md), before
+or after
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md). Before
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
-before or after
-[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md). Both
-stop on a scenario or a simulation that the plan does not hold, and the
-error names the values that it holds. `get_argset()` also stops on a
+`get_data()` takes the scenarios of the last call of
+[`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md) before
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md).
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+forgets them. It then calls each data function with the scenario, the
+simulation and the settings, in the same way as plnr. The value then has
+no element `hash`. So the line `d <- pbn::get_data(p, "real")$d` works
+directly after
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) in a run
+script.
+
+Both stop on a scenario or a simulation that the plan does not hold, and
+the error names the values that it holds. `get_argset()` also stops on a
 kind or a counter that the plan does not hold for that scenario. An
 example is a kind with `control = TRUE` for `"real"`.
 

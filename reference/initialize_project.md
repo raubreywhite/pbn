@@ -97,9 +97,9 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpyKjASy/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpZRWtob/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpyKjASy/pbn_initialize_example/v01_results"
+#> [1] "/tmp/RtmpZRWtob/pbn_initialize_example/v01_results"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

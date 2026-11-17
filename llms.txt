@@ -100,6 +100,8 @@ The help page of each function holds its rules. The
   : Read the results object of a project version
 - [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
   : Check a results object against the contract
+- [`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md) :
+  Render the run log to a PDF
 
 ## Checks of fake scenarios
 

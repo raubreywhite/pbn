@@ -128,8 +128,11 @@ The rules:
   `vNN_results/`, `vNN_cache_gitexclude/`, `vNN_test/`,
   `vNN_check_functions.R` and `check_project.R`, among others. A
   top-level dotfile and a top-level `*.Rproj` file are never unknown.
-  The rule reads the top level only, so it never warns on the folders
-  `output/` and `output_fake_data/` that
+  The rule also reads the files directly in `vNN_results/`. There it
+  names the run log `run.md`, its PDF `run.pdf` and its errors file
+  `run_errors_gitexclude.md`, and no rule needs them. It reads no
+  deeper, so it never warns on the folders `output/` and
+  `output_fake_data/` that
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
   writes in `vNN_results/<scenario>/`, or on the folder
   `sims_gitexclude/` that

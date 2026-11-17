@@ -43,16 +43,25 @@ first. For each scenario of `scenarios`, `make_outputs()` does this:
 - A fake scenario with `output = TRUE`: it calls `fn` with
   `dir = <version>_results/<scenario>/output_fake_data/`. Then it
   renames each file in `dir` that `fn` wrote, so that the name starts
-  with `fake_data_`. The results of a scenario with more than 1
-  simulation are the stacked results, with a column `sim` in each
-  data.frame.
+  with `fake_data_`. It stops when a new name equals the name of another
+  file in `dir`. It ignores the case of the letters, as Windows and
+  macOS do. The results of a scenario with more than 1 simulation are
+  the stacked results, with a column `sim` in each data.frame.
 
 - A fake scenario without `output = TRUE`: nothing.
 
 Before it calls `fn`, `make_outputs()` deletes the folder `dir` and
 creates it again. So no file of an earlier run stays. Keep no other file
-in that folder. After each scenario, it prints one line with the folder
-and the number of files.
+in that folder. It stops when the folder is still there afterwards, for
+example because another program holds a file open on Windows. After each
+scenario, it prints one line with the folder and the number of files.
+
+After
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+in the same R session, `make_outputs()` adds its files and its seconds
+for each scenario to the run log `<version>_results/run.md`. When it
+stops, the result of the log says so, and the errors file of the log
+holds the error. In another R session it does not change the run log.
 
 `make_outputs()` skips a scenario with one printed line when its
 `results.qs2` does not exist, or when its `check.csv` holds an assertion

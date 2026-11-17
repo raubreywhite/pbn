@@ -161,6 +161,28 @@
 <li>
 <code>read_results(sim = 1)</code> reads the <code>results.qs2</code> of a scenario with 1 simulation.</li>
 <li>On Windows, in a git repository, <code><a href="../reference/run_plan.html">run_plan()</a></code> and <code><a href="../reference/save_results.html">save_results()</a></code> stopped even when <code>.gitignore</code> held <code>*gitexclude*</code>. pbn now gives <code>git check-ignore</code> its paths with LF line ends, because git reads the CR of CR LF as part of a path.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> writes the run log <code>vNN_results/run.md</code>. It holds the result, the failures first, the scenarios, the data, the exclusions, the assertions, the files and the timings. It also writes it when it stops on a failed assertion or a failed rule of <code><a href="../reference/check_results.html">check_results()</a></code>.</li>
+<li>Only the sections When and Timings of the run log change in every run. So the log goes to git, and <code>git diff</code> shows the real changes of a run.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> measures each data step and each analysis where it runs, also on a worker. The timings go to the run log, and not to the value of <code><a href="../reference/run_plan.html">run_plan()</a></code>, a results file or a cache key.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> writes the run log with the failed analyses when it stops on them after <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. At its start, it replaces the run log with one that says the run has not finished.</li>
+<li>The run log never holds the text of an error. It numbers each error, and <code>vNN_results/run_errors_gitexclude.md</code> holds the text when git ignores that file.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> writes the run log as failed when it stops in the checks of its arguments.</li>
+<li>
+<code><a href="../reference/make_outputs.html">make_outputs()</a></code> adds its files and its seconds to the run log of <code><a href="../reference/save_results.html">save_results()</a></code> in the same R session.</li>
+<li>New <code><a href="../reference/render_run.html">render_run()</a></code> renders the run log to <code>run.pdf</code> with Quarto and its Typst format, without LaTeX. A run never calls it. It writes the PDF to a temporary file and renames it.</li>
+<li>
+<code>unknown_path</code> reads the files directly in <code>vNN_results/</code>, and knows <code>run.md</code>, <code>run.pdf</code> and <code>run_errors_gitexclude.md</code> there.</li>
+<li>
+<code>get_data(p, scenario, sim)</code> works directly after <code><a href="../reference/add_data.html">add_data()</a></code>. It takes the scenarios of the last <code><a href="../reference/scenarios.html">scenarios()</a></code> before <code><a href="../reference/add_data.html">add_data()</a></code>, which the plan keeps.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> and <code><a href="../reference/make_outputs.html">make_outputs()</a></code> stop when a file that they delete stays, for example because another program holds it open on Windows. The error names the file.</li>
+<li>
+<code><a href="../reference/make_outputs.html">make_outputs()</a></code> compares the new names of the files of a fake scenario in lower case, as Windows and macOS do.</li>
+<li>pbn passes R CMD check on Windows (R-hub, R-devel).</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

@@ -252,6 +252,58 @@ each scenario. To move a project, change these items:
   stopped even when `.gitignore` held `*gitexclude*`. pbn now gives
   `git check-ignore` its paths with LF line ends, because git reads the
   CR of CR LF as part of a path.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes the run log `vNN_results/run.md`. It holds the result, the
+  failures first, the scenarios, the data, the exclusions, the
+  assertions, the files and the timings. It also writes it when it stops
+  on a failed assertion or a failed rule of
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+- Only the sections When and Timings of the run log change in every run.
+  So the log goes to git, and `git diff` shows the real changes of a
+  run.
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+  measures each data step and each analysis where it runs, also on a
+  worker. The timings go to the run log, and not to the value of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md), a
+  results file or a cache key.
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) writes
+  the run log with the failed analyses when it stops on them after
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  At its start, it replaces the run log with one that says the run has
+  not finished.
+- The run log never holds the text of an error. It numbers each error,
+  and `vNN_results/run_errors_gitexclude.md` holds the text when git
+  ignores that file.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes the run log as failed when it stops in the checks of its
+  arguments.
+- [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  adds its files and its seconds to the run log of
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  in the same R session.
+- New
+  [`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md)
+  renders the run log to `run.pdf` with Quarto and its Typst format,
+  without LaTeX. A run never calls it. It writes the PDF to a temporary
+  file and renames it.
+- `unknown_path` reads the files directly in `vNN_results/`, and knows
+  `run.md`, `run.pdf` and `run_errors_gitexclude.md` there.
+- `get_data(p, scenario, sim)` works directly after
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). It
+  takes the scenarios of the last
+  [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
+  before
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md), which
+  the plan keeps.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  and
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  stop when a file that they delete stays, for example because another
+  program holds it open on Windows. The error names the file.
+- [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  compares the new names of the files of a fake scenario in lower case,
+  as Windows and macOS do.
+- pbn passes R CMD check on Windows (R-hub, R-devel).
 
 ## pbn 2026.11.22
 

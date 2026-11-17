@@ -21,6 +21,7 @@ lists every exception. Each version of the analysis has a prefix, here
 v01_run.R                 the run script of version v01
 v01_functions/            the config and the functions that the run script sources
 v01_results/<scenario>/   the results and the output of each scenario
+v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
@@ -106,8 +107,8 @@ pbn::make_outputs(make_output, scenarios)
 6.  [`pbn::make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
     writes the figures and the tables.
 
-To look at the data at the console, run the script up to the calls of
-[`pbn::add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
+To look at the data at the console, run the script up to
+[`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md).
 Then get the data of one scenario and simulation, here simulation 1 of
 `real`:
 
@@ -403,7 +404,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpBYIKbz/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpCbeRy1/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -435,7 +436,7 @@ session gives the value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 12:20.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 13:49.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -473,7 +474,8 @@ unique(sub("sim_[0-9]{4}", "sim_<kkkk>", files))
 #> [14] "null/sims_gitexclude/sim_<kkkk>.qs2"                  
 #> [15] "real/output/outcome_by_group.png"                     
 #> [16] "real/results_gitexclude.qs2"                          
-#> [17] "real/results.qs2"
+#> [17] "real/results.qs2"                                     
+#> [18] "run.md"
 ```
 
 A results object is a named list. The first element is `manifest`, and
@@ -574,7 +576,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpBYIKbz/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -590,6 +592,161 @@ the check of the rows of the data. The
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
 rule `gitexclude_not_tracked` fails when git tracks a path with
 `gitexclude` in its name.
+
+## The run log
+
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+writes the log of the run to `v01_results/run.md`, and
+[`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+adds its files to it. Each run replaces the file. The log holds these
+items:
+
+- the result of the run, and the failures first
+- the scenarios, the cache and the rows of the data, and the exclusion
+  tables
+- the assertions, the output files and the results files
+- the timings
+
+It holds counts and assertions only, as `check.csv` does. It never holds
+the text of an error, because an error message can hold a value of the
+data. It gives each error a number, and
+`v01_results/run_errors_gitexclude.md` holds the text, out of git.
+[`?save_results`](https://www.rwhite.no/pbn/reference/save_results.md)
+lists the errors. These are the first sections of the log of the run
+above:
+
+``` r
+log <- readLines(file.path(home, "v01_results", "run.md"))
+cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
+```
+
+    #> # Run log of `project`, version v01
+    #> 
+    #> ## When
+    #> 
+    #> The run started 2026-11-17 13:49:23 +0000. This section and the section Timings change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
+    #> 
+    #> ## Run
+    #> 
+    #> - Result: All 9 assertions passed.
+    #> - Scenarios of this run: real, known, null and confounded.
+    #> - R version 4.6.2 (2026-10-29).
+    #> - Packages: pbn 2026.11.23, plnr 2026.11.19 and cohort 2026.11.18.
+    #> - Workers: 2.
+    #> 
+    #> ## Scenarios
+    #> 
+    #> | Scenario   | Simulations | Analyses |
+    #> |------------|------------:|---------:|
+    #> | real       |           1 |        3 |
+    #> | known      |           1 |        4 |
+    #> | null       |         140 |      560 |
+    #> | confounded |         140 |      560 |
+    #> 
+    #> ## Data
+    #> 
+    #> | Data | Scenario   | Simulations | Cache        | Rows before exclusions | Rows after exclusions | Rows of the data |
+    #> |------|------------|------------:|--------------|-----------------------:|----------------------:|-----------------:|
+    #> | d    | real       |           1 | computed 1   |                    400 |                   388 |              388 |
+    #> | d    | known      |           1 | computed 1   |                     22 |                    20 |               20 |
+    #> | d    | null       |         140 | computed 140 |                    400 |                   400 |              400 |
+    #> | d    | confounded |         140 | computed 140 |                    400 |                   400 |              400 |
+    #> 
+    #> The cache line of simulation 1 of each scenario, as run_plan() printed it:
+    #> 
+    #> ```
+    #> pbn: data d, real sim_0001: computed, because there is no cache file.
+    #> pbn: data d, known sim_0001: computed, because there is no cache file.
+    #> pbn: data d, null sim_0001: computed, because there is no cache file.
+    #> pbn: data d, confounded sim_0001: computed, because there is no cache file.
+    #> ```
+
+The log is Markdown, so it reads well as plain text and on GitHub. Put
+it in git. Only the sections When and Timings change in every run, so
+`git diff` on the log shows the real changes of a run. The section
+Timings comes last. pbn measures each data step and each analysis where
+it runs, also on a worker. With workers, the computing seconds are the
+sum over the workers:
+
+``` r
+cat(log[seq(grep("^## Timings", log), length(log))], sep = "\n")
+#> ## Timings
+#> 
+#> The numbers of this section change in every run. pbn measures each one with proc.time(), in the R session that does the work.
+#> 
+#> ### Main session
+#> 
+#> | Step                                               | Wall seconds |
+#> |----------------------------------------------------|-------------:|
+#> | run_plan()                                         |        12.59 |
+#> | save_results(): build, write and stack the results |         1.86 |
+#> | save_results(): the checks of check_results()      |         1.03 |
+#> | save_results(): the expect_ functions              |         0.02 |
+#> | save_results() in total                            |         3.00 |
+#> | make_outputs(): real                               |         0.86 |
+#> | make_outputs(): known                              |         0.20 |
+#> 
+#> Summed over the 2 workers, the data and the analyses took 9.27 computing seconds. run_plan() took 12.59 wall seconds.
+#> 
+#> ### Scenarios, in computing seconds
+#> 
+#> | Scenario   | Data | Analyses | Total |
+#> |------------|-----:|---------:|------:|
+#> | real       | 0.42 |     0.03 |  0.45 |
+#> | known      | 0.42 |     0.03 |  0.45 |
+#> | null       | 2.25 |     1.95 |  4.20 |
+#> | confounded | 2.19 |     1.97 |  4.16 |
+#> 
+#> ### Data steps, in computing seconds
+#> 
+#> | Data | Scenario   | Step         | Calls | Total | Median | Maximum |
+#> |------|------------|--------------|------:|------:|-------:|--------:|
+#> | d    | real       | raw          |     1 |  0.02 |   0.02 |    0.02 |
+#> | d    | real       | clean        |     1 |  0.30 |   0.30 |    0.30 |
+#> | d    | real       | cohort       |     1 |  0.01 |   0.01 |    0.01 |
+#> | d    | real       | after_cohort |     1 |  0.02 |   0.02 |    0.02 |
+#> | d    | known      | raw          |     1 |  0.02 |   0.02 |    0.02 |
+#> | d    | known      | clean        |     1 |  0.30 |   0.30 |    0.30 |
+#> | d    | known      | cohort       |     1 |  0.01 |   0.01 |    0.01 |
+#> | d    | known      | after_cohort |     1 |  0.02 |   0.02 |    0.02 |
+#> | d    | null       | raw          |   140 |  0.08 |   0.00 |    0.00 |
+#> | d    | null       | clean        |   140 |  0.87 |   0.01 |    0.01 |
+#> | d    | null       | cohort       |   140 |  0.12 |   0.00 |    0.01 |
+#> | d    | null       | after_cohort |   140 |  0.51 |   0.00 |    0.01 |
+#> | d    | confounded | raw          |   140 |  0.09 |   0.00 |    0.00 |
+#> | d    | confounded | clean        |   140 |  0.87 |   0.01 |    0.01 |
+#> | d    | confounded | cohort       |   140 |  0.12 |   0.00 |    0.00 |
+#> | d    | confounded | after_cohort |   140 |  0.51 |   0.00 |    0.01 |
+#> 
+#> ### Analysis kinds, in computing seconds
+#> 
+#> | Scenario   | Kind      | Analyses | Total | Median | Maximum |
+#> |------------|-----------|---------:|------:|-------:|--------:|
+#> | real       | table1    |        1 |  0.00 |   0.00 |    0.00 |
+#> | real       | models    |        1 |  0.02 |   0.02 |    0.02 |
+#> | real       | predicted |        1 |  0.00 |   0.00 |    0.00 |
+#> | known      | table1    |        1 |  0.00 |   0.00 |    0.00 |
+#> | known      | models    |        1 |  0.02 |   0.02 |    0.02 |
+#> | known      | crude     |        1 |  0.00 |   0.00 |    0.00 |
+#> | known      | predicted |        1 |  0.00 |   0.00 |    0.00 |
+#> | null       | table1    |      140 |  0.27 |   0.00 |    0.00 |
+#> | null       | models    |      140 |  0.77 |   0.00 |    0.01 |
+#> | null       | crude     |      140 |  0.69 |   0.00 |    0.01 |
+#> | null       | predicted |      140 |  0.22 |   0.00 |    0.01 |
+#> | confounded | table1    |      140 |  0.27 |   0.00 |    0.00 |
+#> | confounded | models    |      140 |  0.78 |   0.01 |    0.01 |
+#> | confounded | crude     |      140 |  0.69 |   0.00 |    0.01 |
+#> | confounded | predicted |      140 |  0.24 |   0.00 |    0.01 |
+```
+
+`pbn::render_run("v01")` renders the log to `v01_results/run.pdf`. It
+needs Quarto, and no LaTeX. The PDF is made from `run.md`, so keep it
+out of git, for example with the line `run.pdf` in `.gitignore`:
+
+``` r
+pdf <- withr::with_dir(home, pbn::render_run("v01"))
+file.exists(file.path(home, pdf))
+```
 
 ## The checks
 
@@ -692,8 +849,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 12:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 12:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -711,7 +868,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpBYIKbz/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpBYIKbz/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpBYIKbz/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCbeRy1/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -720,8 +877,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 12:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 12:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
 ```
 
 ### A cleaning step that drops a row
@@ -780,8 +937,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 12:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 12:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 13:49.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 13:49.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -838,7 +995,7 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpBYIKbz/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpCbeRy1/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- pbn::get_argset(p, "confounded", 3, "models")
 data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
@@ -1020,3 +1177,6 @@ with the project folder as the working directory.
   estimate, and an `se` independent of the estimate.
 - [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
   cannot see a file that the output function writes outside `dir`.
+- With workers, the run log cannot give the wall seconds of one
+  scenario. It gives the computing seconds of each scenario, and the
+  wall seconds of the whole run.

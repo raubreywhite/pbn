@@ -95,6 +95,9 @@ syntactic. Its name MUST NOT be one of <code>scenario</code>, <code>sim</code>, 
 <code><a href="add_analyses.html">add_analyses()</a></code> puts the setting of the scenario into each argset.</p>
 <p><code>scenarios()</code> stops on a table that breaks a rule, and on a name in
 <code>only</code> that is not in the table. The error names the problem.</p>
+<p>pbn keeps the value of the last call of <code>scenarios()</code> in this R session,
+and <code><a href="initialize_project.html">initialize_project()</a></code> removes it. <code><a href="add_data.html">add_data()</a></code> gives it to the plan,
+and <code><a href="get_data.html">get_data()</a></code> reads it there before <code><a href="add_analyses.html">add_analyses()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

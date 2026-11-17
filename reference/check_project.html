@@ -134,8 +134,11 @@ folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code> and
 <code>check_project.R</code>, among others. A top-level dotfile and a top-level
-<code>*.Rproj</code> file are never unknown. The rule reads the top level only, so
-it never warns on the folders <code>output/</code> and <code>output_fake_data/</code> that
+<code>*.Rproj</code> file are never unknown. The rule also reads the files
+directly in <code>vNN_results/</code>. There it names the run log <code>run.md</code>, its PDF
+<code>run.pdf</code> and its errors file <code>run_errors_gitexclude.md</code>, and no rule
+needs them. It reads no deeper, so it never
+warns on the folders <code>output/</code> and <code>output_fake_data/</code> that
 <code><a href="make_outputs.html">make_outputs()</a></code> writes in <code>vNN_results/&lt;scenario&gt;/</code>, or on the folder
 <code>sims_gitexclude/</code> that <code><a href="save_results.html">save_results()</a></code> writes there.</p></li>
 </ul><p>The R parser, not a regular expression, finds the calls, the assignments

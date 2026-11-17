@@ -64,8 +64,8 @@ of one analysis, so you do not type the name of the analysis.</p>
 
 
 <dl><dt id="arg-p">p<a class="anchor" aria-label="anchor" href="#arg-p"></a></dt>
-<dd><p>A plan from <code>plnr::Plan$new()</code>, with data from <code><a href="add_data.html">add_data()</a></code> and
-analyses from <code><a href="add_analyses.html">add_analyses()</a></code>.</p></dd>
+<dd><p>A plan from <code>plnr::Plan$new()</code>, with data from <code><a href="add_data.html">add_data()</a></code>.
+<code>get_argset()</code> also needs analyses from <code><a href="add_analyses.html">add_analyses()</a></code>.</p></dd>
 
 
 <dt id="arg-scenario">scenario<a class="anchor" aria-label="anchor" href="#arg-scenario"></a></dt>
@@ -103,11 +103,19 @@ the element <code>hash</code> that plnr adds. <code>pbn::get_data(p)$d</code> is
 of <code>"real"</code>.</p>
 <p><code>get_argset(p, "null", 3, "models", 2)</code> is
 <code>p$get_argset("null__sim_0003__models__2")</code>.</p>
-<p>Call both after <code><a href="add_data.html">add_data()</a></code> and <code><a href="add_analyses.html">add_analyses()</a></code>, before or after
-<code><a href="run_plan.html">run_plan()</a></code>. Both stop on a scenario or a simulation that the plan does
-not hold, and the error names the values that it holds. <code>get_argset()</code>
-also stops on a kind or a counter that the plan does not hold for that
-scenario. An example is a kind with <code>control = TRUE</code> for <code>"real"</code>.</p>
+<p>Call <code>get_argset()</code> after <code><a href="add_analyses.html">add_analyses()</a></code>. Call <code>get_data()</code> after
+<code><a href="add_data.html">add_data()</a></code>, before or after <code><a href="run_plan.html">run_plan()</a></code>. Before <code><a href="add_analyses.html">add_analyses()</a></code>,
+<code>get_data()</code> takes the scenarios of the last call of <code><a href="scenarios.html">scenarios()</a></code> before
+<code><a href="add_data.html">add_data()</a></code>. <code><a href="initialize_project.html">initialize_project()</a></code> forgets them. It then calls each data
+function with the
+scenario, the simulation and the settings, in the same way as plnr. The
+value then has no element <code>hash</code>. So the line
+<code>d &lt;- pbn::get_data(p, "real")$d</code> works directly after <code><a href="add_data.html">add_data()</a></code> in a
+run script.</p>
+<p>Both stop on a scenario or a simulation that the plan does not hold, and
+the error names the values that it holds. <code>get_argset()</code> also stops on a
+kind or a counter that the plan does not hold for that scenario. An
+example is a kind with <code>control = TRUE</code> for <code>"real"</code>.</p>
 <p>To step through an action function by hand, put these lines first in it:</p>
 <p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="cf">if</span> (plnr<span class="sc">::</span><span class="fu">is_run_directly</span>()) {</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>  argset <span class="ot">&lt;-</span> pbn<span class="sc">::</span><span class="fu">get_argset</span>(p, <span class="st">"null"</span>, <span class="dv">3</span>, <span class="st">"models"</span>)</span>

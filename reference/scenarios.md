@@ -56,6 +56,16 @@ puts the setting of the scenario into each argset.
 `scenarios()` stops on a table that breaks a rule, and on a name in
 `only` that is not in the table. The error names the problem.
 
+pbn keeps the value of the last call of `scenarios()` in this R session,
+and
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+removes it.
+[`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) gives it
+to the plan, and
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md) reads it
+there before
+[`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
+
 ## See also
 
 [`vignette("pbn")`](https://www.rwhite.no/pbn/articles/pbn.md), which

@@ -2,8 +2,8 @@
 
 `save_results()` writes one results object for each scenario and
 simulation of a run, and stacks the simulations. It checks the fake
-scenarios with their `expect_` functions, and writes nothing when an
-object fails
+scenarios with their `expect_` functions, and writes no results file
+when an object fails
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
 
 ## Usage
@@ -176,14 +176,15 @@ step that fails:
     or when an analysis of `r` failed. In a git repository, it stops
     when git does not ignore each file that it would write into a folder
     `sims_gitexclude/`. The error names the first 3 of the files that
-    git does not ignore. It writes nothing then.
+    git does not ignore. It writes no results file then, and it writes
+    the run log with its error.
 
 2.  It builds every results object, and the stacked object of each
     scenario with more than 1 simulation, and checks each with
     [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
     On a failure, it prints each failed rule with
-    [`cat()`](https://rdrr.io/r/base/cat.html), writes nothing and
-    stops.
+    [`cat()`](https://rdrr.io/r/base/cat.html), writes no results file
+    and stops.
 
 3.  For each scenario, it replaces `check.csv` with one failed
     assertion, `not checked yet`, so that
@@ -204,7 +205,10 @@ step that fails:
     `check.csv` to a temporary file in the same folder and renames it,
     so a reader never sees a part of it.
 
-5.  After every scenario, it stops when a value of `pass` is not `TRUE`.
+5.  It writes the run log `<version>_results/run.md`, also after a stop
+    in step 2, 3 or 4. The section The run log gives its content.
+
+6.  After every scenario, it stops when a value of `pass` is not `TRUE`.
     It prints each failed assertion in full with
     [`cat()`](https://rdrr.io/r/base/cat.html), because R cuts an error
     message at 1000 bytes by default. The error gives the number of
@@ -212,6 +216,91 @@ step that fails:
     files stay, so that you can find the fault, and
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
     stops on them until the assertions pass.
+
+## The run log
+
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) replaces
+the run log at its start with a short log that says that the run has not
+finished. A run that ends before the next log, for example when R stops,
+leaves that log.
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) also
+writes the full log when it stops on failed analyses, and
+[`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+adds its files to it in the same R session. Each run replaces the file.
+The log is GitHub-flavoured Markdown in ASCII, with these sections in
+this order:
+
+- `When`: the date and the time of the start of the run.
+
+- `Run`: the result in one sentence and the scenarios of the run. Then
+  the run date of each other scenario on the disk, from its manifest.
+  Then the versions of R, pbn, plnr and cohort, and the number of
+  workers.
+
+- `Failures`, only after a failure: the failed analyses with their
+  errors, the failed assertions, and the failed rules of
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+
+- `Scenarios`: the simulations and the analyses of each scenario.
+
+- `Data`: the cache and the rows of each data element.
+
+- `Exclusions`: the exclusion table of simulation 1 of each scenario.
+
+- `Assertions`: the count for each scenario, and its assertions. For
+  more than 30 assertions, the failed ones only.
+
+- `Output` and `Files`: the files of
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  and the results files, with their sizes.
+
+- `Timings`: the seconds of each data step, of each analysis kind, and
+  of each step of the main session.
+
+The log holds counts, exclusion tables and the rows of `check.csv`. It
+never holds the text of an error, because an error message can hold a
+value of the data. These errors get a number in the log:
+
+- the error of each failed analysis or data step, one number for each
+  message,
+
+- the error of an `expect_` function that stopped,
+
+- the detail of each failed rule of
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md),
+  which can quote a name of the project,
+
+- the error of `save_results()` itself, also in the checks of its
+  arguments,
+
+- the error of the output function of
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md).
+
+The file `<version>_results/run_errors_gitexclude.md` holds the full
+text of each error under its number. In a git repository, pbn writes it
+only when git ignores it, as the line `*gitexclude*` of `.gitignore`
+does. Otherwise the log says that the file is missing. Each run deletes
+the old file, and pbn writes it only when the run has an error.
+
+A project string outside a table, for example a file name of
+[`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
+is on one line as a code span. A string in a table cell is on one line
+too. So a line end in a string cannot start a heading or a list item.
+
+Only the sections `When` and `Timings` change in every run. Two runs of
+the same code on one day, with the same data and cache, give the same
+other lines. So put `run.md` in git, and `git diff` shows the real
+changes of a run.
+[`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md)
+renders the log to a PDF.
+
+pbn measures each time with
+[`proc.time()`](https://rdrr.io/r/base/proc.time.html) in the R session
+that does the work, also on a worker. A data step gets the time of its
+function. Data from the cache gets the time of the read. An analysis
+gets the time of its action function. No timing goes to the value of
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md), a
+results file, `check.csv` or a cache key.
 
 ## The files
 
@@ -240,6 +329,10 @@ Before it writes a scenario, `save_results()` deletes each file in its
 simulation of an earlier run stays, for example after `sims` became
 smaller. For a scenario that now has 1 simulation, it deletes the
 folder.
+
+`save_results()` stops when a file or a folder that it deletes is still
+there afterwards, for example because another program holds it open on
+Windows. The error names the file.
 
 pbn 2026.11.22 and older wrote the results of each simulation to
 `sim_<kkkk>/results.qs2`, and git tracked them. When `save_results()`
@@ -317,7 +410,8 @@ builds and runs a small fake project.
 
 Other results:
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md),
-[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md),
+[`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md)
 
 ## Examples
 
@@ -339,7 +433,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpyKjASy/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpZRWtob/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()
@@ -354,6 +448,7 @@ pbn::save_results(r, p, scenarios)
 #> Assertions of the scenario "null":
 #>  assertion expected observed pass
 #>    one row        1        1 TRUE
+#> pbn: wrote the run log v01_results/run.md.
 names(pbn::read_results("v01", home = home))
 #> [1] "manifest" "means"   
 

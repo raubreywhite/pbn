@@ -135,6 +135,7 @@ files of
 
 Other results:
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md),
+[`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md),
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 
 ## Examples

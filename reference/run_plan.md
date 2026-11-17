@@ -107,10 +107,31 @@ error message at 1000 bytes by default, and
 of `run_plan()` also names the first failed analysis in the order of the
 plan, and holds its error. pbn cuts that error to keep the message below
 900 bytes. When 2 or more analyses fail and all have the same error, the
-message says so. pbn then saves nothing, because
+message says so. pbn then saves no results, because
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 needs the value of `run_plan()`. The results files of an earlier run
-stay as they are.
+stay as they are. After
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+`run_plan()` writes the run log `<version>_results/run.md` with the
+failures before it stops. The section The run log of
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+describes it.
+
+After
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+`run_plan()` first replaces the run log with one that says that the run
+has not finished, and deletes the errors file
+`<version>_results/run_errors_gitexclude.md`. A call of `run_plan()`
+without
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+after it leaves this log.
+
+`run_plan()` measures the elapsed time of each data step and of each
+analysis where it runs, also on a worker. The times go to the record of
+the plan, and
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+writes them to the run log. They are not in the value, so two runs stay
+[`identical()`](https://rdrr.io/r/base/identical.html).
 
 The value carries the attribute `pbn_run`, a stamp of the plan. It holds
 no count of the runs, so two runs of one plan can be

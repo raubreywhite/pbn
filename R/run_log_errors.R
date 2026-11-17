@@ -15,6 +15,11 @@ log_errors <- function(log) {
   key <- character(0)
   about <- character(0)
   text <- character(0)
+  if (!is.null(log$run_error)) {
+    key <- "run"
+    about <- "run_plan() stopped outside an analysis with this error."
+    text <- log$run_error
+  }
   failed <- log$run$failed
   for (msg in unique(unname(failed))) {
     nm <- names(failed)[failed == msg]
@@ -199,4 +204,21 @@ write_lines_atomic <- function(lines, file) {
     stop("pbn could not write ", file, call. = FALSE)
   }
   return(invisible(file))
+}
+
+# The section of run.md for an error of run_plan() outside an analysis.
+md_run_error <- function(error, errors) {
+  if (is.null(error)) {
+    return(character(0))
+  }
+  return(c(
+    "### Error of run_plan()",
+    "",
+    paste0(
+      "run_plan() stopped outside an analysis with ",
+      error_ref(errors, "run"),
+      ". A worker stopped, or plnr or the backend of the workers failed."
+    ),
+    ""
+  ))
 }

@@ -38,11 +38,12 @@ merge_scenarios <- function(planned, table) {
 
 # Writes the log of a run that stopped in run_plan() on failed analyses,
 # when initialize_project() set a project. save_results() never runs then.
-write_failed_run <- function(run) {
+write_failed_run <- function(run, error = NULL) {
   if (is.null(state$results)) {
     return(invisible(NULL))
   }
   log <- base_log(run, run$scenarios$scenario)
+  log$run_error <- error
   log$result <- log_result(log)
   write_run_log(log)
   return(invisible(NULL))
@@ -90,11 +91,9 @@ log_result <- function(log) {
 }
 
 run_result <- function(log) {
-  if (isTRUE(log$preflight)) {
-    return(paste(
-      "save_results() stopped before it saved anything. The section",
-      "Failures names its error."
-    ))
+  stopped <- stopped_result(log)
+  if (!is.null(stopped)) {
+    return(stopped)
   }
   failed <- log$run$failed
   if (length(failed) > 0) {
@@ -125,6 +124,25 @@ run_result <- function(log) {
     return(paste0("All ", nrow(checks), " assertions passed."))
   }
   return(paste0(bad, " of ", nrow(checks), " assertions failed."))
+}
+
+# The result of a run that stopped before its analyses could all end, or
+# NULL: save_results() stopped in the checks of its arguments, or run_plan()
+# stopped outside an analysis.
+stopped_result <- function(log) {
+  if (isTRUE(log$preflight)) {
+    return(paste(
+      "save_results() stopped before it saved anything. The section",
+      "Failures names its error."
+    ))
+  }
+  if (!is.null(log$run_error)) {
+    return(paste(
+      "run_plan() stopped outside an analysis, so save_results() did not",
+      "run. The section Failures names its error."
+    ))
+  }
+  return(NULL)
 }
 
 # The versions of pbn, plnr and cohort. A package that is not loaded has its

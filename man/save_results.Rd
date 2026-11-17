@@ -68,7 +68,8 @@ values are their versions. \code{qs2} is always in the list, because it writes
 the file. With 2 or more workers of \code{\link[=run_plan]{run_plan()}}, the list also holds
 the packages loaded on a worker at the end of the run. An example is the
 package of a model. With 2 or more workers, this R session also loads
-doParallel, so the list then holds doParallel too.
+doFuture and the packages that it imports, such as future, so the list
+then holds these too.
 \item \code{run_date}, the date of the call as \code{YYYY-MM-DD}. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.
 \item \code{version}, \code{scenario}, \code{sim} and \code{sims}.

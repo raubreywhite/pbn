@@ -26,12 +26,16 @@ prints each failed analysis with its error.
 \details{
 With \code{workers = 1}, \code{run_plan()} calls \code{p$run_all()} in this R session.
 
-With \code{workers} 2 or more, \code{run_plan()} needs the packages doParallel and
-foreach. It starts a PSOCK cluster of \code{workers} new R sessions with
-\code{\link[parallel:makePSOCKcluster]{parallel::makePSOCKcluster()}}, registers it with
-\code{\link[doParallel:registerDoParallel]{doParallel::registerDoParallel()}}, and calls \code{p$run_all()} with the
-foreach path of plnr. A PSOCK cluster does not fork, so it also works on
-Windows.
+With \code{workers} 2 or more, \code{run_plan()} needs the packages future and
+doFuture. It starts a PSOCK cluster of \code{workers} new R sessions with
+\code{\link[parallel:makePSOCKcluster]{parallel::makePSOCKcluster()}}. It runs \code{p$run_all()} with the foreach path
+of plnr, on \code{\link[doFuture:registerDoFuture]{doFuture::registerDoFuture()}} with the future plan
+\link[future:cluster]{future::cluster} on that cluster. A PSOCK cluster does not fork, so it
+also works on Windows. Each future runs a batch of tasks of plnr on a
+worker, and each task holds the analyses that get the data of one key.
+Each worker gets about 4 batches when each data function with arguments
+has both \code{scenario} and \code{sim}, or when no data function has arguments.
+Otherwise each task is a batch of its own.
 
 Each worker starts with the library paths of this R session, from
 \code{\link[=.libPaths]{.libPaths()}}. While it starts the cluster, \code{run_plan()} sets the
@@ -45,20 +49,29 @@ Before the run, \code{run_plan()} gives each worker these:
 for example data.table after \code{library(data.table)} in the run script.
 \item the kind of random number generator of this R session, from
 \code{\link[=RNGkind]{RNGkind()}}.
-\item every object of the environment that \code{\link[=initialize_project]{initialize_project()}} sourced the
-functions folder into, \code{.GlobalEnv} by default. So a data function and an
-action function find \code{CFG} and the other functions of the folder. A plnr
-plan and \code{.Random.seed} are left out. Each object is copied to each
-worker, so keep large objects out of that environment.
 \item the paths in \code{org::project}, such as \code{org::project$data_raw}.
 }
 
+A future starts with an empty global environment. \code{\link[=initialize_project]{initialize_project()}}
+sources the functions folder into an environment, \code{.GlobalEnv} by
+default. Each batch takes every object of that environment to the global
+environment of its worker. A data function and an action function then find \code{CFG} and
+the other functions of the folder. A plnr plan and \code{.Random.seed} are left
+out. Each batch takes a copy of each object, so keep large objects out of
+that environment.
+
 \code{run_plan()} does not copy the R options, for example
-\code{options(digits = 3)}, and no other state of this R session.
+\code{options(digits = 3)}, and no other state of this R session. A future sets
+the option \code{mc.cores} to 1. \code{run_plan()} removes it on a worker, so
+\code{\link[parallel:mclapply]{parallel::mclapply()}} in an analysis uses its default number of cores.
+The output, the messages and the warnings of a worker come to this R
+session at the end of each batch.
 
 After the run, \code{run_plan()} stops the cluster and registers the sequential
-foreach backend, also after an error.
-
+foreach backend, also after an error. It sets the future plan and the
+option \code{doFuture.rng.onMisuse} back to their values before the run. Each
+data function and each analysis sets its own seed, so \code{run_plan()} turns
+off the warning of doFuture about random numbers for the run.
 plnr calls each data function once for each scenario and simulation, see
 \code{\link[=add_data]{add_data()}}. Each data function and each analysis sets its own seed
 before it runs, see \code{\link[=add_analyses]{add_analyses()}}. Take a function that depends only on
@@ -69,7 +82,9 @@ of the main R session can give other results on a worker. A
 data.table loses its self-reference on the way back from a worker, and
 \code{run_plan()} gives it a new one with \code{\link[data.table:setalloccol]{data.table::setalloccol()}}. It does
 this for each data.table in a value or in a plain list in a value, at any
-depth.
+depth. It does not do this for a data.table in a list column of a
+data.frame. Such a value MAY differ in \code{identical()} between 1 worker and
+more.
 
 \code{run_plan()} runs every analysis, also after an analysis fails. An error in
 an action function fails that analysis, and an error in a data function
@@ -108,6 +123,18 @@ raw data file again when its size or its modification time changed. The
 value carries the md5 in its stamp, and \code{\link[=save_results]{save_results()}} writes it to
 \code{manifest$data_md5}.
 
+An analysis that changes the shared data or an object of the functions
+folder in place fails. An analysis that leaves a new object in the global
+environment fails too. \code{\link[=add_analyses]{add_analyses()}} gives the rules.
+
+An error outside the wrappers of pbn ends the run. Examples are a worker
+that stops, and an error of plnr or of the backend of the workers.
+\code{run_plan()} then prints the whole error, and writes the run log with it
+after \code{\link[=initialize_project]{initialize_project()}}. It stops with one message that holds the
+error, cut below 900 bytes, and saves nothing. The future plan, the
+foreach backend and the options go back as after any run, and the
+cluster stops.
+
 For a data function with \code{cache = TRUE}, \code{run_plan()} needs
 \code{\link[=initialize_project]{initialize_project()}} first, and it prints one line for each scenario and
 simulation. The section Cache of \code{\link[=add_data]{add_data()}} gives the rules. A data
@@ -115,6 +142,46 @@ function that returns a \code{cohort::CohortPipeline} runs on the worker, and
 only its data.table and its exclusion table come back. The section A
 cohort as the data of \code{\link[=add_data]{add_data()}} gives the rules.
 }
+\section{Progress}{
+
+\code{run_plan()} shows one line for each scenario: its finished analyses of
+all its analyses, the time since its start, and a note. The note is one
+of these:
+\itemize{
+\item \code{"waiting"} before the scenario starts, and \code{"done"} at its end.
+\item the last text of \code{\link[=progress]{progress()}} from an analysis of the scenario, while
+that analysis runs.
+\item otherwise the time left, from the finished analyses of the scenario,
+after at least 3 and at least 10\% of them.
+}
+
+The analyses that count the rows do not count. The display replaces the
+progress bar of plnr.
+
+In an interactive terminal, the display draws its lines again in place.
+In RStudio and in another console without ANSI codes, it draws one line
+again in place. It shows the lines of each scenario at the end. While
+the display is shown, progressr holds back other output, messages and
+warnings, and shows them above it.
+
+Without an interactive session, for example with \code{Rscript} into a log,
+in knitr and in testthat, the display only adds lines:
+\itemize{
+\item nothing in the first 60 seconds of the run. A short run adds no line.
+\item after 60 seconds, a header, and one line for each scenario that started.
+\item one line when a scenario finishes.
+\item one line for a running scenario at most every 60 seconds. The line
+comes only when 10\% more of the scenario is done, in analyses or in its
+last text of \code{\link[=progress]{progress()}}.
+}
+
+A worker sends the count of its finished analyses at most every 0.5
+seconds, and at the end of each scenario and simulation. The display uses
+progressr with a handler of its own, inside \code{\link[progressr:with_progress]{progressr::with_progress()}}.
+It sets no progressr handler of the R session, so the handlers that
+another package sets stay as they are.
+}
+
 \examples{
 CFG <- list(scenarios = data.frame(scenario = c("real", "null"), sims = 2))
 p <- plnr::Plan$new()
@@ -137,6 +204,7 @@ Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=add_data]{add_data()}},
 \code{\link[=cohort_data]{cohort_data()}},
-\code{\link[=get_data]{get_data()}}
+\code{\link[=get_data]{get_data()}},
+\code{\link[=progress]{progress()}}
 }
 \concept{plan}

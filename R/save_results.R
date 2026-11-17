@@ -49,7 +49,8 @@
 #'   the file. With 2 or more workers of [run_plan()], the list also holds
 #'   the packages loaded on a worker at the end of the run. An example is the
 #'   package of a model. With 2 or more workers, this R session also loads
-#'   doParallel, so the list then holds doParallel too.
+#'   doFuture and the packages that it imports, such as future, so the list
+#'   then holds these too.
 #' - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so two
 #'   runs on one day with the same inputs and packages write the same bytes.
 #' - `version`, `scenario`, `sim` and `sims`.
@@ -445,8 +446,11 @@ check_stamp <- function(r, p, info) {
 # One row for each analysis of the plan: its name, scenario, simulation,
 # kind, whether it counts the rows, and its argset.
 analysis_index <- function(p, info) {
-  nm <- names(p$analyses)
-  argsets <- lapply(nm, function(n) return(p$analyses[[n]][["argset"]]))
+  analyses <- p$analyses
+  nm <- names(analyses)
+  # One pass over the list. A lookup by name for each analysis takes a time
+  # that grows with the square of the number of analyses.
+  argsets <- unname(lapply(analyses, function(a) return(a[["argset"]])))
   out <- data.frame(
     name = nm,
     scenario = vapply(argsets, function(a) return(a[["scenario"]]), ""),

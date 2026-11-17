@@ -11,7 +11,6 @@ elapsed_since <- function(start) {
 # Empties the log of the timings of the plan before a run.
 reset_log <- function(info) {
   assign("pending", list(), envir = info$log)
-  assign("n", 0, envir = info$log)
   return(invisible(NULL))
 }
 
@@ -19,7 +18,8 @@ reset_log <- function(info) {
 # value of its analysis. `seconds` holds the seconds of each analysis, NA
 # where there are none. `data` holds the records of the data that came back
 # with the values, and those still in `log`, the log of this R session. A
-# record that two workers got with the log is there once.
+# value holds the records of its own R session only, see take_records(), so
+# each record is there once.
 unwrap_timed <- function(r, log) {
   seconds <- rep(NA_real_, length(r))
   parts <- vector("list", length(r))
@@ -32,8 +32,7 @@ unwrap_timed <- function(r, log) {
     }
   }
   data <- c(do.call(c, parts), log[["pending"]])
-  ids <- vapply(data, function(d) return(d[["id"]]), character(1))
-  return(list(r = r, seconds = seconds, data = data[!duplicated(ids)]))
+  return(list(r = r, seconds = seconds, data = data))
 }
 
 # One row for each record of the data: the data, its scenario and

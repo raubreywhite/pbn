@@ -19,6 +19,7 @@ pbn_exports <- c(
   "initialize_project",
   "keep_exclusions",
   "make_outputs",
+  "progress",
   "read_results",
   "render_run",
   "run_plan",

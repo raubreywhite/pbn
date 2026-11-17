@@ -83,6 +83,17 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `save_results()` and `make_outputs()` stop when a file that they delete stays, for example because another program holds it open on Windows. The error names the file.
 - `make_outputs()` compares the new names of the files of a fake scenario in lower case, as Windows and macOS do.
 - pbn passes R CMD check on Windows (R-hub, R-devel).
+- `run_plan()` with workers now runs the analyses through doFuture, and no longer through doParallel. The future plan is `future::cluster`, on the PSOCK cluster that pbn makes. doParallel does not relay the progress of a worker to this R session, and a future does. future and doFuture replace doParallel in Suggests.
+- A future empties the global environment of its worker. So with workers, each batch of analyses takes the objects of the functions folder to its worker. The output, the messages and the warnings of a worker now reach this R session. A worker has no option `mc.cores`, as before.
+- `run_plan()` shows one line for each scenario, drawn again in place in a console. A log gets no line in the first 60 seconds. Then it gets one when a scenario finishes, and at most one every 60 seconds for a running scenario. It replaces the progress bar of plnr. pbn imports progressr.
+- New `progress(done, total, label)` shows the progress of a long analysis on the line of its scenario. It does nothing outside `run_plan()` and in a forked child process.
+- `run_plan()` fails an analysis that changes an object of the functions folder. An example is the index that a data.table subset `CFG$table[x == 1]` adds in place. `initialize_project()` records these objects.
+- The rule `no_local_copy_of_pbn_function` also fails a function `progress` of a project.
+- `progress()` checks its arguments at each call, also within 0.5 seconds of a call that it showed.
+- An error outside an analysis, for example of a worker that stops, no longer ends `run_plan()` with a raw error of future. `run_plan()` writes the run log with the error, sets the backend back, and stops with one message.
+- An analysis fails when it leaves a new object in the global environment. A data function fails when it changes an object of the functions folder.
+- The data functions and the analyses set the kind of random number generator of the run before each seed. An analysis that calls `RNGkind()` then changes no later draw.
+- `run_plan()` and `save_results()` read the argsets of a plan in one pass. Before, the time grew with the square of the number of analyses.
 
 # pbn 2026.11.22
 

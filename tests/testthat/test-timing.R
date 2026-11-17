@@ -115,23 +115,51 @@ test_that("a data record from the cache is marked as reused, with its read time 
   )))
 })
 
-test_that("unwrap_timed keeps one copy of a record that two workers got with the log", {
-  rec <- function(id) return(list(id = id, data = "d"))
+test_that("a count takes only the records of its own R session, and unwrap_timed keeps each record once", {
+  rec <- function(pid, data) return(list(pid = pid, data = data))
   timed <- function(value, data) {
     return(structure(
       list(value = value, seconds = 0.5, data = data),
       class = "pbn_timed"
     ))
   }
-  log <- list2env(list(pending = list(rec("1_1"))), parent = emptyenv())
+  # A worker gets a copy of the log with a record of the main session in it.
+  log <- list2env(
+    list(pending = list(rec(-1L, "main"), rec(Sys.getpid(), "mine"))),
+    parent = emptyenv()
+  )
+  taken <- take_records(log)
+  expect_identical(vapply(taken, function(d) return(d$data), ""), "mine")
+  expect_identical(vapply(log$pending, function(d) return(d$data), ""), "main")
   got <- unwrap_timed(
-    list(timed(1, list(rec("1_1"), rec("9_2"))), timed(NULL, NULL), "plain"),
+    list(timed(1, taken), timed(NULL, NULL), "plain"),
     log
   )
   expect_identical(got$r, list(1, NULL, "plain"))
   expect_identical(got$seconds, c(0.5, 0.5, NA))
   expect_identical(
-    vapply(got$data, function(d) return(d$id), ""),
-    c("1_1", "9_2")
+    vapply(got$data, function(d) return(d$data), ""),
+    c("mine", "main")
+  )
+})
+
+test_that("with 2 workers each data record comes back once, also that of a data function that runs in this R session", {
+  skip_if_pbn_not_installed()
+  local_clean_state()
+  p <- timed_plan()
+  # A data function without arguments runs once, in this R session, before
+  # the workers start.
+  lookup <- function() return(data.frame(k = 1))
+  environment(lookup) <- globalenv()
+  add_data(p, "lookup", fn = lookup)
+  one <- run_plan(p)
+  first <- sort(paste(plan_info(p)$run$data$data, plan_info(p)$run$data$sim))
+  two <- run_plan(p, workers = 2)
+  expect_identical(two, one)
+  got <- sort(paste(plan_info(p)$run$data$data, plan_info(p)$run$data$sim))
+  expect_identical(got, first)
+  expect_identical(
+    got,
+    sort(c(paste("d", c(1, 2, 3, 1)), paste("e", c(1, 2, 3, 1)), "lookup NA"))
   )
 })

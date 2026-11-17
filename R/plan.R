@@ -66,8 +66,11 @@ registry_finalizer <- function(key, registry) {
 }
 
 # .pbn_fn, .pbn_catch, .pbn_shape, .pbn_finish, .pbn_log, .pbn_drain,
-# .pbn_cache, .pbn_plan and .pbn_clock live in the environment of each
-# wrapper, which wrapper_env() and data_wrapper_env() make.
+# .pbn_cache, .pbn_plan, .pbn_clock, .pbn_run, .pbn_enter, .pbn_begin,
+# .pbn_done, .pbn_take, .pbn_objects, .pbn_objects_value, .pbn_data_checked,
+# .pbn_rng, .pbn_globals and .pbn_action live in the environment of each
+# wrapper, which wrapper_env(),
+# action_wrapper() and data_wrapper_env() make.
 utils::globalVariables(c(
   ".pbn_fn",
   ".pbn_catch",
@@ -77,15 +80,26 @@ utils::globalVariables(c(
   ".pbn_drain",
   ".pbn_cache",
   ".pbn_plan",
-  ".pbn_clock"
+  ".pbn_clock",
+  ".pbn_run",
+  ".pbn_enter",
+  ".pbn_begin",
+  ".pbn_done",
+  ".pbn_take",
+  ".pbn_objects",
+  ".pbn_objects_value",
+  ".pbn_data_checked",
+  ".pbn_rng",
+  ".pbn_globals",
+  ".pbn_action"
 ))
 
 # The log of the timings of the data of a plan. Each data wrapper adds one
 # record to `pending` for each call while run_plan() runs. The analysis that
-# counts the rows takes the records and gives them back with its value, so
-# they come back from a worker too. `n` counts the records of this R session.
+# counts the rows takes the records of its own R session and gives them back
+# with its value, so they come back from a worker too.
 new_log <- function() {
-  return(list2env(list(pending = list(), n = 0), parent = emptyenv()))
+  return(list2env(list(pending = list()), parent = emptyenv()))
 }
 
 # The key fields of a data function, as plnr reads them: its arguments
@@ -104,16 +118,27 @@ key_fields <- function(fn) {
 
 # The environment of a wrapper. Its parent is the base environment, so a
 # PSOCK worker needs neither pbn nor an object of the main session to run
-# the wrapper. `.pbn_catch` is TRUE only while run_plan() runs. `log` is the
-# log of the timings of the plan, or NULL. With `drain`, the wrapper takes
-# the records of that log.
+# the wrapper. `.pbn_catch` is TRUE only while run_plan() runs, and
+# `.pbn_run` then holds the run context of run_context(). `log` is the log of
+# the timings of the plan, or NULL. With `drain`, the wrapper takes the
+# records of that log.
 wrapper_env <- function(fn, log = NULL, drain = FALSE) {
   return(list2env(
     list(
       .pbn_fn = fn,
       .pbn_catch = FALSE,
+      .pbn_run = NULL,
       .pbn_shape = data_shape,
       .pbn_finish = action_value,
+      .pbn_enter = run_enter,
+      .pbn_begin = run_begin,
+      .pbn_done = run_done,
+      .pbn_take = take_records,
+      .pbn_objects = objects_print,
+      .pbn_objects_value = objects_value,
+      .pbn_data_checked = data_checked,
+      .pbn_rng = run_rng,
+      .pbn_globals = new_globals,
       .pbn_log = log,
       .pbn_drain = drain
     ),
@@ -182,7 +207,16 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
   if (!is.null(steps)) {
     call <- bquote(run_steps(.(call), .(name)))
   }
-  seed <- if ("sim" %in% keys) quote(set.seed(sim)) else NULL
+  # While run_plan() runs, .pbn_rng() first sets the kind of random number
+  # generator of the run, which an earlier analysis may have changed.
+  seed <- if ("sim" %in% keys) {
+    quote({
+      .pbn_rng(.pbn_run)
+      set.seed(sim)
+    })
+  } else {
+    NULL
+  }
   where <- if (all(c("scenario", "sim") %in% keys)) {
     quote(list(scenario = scenario, sim = sim))
   } else {
@@ -211,12 +245,15 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
     if (!.pbn_catch) {
       return(.(value))
     }
-    return(tryCatch(.(value), error = function(e) {
+    .pbn_enter(.pbn_run, data = TRUE)
+    .pbn_before <- .pbn_objects(.pbn_run)
+    .pbn_out <- tryCatch(.(value), error = function(e) {
       return(structure(
         list(data = .(name), message = conditionMessage(e)),
         class = "pbn_data_error"
       ))
-    }))
+    })
+    return(.pbn_data_checked(.pbn_out, .pbn_run, .pbn_before, .(name)))
   })
   environment(wrapper) <- data_wrapper_env(fn, plan_key, steps, log)
   return(wrapper)
@@ -233,63 +270,93 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
 # only, and `data`, the records that it took from the log `log`. Only the
 # analysis that counts the rows gets a `log`. run_plan() takes the value out
 # again, so the timings never reach its value.
+# While run_plan() runs, an analysis that changes an object of the functions
+# folder also fails, see objects_value(). Each analysis that does not count
+# the rows tells the run context in .pbn_run that it finished, see
+# run_done().
+# plnr keeps one copy of the wrapper for each analysis, and each future of
+# run_plan() serialises each copy. So the wrapper is one call, and its body
+# is action_run() in the environment that the analyses of one kind share.
 action_wrapper <- function(fn, log = NULL) {
   wrapper <- function(data, argset) {
-    if (!.pbn_catch) {
-      set.seed(argset[["seed"]])
-      return(.pbn_fn(data, argset))
+    return(.pbn_action(data, argset))
+  }
+  e <- wrapper_env(fn, log, drain = !is.null(log))
+  action <- action_run
+  environment(action) <- e
+  assign(".pbn_action", action, envir = e)
+  environment(wrapper) <- e
+  return(wrapper)
+}
+
+# The body of action_wrapper(). Its environment is that of the wrapper.
+action_run <- function(data, argset) {
+  if (!.pbn_catch) {
+    set.seed(argset[["seed"]])
+    return(.pbn_fn(data, argset))
+  }
+  run <- .pbn_run
+  .pbn_enter(run)
+  taken <- NULL
+  if (.pbn_drain) {
+    taken <- .pbn_take(.pbn_log)
+  }
+  seconds <- NA_real_
+  failed <- Filter(function(x) return(inherits(x, "pbn_data_error")), data)
+  if (length(failed) > 0) {
+    out <- structure(
+      list(
+        message = paste0(
+          "The data function '",
+          failed[[1]][["data"]],
+          "' failed: ",
+          failed[[1]][["message"]]
+        )
+      ),
+      class = "pbn_failed_analysis"
+    )
+    end <- proc.time()[["elapsed"]]
+  } else {
+    before <- .pbn_shape(data)
+    objects <- if (.pbn_drain) NULL else .pbn_objects(run)
+    globals <- if (.pbn_drain) NULL else .pbn_globals(run, NULL)
+    .pbn_rng(run)
+    set.seed(argset[["seed"]])
+    start <- proc.time()[["elapsed"]]
+    if (!.pbn_drain) {
+      .pbn_begin(run, argset, start)
     }
-    taken <- NULL
-    if (.pbn_drain) {
-      taken <- .pbn_log[["pending"]]
-      assign("pending", list(), envir = .pbn_log)
-    }
-    seconds <- NA_real_
-    failed <- Filter(function(x) return(inherits(x, "pbn_data_error")), data)
-    if (length(failed) > 0) {
-      out <- structure(
+    out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
+      call <- conditionCall(e)
+      return(structure(
         list(
           message = paste0(
-            "The data function '",
-            failed[[1]][["data"]],
-            "' failed: ",
-            failed[[1]][["message"]]
+            # The call of the wrapper itself, .pbn_fn(data, argset), names
+            # nothing that the project wrote.
+            if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
+              paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
+            } else {
+              "Error: "
+            },
+            conditionMessage(e)
           )
         ),
         class = "pbn_failed_analysis"
-      )
-    } else {
-      before <- .pbn_shape(data)
-      set.seed(argset[["seed"]])
-      start <- proc.time()[["elapsed"]]
-      out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
-        call <- conditionCall(e)
-        return(structure(
-          list(
-            message = paste0(
-              # The call of the wrapper itself, .pbn_fn(data, argset), names
-              # nothing that the project wrote.
-              if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
-                paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
-              } else {
-                "Error: "
-              },
-              conditionMessage(e)
-            )
-          ),
-          class = "pbn_failed_analysis"
-        ))
-      })
-      seconds <- proc.time()[["elapsed"]] - start
-      out <- .pbn_finish(out, before, .pbn_shape(data))
-    }
-    return(structure(
-      list(value = out, seconds = seconds, data = taken),
-      class = "pbn_timed"
-    ))
+      ))
+    })
+    end <- proc.time()[["elapsed"]]
+    seconds <- end - start
+    out <- .pbn_finish(out, before, .pbn_shape(data))
+    out <- .pbn_objects_value(out, run, objects)
+    out <- .pbn_globals(run, globals, out)
   }
-  environment(wrapper) <- wrapper_env(fn, log, drain = !is.null(log))
-  return(wrapper)
+  if (!.pbn_drain) {
+    .pbn_done(run, argset, end)
+  }
+  return(structure(
+    list(value = out, seconds = seconds, data = taken),
+    class = "pbn_timed"
+  ))
 }
 
 # The value of an analysis after fn(data, argset) returned `out`: `out`, or
@@ -535,9 +602,11 @@ environment(count_rows) <- baseenv()
 #' The key file also records the version of each package that was loaded in
 #' the R session that computed the value, after `fn` returned. On a worker,
 #' that is the worker. The record leaves out the base packages. It also
-#' leaves out the packages that run the plan, tests and documents: pbn, plnr, foreach,
-#' doParallel, iterators, qs2, digest, uuid, progress, testthat, pkgload,
-#' devtools, callr, processx, ps, knitr, rmarkdown and evaluate. A later use
+#' leaves out the packages that run the plan, tests and documents: pbn,
+#' plnr, foreach, doParallel, doFuture, future, future.apply, globals,
+#' listenv, parallelly, progressr, iterators, qs2, digest, uuid, progress,
+#' testthat, pkgload, devtools, callr, processx, ps, knitr, rmarkdown and
+#' evaluate. A later use
 #' compares each recorded version with [utils::packageVersion()] now. A
 #' package with another version, or one that is not installed now, computes
 #' the value again.
@@ -723,6 +792,49 @@ add_data <- function(
 #' some rows, `data.table::setorder()` and `data.table::setattr()` on a
 #' column. Copy the data first with [data.table::copy()] when the analysis
 #' changes it.
+#'
+#' While [run_plan()] runs, an analysis also fails when it changes an object
+#' of the functions folder, for example `CFG`. plnr runs many analyses in one
+#' R session, so the change would reach each later analysis of that session.
+#' A result would then depend on the analyses that ran before it there. pbn
+#' checks each object that the functions folder made or changed when
+#' [initialize_project()] sourced it, other than a function, a plnr plan and
+#' `.Random.seed`. It compares the bytes of [serialize()] of each object
+#' before and after the analysis. That finds a new value, a new element and
+#' a new attribute. It compares them before and after each data function or
+#' data step too. A data function that changes such an object fails each
+#' analysis that gets its data.
+#'
+#' While [run_plan()] runs, two more parts of the state of an R session
+#' cannot pass from one analysis to the next:
+#' - An analysis fails when it leaves a new object in the global
+#'   environment, for example with `<<-` or `assign()`. `.Random.seed` does
+#'   not count.
+#' - pbn takes the kind of random number generator of the run from
+#'   [RNGkind()] at the start of [run_plan()]. It sets that kind again
+#'   before each seed of a data function and of an analysis. An analysis
+#'   that calls `RNGkind()` then changes no draw of a later analysis.
+#'
+#' A data.table subset with a logical, for example
+#' `CFG$table[group == "a"]`, adds an index to the table in place. Copy the
+#' table first with [data.table::copy()], or set
+#' `options(datatable.auto.index = FALSE)` in the project. pbn sets neither.
+#'
+#' The check has these limits:
+#' - It does not see a function inside an object, because R compiles a
+#'   function after some calls.
+#' - It does not see the contents of an environment inside an object, for
+#'   example that of a formula. It does not call an active binding.
+#' - It does not see a change of an object that already was in the global
+#'   environment, other than an object of the functions folder.
+#' - The analysis that made the change fails, and the change stays for the
+#'   later analyses of that R session. With more workers, each batch of a
+#'   worker gets its own copy, so one analysis of each batch can fail.
+#' - Without [initialize_project()], pbn checks no object.
+#'
+#' The check costs time in proportion to the size of the objects. One
+#' computer took about 45 microseconds for each analysis with a `CFG` of 49
+#' elements. These held 5 data.tables of 100 rows, 20 KB in [serialize()].
 #'
 #' For each scenario and simulation, pbn also adds one analysis named
 #' `<scenario>__sim_<kkkk>__pbn_n_rows`. It counts the rows of each data

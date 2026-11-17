@@ -98,6 +98,53 @@ some rows, \code{data.table::setorder()} and \code{data.table::setattr()} on a
 column. Copy the data first with \code{\link[data.table:copy]{data.table::copy()}} when the analysis
 changes it.
 
+While \code{\link[=run_plan]{run_plan()}} runs, an analysis also fails when it changes an object
+of the functions folder, for example \code{CFG}. plnr runs many analyses in one
+R session, so the change would reach each later analysis of that session.
+A result would then depend on the analyses that ran before it there. pbn
+checks each object that the functions folder made or changed when
+\code{\link[=initialize_project]{initialize_project()}} sourced it, other than a function, a plnr plan and
+\code{.Random.seed}. It compares the bytes of \code{\link[=serialize]{serialize()}} of each object
+before and after the analysis. That finds a new value, a new element and
+a new attribute. It compares them before and after each data function or
+data step too. A data function that changes such an object fails each
+analysis that gets its data.
+
+While \code{\link[=run_plan]{run_plan()}} runs, two more parts of the state of an R session
+cannot pass from one analysis to the next:
+\itemize{
+\item An analysis fails when it leaves a new object in the global
+environment, for example with \verb{<<-} or \code{assign()}. \code{.Random.seed} does
+not count.
+\item pbn takes the kind of random number generator of the run from
+\code{\link[=RNGkind]{RNGkind()}} at the start of \code{\link[=run_plan]{run_plan()}}. It sets that kind again
+before each seed of a data function and of an analysis. An analysis
+that calls \code{RNGkind()} then changes no draw of a later analysis.
+}
+
+A data.table subset with a logical, for example
+\code{CFG$table[group == "a"]}, adds an index to the table in place. Copy the
+table first with \code{\link[data.table:copy]{data.table::copy()}}, or set
+\code{options(datatable.auto.index = FALSE)} in the project. pbn sets neither.
+
+The check has these limits:
+\itemize{
+\item It does not see a function inside an object, because R compiles a
+function after some calls.
+\item It does not see the contents of an environment inside an object, for
+example that of a formula. It does not call an active binding.
+\item It does not see a change of an object that already was in the global
+environment, other than an object of the functions folder.
+\item The analysis that made the change fails, and the change stays for the
+later analyses of that R session. With more workers, each batch of a
+worker gets its own copy, so one analysis of each batch can fail.
+\item Without \code{\link[=initialize_project]{initialize_project()}}, pbn checks no object.
+}
+
+The check costs time in proportion to the size of the objects. One
+computer took about 45 microseconds for each analysis with a \code{CFG} of 49
+elements. These held 5 data.tables of 100 rows, 20 KB in \code{\link[=serialize]{serialize()}}.
+
 For each scenario and simulation, pbn also adds one analysis named
 \verb{<scenario>__sim_<kkkk>__pbn_n_rows}. It counts the rows of each data
 element. \code{\link[=save_results]{save_results()}} stores the counts in \code{manifest$n_rows_data}, and
@@ -133,6 +180,7 @@ Other plan:
 \code{\link[=add_data]{add_data()}},
 \code{\link[=cohort_data]{cohort_data()}},
 \code{\link[=get_data]{get_data()}},
+\code{\link[=progress]{progress()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

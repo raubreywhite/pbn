@@ -52,6 +52,7 @@ fake project file by file, and runs it. Read it first.
 | `cohort_data()`, `keep_exclusions()` | Give the data of a cohort to a step after it, such as an imputation, and keep the exclusion table on the value of that step. |
 | `add_analyses()` | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
 | `run_plan()` | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |
+| `progress()` | Shows the progress inside a long analysis. |
 | `save_results()` | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. `gitexclude` puts the results with data for each person in a file that git ignores. |
 | `expect_recovers()`, `expect_biased()` | Check the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario, and the bias of a control. |
 | `make_outputs()`, `stamp_fake()` | Write the figures and the tables of the real data and of chosen fake scenarios, with fake output marked. |

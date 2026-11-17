@@ -87,6 +87,9 @@ initialize_project <- function(
     real_md5 <- data_md5(data_raw)
     real_stat <- file_stat(file.path(data_raw, names(real_md5)), names(real_md5))
   }
+  # The objects that the folder defines are the new ones and those with a
+  # new address. run_plan() fails an analysis that changes one of them.
+  before <- object_addresses(env)
   # results = NULL: org then creates no folder, also no folder with today's
   # date, and it does not create data_raw.
   org::initialize_project(
@@ -111,7 +114,8 @@ initialize_project <- function(
         data_stat = real_stat,
         source_md5 = code_md5,
         source_stat = code_stat,
-        env = env
+        env = env,
+        sourced = defined_names(env, before)
       )
     ),
     envir = state

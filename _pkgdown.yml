@@ -30,6 +30,7 @@ reference:
     - cohort_data
     - add_analyses
     - run_plan
+    - progress
     - get_data
 
 - title: "Results"

@@ -61,20 +61,23 @@ test_that("run_plan stops on a bad plan, bad workers and a data function with an
   )
 })
 
-test_that("run_plan with workers > 1 stops with a message when doParallel or foreach is missing", {
+test_that("run_plan with workers > 1 stops with a message when future or doFuture is missing", {
   p <- plnr::Plan$new()
   add_data(p, "d", fn = function(scenario, sim) return(data.frame(x = 1)))
   add_analyses(p, two_scenarios(), "a", fn = function(data, argset) 1)
-  local_mocked_bindings(has_package = function(pkg) return(pkg != "doParallel"))
+  local_mocked_bindings(has_package = function(pkg) return(pkg != "doFuture"))
   expect_error(
     run_plan(p, workers = 2),
-    "run_plan() with workers > 1 needs the packages doParallel. Install them",
+    paste0(
+      "run_plan() with workers > 1 needs the packages doFuture: install ",
+      "them, or use workers = 1."
+    ),
     fixed = TRUE
   )
   local_mocked_bindings(has_package = function(pkg) return(FALSE))
   expect_error(
     run_plan(p, workers = 2),
-    "needs the packages doParallel and foreach",
+    "needs the packages future and doFuture: install them",
     fixed = TRUE
   )
   # workers = 1 needs neither.
@@ -358,4 +361,145 @@ test_that("prepare_workers() gives a worker the library paths of this R session"
   expect_false(lib %in% parallel::clusterCall(cl, ask)[[1]])
   prepare_workers(cl)
   expect_true(lib %in% parallel::clusterCall(cl, ask)[[1]])
+})
+
+test_that("a worker uses the kind of random number generator of this R session, and the results stay identical to 1 worker", {
+  skip_if_pbn_not_installed()
+  old <- RNGkind()
+  withr::defer(RNGkind(old[1], old[2], old[3]))
+  RNGkind("L'Ecuyer-CMRG")
+  data_fn <- function(scenario, sim) return(data.frame(x = stats::runif(2)))
+  action_fn <- function(data, argset) {
+    return(list(kind = RNGkind()[1], draw = stats::runif(1), x = data$d$x))
+  }
+  environment(data_fn) <- globalenv()
+  environment(action_fn) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = data_fn)
+  add_analyses(p, two_scenarios(), "a", fn = action_fn)
+  one <- run_plan(p)
+  two <- run_plan(p, workers = 2)
+  expect_identical(two, one)
+  expect_identical(two[["null__sim_0002__a__1"]]$kind, "L'Ecuyer-CMRG")
+})
+
+# Runs run_plan(), and returns the error, the output, the run log and the
+# errors file, and what the run left: the future plan, the foreach backend,
+# the option of doFuture and the cluster.
+run_outside <- function(plan, p, workers) {
+  seen <- new.env()
+  real_make <- make_cluster
+  local_mocked_bindings(make_cluster = function(workers) {
+    seen$cl <- real_make(workers)
+    return(seen$cl)
+  })
+  before <- future::plan()
+  out <- utils::capture.output(
+    err <- tryCatch(run_plan(plan, workers = workers), error = function(e) e)
+  )
+  results <- file.path(p$home, "v01_results")
+  return(list(
+    err = err,
+    out = out,
+    log = readLines(file.path(results, "run.md")),
+    errors = readLines(file.path(results, "run_errors_gitexclude.md")),
+    plan_back = identical(future::plan(), before),
+    backend = foreach::getDoParName(),
+    rng_option = getOption("doFuture.rng.onMisuse"),
+    cluster = seen$cl
+  ))
+}
+
+expect_run_error <- function(got, text) {
+  msg <- conditionMessage(got$err)
+  expect_true(startsWith(
+    msg,
+    paste0(
+      "run_plan() stopped outside an analysis: a worker stopped, or plnr or ",
+      "the backend of the workers failed. pbn printed the whole error above, ",
+      "and saved nothing."
+    )
+  ))
+  expect_lt(nchar(msg, "bytes"), 900)
+  expect_match(msg, text, fixed = TRUE)
+  expect_identical(
+    got$out[1:2],
+    c(
+      "pbn: wrote the run log v01_results/run.md.",
+      "pbn: run_plan() stopped outside an analysis:"
+    )
+  )
+  expect_true(any(grepl(text, got$errors, fixed = TRUE)))
+  expect_true(any(grepl(
+    "run_plan() stopped outside an analysis, so save_results() did not run.",
+    got$log,
+    fixed = TRUE
+  )))
+  expect_false(any(grepl(text, got$log, fixed = TRUE)))
+  expect_true(got$plan_back)
+  expect_identical(got$backend, "doSEQ")
+  expect_null(got$rng_option)
+  expect_null(getOption("pbn.run"))
+  return(invisible(NULL))
+}
+
+test_that("a worker that stops ends run_plan with one message and a failed run log, and the backend goes back and the cluster stops", {
+  skip_if_pbn_not_installed()
+  main <- Sys.getpid()
+  # The analysis stops its R session when it runs on a worker, never here.
+  stops <- function(data, argset) {
+    if (Sys.getpid() != main && argset$sim == 2) {
+      quit(save = "no", status = 1)
+    }
+    return(1)
+  }
+  environment(stops) <- list2env(list(main = main), parent = globalenv())
+  # Two plans, because future reports the stop in two ways: as an interrupt
+  # of a running future, or as an error when it launches the next one. The
+  # second one used to be lost: the closed connection of the stopped worker
+  # made stopCluster() fail, and its error replaced the one of the run.
+  for (small in c(FALSE, TRUE)) {
+    p <- local_project()
+    sourced <- init(p)
+    if (small) {
+      data_fn <- function(scenario, sim) return(data.frame(x = 1))
+      environment(data_fn) <- globalenv()
+      plan <- plnr::Plan$new()
+      add_data(plan, "d", fn = data_fn)
+      sc <- scenarios(list(
+        scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 4))
+      ))
+      add_analyses(plan, sc, "stops", fn = stops, k = 1:3)
+    } else {
+      plan <- build_plan(sourced, scenarios(sourced$CFG))
+      add_analyses(plan, scenarios(sourced$CFG), "stops", fn = stops)
+    }
+    # doFuture warns that it cancels the other futures.
+    got <- suppressWarnings(run_outside(plan, p, 2))
+    expect_run_error(got, "Future")
+    expect_no_match(conditionMessage(got$err), "invalid connection", fixed = TRUE)
+    expect_s3_class(got$cluster, "SOCKcluster")
+    expect_error(parallel::clusterCall(got$cluster, function() 1))
+  }
+})
+
+test_that("an error of plnr outside the wrappers of pbn ends run_plan with one message and a failed run log, with 1 and 2 workers", {
+  skip_if_pbn_not_installed()
+  for (workers in 1:2) {
+    p <- local_project()
+    sourced <- init(p)
+    plan <- build_plan(sourced, scenarios(sourced$CFG))
+    # A data function of plnr itself, without the wrapper of add_data().
+    plan$add_data("outside", fn = function() stop("planted outside the wrappers"))
+    got <- run_outside(plan, p, workers)
+    expect_run_error(got, "planted outside the wrappers")
+  }
+})
+
+test_that("run_error_message cuts a long error at a whole character below 900 bytes", {
+  msg <- run_error_message(paste(rep("\u00e9", 3000), collapse = ""))
+  expect_true(validUTF8(msg))
+  expect_lt(nchar(msg, "bytes"), 900)
+  expect_true(endsWith(msg, "\u00e9 [...]\"."))
+  expect_true(endsWith(run_error_message("short"), "The error is: \"short\"."))
 })

@@ -127,6 +127,7 @@ md_failures <- function(log) {
   }
   return(c(
     lines,
+    md_run_error(log$run_error, errors),
     md_failed_analyses(log$run$failed, log$run$n_analyses, errors),
     md_failed_assertions(checks_for_log(bad, errors)),
     md_contract(log$contract, errors),

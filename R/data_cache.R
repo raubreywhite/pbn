@@ -117,13 +117,12 @@ timed_compute <- function(compute) {
 # Adds the record of one call of the data `name` to the log of the plan: the
 # scenario and simulation, the seconds of each step, the elapsed seconds of
 # the whole call since `start`, whether the data came from the cache, the
-# cache line, and whether the call failed (`done` is FALSE). The id names
-# the R session and the record, so that run_plan() keeps one copy of a
-# record that two workers got with the log.
+# cache line, and whether the call failed (`done` is FALSE). `pid` names the
+# R session, so that the analysis that counts the rows takes the records of
+# its own session only, see take_records().
 log_data <- function(name, where, done, start) {
-  n <- .pbn_log[["n"]] + 1
   record <- list(
-    id = paste0(Sys.getpid(), "_", n),
+    pid = Sys.getpid(),
     data = name,
     scenario = if (is.null(where)) NA_character_ else where[["scenario"]],
     sim = if (is.null(where)) NA_integer_ else as.integer(where[["sim"]]),
@@ -137,7 +136,6 @@ log_data <- function(name, where, done, start) {
     },
     failed = !done
   )
-  assign("n", n, envir = .pbn_log)
   assign("pending", c(.pbn_log[["pending"]], list(record)), envir = .pbn_log)
   return(invisible(NULL))
 }
@@ -550,6 +548,13 @@ machinery_packages <- c(
   "plnr",
   "foreach",
   "doParallel",
+  "doFuture",
+  "future",
+  "future.apply",
+  "globals",
+  "listenv",
+  "parallelly",
+  "progressr",
   "iterators",
   "qs2",
   "digest",

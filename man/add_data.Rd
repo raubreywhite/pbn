@@ -208,9 +208,11 @@ change the key.
 The key file also records the version of each package that was loaded in
 the R session that computed the value, after \code{fn} returned. On a worker,
 that is the worker. The record leaves out the base packages. It also
-leaves out the packages that run the plan, tests and documents: pbn, plnr, foreach,
-doParallel, iterators, qs2, digest, uuid, progress, testthat, pkgload,
-devtools, callr, processx, ps, knitr, rmarkdown and evaluate. A later use
+leaves out the packages that run the plan, tests and documents: pbn,
+plnr, foreach, doParallel, doFuture, future, future.apply, globals,
+listenv, parallelly, progressr, iterators, qs2, digest, uuid, progress,
+testthat, pkgload, devtools, callr, processx, ps, knitr, rmarkdown and
+evaluate. A later use
 compares each recorded version with \code{\link[utils:packageVersion]{utils::packageVersion()}} now. A
 package with another version, or one that is not installed now, computes
 the value again.
@@ -276,6 +278,7 @@ Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=cohort_data]{cohort_data()}},
 \code{\link[=get_data]{get_data()}},
+\code{\link[=progress]{progress()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

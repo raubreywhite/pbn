@@ -75,6 +75,7 @@ Other plan:
 \code{\link[=add_analyses]{add_analyses()}},
 \code{\link[=add_data]{add_data()}},
 \code{\link[=get_data]{get_data()}},
+\code{\link[=progress]{progress()}},
 \code{\link[=run_plan]{run_plan()}}
 }
 \concept{plan}

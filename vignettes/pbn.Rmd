@@ -250,6 +250,7 @@ fit_models <- function(data, argset) {
     fit <- stats::glm(stats::as.formula(paste("outcome ~", rhs)), family = "binomial", data = data$d)
     est[k] <- stats::coef(fit)[["groupb"]]
     w[k] <- stats::vcov(fit)["groupb", "groupb"]
+    pbn::progress(k, CFG$data$n_imp, "imputations")
   }
   # Rubin's rules: the variance within the imputations, plus (1 + 1/m) times
   # the variance between them.
@@ -336,7 +337,7 @@ length(p$analyses)
 head(names(p$analyses), 5)
 ```
 
-`workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster. pbn gives each worker the objects that `v01_functions/` defines and the attached packages, so the functions find `CFG` and each other. The data and each analysis set their own seed. So one analysis by hand in this R session gives the value of the worker:
+`workers = 2` runs the analyses on 2 new R sessions, in a PSOCK cluster, through the packages future and doFuture. pbn gives each worker the objects that `v01_functions/` defines and the attached packages, so the functions find `CFG` and each other. The data and each analysis set their own seed. So one analysis by hand in this R session gives the value of the worker:
 
 ```{r}
 by_hand <- p$run_one("confounded__sim_0003__models__1")
@@ -348,6 +349,33 @@ stopifnot(identical(by_hand, r[["confounded__sim_0003__models__1"]]))
 ```
 
 This holds for functions that depend only on their arguments, the functions and `CFG` of `v01_functions/`, the attached packages and the seed. pbn does not copy the R options to the workers.
+
+An analysis MUST NOT change `CFG` or another object of `v01_functions/`. A later analysis in the same R session would see the change, so its result would depend on the analyses before it. `run_plan()` fails such an analysis, also for the index that a data.table subset such as `CFG$vars[var == "x"]` adds in place. `?add_analyses` gives the rules.
+
+## Progress
+
+`run_plan()` shows one line for each scenario: its finished analyses, the time since its start, and a note. In an interactive terminal, it draws the lines again in place, for example:
+
+```text
+pbn: 4 scenarios, 2 workers, started 14:02
+  real          3/3   analyses       5s  done
+  known         4/4   analyses       1s  done
+  null        168/560 analyses   1m 05s  models (x, sim 43) imputations 2/3 66%
+  confounded    0/560 analyses           waiting
+```
+
+In RStudio, it draws one line again in place. A run with `Rscript` into a log adds lines instead. It adds none in the first 60 seconds of the run, so a short run adds none. After that, it adds one line when a scenario finishes. A running scenario gets at most one line every 60 seconds, and only with 10% more done. The section Progress of `?run_plan` gives the rules.
+
+`fit_models()` calls `pbn::progress()` in its loop over the imputations. While the analysis runs, the line of its scenario shows its text, as for `null` above. The text holds the kind, the values of the extra dimensions, the simulation, the step and the percent. Outside `run_plan()`, `pbn::progress()` only checks its arguments, so the function also runs by hand.
+
+`pbn::progress()` does nothing in a forked child process, for example inside `parallel::mclapply()`. Call it in the loop of the analysis, between chunks of the work:
+
+```r
+for (chunk in split(seq_len(2000), ceiling(seq_len(2000) / 100))) {
+  est <- c(est, unlist(parallel::mclapply(chunk, one_replicate, mc.cores = 4)))
+  pbn::progress(length(est), 2000, "bootstrap")
+}
+```
 
 ## The results
 
@@ -700,6 +728,7 @@ The default `home = "."` is the working directory, so this file MUST run with th
 - No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
 - When `run_plan()` stops on a failed analysis, the results files of an earlier run stay as they are. `read_results()` reads them.
 - pbn finds an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place, for example `data$d[1, x := 0]`. Copy the data first with `data.table::copy()`.
+- pbn finds an analysis that changes an object of `v01_functions/`, such as `CFG`. It does not find a change of a function inside the object, a change inside an environment of the object, or a change by a data function.
 - `workers` limits the number of R sessions. It does not limit the threads that R or the BLAS library starts in each of them.
 - `workers` limits the R sessions of pbn only. An analysis that starts its own processes in a worker multiplies them, for example with `parallel::mclapply()`. Two workers that each start 4 processes run 8 processes at the same time.
 - `fake_md5` is the md5 of the code of the steps of `add_data()` only. A change in a function that a step calls does not change `fake_md5`. `source_md5` holds the md5 of its file.

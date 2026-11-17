@@ -175,11 +175,12 @@ test_that("workers = 2 gives results identical to workers = 1, with the function
   for (f in names(one$results)) {
     expect_identical(two$results[[f]]$x, one$results[[f]]$x, info = f)
     # The manifest names the packages loaded in the main R session and on
-    # the workers. With 2 workers the main session loads doParallel. plnr
-    # calls digest on the workers only, and the manifest names it too.
+    # the workers. With 2 workers the main session loads doFuture and the
+    # packages that it imports. plnr calls digest on the workers only, and
+    # the manifest names it too.
     expect_identical(
-      setdiff(two$results[[f]]$packages, one$results[[f]]$packages),
-      "doParallel",
+      sort(setdiff(two$results[[f]]$packages, one$results[[f]]$packages)),
+      c("doFuture", "future", "future.apply", "globals", "listenv", "parallelly"),
       info = f
     )
     expect_identical(
@@ -237,6 +238,42 @@ test_that("a failing analysis in the run script lists every failure in full and 
     )
   }
   expect_identical(outputs[[2]], outputs[[1]])
+})
+
+test_that("on 2 workers, with the folder in the global environment, a function of the folder calls another and reads CFG, and an analysis sees no option mc.cores and fails for no draw of the folder", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/helpers.R",
+    c(
+      "# A draw while the folder is sourced changes .Random.seed of the",
+      "# global environment, and no analysis fails for it.",
+      "invisible(stats::runif(1))",
+      "n_outcomes <- function() return(length(CFG$outcomes))",
+      "uses_helpers <- function(data, argset) {",
+      "  return(data.frame(",
+      "    n = n_outcomes(),",
+      "    twice = double_it(nrow(data$d)),",
+      "    no_mc_cores = is.null(getOption(\"mc.cores\"))",
+      "  ))",
+      "}"
+    )
+  )
+  lines <- run_script_lines("v01", p$data_default, workers = 2)
+  at <- grep("^r <- pbn::run_plan", lines)
+  lines <- append(
+    lines,
+    "pbn::add_analyses(p, scenarios, name = \"helpers\", fn = uses_helpers)",
+    after = at - 1
+  )
+  write_lines(p$home, "v01_run.R", lines)
+  res <- run_script(p$home)
+  expect_identical(res$status, 0L, info = res$stdout)
+  helpers <- read_results("v01", "null", home = p$home)$helpers
+  expect_identical(helpers$n, rep(2L, 3))
+  expect_identical(helpers$twice, rep(80, 3))
+  expect_identical(helpers$no_mc_cores, rep(TRUE, 3))
 })
 
 test_that("with library(data.table) in the run script, an action with := and .() runs on 2 workers", {

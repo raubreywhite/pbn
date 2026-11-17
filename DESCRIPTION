@@ -33,6 +33,7 @@ Imports:
     org (>= 2026.11.16),
     parallel,
     plnr (>= 2026.11.17),
+    progressr,
     qs2,
     stats,
     tools,
@@ -40,8 +41,9 @@ Imports:
 Suggests:
     callr,
     cohort (>= 2026.11.18),
-    doParallel,
+    doFuture,
     foreach,
+    future,
     ggplot2,
     janitor,
     R6,

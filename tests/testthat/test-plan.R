@@ -484,3 +484,27 @@ test_that("an analysis that changes the shared data in place fails, and one that
   r <- run_plan(p)
   expect_identical(r[["null__sim_0002__b__1"]], 0L)
 })
+
+test_that("an analysis on a worker that changes the shared data in place fails too", {
+  skip_if_pbn_not_installed()
+  shared <- function(scenario, sim) {
+    return(data.table::data.table(x = 1:3))
+  }
+  adds <- function(data, argset) {
+    data$d[, z := 1]
+    return(1)
+  }
+  environment(shared) <- globalenv()
+  environment(adds) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = shared)
+  add_analyses(p, small_scenarios(), "a", fn = adds)
+  out <- utils::capture.output(
+    err <- tryCatch(run_plan(p, workers = 2), error = function(e) e)
+  )
+  expect_match(conditionMessage(err), "3 of 6 analyses failed")
+  expect_identical(
+    sum(grepl("The analysis changed the data 'd' in place", out, fixed = TRUE)),
+    3L
+  )
+})

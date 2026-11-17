@@ -78,9 +78,10 @@ run read, also after a change of a file since \code{\link[=initialize_project]{i
 \code{save_results()} stops for \code{"real"} when \code{data_raw} did not exist when
 \code{\link[=initialize_project]{initialize_project()}} ran.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
-functions of \code{\link[=add_data]{add_data()}}, without their source references. A change in
-a function that a data function calls does not change \code{fake_md5}.
-\code{source_md5} holds the md5 of the files of those functions.
+functions of \code{\link[=add_data]{add_data()}}, without their source references: each \code{fn},
+and each step of the steps form. A change in a function that \code{fn} or a
+step calls does not change \code{fake_md5}. \code{source_md5} holds the md5 of
+the files of those functions.
 \item \code{n_rows_data}, a named integer vector with the number of rows of each
 data element. A list of data.frames with one number of rows, for
 example a list of imputed data sets, has the rows of one of them. Each

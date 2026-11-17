@@ -26,14 +26,18 @@ exclusions. \code{keep_exclusions()} puts the exclusion table of the pipeline on
 the value of a step after the cohort, such as an imputation.
 }
 \details{
-A data function MAY end with a step after the cohort:
+A step after the cohort reads the data with \code{cohort_data()}. As the step
+\code{after_cohort} of \code{\link[=add_data]{add_data()}}, it returns its value, and pbn puts the
+exclusion table on it:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{data_impute <- function(cp) \{
   d <- pbn::cohort_data(cp)
-  imp <- lapply(1:5, function(k) impute_once(d))
-  pbn::keep_exclusions(imp, cp)
+  lapply(1:5, function(k) impute_once(d))
 \}
 }\if{html}{\out{</div>}}
+
+At the end of a data function \code{fn}, the step returns
+\code{pbn::keep_exclusions(imp, cp)}, so that the table stays.
 
 \code{cohort_data()} returns \verb{cp$get_included(<cohort>)}. \verb{<cohort>} is the one
 cohort of the pipeline that no other cohort branches from, the cohort that

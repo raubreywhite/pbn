@@ -76,15 +76,20 @@ cohort_function_files <- function() {
       "}"
     ),
     # Three draws of y for each person of the cohort, after the exclusions.
+    # impute_draws() returns the plain list, for the step after_cohort, and
+    # data_impute() keeps the exclusion table, as a data function fn does.
     "data_impute.R" = c(
-      "data_impute <- function(cp) {",
+      "impute_draws <- function(cp) {",
       "  d <- pbn::cohort_data(cp)",
-      "  imp <- lapply(1:3, function(k) {",
+      "  lapply(1:3, function(k) {",
       "    x <- data.table::copy(d)",
       "    data.table::set(x, j = \"y\", value = x$y + stats::rnorm(nrow(x), 0, 0.1))",
       "    x",
       "  })",
-      "  pbn::keep_exclusions(imp, cp)",
+      "}",
+      "",
+      "data_impute <- function(cp) {",
+      "  pbn::keep_exclusions(impute_draws(cp), cp)",
       "}"
     ),
     "expect_null.R" = c(
@@ -147,20 +152,52 @@ impute_data_fn <- function(scenario, sim) {
   return(data_impute(data_cohort(data_clean(data_raw(scenario, sim)))))
 }
 
+# The steps of cohort_data_fn() and of impute_data_fn(), for the steps form
+# of add_data(). A string is the name of a function of the functions folder.
+cohort_steps <- list(
+  raw = "data_raw",
+  clean = "data_clean",
+  cohort = "data_cohort"
+)
+impute_steps <- c(cohort_steps, list(after_cohort = "data_impute"))
+# The step after_cohort without keep_exclusions(): pbn keeps the table.
+plain_steps <- c(cohort_steps, list(after_cohort = "impute_draws"))
+
+# The steps `steps` as functions: a string is the function of that name in
+# `sourced`, and a function gets `sourced` as its environment.
+sourced_steps <- function(steps, sourced) {
+  return(lapply(steps, function(s) {
+    if (is.character(s)) {
+      return(sourced[[s]])
+    }
+    environment(s) <- sourced
+    return(s)
+  }))
+}
+
 # Starts the project and builds the plan, as the run script does up to the
-# add_ calls. `env` is the test.
+# add_ calls. The data is `fn`, or the steps form with `steps` when it is
+# not NULL. `env` is the test.
 cohort_plan <- function(
   p,
   cache = TRUE,
   fn = cohort_data_fn,
   analysis = "fit_mean",
+  steps = NULL,
   env = parent.frame()
 ) {
   sourced <- init(p, env = env)
   scenarios <- scenarios(sourced$CFG)
   plan <- plnr::Plan$new()
-  environment(fn) <- sourced
-  add_data(plan, "d", fn = fn, cache = cache)
+  if (is.null(steps)) {
+    environment(fn) <- sourced
+    add_data(plan, "d", fn = fn, cache = cache)
+  } else {
+    do.call(
+      add_data,
+      c(list(plan, "d"), sourced_steps(steps, sourced), list(cache = cache))
+    )
+  }
   add_analyses(plan, scenarios, name = "means", fn = sourced[[analysis]])
   return(list(plan = plan, scenarios = scenarios, sourced = sourced))
 }
@@ -194,9 +231,10 @@ cohort_run <- function(
   cache = TRUE,
   fn = cohort_data_fn,
   analysis = "fit_mean",
+  steps = NULL,
   env = parent.frame()
 ) {
-  run <- cohort_plan(p, cache, fn, analysis, env = env)
+  run <- cohort_plan(p, cache, fn, analysis, steps = steps, env = env)
   out <- utils::capture.output(r <- run_plan(run$plan, workers = workers))
   return(c(list(r = r, out = out), run))
 }

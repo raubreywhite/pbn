@@ -20,16 +20,14 @@ A project version has a run script `v01_run.R` and a folder
 `v01_functions/`. `v01_functions/_cfg.R` names the scenarios in
 `CFG$scenarios`: the real data, and fake data that the project makes itself.
 The run script is one `plnr` plan over every scenario and simulation. Its
-data function reads the data, cleans it and builds a `cohort`:
+data steps read the data, clean it and build a `cohort`:
 
 ```r
 pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
 scenarios <- pbn::scenarios(CFG)
 
 p <- plnr::Plan$new()
-pbn::add_data(p, "d", fn = function(scenario, sim) {
-  data_raw(scenario, sim) |> data_clean() |> data_cohort()
-})
+pbn::add_data(p, "d", raw = data_raw, clean = data_clean, cohort = data_cohort)
 pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, outcome = CFG$outcomes)
 r <- pbn::run_plan(p)
 pbn::save_results(r, p, scenarios)
@@ -50,7 +48,7 @@ fake project file by file, and runs it. Read it first.
 |---|---|
 | `initialize_project()` | Sets the paths of a project version and sources `vNN_functions/` with the house defaults of `org`. |
 | `scenarios()` | Checks `CFG$scenarios` and chooses the scenarios of a run. |
-| `add_data()` | Adds a data function to a plan. plnr calls it once for each scenario and simulation. A cohort gives its data and its exclusion table, and `cache = TRUE` keeps the data on disk. |
+| `add_data()` | Adds the data steps to a plan. plnr runs them once for each scenario and simulation. A cohort gives its data and its exclusion table, and `cache = TRUE` keeps the data on disk. |
 | `cohort_data()`, `keep_exclusions()` | Give the data of a cohort to a step after it, such as an imputation, and keep the exclusion table on the value of that step. |
 | `add_analyses()` | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
 | `run_plan()` | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |

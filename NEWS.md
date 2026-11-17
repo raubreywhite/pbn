@@ -50,6 +50,9 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `CFG$scenarios` MAY have the column `output`, `TRUE` or `FALSE`, and `FALSE` for `"real"`. It is not a setting. Before, a column `output` was a setting of any atomic type.
 - New `check_project()` rule `fake_data_names`.
 - The article Get started has the scenarios `null` and `confounded`, with 140 simulations each and recovery checks, and an output part with `make_outputs()`.
+- `add_data()` takes the data as the steps `raw`, `clean`, `cohort` and `after_cohort`, or as one function `fn`. The data fails when `clean` changes the number of rows, or when the cohort does not start with every row. Each exclusion thus goes through the cohort, which counts it.
+- pbn puts the exclusion table of the cohort on the value of `after_cohort`, so the step needs no `keep_exclusions()`. `keep_exclusions()` is for a data function `fn`.
+- With the steps, the cache key and `fake_md5` hold each step, and the cache line names a changed step. The article Get started uses the steps.
 
 # pbn 2026.11.22
 

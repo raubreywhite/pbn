@@ -29,6 +29,7 @@ plan_info <- function(p, create = FALSE) {
   if (is.null(info) && create) {
     info <- new.env(parent = emptyenv())
     info$data <- list()
+    info$steps <- list()
     info$cache <- list()
     info$data_envs <- list()
     info$scenario_settings <- list()
@@ -140,17 +141,22 @@ analysis_seed <- function(name, k, sim) {
 
 # A data function with the key fields of `fn`. It sets the seed to `sim`
 # when `sim` is a key field, and calls `fn` with the key fields by name.
-# add_data() allows `sim` only together with `scenario`. data_value() turns a
+# add_data() allows `sim` only together with `scenario`. For the steps form,
+# `fn` is the step raw, and run_steps() gives its value to the other steps
+# in `steps`, after the one seed. data_value() turns a
 # cohort::CohortPipeline into its data, and reads or writes the cache while
 # run_plan() runs with cache = TRUE.
 # While run_plan() runs, an error becomes an object of class pbn_data_error,
 # so the error reaches each analysis that needs the data.
-data_wrapper <- function(fn, name, plan_key = NULL) {
+data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL) {
   keys <- key_fields(fn)
   call <- as.call(c(
     list(as.name(".pbn_fn")),
     stats::setNames(lapply(keys, as.name), keys)
   ))
+  if (!is.null(steps)) {
+    call <- bquote(run_steps(.(call), .(name)))
+  }
   seed <- if ("sim" %in% keys) quote(set.seed(sim)) else NULL
   where <- if (all(c("scenario", "sim") %in% keys)) {
     quote(list(scenario = scenario, sim = sim))
@@ -187,7 +193,7 @@ data_wrapper <- function(fn, name, plan_key = NULL) {
       ))
     }))
   })
-  environment(wrapper) <- data_wrapper_env(fn, plan_key)
+  environment(wrapper) <- data_wrapper_env(fn, plan_key, steps)
   return(wrapper)
 }
 
@@ -310,22 +316,37 @@ count_rows <- function(data, argset) {
 }
 environment(count_rows) <- baseenv()
 
-#' Add a data function to a plan
+#' Add data to a plan
 #'
-#' `add_data()` adds the data function `fn` to the plnr plan `p` with
-#' `p$add_data()`. plnr calls it once for each scenario and simulation, and
-#' gives the data to each analysis of that scenario and simulation.
+#' `add_data()` adds the data `name` to the plnr plan `p`, as the steps
+#' `raw`, `clean`, `cohort` and `after_cohort`, or as one data function `fn`.
+#' plnr calls it once for each scenario and simulation, and gives the data to
+#' each analysis of that scenario and simulation.
 #'
 #' @param p A plan from `plnr::Plan$new()`.
 #' @param name The name of the data. Each action function gets it as
 #'   `data[[name]]`.
-#' @param fn The data function, normally
-#'   `function(scenario, sim) data_raw(scenario, sim) |> data_clean() |>
-#'   data_cohort()`.
-#' @param cache `TRUE` saves the value of `fn` on disk for each scenario and
+#' @param fn The free form: one data function, for data that does not fit
+#'   the steps. Give `fn` or `raw`, not both.
+#' @param raw The first step, normally `data_raw`, a `function(scenario,
+#'   sim)` that reads the real data or makes fake data.
+#' @param clean Optional. The step that gets the value of `raw`, normally
+#'   `data_clean`, for example for names and types. It MUST return a
+#'   data.frame with the same number of rows.
+#' @param cohort Optional. The step that gets the value of `clean`, or of
+#'   `raw` without `clean`, normally `data_cohort`. It MUST return a
+#'   `cohort::CohortPipeline` that starts with every row that it got.
+#' @param after_cohort Optional, and only with `cohort`. The step that gets
+#'   the `cohort::CohortPipeline`, for example an imputation. It returns the
+#'   data for the analyses, and pbn puts the exclusion table of the cohort on
+#'   it. See the section A cohort as the data.
+#' @param cache `TRUE` saves the data on disk for each scenario and
 #'   simulation. The next run reads it while the cache key is the same. See
 #'   the section Cache.
 #' @details
+#' In the steps form, each rule for `fn` in this section and in the section
+#' Cache applies to `raw`.
+#'
 #' plnr keys a data function on its arguments without a default. These are
 #' the key fields. Each key field of `fn` MUST be `scenario`, `sim` or a
 #' setting column of `CFG$scenarios`. Otherwise [run_plan()] stops before it
@@ -351,30 +372,72 @@ environment(count_rows) <- baseenv()
 #' The wrapper needs no object of the R session that adds it. [run_plan()]
 #' gives each worker the objects that the functions folder defines.
 #'
-#' `name` MUST be one non-empty string, and it MUST NOT be `"hash"`, because
-#' plnr adds `data$hash` to the data of each analysis. Two data functions of
+#' `name` MUST be one syntactic name that starts with a letter and holds
+#' only letters, digits, `.` and `_`, for example `"d"`. pbn names each step
+#' of the data `<name>$<step>` in the code that `fake_md5` hashes. A `$` in a
+#' name could thus match a step of another data. `name` MUST NOT be
+#' `"hash"`, because plnr adds `data$hash` to the data of each analysis. Two data functions of
 #' one plan MUST NOT have the same name. Add data with `add_data()`, not with
 #' `p$add_data()`. [save_results()] reads the data functions of `add_data()`
 #' only.
 #'
-#' While [run_plan()] runs, an error in `fn` fails each analysis that gets
-#' the data. When you call `p$get_data()` by hand, the error stops the call.
+#' While [run_plan()] runs, an error in `fn` or in a step fails each
+#' analysis that gets the data. When you call `p$get_data()` by hand, the
+#' error stops the call.
+#' @section The steps:
+#' pbn runs the steps in the order `raw`, `clean`, `cohort` and
+#' `after_cohort`, and gives the value of each step to the next one. Each
+#' step after `raw` MUST take exactly one argument without a default, or
+#' `add_data()` stops. pbn calls `set.seed(sim)` once, before `raw`. So
+#' `raw = data_raw, clean = data_clean` draws the same numbers as
+#' `fn = function(scenario, sim) data_clean(data_raw(scenario, sim))`.
+#'
+#' pbn sees the value between the steps, so it checks the rule that the
+#' cleaning drops no row. Each exclusion goes through the cohort, which counts
+#' it. These values fail the data, as an error in `fn` does:
+#' - `raw` returns a data.frame, and `clean` returns a value that is not a
+#'   data.frame, or a data.frame with another number of rows.
+#' - `cohort` returns a value that is not a `cohort::CohortPipeline`.
+#' - `cohort` gets a data.frame, and its pipeline starts with another number
+#'   of rows, `cp$n_total()`.
+#'
+#' The error gives both numbers of rows. The checks compare the numbers of
+#' rows only, so the order of the rows and the columns MAY change. The checks
+#' compare the number of rows, not which rows: a step that drops one row and
+#' repeats another passes.
+#'
+#' When `raw` returns a value that is not a data.frame, pbn does not check
+#' `clean`. An example is a list of two tables that `clean` joins. That list
+#' has no number of rows to compare, and it is a valid start. pbn does not
+#' check the rows of `after_cohort`.
+#'
+#' Use `fn` for data that does not fit the steps, for example data that
+#' joins two cohorts. pbn then checks no rows inside `fn`.
 #' @section A cohort as the data:
-#' `fn` MAY return a `cohort::CohortPipeline` after its exclusions. The
-#' analyses then get `data[[name]]` as the data.table of
+#' `fn` or the step `cohort` MAY return a `cohort::CohortPipeline` after its
+#' exclusions. The analyses then get `data[[name]]` as the data.table of
 #' `$get_included(<cohort>)`. `<cohort>` is the one cohort of the pipeline
 #' that no other cohort branches from. A pipeline with more than one such
 #' cohort fails the data. Each other value goes to the analyses as it is.
 #'
-#' A step after the cohort, such as an imputation, reads the data of the
-#' cohort with [cohort_data()]. It returns its value through
-#' [keep_exclusions()], which puts the exclusion table on it. The value MAY
-#' be any R object, for example a list of imputed data sets.
+#' The step `after_cohort` reads the data of the cohort with
+#' [cohort_data()], and returns its value. The value MAY be any R object
+#' other than `NULL`, for example a list of imputed data sets. pbn puts the
+#' exclusion table of the cohort and its number of rows at the start on the
+#' value, as [keep_exclusions()] does. These replace the attributes that the
+#' step set. So a call of `keep_exclusions()` in the step changes nothing,
+#' and a table from another cohort does not stay. The step MAY return the
+#' `cohort::CohortPipeline` that it got. Another `cohort::CohortPipeline`
+#' fails the data, because its exclusion table would replace that of the
+#' step `cohort`.
+#'
+#' A step after the cohort in `fn` returns its value through
+#' [keep_exclusions()], which puts the exclusion table on it.
 #'
 #' pbn keeps the exclusion table of the cohort, and [save_results()] stores
 #' it in the element `exclusions` of the results. The table has one row for
 #' each exclusion step of the cohort and of the cohorts above it, in the
-#' order of the steps. It is a data.frame with these columns:
+#' order of the exclusion steps. It is a data.frame with these columns:
 #' - `data`, the name of the data.
 #' - `step`, the reason of `$exclude_and_track()`.
 #' - `n_before`, `n_excluded` and `n_after`, the number of rows before the
@@ -402,7 +465,8 @@ environment(count_rows) <- baseenv()
 #'   `data_`, for example `data_raw.R`, `data_clean.R`, `data_cohort.R` and
 #'   `data_impute.R`. [initialize_project()] computes them before it sources
 #'   the files.
-#' - the code of `fn`, deparsed without its source references.
+#' - the code of `fn`, or of each step, deparsed without its source
+#'   references.
 #' - `CFG$data`, when `CFG` has the element `data`. Put the config that the
 #'   data code reads there. A change in another element of `CFG` does not
 #'   change the key.
@@ -431,16 +495,18 @@ environment(count_rows) <- baseenv()
 #' change of the data code that the cache does not find.
 #'
 #' When the key is the same, [run_plan()] reads the value from the cache and
-#' does not call `fn`. Each analysis sets its own seed, so its results are
-#' the same as with a new value. Otherwise, or when a cache file cannot be
-#' read, it calls `fn` and writes the cache. To compute every value again,
+#' does not call `fn` or a step. Each analysis sets its own seed, so its
+#' results are the same as with a new value. Otherwise, or when a cache file
+#' cannot be read, it calls `fn` or the steps and writes the cache. To compute every value again,
 #' delete the folder `<version>_cache_gitexclude/`. No argument does that.
 #'
 #' For each scenario and simulation, [run_plan()] prints one line with
 #' `cat()`. The line says that the data came from the cache, with the date
 #' and time of the cache file. Or it says that pbn computed it, and why.
-#' The reason names each changed `data_*.R` file, `CFG$data`, the raw data,
-#' the code of `fn` or the settings. It can also name the kind of random
+#' The reason names each changed `data_*.R` file, `CFG$data`, the raw data
+#' or the settings. It names a changed `fn` as "the data function of
+#' add_data()", and each changed step as, for example, "the function given
+#' as `clean`". It can also name the kind of random
 #' number generator, or each package with another version. With `workers = 1`, the line comes before the
 #' data function runs. With more workers, [run_plan()] prints the lines after
 #' the run, in the order of the plan.
@@ -463,30 +529,34 @@ environment(count_rows) <- baseenv()
 #' @return Invisibly, the name of the data.
 #' @examples
 #' p <- plnr::Plan$new()
-#' pbn::add_data(p, "d", fn = function(scenario, sim) {
-#'   return(data.frame(x = stats::rnorm(3)))
-#' })
+#' pbn::add_data(
+#'   p,
+#'   "d",
+#'   raw = function(scenario, sim) return(data.frame(X = stats::rnorm(3))),
+#'   clean = function(d) return(stats::setNames(d, tolower(names(d))))
+#' )
 #' @family plan
 #' @seealso `vignette("pbn")`, which builds and runs a small fake project.
 #' @importFrom plnr Plan
 #' @export
-add_data <- function(p, name, fn, cache = FALSE) {
+add_data <- function(
+  p,
+  name,
+  fn = NULL,
+  raw = NULL,
+  clean = NULL,
+  cohort = NULL,
+  after_cohort = NULL,
+  cache = FALSE
+) {
   check_plan(p)
-  if (
-    !is.character(name) || length(name) != 1 || is.na(name) || !nzchar(name)
-  ) {
-    stop("`name` must be one non-empty string.", call. = FALSE)
-  }
-  if (name %in% c("hash", "data__________go_up_one_level")) {
-    stop(
-      "`name` must not be \"",
-      name,
-      "\", because plnr uses that name.",
-      call. = FALSE
-    )
-  }
-  if (!is.function(fn)) {
-    stop("`fn` must be a function.", call. = FALSE)
+  check_data_name(name)
+  steps <- check_data_steps(
+    fn,
+    list(raw = raw, clean = clean, cohort = cohort, after_cohort = after_cohort)
+  )
+  if (!is.null(steps)) {
+    fn <- steps[["raw"]]
   }
   check_data_formals(fn)
   check_cache_arg(cache, fn)
@@ -502,10 +572,12 @@ add_data <- function(p, name, fn, cache = FALSE) {
   wrapper <- data_wrapper(
     fn,
     name,
-    if (cache) data.table::address(p) else NULL
+    if (cache) data.table::address(p) else NULL,
+    steps
   )
   p$add_data(name, fn = wrapper)
   info$data[[name]] <- fn
+  info$steps[[name]] <- steps
   info$cache[[name]] <- cache
   info$data_envs[[name]] <- environment(wrapper)
   info$wrappers <- c(info$wrappers, list(environment(wrapper)))
@@ -690,6 +762,31 @@ add_analyses <- function(p, scenarios, name, fn, ..., control = FALSE) {
     list(environment(count), environment(action))
   )
   return(invisible(planned$kind$name))
+}
+
+# Stops when `name` is not a valid name of the data of add_data().
+check_data_name <- function(name) {
+  if (
+    !is.character(name) || length(name) != 1 || is.na(name) || !nzchar(name)
+  ) {
+    stop("`name` must be one non-empty string.", call. = FALSE)
+  }
+  if (!grepl("^[A-Za-z][A-Za-z0-9._]*$", name) || make.names(name) != name) {
+    stop(
+      "`name` must be a syntactic name that starts with a letter and holds ",
+      "only letters, digits, \".\" and \"_\", for example \"d\".",
+      call. = FALSE
+    )
+  }
+  if (name %in% c("hash", "data__________go_up_one_level")) {
+    stop(
+      "`name` must not be \"",
+      name,
+      "\", because plnr uses that name.",
+      call. = FALSE
+    )
+  }
+  return(invisible(name))
 }
 
 # Stops when `cache` is not TRUE or FALSE, or when it is TRUE for a data
@@ -890,7 +987,10 @@ planned_analyses <- function(table, name, dims) {
         hidden_args,
         list(c(
           base,
-          list(analysis = n_rows_kind, seed = analysis_seed(n_rows_kind, 0, sim)),
+          list(
+            analysis = n_rows_kind,
+            seed = analysis_seed(n_rows_kind, 0, sim)
+          ),
           settings
         ))
       )

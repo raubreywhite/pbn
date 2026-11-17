@@ -19,23 +19,36 @@ worker_functions <- c(
   "cache_md5",
   "cache_reason",
   "changed_parts",
+  "part_change",
+  "differing_names",
   "cache_read",
   "cache_save",
   "cache_line",
   "loaded_versions",
   "changed_packages",
-  "set_value_attr"
+  "set_value_attr",
+  "run_steps",
+  "call_step",
+  "check_clean_rows",
+  "check_cohort_rows",
+  "keep_cohort_table"
 )
 
 # The environment of a data wrapper: that of wrapper_env(), with the
 # functions of worker_functions, .pbn_cache, the cache context, and
 # .pbn_plan, the key of the plan in the registry, or NULL without a cache.
 # run_plan() sets .pbn_cache for a data function with cache = TRUE, and sets
-# it back to NULL after the run.
-data_wrapper_env <- function(fn, plan_key = NULL) {
+# it back to NULL after the run. For the steps form, `steps` holds the steps
+# that add_data() got, and the environment holds each step after raw as
+# .pbn_<step>, NULL when it was not given, and .pbn_step_args.
+data_wrapper_env <- function(fn, plan_key = NULL, steps = NULL) {
   e <- wrapper_env(fn)
   assign(".pbn_cache", NULL, envir = e)
   assign(".pbn_plan", plan_key, envir = e)
+  for (s in setdiff(step_names, "raw")) {
+    assign(paste0(".pbn_", s), steps[[s]], envir = e)
+  }
+  assign(".pbn_step_args", step_args(steps), envir = e)
   for (nm in worker_functions) {
     f <- get(nm, mode = "function")
     environment(f) <- e
@@ -288,8 +301,31 @@ changed_packages <- function(packages, memo) {
 }
 
 # The names of the parts of the key that differ between `old` and `new`. A
-# changed data_*.R file and a changed version are each named.
+# changed data_*.R file, a changed version and a changed step of the data
+# are each named.
 changed_parts <- function(old, new) {
+  out <- character(0)
+  for (nm in names(new)) {
+    if (!identical(old[[nm]], new[[nm]])) {
+      out <- c(out, part_change(nm, old[[nm]], new[[nm]]))
+    }
+  }
+  return(out)
+}
+
+# The name of the change of the part `nm` of the key from `a` to `b`. The
+# part data_function of the steps holds one md5 for each step, named by the
+# step, and the part data_function of `fn` holds one md5 without a name.
+part_change <- function(nm, a, b) {
+  if (nm == "data_function" && !is.null(names(a)) && !is.null(names(b))) {
+    return(paste0("the function given as `", differing_names(a, b), "`"))
+  }
+  if (nm == "versions") {
+    return(paste("the version of", differing_names(a, b)))
+  }
+  if (nm == "data_files") {
+    return(differing_names(a, b))
+  }
   labels <- c(
     scenario = "the scenario",
     sim = "the simulation",
@@ -299,31 +335,19 @@ changed_parts <- function(old, new) {
     cfg_data = "CFG$data",
     rng = "the kind of random number generator"
   )
-  out <- character(0)
-  for (nm in names(new)) {
-    if (identical(old[[nm]], new[[nm]])) {
-      next
-    }
-    if (nm %in% c("data_files", "versions")) {
-      a <- old[[nm]]
-      b <- new[[nm]]
-      each <- union(names(a), names(b))
-      differ <- each[
-        !vapply(
-          each,
-          function(f) return(identical(unname(a[f]), unname(b[f]))),
-          logical(1)
-        )
-      ]
-      out <- c(
-        out,
-        if (nm == "versions") paste("the version of", differ) else differ
-      )
-    } else {
-      out <- c(out, labels[[nm]])
-    }
-  }
-  return(out)
+  return(labels[[nm]])
+}
+
+# The names of the named vectors `a` and `b` whose values differ, also a
+# name that only one of them has, in the order of union().
+differing_names <- function(a, b) {
+  each <- union(names(a), names(b))
+  same <- vapply(
+    each,
+    function(f) return(identical(unname(a[f]), unname(b[f]))),
+    logical(1)
+  )
+  return(each[!same])
 }
 
 # The value in the cache file `file`, and a reason when it cannot be used:
@@ -421,7 +445,7 @@ cache_context <- function(info, name, print_now) {
       paste0(state$version, "_cache_gitexclude"),
       name
     ),
-    data_function = function_md5(info$data[name])
+    data_function = data_function_md5(info, name)
   ))
 }
 

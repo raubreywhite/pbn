@@ -59,9 +59,10 @@
 #'   `save_results()` stops for `"real"` when `data_raw` did not exist when
 #'   [initialize_project()] ran.
 #' - For a fake scenario only, `fake_md5`, one md5 of the code of the data
-#'   functions of [add_data()], without their source references. A change in
-#'   a function that a data function calls does not change `fake_md5`.
-#'   `source_md5` holds the md5 of the files of those functions.
+#'   functions of [add_data()], without their source references: each `fn`,
+#'   and each step of the steps form. A change in a function that `fn` or a
+#'   step calls does not change `fake_md5`. `source_md5` holds the md5 of
+#'   the files of those functions.
 #' - `n_rows_data`, a named integer vector with the number of rows of each
 #'   data element. A list of data.frames with one number of rows, for
 #'   example a list of imputed data sets, has the rows of one of them. Each
@@ -431,7 +432,7 @@ expect_function <- function(scenario) {
 # results_gitexclude.qs2 or NULL of each simulation in `private`, and, for
 # more than 1 simulation, the stacked object of results.qs2.
 build_objects <- function(r, index, table, info, gitexclude, data_md5) {
-  fake_md5 <- function_md5(info$data)
+  fake_md5 <- function_md5(data_code(info))
   out <- list()
   for (i in seq_len(nrow(table))) {
     s <- table$scenario[i]

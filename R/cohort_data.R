@@ -9,15 +9,19 @@
 #'   `NULL`. For example a data.table, a list of imputed data sets or a
 #'   `mids` object.
 #' @details
-#' A data function MAY end with a step after the cohort:
+#' A step after the cohort reads the data with `cohort_data()`. As the step
+#' `after_cohort` of [add_data()], it returns its value, and pbn puts the
+#' exclusion table on it:
 #'
 #' ```r
 #' data_impute <- function(cp) {
 #'   d <- pbn::cohort_data(cp)
-#'   imp <- lapply(1:5, function(k) impute_once(d))
-#'   pbn::keep_exclusions(imp, cp)
+#'   lapply(1:5, function(k) impute_once(d))
 #' }
 #' ```
+#'
+#' At the end of a data function `fn`, the step returns
+#' `pbn::keep_exclusions(imp, cp)`, so that the table stays.
 #'
 #' `cohort_data()` returns `cp$get_included(<cohort>)`. `<cohort>` is the one
 #' cohort of the pipeline that no other cohort branches from, the cohort that

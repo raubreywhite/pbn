@@ -2,9 +2,18 @@
 % Please edit documentation in R/plan.R
 \name{add_data}
 \alias{add_data}
-\title{Add a data function to a plan}
+\title{Add data to a plan}
 \usage{
-add_data(p, name, fn, cache = FALSE)
+add_data(
+  p,
+  name,
+  fn = NULL,
+  raw = NULL,
+  clean = NULL,
+  cohort = NULL,
+  after_cohort = NULL,
+  cache = FALSE
+)
 }
 \arguments{
 \item{p}{A plan from \code{plnr::Plan$new()}.}
@@ -12,10 +21,25 @@ add_data(p, name, fn, cache = FALSE)
 \item{name}{The name of the data. Each action function gets it as
 \code{data[[name]]}.}
 
-\item{fn}{The data function, normally
-\code{function(scenario, sim) data_raw(scenario, sim) |> data_clean() |> data_cohort()}.}
+\item{fn}{The free form: one data function, for data that does not fit
+the steps. Give \code{fn} or \code{raw}, not both.}
 
-\item{cache}{\code{TRUE} saves the value of \code{fn} on disk for each scenario and
+\item{raw}{The first step, normally \code{data_raw}, a \verb{function(scenario, sim)} that reads the real data or makes fake data.}
+
+\item{clean}{Optional. The step that gets the value of \code{raw}, normally
+\code{data_clean}, for example for names and types. It MUST return a
+data.frame with the same number of rows.}
+
+\item{cohort}{Optional. The step that gets the value of \code{clean}, or of
+\code{raw} without \code{clean}, normally \code{data_cohort}. It MUST return a
+\code{cohort::CohortPipeline} that starts with every row that it got.}
+
+\item{after_cohort}{Optional, and only with \code{cohort}. The step that gets
+the \code{cohort::CohortPipeline}, for example an imputation. It returns the
+data for the analyses, and pbn puts the exclusion table of the cohort on
+it. See the section A cohort as the data.}
+
+\item{cache}{\code{TRUE} saves the data on disk for each scenario and
 simulation. The next run reads it while the cache key is the same. See
 the section Cache.}
 }
@@ -23,11 +47,15 @@ the section Cache.}
 Invisibly, the name of the data.
 }
 \description{
-\code{add_data()} adds the data function \code{fn} to the plnr plan \code{p} with
-\code{p$add_data()}. plnr calls it once for each scenario and simulation, and
-gives the data to each analysis of that scenario and simulation.
+\code{add_data()} adds the data \code{name} to the plnr plan \code{p}, as the steps
+\code{raw}, \code{clean}, \code{cohort} and \code{after_cohort}, or as one data function \code{fn}.
+plnr calls it once for each scenario and simulation, and gives the data to
+each analysis of that scenario and simulation.
 }
 \details{
+In the steps form, each rule for \code{fn} in this section and in the section
+Cache applies to \code{raw}.
+
 plnr keys a data function on its arguments without a default. These are
 the key fields. Each key field of \code{fn} MUST be \code{scenario}, \code{sim} or a
 setting column of \code{CFG$scenarios}. Otherwise \code{\link[=run_plan]{run_plan()}} stops before it
@@ -55,32 +83,79 @@ sets no seed.
 The wrapper needs no object of the R session that adds it. \code{\link[=run_plan]{run_plan()}}
 gives each worker the objects that the functions folder defines.
 
-\code{name} MUST be one non-empty string, and it MUST NOT be \code{"hash"}, because
-plnr adds \code{data$hash} to the data of each analysis. Two data functions of
+\code{name} MUST be one syntactic name that starts with a letter and holds
+only letters, digits, \code{.} and \verb{_}, for example \code{"d"}. pbn names each step
+of the data \verb{<name>$<step>} in the code that \code{fake_md5} hashes. A \code{$} in a
+name could thus match a step of another data. \code{name} MUST NOT be
+\code{"hash"}, because plnr adds \code{data$hash} to the data of each analysis. Two data functions of
 one plan MUST NOT have the same name. Add data with \code{add_data()}, not with
 \code{p$add_data()}. \code{\link[=save_results]{save_results()}} reads the data functions of \code{add_data()}
 only.
 
-While \code{\link[=run_plan]{run_plan()}} runs, an error in \code{fn} fails each analysis that gets
-the data. When you call \code{p$get_data()} by hand, the error stops the call.
+While \code{\link[=run_plan]{run_plan()}} runs, an error in \code{fn} or in a step fails each
+analysis that gets the data. When you call \code{p$get_data()} by hand, the
+error stops the call.
 }
+\section{The steps}{
+
+pbn runs the steps in the order \code{raw}, \code{clean}, \code{cohort} and
+\code{after_cohort}, and gives the value of each step to the next one. Each
+step after \code{raw} MUST take exactly one argument without a default, or
+\code{add_data()} stops. pbn calls \code{set.seed(sim)} once, before \code{raw}. So
+\verb{raw = data_raw, clean = data_clean} draws the same numbers as
+\code{fn = function(scenario, sim) data_clean(data_raw(scenario, sim))}.
+
+pbn sees the value between the steps, so it checks the rule that the
+cleaning drops no row. Each exclusion goes through the cohort, which counts
+it. These values fail the data, as an error in \code{fn} does:
+\itemize{
+\item \code{raw} returns a data.frame, and \code{clean} returns a value that is not a
+data.frame, or a data.frame with another number of rows.
+\item \code{cohort} returns a value that is not a \code{cohort::CohortPipeline}.
+\item \code{cohort} gets a data.frame, and its pipeline starts with another number
+of rows, \code{cp$n_total()}.
+}
+
+The error gives both numbers of rows. The checks compare the numbers of
+rows only, so the order of the rows and the columns MAY change. The checks
+compare the number of rows, not which rows: a step that drops one row and
+repeats another passes.
+
+When \code{raw} returns a value that is not a data.frame, pbn does not check
+\code{clean}. An example is a list of two tables that \code{clean} joins. That list
+has no number of rows to compare, and it is a valid start. pbn does not
+check the rows of \code{after_cohort}.
+
+Use \code{fn} for data that does not fit the steps, for example data that
+joins two cohorts. pbn then checks no rows inside \code{fn}.
+}
+
 \section{A cohort as the data}{
 
-\code{fn} MAY return a \code{cohort::CohortPipeline} after its exclusions. The
-analyses then get \code{data[[name]]} as the data.table of
+\code{fn} or the step \code{cohort} MAY return a \code{cohort::CohortPipeline} after its
+exclusions. The analyses then get \code{data[[name]]} as the data.table of
 \verb{$get_included(<cohort>)}. \verb{<cohort>} is the one cohort of the pipeline
 that no other cohort branches from. A pipeline with more than one such
 cohort fails the data. Each other value goes to the analyses as it is.
 
-A step after the cohort, such as an imputation, reads the data of the
-cohort with \code{\link[=cohort_data]{cohort_data()}}. It returns its value through
-\code{\link[=keep_exclusions]{keep_exclusions()}}, which puts the exclusion table on it. The value MAY
-be any R object, for example a list of imputed data sets.
+The step \code{after_cohort} reads the data of the cohort with
+\code{\link[=cohort_data]{cohort_data()}}, and returns its value. The value MAY be any R object
+other than \code{NULL}, for example a list of imputed data sets. pbn puts the
+exclusion table of the cohort and its number of rows at the start on the
+value, as \code{\link[=keep_exclusions]{keep_exclusions()}} does. These replace the attributes that the
+step set. So a call of \code{keep_exclusions()} in the step changes nothing,
+and a table from another cohort does not stay. The step MAY return the
+\code{cohort::CohortPipeline} that it got. Another \code{cohort::CohortPipeline}
+fails the data, because its exclusion table would replace that of the
+step \code{cohort}.
+
+A step after the cohort in \code{fn} returns its value through
+\code{\link[=keep_exclusions]{keep_exclusions()}}, which puts the exclusion table on it.
 
 pbn keeps the exclusion table of the cohort, and \code{\link[=save_results]{save_results()}} stores
 it in the element \code{exclusions} of the results. The table has one row for
 each exclusion step of the cohort and of the cohorts above it, in the
-order of the steps. It is a data.frame with these columns:
+order of the exclusion steps. It is a data.frame with these columns:
 \itemize{
 \item \code{data}, the name of the data.
 \item \code{step}, the reason of \verb{$exclude_and_track()}.
@@ -114,7 +189,8 @@ modification time differs from the last record.
 \code{data_}, for example \code{data_raw.R}, \code{data_clean.R}, \code{data_cohort.R} and
 \code{data_impute.R}. \code{\link[=initialize_project]{initialize_project()}} computes them before it sources
 the files.
-\item the code of \code{fn}, deparsed without its source references.
+\item the code of \code{fn}, or of each step, deparsed without its source
+references.
 \item \code{CFG$data}, when \code{CFG} has the element \code{data}. Put the config that the
 data code reads there. A change in another element of \code{CFG} does not
 change the key.
@@ -144,16 +220,18 @@ leaves the key the same, and the run reads the old data. This is the one
 change of the data code that the cache does not find.
 
 When the key is the same, \code{\link[=run_plan]{run_plan()}} reads the value from the cache and
-does not call \code{fn}. Each analysis sets its own seed, so its results are
-the same as with a new value. Otherwise, or when a cache file cannot be
-read, it calls \code{fn} and writes the cache. To compute every value again,
+does not call \code{fn} or a step. Each analysis sets its own seed, so its
+results are the same as with a new value. Otherwise, or when a cache file
+cannot be read, it calls \code{fn} or the steps and writes the cache. To compute every value again,
 delete the folder \verb{<version>_cache_gitexclude/}. No argument does that.
 
 For each scenario and simulation, \code{\link[=run_plan]{run_plan()}} prints one line with
 \code{cat()}. The line says that the data came from the cache, with the date
 and time of the cache file. Or it says that pbn computed it, and why.
-The reason names each changed \code{data_*.R} file, \code{CFG$data}, the raw data,
-the code of \code{fn} or the settings. It can also name the kind of random
+The reason names each changed \code{data_*.R} file, \code{CFG$data}, the raw data
+or the settings. It names a changed \code{fn} as "the data function of
+add_data()", and each changed step as, for example, "the function given
+as \code{clean}". It can also name the kind of random
 number generator, or each package with another version. With \code{workers = 1}, the line comes before the
 data function runs. With more workers, \code{\link[=run_plan]{run_plan()}} prints the lines after
 the run, in the order of the plan.
@@ -177,9 +255,12 @@ rules.
 
 \examples{
 p <- plnr::Plan$new()
-pbn::add_data(p, "d", fn = function(scenario, sim) {
-  return(data.frame(x = stats::rnorm(3)))
-})
+pbn::add_data(
+  p,
+  "d",
+  raw = function(scenario, sim) return(data.frame(X = stats::rnorm(3))),
+  clean = function(d) return(stats::setNames(d, tolower(names(d))))
+)
 }
 \seealso{
 \code{vignette("pbn")}, which builds and runs a small fake project.

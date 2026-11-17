@@ -47,9 +47,14 @@ and \code{cache_key}. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,
 with \code{file.copy(copy.date = TRUE)}. That is why \code{data_files} and the cache
 key agree. pbn reads no content of a data file, so a copy with new times
-looks like changed data. On PASS, \code{check_one_file()} deletes the temporary folder.
-On FAIL, it keeps it, and the line names the folder with the file and the
-output of its run.
+looks like changed data. The times are whole seconds, so a copy that
+loses a part of a second, as on Windows, still agrees.
+
+When the run of the file stops with an error, \code{check_one_file()} prints
+FAIL with the exit status and the last 20 lines of the output of the run,
+and compares nothing. On PASS, it deletes the temporary folder. On FAIL,
+it keeps it, and the text names the folder with the file and the output
+of its run.
 
 The check copies each folder, so it needs the disk space of the real data
 once more. These are its limits:

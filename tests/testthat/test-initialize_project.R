@@ -100,7 +100,7 @@ test_that("data_files lists every file under each folder, at any depth, with its
     data.frame(
       file = "main/d.csv",
       size = as.numeric(file.size(csv)),
-      mtime = as.numeric(file.mtime(csv))
+      mtime = floor(as.numeric(file.mtime(csv)))
     )
   )
   # A file written after the call is not in the list.

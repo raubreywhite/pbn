@@ -62,8 +62,10 @@ state <- new.env(parent = emptyenv())
 #' - `file`, the name `<folder name>/<path in the folder>` with `/`, for
 #'   example `main/sub/d.csv`. It never holds the path of the folder.
 #' - `size`, the size in bytes.
-#' - `mtime`, the modification time in seconds since 1970-01-01 UTC, with
-#'   the fraction of a second that the file system keeps.
+#' - `mtime`, the modification time in whole seconds since 1970-01-01 UTC,
+#'   with the fraction of a second cut off. A copy of a file can lose part
+#'   of that fraction, for example on Windows, and whole seconds stay the
+#'   same.
 #'
 #' Hidden files count. A link to a file gives the size and the time of its
 #' target, and [list.files()] follows a link to a folder. A broken link stops
@@ -72,8 +74,8 @@ state <- new.env(parent = emptyenv())
 #' `<version>_results/` or `<version>_cache_gitexclude/`, because pbn writes
 #' there in each run. A folder elsewhere inside `home` is allowed.
 #'
-#' A file that changed in place, and kept its size and its modification
-#' time, is not seen. A copy that does not keep the modification times looks
+#' A file that changed in place, and kept its size and the second of its
+#' modification time, is not seen. A copy that does not keep the modification times looks
 #' like changed data, so the cache computes the data again. `file.copy(...,
 #' copy.date = TRUE)` keeps them.
 #' @section One file:

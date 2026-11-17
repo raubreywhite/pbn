@@ -212,7 +212,10 @@ check_nested_folders <- function(folders, home, version) {
 # The fingerprint of the files under each folder of the named paths
 # `folders`, at any depth: a data.frame with `file`, named <folder
 # name>/<path in the folder> with /, `size` in bytes and `mtime`, the
-# modification time in seconds since 1970-01-01 UTC. It is sorted by `file`
+# modification time in whole seconds since 1970-01-01 UTC, cut down. A copy
+# can keep the time with less than the full fraction of a second, for
+# example on Windows, and whole seconds agree on each file system. It is
+# sorted by `file`
 # in the C locale. One list.files() and one file.info() for each folder, and
 # no content of a file. A link to a file has the size and the time of its
 # target. Stops on a file without a size, such as a broken link.
@@ -233,7 +236,7 @@ folder_files <- function(folders) {
     out[[nm]] <- data.frame(
       file = paste0(nm, "/", rel, recycle0 = TRUE),
       size = as.numeric(info$size),
-      mtime = as.numeric(info$mtime)
+      mtime = floor(as.numeric(info$mtime))
     )
   }
   x <- do.call(rbind, unname(out))

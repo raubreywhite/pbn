@@ -265,14 +265,13 @@ fake_scenarios <- function() {
 }
 
 # The .R files of the functions folder of `version` in `home` that org
-# sources, relative to `home`, in the order that org sources them. org
-# documents the rule and keeps it in one internal function, so pbn calls
-# that function and does not write a second copy of the rule.
+# sources, relative to `home`, in the order that org sources them. pbn calls
+# the export of org for the rule and does not write a second copy of it.
 sourcing_order <- function(home, version) {
   folder <- paste0(version, "_functions")
   files <- org::ls_files(file.path(home, folder), regexp = "\\.[rR]$")
   files <- files[!dir.exists(files)]
-  sorted <- utils::getFromNamespace("sort_for_sourcing", "org")(files)
+  sorted <- org::sort_for_sourcing(files)
   return(paste0(folder, "/", basename(sorted), recycle0 = TRUE))
 }
 

@@ -865,12 +865,19 @@ The file is ASCII with LF line ends, because it goes through a clipboard. Put it
 
 `pbn::check_one_file()` runs the file in a new R session on this computer. The project folder there is an empty folder, and the folder `main` is a copy that keeps the modification times. It compares the real results of that run with those of the project, and prints PASS or the first difference:
 
-```{r}
-pass <- withr::with_dir(home, pbn::check_one_file("v01"))
+```{r, results = "hide"}
+said <- utils::capture.output(pass <- withr::with_dir(home, pbn::check_one_file("v01")))
+```
+
+```{r, echo = FALSE, comment = "#>"}
+cat(said, sep = "\n")
 ```
 
 ```{r, include = FALSE}
-stopifnot(isTRUE(pass))
+if (!isTRUE(pass)) {
+  options(warning.length = 8170)
+  stop(paste(c("check_one_file() did not pass:", said), collapse = "\n"))
+}
 ```
 
 Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there.

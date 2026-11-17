@@ -110,7 +110,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `initialize_project()` stops without `pbn.yml`. It gives org the `limit` of `loc_per_file`, or `Inf` when the rule is `warn` or `off`. pbn imports `yaml`.
 - `initialize_project()` takes `folders`, the named folders that the project reads, such as `c(main = "../data", lookup = "../codes")`, in the place of `data_raw`. One folder without a name is `main`. A call with `data_raw =` stops and gives the new argument.
 - New `folder(name, ...)` gives the path of a folder of the project, or of a path inside it, such as `pbn::folder("main", "sub", "d.csv")`, also on a worker of `run_plan()`. A part with a leading `/`, a drive or `..` stops. pbn gives org no folder, so `org::project$data_raw` is gone.
-- pbn reads no content of a data file. `manifest$data_files`, in the place of `data_md5`, lists each file under each folder at any depth, as `<folder>/<path>`, with its size and its modification time. A file that changed in place and kept both is not seen.
+- pbn reads no content of a data file. `manifest$data_files`, in the place of `data_md5`, lists each file under each folder at any depth, as `<folder>/<path>`, with its size and its modification time in whole seconds. A file that changed in place and kept its size and that second is not seen.
 - The cache key holds that fingerprint and no path. So the same files in another place, copied with their modification times, give the same key and the same results. A changed, new or removed file gives the cache line "the raw data in the folder lookup changed".
 - The rule `manifest_data` of `check_results()` needs `data_files` for `"real"`, and fails a manifest with `data_md5`.
 - `initialize_project()` stops on a folder inside another, on a folder that holds or is inside the results or the cache folder, and on a broken link.
@@ -120,7 +120,7 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - The set `house_2026_11_17` gets both new rules, and its md5 changes. It had no release yet. After the first release of pbn, a new rule needs a new dated set.
 - `run_script_initialises` does not count a call with an argument that `initialize_project()` does not have.
 - New `to_one_file()` writes the run of the real data as one R script, `vNN_one_file.R` in the project of the session, for a server without a network. It stops on kept code that uses a left-out `expect_` function, and on a file that does not parse. `initialize_project()` gains the argument `one_file` for that script.
-- New `check_one_file()` runs that script on copies of the folders and compares its real results with those of the project.
+- New `check_one_file()` runs that script on copies of the folders and compares its real results with those of the project. When the run stops, it prints the exit status and the last 20 lines of its output.
 - `unknown_path` knows `vNN_one_file.R`, and the code rules do not read it.
 - New `show_blocks()` and `show_block()` print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.
 

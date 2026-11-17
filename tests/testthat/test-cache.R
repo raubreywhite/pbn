@@ -129,6 +129,9 @@ test_that("each part of the cache key computes the data again with its reason, a
   )
 
   write_cohort_data(p$data_default, age = c(16, 16, 16, 30, 40, 50, 60, 25))
+  # The new file has the same size. pbn keeps whole seconds, so the time
+  # moves on by more than one second.
+  Sys.setFileTime(file.path(p$data_default, "d.csv"), Sys.time() + 10)
   s <- step(c("the raw data in the folder main changed", NA, NA))
   expect_identical(s$new_calls, "real 1")
 
@@ -376,7 +379,7 @@ test_that("a raw data file changed after initialize_project() changes the key an
     attr(r[["real__sim_0001__pbn_n_rows"]], "exclusions")$d$n_excluded,
     3L
   )
-  read_stat <- c(size = file.size(csv), mtime = as.numeric(file.mtime(csv)))
+  read_stat <- c(size = file.size(csv), mtime = floor(as.numeric(file.mtime(csv))))
   # The file changes again after the run, and a step by hand reads it. The
   # manifest of the run still names the data that the run read.
   write_cohort_data(p$data_default, age = c(16, 16, 16, 16, 40, 50, 60, 25))

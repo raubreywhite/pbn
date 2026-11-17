@@ -313,6 +313,9 @@ test_that("check_one_file prints PASS for the file of the project, and the first
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   init(p)
+  # The new R session gets its library paths from check_one_file(), not
+  # from R_LIBS of this R session, as in R CMD build.
+  withr::local_envvar(R_LIBS = NA)
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_identical(
     out,
@@ -476,4 +479,45 @@ test_that("to_one_file parses the whole file as its last step, and writes no fil
     fixed = TRUE
   )
   expect_false(file.exists(file.path(p$home, "v01_one_file.R")))
+})
+
+test_that("check_one_file prints the exit status and the last lines of the output when the run of the file stops", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  res <- run_script(p$home)
+  expect_identical(res$status, 0L, info = res$stdout)
+  init(p)
+  made <- one_file_lines
+  local_mocked_bindings(one_file_lines = function(...) {
+    return(c(made(...), "stop(\"boom in the new session\")"))
+  })
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_match(
+    out[1],
+    paste0(
+      "^FAIL: the file of pbn::to_one_file\\(\\) stopped in its new R session ",
+      "with the exit status 1, so there are no results to compare\\. The last ",
+      "[0-9]+ lines of its output:$"
+    )
+  )
+  expect_true(any(grepl("boom in the new session", out, fixed = TRUE)))
+  expect_match(out[length(out)], "^Its whole output is in .*run\\.log\\. The file and its run are in ")
+})
+
+test_that("a Windows path with \\ and a short name goes into the file as text that R reads back", {
+  p <- local_project()
+  init(p)
+  home <- "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\Rtmp a b\\home"
+  main <- "D:\\data dir\\main"
+  utils::capture.output(file <- to_one_file("v01", home, c(main = main)))
+  exprs <- parse(file, keep.source = FALSE)
+  init_call <- exprs[[which(vapply(
+    as.list(exprs),
+    function(e) return(is.call(e) && identical(e[[1]], quote(pbn::initialize_project))),
+    logical(1)
+  ))]]
+  expect_identical(init_call$home, home)
+  expect_identical(eval(init_call$folders), c(main = main))
+  expect_identical(exprs[[1]], call("setwd", home))
 })

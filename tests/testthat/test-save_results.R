@@ -108,7 +108,7 @@ test_that("the manifest names the run, the data, the rows of the data and the an
     data.frame(
       file = "main/d.csv",
       size = as.numeric(file.size(csv)),
-      mtime = as.numeric(file.mtime(csv))
+      mtime = floor(as.numeric(file.mtime(csv)))
     )
   )
   expect_identical(m$n_rows_data, c(d = 10L))

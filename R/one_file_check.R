@@ -31,9 +31,14 @@
 #' and of its folders. The copies keep the modification times of the files,
 #' with `file.copy(copy.date = TRUE)`. That is why `data_files` and the cache
 #' key agree. pbn reads no content of a data file, so a copy with new times
-#' looks like changed data. On PASS, `check_one_file()` deletes the temporary folder.
-#' On FAIL, it keeps it, and the line names the folder with the file and the
-#' output of its run.
+#' looks like changed data. The times are whole seconds, so a copy that
+#' loses a part of a second, as on Windows, still agrees.
+#'
+#' When the run of the file stops with an error, `check_one_file()` prints
+#' FAIL with the exit status and the last 20 lines of the output of the run,
+#' and compares nothing. On PASS, it deletes the temporary folder. On FAIL,
+#' it keeps it, and the text names the folder with the file and the output
+#' of its run.
 #'
 #' The check copies each folder, so it needs the disk space of the real data
 #' once more. These are its limits:
@@ -62,30 +67,46 @@ check_one_file <- function(version) {
     )
   }
   tmp <- tempfile("pbn_one_file_")
+  dir.create(file.path(tmp, "home"), recursive = TRUE)
+  # A temporary path on Windows holds \ and can hold a short name such as
+  # RUNNER~1. Each path that goes into the file is the long path with /.
+  tmp <- normalizePath(tmp, winslash = "/")
   home <- file.path(tmp, "home")
-  dir.create(home, recursive = TRUE)
   copies <- copy_folders(state$folders, file.path(tmp, "folders"))
   file <- file.path(tmp, paste0(version, "_one_file.R"))
   write_lf_lines(one_file_lines(version, home, copies), file)
   log <- file.path(tmp, "run.log")
   status <- run_rscript(file, log)
   if (!identical(status, 0L)) {
-    return(one_file_verdict(
-      paste0(
-        "the file stopped with the status ",
-        status,
-        ". Its output is in ",
-        log,
-        "."
-      ),
-      tmp
-    ))
+    return(one_file_verdict(child_failure(status, log), tmp))
   }
   found <- one_file_difference(
     local,
     file.path(home, paste0(version, "_results"), "real")
   )
   return(one_file_verdict(found, tmp))
+}
+
+# The text of check_one_file() for a run of the file that stopped with the
+# exit status `status`: the status, and the last 20 lines of the output in
+# `log`, each indented, because the folder of the run can be gone later, for
+# example after R CMD build.
+child_failure <- function(status, log) {
+  out <- if (file.exists(log)) readLines(log, warn = FALSE) else character(0)
+  out <- sub("\r$", "", out)
+  out <- utils::tail(out, 20)
+  return(paste0(
+    "the file of pbn::to_one_file() stopped in its new R session with the ",
+    "exit status ",
+    status,
+    ", so there are no results to compare. The last ",
+    length(out),
+    " lines of its output:\n",
+    paste0("    ", out, "\n", collapse = ""),
+    "Its whole output is in ",
+    log,
+    "."
+  ))
 }
 
 # Prints the line of check_one_file() for the difference `found`, or NULL

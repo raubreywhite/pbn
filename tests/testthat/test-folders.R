@@ -52,7 +52,7 @@ test_that("two folders: data_files names each file by its folder, a changed file
   expect_identical(m$data_files$file, c("lookup/codes.csv", "main/d.csv"))
   expect_identical(
     m$data_files$mtime,
-    as.numeric(file.mtime(c(csv, file.path(p$data_default, "d.csv"))))
+    floor(as.numeric(file.mtime(c(csv, file.path(p$data_default, "d.csv")))))
   )
   log <- readLines(file.path(p$home, "v01_results", "run.md"))
   expect_true(any(
@@ -235,5 +235,33 @@ test_that("a copy of the data with new modification times looks like changed dat
       "pbn: data d, real sim_0001: computed, because the raw data in the ",
       "folder main changed."
     )
+  )
+})
+
+test_that("a copy that keeps the modification time with less than its fraction of a second gives the same fingerprint and the same cache key", {
+  p <- local_project()
+  csv <- file.path(p$data_default, "d.csv")
+  # A time with a fraction, and the copy that Windows makes of it: the same
+  # second, without the whole fraction.
+  Sys.setFileTime(csv, as.POSIXct(1.8e9 + 0.75, origin = "1970-01-01", tz = "UTC"))
+  sourced <- init(p, folders = c(main = p$data_default))
+  first <- state$data_files
+  run <- real_plan(sourced)
+  utils::capture.output(run_plan(run$plan))
+  copy <- file.path(p$root, "copy")
+  dir.create(copy)
+  file.copy(csv, copy)
+  Sys.setFileTime(
+    file.path(copy, "d.csv"),
+    as.POSIXct(1.8e9 + 0.5, origin = "1970-01-01", tz = "UTC")
+  )
+  sourced <- init(p, folders = c(main = copy))
+  expect_identical(state$data_files, first)
+  expect_identical(first$mtime, 1.8e9)
+  run <- real_plan(sourced)
+  expect_match(
+    utils::capture.output(run_plan(run$plan)),
+    "reused the cache of",
+    fixed = TRUE
   )
 })

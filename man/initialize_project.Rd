@@ -89,8 +89,10 @@ The fingerprint is a data.frame with one row for each file, sorted by
 \item \code{file}, the name \verb{<folder name>/<path in the folder>} with \code{/}, for
 example \code{main/sub/d.csv}. It never holds the path of the folder.
 \item \code{size}, the size in bytes.
-\item \code{mtime}, the modification time in seconds since 1970-01-01 UTC, with
-the fraction of a second that the file system keeps.
+\item \code{mtime}, the modification time in whole seconds since 1970-01-01 UTC,
+with the fraction of a second cut off. A copy of a file can lose part
+of that fraction, for example on Windows, and whole seconds stay the
+same.
 }
 
 Hidden files count. A link to a file gives the size and the time of its
@@ -100,8 +102,8 @@ another or is the same folder. It stops when a folder holds or is inside
 \verb{<version>_results/} or \verb{<version>_cache_gitexclude/}, because pbn writes
 there in each run. A folder elsewhere inside \code{home} is allowed.
 
-A file that changed in place, and kept its size and its modification
-time, is not seen. A copy that does not keep the modification times looks
+A file that changed in place, and kept its size and the second of its
+modification time, is not seen. A copy that does not keep the modification times looks
 like changed data, so the cache computes the data again. \code{file.copy(..., copy.date = TRUE)} keeps them.
 }
 

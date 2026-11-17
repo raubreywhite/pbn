@@ -549,7 +549,7 @@ fourth <- run_lines()
 ```
 
 ```{r, include = FALSE}
-stopifnot(length(fourth) == 2, all(endsWith(fourth, ": computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.")))
+if (!(length(fourth) == 2 && all(endsWith(fourth, ": computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.")))) stop(paste(c("unexpected cache lines:", fourth), collapse = " | "))
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. Keep the data code in `data_*.R` files: a change in another file does not change the key. To compute every value again, delete `v01_cache_gitexclude/`.

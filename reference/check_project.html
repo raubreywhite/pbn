@@ -92,12 +92,17 @@ call <code><a href="initialize_project.html">pbn::initialize_project()</a></code
 <li><p><code>version_items_complete</code> (FAIL): a <code>vNN_run.R</code> has no <code>vNN_functions/</code>,
 or the reverse.</p></li>
 <li><p><code>results_contract</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/results.qs2</code> or a
-<code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> fails <code><a href="check_results.html">check_results()</a></code>,
-or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p>
-<p>The rule also reads each <code>results_gitexclude.qs2</code> beside such a file,
-also when git ignores it. It fails when the file does not hold exactly
-the analysis kinds that the manifest of <code>results.qs2</code> puts there.
-<code><a href="check_results.html">check_results()</a></code> does not check it.</p></li>
+<code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> of pbn 2026.11.22 fails
+<code><a href="check_results.html">check_results()</a></code>, or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p>
+<p>The rule also reads each <code>vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2</code>
+on the disk, also when git ignores it, and fails a file that fails
+<code><a href="check_results.html">check_results()</a></code>. A clone of the repository has none, and the rule then
+needs none.</p>
+<p>The rule also reads each <code>results_gitexclude.qs2</code> beside a
+<code>results.qs2</code>, and each <code>sim_NNNN_gitexclude.qs2</code> beside a
+<code>sim_NNNN.qs2</code>, also when git ignores it. It fails when the file does
+not hold exactly the analysis kinds that the manifest of the results
+file puts there. <code><a href="check_results.html">check_results()</a></code> does not check it.</p></li>
 <li><p><code>gitexclude_not_tracked</code> (FAIL): git tracks a path with <code>gitexclude</code> in
 its name, from <code>git ls-files</code> in <code>path</code>. Such a path holds data for each
 person. When git is not installed or <code>path</code> is not in a git repository,
@@ -118,7 +123,9 @@ name without the prefix <code>fake_data_</code>, or a file with the prefix is in
 another folder. <code><a href="make_outputs.html">make_outputs()</a></code> writes these folders.</p></li>
 <li><p><code>no_local_copy_of_pbn_function</code> (FAIL): a top-level assignment in a
 <code>vNN_functions/*.R</code> file defines a function with the name of a pbn
-export.</p></li>
+export. The one exception is <code>get_data</code>: a project MAY name its data
+function <code>get_data(scenario, sim)</code>, and a run script calls the export
+as <code><a href="get_data.html">pbn::get_data()</a></code>.</p></li>
 <li><p><code>loc_per_file</code> (FAIL): an <code>.R</code> file has more than 1000 code lines, as
 counted by <code><a href="https://www.rwhite.no/org/reference/loc_per_file.html" class="external-link">org::loc_per_file()</a></code>.</p></li>
 <li><p><code>no_environment_variables</code> (FAIL): a run script or a file in a functions
@@ -129,7 +136,8 @@ folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <c
 <code>check_project.R</code>, among others. A top-level dotfile and a top-level
 <code>*.Rproj</code> file are never unknown. The rule reads the top level only, so
 it never warns on the folders <code>output/</code> and <code>output_fake_data/</code> that
-<code><a href="make_outputs.html">make_outputs()</a></code> writes in <code>vNN_results/&lt;scenario&gt;/</code>.</p></li>
+<code><a href="make_outputs.html">make_outputs()</a></code> writes in <code>vNN_results/&lt;scenario&gt;/</code>, or on the folder
+<code>sims_gitexclude/</code> that <code><a href="save_results.html">save_results()</a></code> writes there.</p></li>
 </ul><p>The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.</p>
 <p>The file <code>pbn_allow.txt</code> in the project folder MAY list exceptions. Write
@@ -150,7 +158,7 @@ that matches no finding prints as a WARN of the rule <code>pbn_allow</code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2 passes check_results()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and each vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_&lt;INITIALS&gt;.docx</span>

@@ -123,7 +123,17 @@ rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</
 and attributes. It does not go into <code>manifest</code> or <code>exclusions</code>. A count that is <code>NA</code>, 0
 or 1 checks nothing, and a <code>manifest$n_rows_data</code> without another count
 checks nothing too. A table with fewer rows than the data passes, and
-so does a vector with one value for each group.</p></li>
+so does a vector with one value for each group.</p>
+<p>For stacked results, the rule is about the rows of one simulation. It
+takes the results apart into the value of each simulation. It uses the
+column <code>sim</code> of each data.frame and the entries <code>sim_&lt;kkkk&gt;</code> of each
+other value. It checks each simulation against its own counts in
+<code>manifest$n_rows_by_sim</code>. So 400 simulations of a 1-row table, a
+stacked table of 400 rows, pass with 400 rows of data in each
+simulation. A table with one row for each person in one simulation
+fails. Stacked results without <code>manifest$n_rows_by_sim</code> get the rule of
+unstacked results. An older pbn wrote their counts as <code>NA</code>, so they
+check nothing.</p></li>
 <li><p><code>manifest_scenario</code>: <code>manifest</code> has the elements <code>scenario</code>, <code>sim</code> and
 <code>sims</code>, and <code>scenario</code> is one string.</p></li>
 <li><p><code>manifest_data</code>: <code>manifest</code> has exactly one of <code>data_md5</code> and
@@ -138,9 +148,10 @@ md5 values, each a string of 32 lower-case hex digits. It names the run
 script <code>&lt;version&gt;_run.R</code> of <code>manifest$version</code>, or a <code>vNN_run.R</code> when
 the manifest has no valid version. A results file that pbn 2026.11.20
 or older wrote has no <code>source_md5</code>, so it fails this rule.</p></li>
-</ul><p><code>check_results()</code> checks the object of <code>results.qs2</code>. The object of
-<code>results_gitexclude.qs2</code> MAY hold data for each person, and these rules do
-not apply to it. See the section Two files of <code><a href="save_results.html">save_results()</a></code>.</p>
+</ul><p><code>check_results()</code> checks the object of <code>results.qs2</code> or of
+<code>sim_&lt;kkkk&gt;.qs2</code>. The object of a file of <code>gitexclude</code> MAY hold data for
+each person, and these rules do not apply to it. See the section Two
+files of <code><a href="save_results.html">save_results()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

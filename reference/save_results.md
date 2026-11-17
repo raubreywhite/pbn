@@ -70,6 +70,12 @@ the order of the plan:
   data.table. A kind without extra dimensions has the data.frame of its
   one analysis.
 
+- When each value is a list of data.frames with the same names, each
+  name once, the element is a named list with these names. Each of its
+  data.frames is the data.frames of that name row-bound, with the rule
+  of a data.frame above. An example is `results$sem$estimates` and
+  `results$sem$fit`.
+
 - Otherwise, a kind without extra dimensions has the value of its one
   analysis.
 
@@ -87,7 +93,11 @@ The `manifest` is a list with these elements:
 - `packages`, a named character vector. The names are the attached and
   loaded packages of this R session that are not base packages, and the
   values are their versions. `qs2` is always in the list, because it
-  writes the file.
+  writes the file. With 2 or more workers of
+  [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md), the
+  list also holds the packages loaded on a worker at the end of the run.
+  An example is the package of a model. With 2 or more workers, this R
+  session also loads doParallel, so the list then holds doParallel too.
 
 - `run_date`, the date of the call as `YYYY-MM-DD`. It has no time, so
   two runs on one day with the same inputs and packages write the same
@@ -163,7 +173,10 @@ step that fails:
     in the argsets of `p`. It stops when a fake scenario has no function
     `expect_<scenario>(results)` in the environment of
     [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
-    or when an analysis of `r` failed. It writes nothing then.
+    or when an analysis of `r` failed. In a git repository, it stops
+    when git does not ignore each file that it would write into a folder
+    `sims_gitexclude/`. The error names the first 3 of the files that
+    git does not ignore. It writes nothing then.
 
 2.  It builds every results object, and the stacked object of each
     scenario with more than 1 simulation, and checks each with
@@ -175,13 +188,9 @@ step that fails:
 3.  For each scenario, it replaces `check.csv` with one failed
     assertion, `not checked yet`, so that
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-    refuses the new results until step 4 checks them. It writes
-    `<version>_results/<scenario>/results.qs2` for 1 simulation. For
-    more simulations, it writes
-    `<version>_results/<scenario>/sim_<kkkk>/results.qs2` for each, and
-    then the stacked `<version>_results/<scenario>/results.qs2`. The
-    section Stacking gives the rules. The files of the scenarios that
-    are not in `scenarios` stay as they are.
+    refuses the new results until step 4 checks them. Then it writes the
+    files of the section The files. The files of the scenarios that are
+    not in `scenarios` stay as they are.
 
 4.  For each scenario with a function `expect_<scenario>()`, it calls
     that function on the results of the scenario. `expect_real()` is
@@ -196,10 +205,46 @@ step that fails:
     so a reader never sees a part of it.
 
 5.  After every scenario, it stops when a value of `pass` is not `TRUE`.
-    The error lists the failed assertions. The files stay, so that you
-    can find the fault, and
+    It prints each failed assertion in full with
+    [`cat()`](https://rdrr.io/r/base/cat.html), because R cuts an error
+    message at 1000 bytes by default. The error gives the number of
+    failed assertions, their scenarios and the path of `check.csv`. The
+    files stay, so that you can find the fault, and
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
     stops on them until the assertions pass.
+
+## The files
+
+git gets the results of each scenario as one file, `results.qs2`, and
+never the results of each simulation. These are the files of
+`<version>_results/<scenario>/`:
+
+    check.csv                  the assertions of expect_<scenario>()
+    results.qs2                the results, stacked for more than 1 simulation
+    results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
+    sims_gitexclude/           only for more than 1 simulation
+      sim_<kkkk>.qs2           the results of simulation <kkkk>
+      sim_<kkkk>_gitexclude.qs2  the kinds of `gitexclude` of simulation <kkkk>
+
+A scenario with 1 simulation has no folder `sims_gitexclude/`. Its
+`results.qs2` is the results object of its one simulation. For more
+simulations, `results.qs2` holds the simulations stacked, with the rules
+of the section Stacking. The name of `sims_gitexclude/` holds
+`gitexclude`, so the line `*gitexclude*` of `.gitignore` keeps it out of
+git. A clone of the repository thus has no results of one simulation.
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+with `sim` reads them.
+
+Before it writes a scenario, `save_results()` deletes each file in its
+`sims_gitexclude/`, and prints one line when there was one. So no
+simulation of an earlier run stays, for example after `sims` became
+smaller. For a scenario that now has 1 simulation, it deletes the
+folder.
+
+pbn 2026.11.22 and older wrote the results of each simulation to
+`sim_<kkkk>/results.qs2`, and git tracked them. When `save_results()`
+writes a scenario with more than 1 simulation, it deletes each folder
+`sim_<kkkk>/` of that scenario, and prints one line.
 
 ## Stacking
 
@@ -223,15 +268,21 @@ data.frame with a column `sim`, because pbn adds that column.
 
 The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
 are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
-The columns `from_cache` and `cache_key` of `data_cache` are `NA`.
-Stacking stops when the files of the simulations are not exactly the
-simulations 1 to `sims`, for example after `sims` became smaller. Delete
-the folders of the higher simulations then.
+The columns `from_cache` and `cache_key` of `data_cache` are `NA`. The
+counts `n_rows_before_exclusions` and `n_rows_after_exclusions` are `NA`
+too. The element `n_rows_by_sim` holds the counts of each simulation. It
+is a data.frame with one row for each simulation and data element. Its
+columns are `sim`, `data`, `n_rows_data`, `n_rows_before_exclusions` and
+`n_rows_after_exclusions`. The rule `no_row_per_person` of
+[`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
+reads it.
 
 ## Two files
 
 `save_results()` writes the results of the kinds in `gitexclude` to
-`results_gitexclude.qs2`, beside each `results.qs2`. `results.qs2` holds
+`results_gitexclude.qs2`, beside `results.qs2`, and to
+`sim_<kkkk>_gitexclude.qs2`, beside each `sim_<kkkk>.qs2`. The section
+The files shows them. `results.qs2` and `sim_<kkkk>.qs2` hold
 `manifest`, `exclusions` and every other kind. Use `gitexclude` for a
 kind with fitted models, imputations or one row for each person. The
 project's `.gitignore` MUST hold the line `*gitexclude*`, so that git
@@ -248,15 +299,16 @@ These rules apply:
   `results_gitexclude.qs2`.
 
 - [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
-  checks `results.qs2` only. So `results.qs2` MUST hold an element other
-  than `manifest`: one kind, or `exclusions`.
+  checks `results.qs2` and `sim_<kkkk>.qs2`, and not the files of
+  `gitexclude`.
 
 - The simulations of the two files are stacked apart, with the rules of
   the section Stacking.
 
 - Without kinds in `gitexclude`, `save_results()` deletes an old
-  `results_gitexclude.qs2` of the scenario and of each of its
-  simulations. It prints one line for each deleted file.
+  `results_gitexclude.qs2` of the scenario, and prints one line. The old
+  `sim_<kkkk>_gitexclude.qs2` files go with the rest of
+  `sims_gitexclude/`, see the section The files.
 
 ## See also
 
@@ -287,7 +339,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpjxOYQ1/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpQEQ3ZB/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

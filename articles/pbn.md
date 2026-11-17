@@ -106,12 +106,22 @@ pbn::make_outputs(make_output, scenarios)
 6.  [`pbn::make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
     writes the figures and the tables.
 
+To look at the data at the console, run the script up to the calls of
+[`pbn::add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md).
+Then get the data of one scenario and simulation, here simulation 1 of
+`real`:
+
+``` r
+d <- pbn::get_data(p, "real")$d
+```
+
 `data_raw` is relative to the project folder, because the script runs
 there. In a real project, run it with `Rscript v01_run.R` from the
 project folder.
 
-The cache and one results file hold data for each person, and both have
-`gitexclude` in their names. In a git repository,
+Three items have `gitexclude` in their names: the cache, a results file
+with data for each person, and the results of each simulation. In a git
+repository,
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) and
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 stop until git ignores them. So `.gitignore` MUST hold this line:
@@ -298,8 +308,8 @@ crude model.
 ``` r
 fit_models <- function(data, argset) {
   if (plnr::is_run_directly()) {
-    argset <- p$get_argset("confounded__sim_0003__models__1")
-    data <- p$get_data("confounded__sim_0003__models__1")
+    argset <- pbn::get_argset(p, "confounded", 3, "models")
+    data <- pbn::get_data(p, "confounded", 3)
   }
   est <- numeric(0)
   w <- numeric(0)
@@ -347,13 +357,13 @@ expect_known <- function(results) {
 }
 
 expect_null <- function(results) {
-  pbn::expect_recovers(results$models, truth = 0, level = CFG$level)
+  pbn::expect_recovers(results$models, truth = 0, level = CFG$level, label = "adjusted model")
 }
 
 expect_confounded <- function(results) {
   rbind(
-    pbn::expect_recovers(results$models, truth = 0.5, level = CFG$level),
-    pbn::expect_biased(results$crude, truth = 0.5)
+    pbn::expect_recovers(results$models, truth = 0.5, level = CFG$level, label = "adjusted model"),
+    pbn::expect_biased(results$crude, truth = 0.5, label = "crude model")
   )
 }
 ```
@@ -393,7 +403,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpX4U8CU/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpJuVhpa/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -425,7 +435,7 @@ session gives the value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 08:28.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 11:17.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -437,11 +447,12 @@ seed. pbn does not copy the R options to the workers.
 ## The results
 
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-wrote one results object for each scenario and simulation. A scenario
-with more than 1 simulation has one folder for each simulation, and a
-stacked `results.qs2`. Each fake scenario has `check.csv`, the table of
-its assertions. Here `sim_<kkkk>` stands for the folders of the 140
-simulations:
+wrote one results object for each scenario and simulation. git gets one
+`results.qs2` for each scenario, and `check.csv`, the table of the
+assertions of a fake scenario. For more than 1 simulation, `results.qs2`
+holds the simulations stacked. The results of each simulation are in
+`sims_gitexclude/`, which git ignores. Here `sim_<kkkk>` stands for the
+140 simulations:
 
 ``` r
 files <- list.files(file.path(home, "v01_results"), recursive = TRUE)
@@ -449,8 +460,8 @@ unique(sub("sim_[0-9]{4}", "sim_<kkkk>", files))
 #>  [1] "confounded/check.csv"                                 
 #>  [2] "confounded/results_gitexclude.qs2"                    
 #>  [3] "confounded/results.qs2"                               
-#>  [4] "confounded/sim_<kkkk>/results_gitexclude.qs2"         
-#>  [5] "confounded/sim_<kkkk>/results.qs2"                    
+#>  [4] "confounded/sims_gitexclude/sim_<kkkk>_gitexclude.qs2" 
+#>  [5] "confounded/sims_gitexclude/sim_<kkkk>.qs2"            
 #>  [6] "known/check.csv"                                      
 #>  [7] "known/output_fake_data/fake_data_outcome_by_group.png"
 #>  [8] "known/results_gitexclude.qs2"                         
@@ -458,8 +469,8 @@ unique(sub("sim_[0-9]{4}", "sim_<kkkk>", files))
 #> [10] "null/check.csv"                                       
 #> [11] "null/results_gitexclude.qs2"                          
 #> [12] "null/results.qs2"                                     
-#> [13] "null/sim_<kkkk>/results_gitexclude.qs2"               
-#> [14] "null/sim_<kkkk>/results.qs2"                          
+#> [13] "null/sims_gitexclude/sim_<kkkk>_gitexclude.qs2"       
+#> [14] "null/sims_gitexclude/sim_<kkkk>.qs2"                  
 #> [15] "real/output/outcome_by_group.png"                     
 #> [16] "real/results_gitexclude.qs2"                          
 #> [17] "real/results.qs2"
@@ -486,7 +497,10 @@ res$models
 
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
 reads the real results by default. With `scenario`, it reads the results
-of a fake scenario, and with `sim` one simulation. The stacked results
+of a fake scenario, and with `sim` one simulation from
+`sims_gitexclude/`. A clone of the repository has no such file, so
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+with `sim` then stops and says how to make the file. The stacked results
 of `confounded` have a first column `sim`:
 
 ``` r
@@ -499,12 +513,12 @@ head(confounded$models, 3)
 ```
 
 The manifest records where the results come from. It holds the versions
-of R, pbn and the loaded packages, the date, the scenario and the
-simulation. `source_md5` holds the md5 of `v01_run.R` and of each file
-in `v01_functions/`. For the real data, `data_md5` holds the md5 of each
-data file. For a fake scenario, `fake_md5` holds the md5 of the code of
-the data steps. `n_rows_data` holds the number of rows of the data after
-the exclusions.
+of R, pbn and the packages of this R session and of the workers, the
+date, the scenario and the simulation. `source_md5` holds the md5 of
+`v01_run.R` and of each file in `v01_functions/`. For the real data,
+`data_md5` holds the md5 of each data file. For a fake scenario,
+`fake_md5` holds the md5 of the code of the data steps. `n_rows_data`
+holds the number of rows of the data after the exclusions.
 
 ``` r
 str(res$manifest[c("scenario", "sim", "sims", "data_md5", "n_rows_data", "n_rows_before_exclusions", "analyses")])
@@ -537,8 +551,9 @@ check the small groups by hand.
 A results file goes to git, so it MUST NOT hold one row for each person.
 Some results do: fitted models, the imputations, or the predicted risk
 of `predict_risk()`. `save_results(gitexclude = "predicted")` writes
-that kind to `results_gitexclude.qs2`, beside each `results.qs2`. The
-line `*gitexclude*` of `.gitignore` keeps that file out of git.
+that kind to `results_gitexclude.qs2`, beside `results.qs2`, and to
+`sim_<kkkk>_gitexclude.qs2` for each simulation. The line `*gitexclude*`
+of `.gitignore` keeps that file out of git.
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
 reads both files and returns one list:
 
@@ -559,7 +574,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpX4U8CU/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpJuVhpa/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -570,8 +585,8 @@ file.rename(file.path(root, "kept.qs2"), private)
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
 and
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-check `results.qs2` only, so `predicted` passes the check of the rows of
-the data. The
+do not check what the kinds in `gitexclude` hold, so `predicted` passes
+the check of the rows of the data. The
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
 rule `gitexclude_not_tracked` fails when git tracks a path with
 `gitexclude` in its name.
@@ -601,9 +616,10 @@ knitr::kable(utils::read.csv(file.path(home, "v01_results", "confounded", "check
 
 | assertion | expected | observed | pass |
 |:---|:---|:---|:---|
-| results\$models: bias of estimate \|&#124;bias&#124; \<= 0.0932 (3.89 MCSE); can detect &#124;bias&#124; of 0.113 \|0.031; 140 of 140 simulations \|TRUE \| \|results\$models: model SE of estimate against its SD | \|relative error\| \<= 23.6% (3.89 MCSE); can detect ModSE/EmpSE of 0.772 or 1.37 | +1.1% (ModSE 0.286, EmpSE 0.283); 140 of 140 simulations | TRUE |
-| results$`models: coverage of the 90% interval        |0.801 to 0.999 (3.89 MCSE); can detect coverage of 0.771                                 |0.914; 140 of 140 simulations                            |TRUE |
-|results`$crude: bias of estimate, a control | \|bias\| \> 0.0715 (3.89 MCSE); can detect \|bias\| of 0.087 | 1.05; 140 of 140 simulations | TRUE |
+| adjusted model: bias of estimate against 0.5 | \|bias\| \<= 0.0932 (3.89 MCSE); can detect \|bias\| of 0.113 | 0.031; 140 of 140 simulations | TRUE |
+| adjusted model: model SE of estimate against its SD | \|relative error\| \<= 23.6% (3.89 MCSE); can detect ModSE/EmpSE of 0.772 or 1.37 | +1.1% (ModSE 0.286, EmpSE 0.283); 140 of 140 simulations | TRUE |
+| adjusted model: coverage of 0.5 by the 90% interval | 0.801 to 0.999 (3.89 MCSE); can detect coverage of 0.771 | 0.914; 140 of 140 simulations | TRUE |
+| crude model: bias of estimate against 0.5, a control | \|bias\| \> 0.0715 (3.89 MCSE); can detect \|bias\| of 0.087 | 1.05; 140 of 140 simulations | TRUE |
 
 “can detect” is the smallest error that the check finds with a
 probability of 80% at this number of simulations. A row passes when
@@ -613,7 +629,9 @@ means that the row passes almost anything.
 Give the checks the estimate on the scale where it is near normal: a log
 odds ratio, with a truth on the log scale. Below 100 simulations, or 137
 for the coverage at the level 0.9, each assertion fails with “too few
-simulations to check”.
+simulations to check”. `expect_recovers(coverage = FALSE)` makes no
+coverage assertion, so 100 simulations are enough, and `x` needs no
+`lower` and `upper`.
 [`?expect_recovers`](https://www.rwhite.no/pbn/reference/expect_recovers.md)
 gives the formulas, the rule for missing estimates and the probability
 of a false alarm.
@@ -622,11 +640,11 @@ The crude model does not recover the truth of `confounded`. These are
 the assertions that a wrong analysis gets:
 
 ``` r
-pbn::expect_recovers(confounded$crude, truth = 0.5, level = CFG$level)[, c("assertion", "observed", "pass")]
-#>                                               assertion
-#> 1                    confounded$crude: bias of estimate
-#> 2 confounded$crude: model SE of estimate against its SD
-#> 3        confounded$crude: coverage of the 90% interval
+pbn::expect_recovers(confounded$crude, truth = 0.5, level = CFG$level, label = "crude model")[, c("assertion", "observed", "pass")]
+#>                                          assertion
+#> 1        crude model: bias of estimate against 0.5
+#> 2 crude model: model SE of estimate against its SD
+#> 3 crude model: coverage of 0.5 by the 90% interval
 #>                                                   observed  pass
 #> 1                             1.05; 140 of 140 simulations FALSE
 #> 2 +6.0% (ModSE 0.231, EmpSE 0.218); 140 of 140 simulations  TRUE
@@ -674,8 +692,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 08:28.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 08:28.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 11:17.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 11:17.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -693,7 +711,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpX4U8CU/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpX4U8CU/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpX4U8CU/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpJuVhpa/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpJuVhpa/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpJuVhpa/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -702,8 +720,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 08:28.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 08:28.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 11:17.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 11:17.
 ```
 
 ### A cleaning step that drops a row
@@ -762,8 +780,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 08:28.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 08:28.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-17 11:17.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-17 11:17.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -796,8 +814,13 @@ file does not change the key. To compute every value again, delete
 ## Stepping through one analysis by hand
 
 The names of the analyses are `<scenario>__sim_<kkkk>__<name>__<i>`.
-`<i>` counts the values of the extra dimensions. Put back the second
-line of `v01_run.R`, so that the plan has every scenario:
+`<i>` counts the values of the extra dimensions.
+`pbn::get_argset(p, "confounded", 3, "models", 1)` gives the argset of
+`confounded__sim_0003__models__1`, and
+`pbn::get_data(p, "confounded", 3)` gives its data. The last argument of
+[`get_argset()`](https://www.rwhite.no/pbn/reference/get_data.md),
+`<i>`, is 1 by default. Put back the second line of `v01_run.R`, so that
+the plan has every scenario:
 
 ``` r
 script <- sub('pbn::scenarios(CFG, only = c("real", "known"))', "pbn::scenarios(CFG)", readLines(run_file), fixed = TRUE)
@@ -815,9 +838,9 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpX4U8CU/pbn_get_started/project/v01_functions into R_GlobalEnv
-argset <- p$get_argset("confounded__sim_0003__models__1")
-data <- p$get_data("confounded__sim_0003__models__1")
+#> Sourcing all code inside /tmp/RtmpJuVhpa/pbn_get_started/project/v01_functions into R_GlobalEnv
+argset <- pbn::get_argset(p, "confounded", 3, "models")
+data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
 argset$adjust
 #> [1] "x"
@@ -825,9 +848,10 @@ nrow(data$d)
 #> [1] 400
 ```
 
-`p$get_data()` uses the cache. The data code changed after the first
-run, so it computed the data again, and it gave the reason. When the
-plan runs `fit_models()`,
+[`pbn::get_data()`](https://www.rwhite.no/pbn/reference/get_data.md)
+uses the cache, as `p$get_data()` does. The data code changed after the
+first run, so it computed the data again, and it gave the reason. When
+the plan runs `fit_models()`,
 [`plnr::is_run_directly()`](https://www.rwhite.no/plnr/reference/is_run_directly.html)
 is `FALSE`, and the first lines do nothing. The plan calls
 `set.seed(argset$seed)` before each analysis. Run that line too before
@@ -886,7 +910,7 @@ pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
-#> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
+#> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
@@ -958,6 +982,11 @@ with the project folder as the working directory.
   [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html).
 - `workers` limits the number of R sessions. It does not limit the
   threads that R or the BLAS library starts in each of them.
+- `workers` limits the R sessions of pbn only. An analysis that starts
+  its own processes in a worker multiplies them, for example with
+  [`parallel::mclapply()`](https://rdrr.io/r/parallel/mclapply.html).
+  Two workers that each start 4 processes run 8 processes at the same
+  time.
 - `fake_md5` is the md5 of the code of the steps of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) only.
   A change in a function that a step calls does not change `fake_md5`.

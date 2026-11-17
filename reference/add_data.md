@@ -117,7 +117,9 @@ reads the data functions of `add_data()` only.
 
 While [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 runs, an error in `fn` or in a step fails each analysis that gets the
-data. When you call `p$get_data()` by hand, the error stops the call.
+data. When you call
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md) or
+`p$get_data()` by hand, the error stops the call.
 
 ## The steps
 
@@ -153,6 +155,14 @@ not check the rows of `after_cohort`.
 
 Use `fn` for data that does not fit the steps, for example data that
 joins two cohorts. pbn then checks no rows inside `fn`.
+
+An exclusion MAY apply to the rows of a reshape, for example one row for
+each person and time point. Add these rows as a second data element,
+with a second call of `add_data()`. Its `raw` builds the reshaped rows,
+and its `cohort` applies the exclusion, so the cohort counts it. Its
+`raw` MAY reshape the value of the `raw` of the first element. pbn sets
+the seed to `sim` before each data element, so both draw the same
+numbers.
 
 ## A cohort as the data
 
@@ -315,6 +325,7 @@ builds and runs a small fake project.
 Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

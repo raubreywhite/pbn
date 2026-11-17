@@ -8,7 +8,7 @@ confounder.
 ## Usage
 
 ``` r
-expect_biased(x, truth, estimate = "estimate", by = NULL)
+expect_biased(x, truth, estimate = "estimate", by = NULL, label = NULL)
 ```
 
 ## Arguments
@@ -34,7 +34,13 @@ expect_biased(x, truth, estimate = "estimate", by = NULL)
 - by:
 
   `NULL`, or the names of the columns of `x` that split it into groups,
-  for example `"term"`. Each group gets its own three assertions.
+  for example `"term"`. Each group gets its own assertions.
+
+- label:
+
+  `NULL`, or one string that starts the text of each assertion. `NULL`
+  uses the expression of `x`, for example `"results$models"`. Give a
+  label when `x` is not a named object, or for two calls on one object.
 
 ## Value
 
@@ -76,8 +82,8 @@ Other checks of fake scenarios:
 set.seed(1)
 x <- data.frame(sim = 1:300, estimate = rnorm(300, 0.9, 0.2))
 pbn::expect_biased(x, truth = 0.5)
-#>                        assertion
-#> 1 x: bias of estimate, a control
+#>                                    assertion
+#> 1 x: bias of estimate against 0.5, a control
 #>                                                   expected
 #> 1 |bias| > 0.0433 (3.89 MCSE); can detect |bias| of 0.0527
 #>                        observed pass

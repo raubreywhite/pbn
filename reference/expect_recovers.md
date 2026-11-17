@@ -15,7 +15,9 @@ expect_recovers(
   lower = "lower",
   upper = "upper",
   by = NULL,
-  level = 0.95
+  level = 0.95,
+  coverage = TRUE,
+  label = NULL
 )
 ```
 
@@ -43,25 +45,45 @@ expect_recovers(
 - by:
 
   `NULL`, or the names of the columns of `x` that split it into groups,
-  for example `"term"`. Each group gets its own three assertions.
+  for example `"term"`. Each group gets its own assertions.
 
 - level:
 
   The level of the confidence interval of `lower` and `upper`.
 
+- coverage:
+
+  `TRUE` checks the coverage of the interval. `FALSE` makes no coverage
+  assertion and needs no `lower` and `upper`. See the section Without
+  coverage.
+
+- label:
+
+  `NULL`, or one string that starts the text of each assertion. `NULL`
+  uses the expression of `x`, for example `"results$models"`. Give a
+  label when `x` is not a named object, or for two calls on one object.
+
 ## Value
 
 A data.frame with the columns `assertion`, `expected`, `observed` and
-`pass`, and three rows for each group. Give it to
-[`rbind()`](https://rdrr.io/r/base/cbind.html) with the other assertions
-of the `expect_<scenario>()` function.
+`pass`, and three rows for each group, or two with `coverage = FALSE`.
+Give it to [`rbind()`](https://rdrr.io/r/base/cbind.html) with the other
+assertions of the `expect_<scenario>()` function.
 
 ## Details
 
-The checks work on the scale of the columns. Give a log odds ratio, its
-standard error and its limits on the log scale, with a truth on the log
-scale. Do not give odds ratios. On the scale of the odds ratio, the
-estimate is biased, and the standard error is that of the log.
+`expect_recovers()` needs a fake scenario with random data and at least
+100 simulations. A fixed scenario, for example one with values that a
+person computed by hand, MUST keep exact assertions that you write by
+hand.
+
+The text of each assertion holds the label, the group of `by`, the
+measure and the truth, for example
+`"results$models: bias of estimate against 0.673"`. The checks work on
+the scale of the columns. Give a log odds ratio, its standard error and
+its limits on the log scale, with a truth on the log scale. Do not give
+odds ratios. On the scale of the odds ratio, the estimate is biased, and
+the standard error is that of the log.
 
 For each group and assertion, `n` is the number of simulations with the
 values that the assertion needs. The bias needs a finite `estimate`, the
@@ -130,6 +152,17 @@ the count:
 - the bias and the standard error, when all estimates are equal. The
   Monte Carlo SE is then 0.
 
+## Without coverage
+
+With `coverage = FALSE`, `expect_recovers()` checks the bias and the
+standard error only. It gives no row for the coverage, so the coverage
+is not checked, and `x` needs no columns `lower` and `upper`. Each
+assertion then needs 100 simulations. Use it for a simulation that is
+too slow for 288 simulations, the number that the coverage of a 95%
+interval needs. Use it also for an analysis without a confidence
+interval. The bias and the standard error are the same as with
+`coverage = TRUE`.
+
 ## The false alarms
 
 A false alarm is a failed assertion for a correct analysis. It stops the
@@ -174,9 +207,9 @@ x$lower <- x$estimate - 1.96 * x$se
 x$upper <- x$estimate + 1.96 * x$se
 pbn::expect_recovers(x, truth = 0.5)
 #>                                assertion
-#> 1                    x: bias of estimate
+#> 1        x: bias of estimate against 0.5
 #> 2 x: model SE of estimate against its SD
-#> 3        x: coverage of the 95% interval
+#> 3 x: coverage of 0.5 by the 95% interval
 #>                                                                         expected
 #> 1                      |bias| <= 0.0433 (3.89 MCSE); can detect |bias| of 0.0527
 #> 2 |relative error| <= 16.5% (3.89 MCSE); can detect ModSE/EmpSE of 0.834 or 1.23

@@ -82,6 +82,7 @@ imputes after the cohort.
 Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples

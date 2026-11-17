@@ -97,6 +97,17 @@ is valid. The seven rules:
   table with fewer rows than the data passes, and so does a vector with
   one value for each group.
 
+  For stacked results, the rule is about the rows of one simulation. It
+  takes the results apart into the value of each simulation. It uses the
+  column `sim` of each data.frame and the entries `sim_<kkkk>` of each
+  other value. It checks each simulation against its own counts in
+  `manifest$n_rows_by_sim`. So 400 simulations of a 1-row table, a
+  stacked table of 400 rows, pass with 400 rows of data in each
+  simulation. A table with one row for each person in one simulation
+  fails. Stacked results without `manifest$n_rows_by_sim` get the rule
+  of unstacked results. An older pbn wrote their counts as `NA`, so they
+  check nothing.
+
 - `manifest_scenario`: `manifest` has the elements `scenario`, `sim` and
   `sims`, and `scenario` is one string.
 
@@ -114,9 +125,10 @@ is valid. The seven rules:
   when the manifest has no valid version. A results file that pbn
   2026.11.20 or older wrote has no `source_md5`, so it fails this rule.
 
-`check_results()` checks the object of `results.qs2`. The object of
-`results_gitexclude.qs2` MAY hold data for each person, and these rules
-do not apply to it. See the section Two files of
+`check_results()` checks the object of `results.qs2` or of
+`sim_<kkkk>.qs2`. The object of a file of `gitexclude` MAY hold data for
+each person, and these rules do not apply to it. See the section Two
+files of
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
 
 ## See also

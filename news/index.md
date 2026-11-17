@@ -9,7 +9,7 @@ each scenario. To move a project, change these items:
 | Removed | Use instead |
 |----|----|
 | `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `org::project$data_raw`, and each argset holds `scenario`, `sim` and the settings. |
-| `use_scenario()` and its commented lines in `vNN_run.R` | `p$get_argset("<scenario>__sim_<kkkk>__<name>__<i>")` and `p$get_data()` inside `if (plnr::is_run_directly())`. |
+| `use_scenario()` and its commented lines in `vNN_run.R` | `pbn::get_argset(p, "<scenario>", <sim>, "<name>", <i>)` and `pbn::get_data(p, "<scenario>", <sim>)` inside `if (plnr::is_run_directly())`. |
 | `run_scenarios()`, `run_scenarios.R`, `workers` and `resume` | `pbn::scenarios(CFG)`, or `pbn::scenarios(CFG, only = "null")`, and `pbn::run_plan(p, workers = 2)`. A run always runs every chosen scenario. |
 | `fake_<scenario>(dir)` and the folder `data/` of a fake run | One data function `get_data(scenario, sim)` for every scenario, added with [`pbn::add_data()`](https://www.rwhite.no/pbn/reference/add_data.md). |
 | The command-line arguments `scenario=` and `sim=` | `pbn::scenarios(CFG, only = ...)` in the run script. |
@@ -186,6 +186,66 @@ each scenario. To move a project, change these items:
   that the whole error stays below 900 bytes. A knitr build keeps this
   error and loses the output of
   [`cat()`](https://rdrr.io/r/base/cat.html).
+- [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) with
+  workers starts each worker with the library paths of this R session,
+  through `R_LIBS`. Before, a worker did not find a library that the
+  session added with
+  [`.libPaths()`](https://rdrr.io/r/base/libPaths.html), for example
+  that of `R CMD build` on Windows.
+- git gets the stacked `<scenario>/results.qs2` only.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes the results of each simulation to
+  `<scenario>/sims_gitexclude/sim_<kkkk>.qs2`, and in a git repository
+  it stops until git ignores that folder.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  deletes the folders `sim_<kkkk>/` of the old layout of a scenario, and
+  prints one line.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  empties the folder `sims_gitexclude/` of a scenario before it writes
+  it, and deletes it for a scenario with 1 simulation. It prints one
+  line when it deleted a file. Before, a stale simulation stayed, and
+  `read_results(sim = )` read it.
+- In a git repository,
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  checks each file that it writes into `sims_gitexclude/`, with one call
+  of git, and names the first 3 that git does not ignore.
+- `read_results(sim = k)` reads `sims_gitexclude/sim_<kkkk>.qs2`.
+  Without that file, for example in a clone, it stops and says to run
+  the scenario.
+- `results_contract` checks each file of `sims_gitexclude/` on the disk,
+  and needs none in a clone.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  prints each failed assertion with
+  [`cat()`](https://rdrr.io/r/base/cat.html). Its error gives the count,
+  the scenarios and the path of `check.csv`, because R cut the list at
+  1000 bytes.
+- `no_row_per_person` checks stacked results for each simulation, with
+  the new `manifest$n_rows_by_sim`. Before, it checked nothing on
+  stacked results.
+- New argument `label` of
+  [`expect_recovers()`](https://www.rwhite.no/pbn/reference/expect_recovers.md)
+  and
+  [`expect_biased()`](https://www.rwhite.no/pbn/reference/expect_biased.md).
+  The text of the bias and coverage assertions names the truth, for
+  example “bias of estimate against 0.673”.
+- A kind whose analyses each return a list of data.frames with the same
+  names is a named list of row-bound data.frames, for example
+  `results$sem$estimates`. This changes the shape of such a kind in
+  results that this unreleased version wrote, where it was
+  `results$sem$sem__1` and so on.
+- `manifest$packages` also names the packages that the workers loaded,
+  for example the package of a model.
+- New `get_data(p, scenario, sim)` and
+  `get_argset(p, scenario, sim, name, i)` give the data and the argset
+  of one analysis without its name. An example is
+  `pbn::get_data(p, "real")$d`. `no_local_copy_of_pbn_function` allows a
+  project function `get_data`.
+- New argument `coverage` of
+  [`expect_recovers()`](https://www.rwhite.no/pbn/reference/expect_recovers.md).
+  With `FALSE`, it makes no coverage assertion, needs no `lower` and
+  `upper`, and needs 100 simulations.
+- `read_results(sim = 1)` reads the `results.qs2` of a scenario with 1
+  simulation.
 
 ## pbn 2026.11.22
 

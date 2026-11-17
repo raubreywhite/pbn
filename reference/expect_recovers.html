@@ -62,7 +62,9 @@ assertions in the format of an <code>expect_&lt;scenario&gt;()</code> function.<
 <span>  lower <span class="op">=</span> <span class="st">"lower"</span>,</span>
 <span>  upper <span class="op">=</span> <span class="st">"upper"</span>,</span>
 <span>  by <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  level <span class="op">=</span> <span class="fl">0.95</span></span>
+<span>  level <span class="op">=</span> <span class="fl">0.95</span>,</span>
+<span>  coverage <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  label <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -91,22 +93,42 @@ interval.</p></dd>
 
 <dt id="arg-by">by<a class="anchor" aria-label="anchor" href="#arg-by"></a></dt>
 <dd><p><code>NULL</code>, or the names of the columns of <code>x</code> that split it into
-groups, for example <code>"term"</code>. Each group gets its own three assertions.</p></dd>
+groups, for example <code>"term"</code>. Each group gets its own assertions.</p></dd>
 
 
 <dt id="arg-level">level<a class="anchor" aria-label="anchor" href="#arg-level"></a></dt>
 <dd><p>The level of the confidence interval of <code>lower</code> and <code>upper</code>.</p></dd>
 
+
+<dt id="arg-coverage">coverage<a class="anchor" aria-label="anchor" href="#arg-coverage"></a></dt>
+<dd><p><code>TRUE</code> checks the coverage of the interval. <code>FALSE</code> makes
+no coverage assertion and needs no <code>lower</code> and <code>upper</code>. See the section
+Without coverage.</p></dd>
+
+
+<dt id="arg-label">label<a class="anchor" aria-label="anchor" href="#arg-label"></a></dt>
+<dd><p><code>NULL</code>, or one string that starts the text of each
+assertion. <code>NULL</code> uses the expression of <code>x</code>, for example
+<code>"results$models"</code>. Give a label when <code>x</code> is not a named object, or for
+two calls on one object.</p></dd>
+
 </dl></div>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data.frame with the columns <code>assertion</code>, <code>expected</code>, <code>observed</code>
-and <code>pass</code>, and three rows for each group. Give it to <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code> with the
-other assertions of the <code>expect_&lt;scenario&gt;()</code> function.</p>
+and <code>pass</code>, and three rows for each group, or two with
+<code>coverage = FALSE</code>. Give it to <code><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind()</a></code> with the other assertions of the
+<code>expect_&lt;scenario&gt;()</code> function.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p>The checks work on the scale of the columns. Give a log odds ratio, its
+    <p><code>expect_recovers()</code> needs a fake scenario with random data and at least 100
+simulations. A fixed scenario, for example one with values that a person
+computed by hand, MUST keep exact assertions that you write by hand.</p>
+<p>The text of each assertion holds the label, the group of <code>by</code>, the
+measure and the truth, for example
+<code>"results$models: bias of estimate against 0.673"</code>.
+The checks work on the scale of the columns. Give a log odds ratio, its
 standard error and its limits on the log scale, with a truth on the log
 scale. Do not give odds ratios. On the scale of the odds ratio, the
 estimate is biased, and the standard error is that of the log.</p>
@@ -162,6 +184,18 @@ count:</p><ul><li><p>the standard error, on an <code>se</code> of 0 or less.</p>
 Monte Carlo SE is then 0.</p></li>
 </ul></div>
     <div class="section level2">
+    <h2 id="without-coverage">Without coverage<a class="anchor" aria-label="anchor" href="#without-coverage"></a></h2>
+
+
+<p>With <code>coverage = FALSE</code>, <code>expect_recovers()</code> checks the bias and the
+standard error only. It gives no row for the coverage, so the coverage is
+not checked, and <code>x</code> needs no columns <code>lower</code> and <code>upper</code>. Each assertion
+then needs 100 simulations. Use it for a simulation that is too slow for
+288 simulations, the number that the coverage of a 95% interval needs. Use
+it also for an analysis without a confidence interval. The bias and the standard error are the
+same as with <code>coverage = TRUE</code>.</p>
+    </div>
+    <div class="section level2">
     <h2 id="the-false-alarms">The false alarms<a class="anchor" aria-label="anchor" href="#the-false-alarms"></a></h2>
 
 
@@ -195,9 +229,9 @@ evaluate statistical methods. Statistics in Medicine. 2019;38:2074-2102.
 <span class="r-in"><span><span class="va">x</span><span class="op">$</span><span class="va">upper</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">estimate</span> <span class="op">+</span> <span class="fl">1.96</span> <span class="op">*</span> <span class="va">x</span><span class="op">$</span><span class="va">se</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">expect_recovers</span><span class="op">(</span><span class="va">x</span>, truth <span class="op">=</span> <span class="fl">0.5</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                assertion</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                    x: bias of estimate</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1        x: bias of estimate against 0.5</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 x: model SE of estimate against its SD</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3        x: coverage of the 95% interval</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3 x: coverage of 0.5 by the 95% interval</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                                                                         expected</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1                      |bias| &lt;= 0.0433 (3.89 MCSE); can detect |bias| of 0.0527</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 2 |relative error| &lt;= 16.5% (3.89 MCSE); can detect ModSE/EmpSE of 0.834 or 1.23</span>

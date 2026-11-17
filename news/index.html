@@ -55,7 +55,7 @@
 <code>use_scenario()</code> and its commented lines in <code>vNN_run.R</code>
 </td>
 <td>
-<code>p$get_argset("&lt;scenario&gt;__sim_&lt;kkkk&gt;__&lt;name&gt;__&lt;i&gt;")</code> and <code>p$get_data()</code> inside <code>if (plnr::is_run_directly())</code>.</td>
+<code>pbn::get_argset(p, "&lt;scenario&gt;", &lt;sim&gt;, "&lt;name&gt;", &lt;i&gt;)</code> and <code>pbn::get_data(p, "&lt;scenario&gt;", &lt;sim&gt;)</code> inside <code>if (plnr::is_run_directly())</code>.</td>
 </tr><tr><td>
 <code>run_scenarios()</code>, <code>run_scenarios.R</code>, <code>workers</code> and <code>resume</code>
 </td>
@@ -136,6 +136,30 @@
 <li>pbn puts the exclusion table of the cohort on the value of <code>after_cohort</code>, so the step needs no <code><a href="../reference/cohort_data.html">keep_exclusions()</a></code>. <code><a href="../reference/cohort_data.html">keep_exclusions()</a></code> is for a data function <code>fn</code>.</li>
 <li>With the steps, the cache key and <code>fake_md5</code> hold each step, and the cache line names a changed step. The article Get started uses the steps.</li>
 <li>The error of <code><a href="../reference/run_plan.html">run_plan()</a></code> also names the first failed analysis and holds its error. pbn cuts it so that the whole error stays below 900 bytes. A knitr build keeps this error and loses the output of <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>.</li>
+<li>
+<code><a href="../reference/run_plan.html">run_plan()</a></code> with workers starts each worker with the library paths of this R session, through <code>R_LIBS</code>. Before, a worker did not find a library that the session added with <code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>, for example that of <code>R CMD build</code> on Windows.</li>
+<li>git gets the stacked <code>&lt;scenario&gt;/results.qs2</code> only. <code><a href="../reference/save_results.html">save_results()</a></code> writes the results of each simulation to <code>&lt;scenario&gt;/sims_gitexclude/sim_&lt;kkkk&gt;.qs2</code>, and in a git repository it stops until git ignores that folder.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> deletes the folders <code>sim_&lt;kkkk&gt;/</code> of the old layout of a scenario, and prints one line.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> empties the folder <code>sims_gitexclude/</code> of a scenario before it writes it, and deletes it for a scenario with 1 simulation. It prints one line when it deleted a file. Before, a stale simulation stayed, and <code>read_results(sim = )</code> read it.</li>
+<li>In a git repository, <code><a href="../reference/save_results.html">save_results()</a></code> checks each file that it writes into <code>sims_gitexclude/</code>, with one call of git, and names the first 3 that git does not ignore.</li>
+<li>
+<code>read_results(sim = k)</code> reads <code>sims_gitexclude/sim_&lt;kkkk&gt;.qs2</code>. Without that file, for example in a clone, it stops and says to run the scenario.</li>
+<li>
+<code>results_contract</code> checks each file of <code>sims_gitexclude/</code> on the disk, and needs none in a clone.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> prints each failed assertion with <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>. Its error gives the count, the scenarios and the path of <code>check.csv</code>, because R cut the list at 1000 bytes.</li>
+<li>
+<code>no_row_per_person</code> checks stacked results for each simulation, with the new <code>manifest$n_rows_by_sim</code>. Before, it checked nothing on stacked results.</li>
+<li>New argument <code>label</code> of <code><a href="../reference/expect_recovers.html">expect_recovers()</a></code> and <code><a href="../reference/expect_biased.html">expect_biased()</a></code>. The text of the bias and coverage assertions names the truth, for example “bias of estimate against 0.673”.</li>
+<li>A kind whose analyses each return a list of data.frames with the same names is a named list of row-bound data.frames, for example <code>results$sem$estimates</code>. This changes the shape of such a kind in results that this unreleased version wrote, where it was <code>results$sem$sem__1</code> and so on.</li>
+<li>
+<code>manifest$packages</code> also names the packages that the workers loaded, for example the package of a model.</li>
+<li>New <code>get_data(p, scenario, sim)</code> and <code>get_argset(p, scenario, sim, name, i)</code> give the data and the argset of one analysis without its name. An example is <code>pbn::get_data(p, "real")$d</code>. <code>no_local_copy_of_pbn_function</code> allows a project function <code>get_data</code>.</li>
+<li>New argument <code>coverage</code> of <code><a href="../reference/expect_recovers.html">expect_recovers()</a></code>. With <code>FALSE</code>, it makes no coverage assertion, needs no <code>lower</code> and <code>upper</code>, and needs 100 simulations.</li>
+<li>
+<code>read_results(sim = 1)</code> reads the <code>results.qs2</code> of a scenario with 1 simulation.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

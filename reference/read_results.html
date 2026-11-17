@@ -87,8 +87,13 @@ writes. The default reads the real results.</p>
 <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/results.qs2</code>. That is the results of
 a scenario with 1 simulation, or the simulations that <code><a href="save_results.html">save_results()</a></code>
 stacked. With a number <code>k</code>, it reads
-<code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/results.qs2</code>, where
-<code>&lt;kkkk&gt;</code> is <code>k</code> with four digits.</p>
+<code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/sims_gitexclude/sim_&lt;kkkk&gt;.qs2</code>,
+where <code>&lt;kkkk&gt;</code> is <code>k</code> with four digits. git ignores that folder, so a clone
+of the repository has no such file. Then <code>read_results()</code> stops, and the
+error says to run the scenario with <code><a href="run_plan.html">run_plan()</a></code> and <code><a href="save_results.html">save_results()</a></code>.
+For a scenario with 1 simulation, <code>sim = 1</code> reads its <code>results.qs2</code>, the
+results of that simulation.
+The section The files of <code><a href="save_results.html">save_results()</a></code> shows each file.</p>
 <p><code>read_results()</code> stops when <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/check.csv</code>
 exists and holds a value of <code>pass</code> that is not <code>TRUE</code>, also when it reads
 one simulation. It also stops when that file holds no assertion, or has
@@ -98,8 +103,9 @@ can find the fault. The error names the file and how to read it with
 <p><code>read_results()</code> returns one list with the elements of both files. The
 order is that of a results object: <code>manifest</code>, <code>exclusions</code>, and the
 analysis kinds in the order of <code>manifest$analyses</code>. These rules apply to
-<code>results_gitexclude.qs2</code>:</p><ul><li><p>When the manifest names kinds in it and the file is missing, it returns
-the elements of <code>results.qs2</code>. A clone of the repository has no such
+<code>results_gitexclude.qs2</code>, and to <code>sim_&lt;kkkk&gt;_gitexclude.qs2</code> for one
+simulation:</p><ul><li><p>When the manifest names kinds in it and the file is missing, it returns
+the elements of the results file. A clone of the repository has no such
 file. It gives one warning that names the missing kinds and the file.</p></li>
 <li><p>It stops when the file holds other kinds than the manifest names, also
 when the manifest names none.</p></li>

@@ -41,8 +41,16 @@ With `sim = NULL`, `read_results()` reads
 of a scenario with 1 simulation, or the simulations that
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 stacked. With a number `k`, it reads
-`<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2`, where
-`<kkkk>` is `k` with four digits.
+`<home>/<version>_results/<scenario>/sims_gitexclude/sim_<kkkk>.qs2`,
+where `<kkkk>` is `k` with four digits. git ignores that folder, so a
+clone of the repository has no such file. Then `read_results()` stops,
+and the error says to run the scenario with
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) and
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
+For a scenario with 1 simulation, `sim = 1` reads its `results.qs2`, the
+results of that simulation. The section The files of
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+shows each file.
 
 `read_results()` stops when
 `<home>/<version>_results/<scenario>/check.csv` exists and holds a value
@@ -57,12 +65,13 @@ names the file and how to read it with
 `read_results()` returns one list with the elements of both files. The
 order is that of a results object: `manifest`, `exclusions`, and the
 analysis kinds in the order of `manifest$analyses`. These rules apply to
-`results_gitexclude.qs2`:
+`results_gitexclude.qs2`, and to `sim_<kkkk>_gitexclude.qs2` for one
+simulation:
 
 - When the manifest names kinds in it and the file is missing, it
-  returns the elements of `results.qs2`. A clone of the repository has
-  no such file. It gives one warning that names the missing kinds and
-  the file.
+  returns the elements of the results file. A clone of the repository
+  has no such file. It gives one warning that names the missing kinds
+  and the file.
 
 - It stops when the file holds other kinds than the manifest names, also
   when the manifest names none.

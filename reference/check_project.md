@@ -59,13 +59,21 @@ The rules:
   `vNN_functions/`, or the reverse.
 
 - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
-  `vNN_results/<scenario>/sim_NNNN/results.qs2` fails
+  `vNN_results/<scenario>/sim_NNNN/results.qs2` of pbn 2026.11.22 fails
   [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md),
   or a `results.qs2` is directly in `vNN_results/`.
 
-  The rule also reads each `results_gitexclude.qs2` beside such a file,
-  also when git ignores it. It fails when the file does not hold exactly
-  the analysis kinds that the manifest of `results.qs2` puts there.
+  The rule also reads each
+  `vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2` on the disk,
+  also when git ignores it, and fails a file that fails
+  [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md).
+  A clone of the repository has none, and the rule then needs none.
+
+  The rule also reads each `results_gitexclude.qs2` beside a
+  `results.qs2`, and each `sim_NNNN_gitexclude.qs2` beside a
+  `sim_NNNN.qs2`, also when git ignores it. It fails when the file does
+  not hold exactly the analysis kinds that the manifest of the results
+  file puts there.
   [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
   does not check it.
 
@@ -103,7 +111,10 @@ The rules:
 
 - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
   `vNN_functions/*.R` file defines a function with the name of a pbn
-  export.
+  export. The one exception is `get_data`: a project MAY name its data
+  function `get_data(scenario, sim)`, and a run script calls the export
+  as
+  [`pbn::get_data()`](https://www.rwhite.no/pbn/reference/get_data.md).
 
 - `loc_per_file` (FAIL): an `.R` file has more than 1000 code lines, as
   counted by
@@ -120,7 +131,10 @@ The rules:
   The rule reads the top level only, so it never warns on the folders
   `output/` and `output_fake_data/` that
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
-  writes in `vNN_results/<scenario>/`.
+  writes in `vNN_results/<scenario>/`, or on the folder
+  `sims_gitexclude/` that
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  writes there.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -144,7 +158,7 @@ pbn::check_project(home)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
-#> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and vNN_results/<scenario>/sim_NNNN/results.qs2 passes check_results()
+#> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx

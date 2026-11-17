@@ -85,7 +85,13 @@ foreach. It starts a PSOCK cluster of <code>workers</code> new R sessions with
 <code><a href="https://rdrr.io/r/parallel/makeCluster.html" class="external-link">parallel::makePSOCKcluster()</a></code>, registers it with
 <code><a href="https://rdrr.io/pkg/doParallel/man/registerDoParallel.html" class="external-link">doParallel::registerDoParallel()</a></code>, and calls <code>p$run_all()</code> with the
 foreach path of plnr. A PSOCK cluster does not fork, so it also works on
-Windows. Before the run, <code>run_plan()</code> gives each worker these:</p><ul><li><p>the library paths of this R session, from <code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>.</p></li>
+Windows.</p>
+<p>Each worker starts with the library paths of this R session, from
+<code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>. While it starts the cluster, <code>run_plan()</code> sets the
+environment variable <code>R_LIBS</code> to these paths, and then it sets
+<code>R_LIBS</code> back. So a worker also finds a library that this R session added
+with <code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>, for example the temporary library of <code>R CMD build</code>.
+Before the run, <code>run_plan()</code> gives each worker these:</p><ul><li><p>the library paths of this R session again, with <code><a href="https://rdrr.io/r/base/libPaths.html" class="external-link">.libPaths()</a></code>.</p></li>
 <li><p>the packages attached in this R session, in the order of <code><a href="https://rdrr.io/r/base/search.html" class="external-link">search()</a></code>,
 for example data.table after <code><a href="https://r-datatable.com" class="external-link">library(data.table)</a></code> in the run script.</p></li>
 <li><p>the kind of random number generator of this R session, from
@@ -145,7 +151,8 @@ cohort as the data of <code><a href="add_data.html">add_data()</a></code> gives 
 <p>Other plan:
 <code><a href="add_analyses.html">add_analyses()</a></code>,
 <code><a href="add_data.html">add_data()</a></code>,
-<code><a href="cohort_data.html">cohort_data()</a></code></p></div>
+<code><a href="cohort_data.html">cohort_data()</a></code>,
+<code><a href="get_data.html">get_data()</a></code></p></div>
     </div>
 
     <div class="section level2">

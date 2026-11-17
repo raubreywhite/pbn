@@ -106,6 +106,10 @@ Each extra dimension of the kind comes first as a column, unless the
 data.frame has a column of that name already. A data.table stays a
 data.table. A kind without extra dimensions has the data.frame of its one
 analysis.</p></li>
+<li><p>When each value is a list of data.frames with the same names, each name
+once, the element is a named list with these names. Each of its data.frames is the data.frames of that name
+row-bound, with the rule of a data.frame above. An example is
+<code>results$sem$estimates</code> and <code>results$sem$fit</code>.</p></li>
 <li><p>Otherwise, a kind without extra dimensions has the value of its one
 analysis.</p></li>
 <li><p>Otherwise, the element is a named list with one entry for each
@@ -116,7 +120,10 @@ simulation. <code><a href="add_analyses.html">add_analyses()</a></code> gives th
 <li><p><code>packages</code>, a named character vector. The names are the attached and
 loaded packages of this R session that are not base packages, and the
 values are their versions. <code>qs2</code> is always in the list, because it writes
-the file.</p></li>
+the file. With 2 or more workers of <code><a href="run_plan.html">run_plan()</a></code>, the list also holds
+the packages loaded on a worker at the end of the run. An example is the
+package of a model. With 2 or more workers, this R session also loads
+doParallel, so the list then holds doParallel too.</p></li>
 <li><p><code>run_date</code>, the date of the call as <code>YYYY-MM-DD</code>. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.</p></li>
 <li><p><code>version</code>, <code>scenario</code>, <code>sim</code> and <code>sims</code>.</p></li>
@@ -163,21 +170,19 @@ that fails:</p><ol><li><p>It checks its arguments. It stops when <code>r</code> 
 <code><a href="run_plan.html">run_plan()</a></code> for <code>p</code>. It stops when the settings of <code>scenarios</code> are not
 the settings in the argsets of <code>p</code>. It stops when a fake scenario has no function
 <code>expect_&lt;scenario&gt;(results)</code> in the environment of
-<code><a href="initialize_project.html">initialize_project()</a></code>, or when an analysis of <code>r</code> failed. It writes
-nothing then.</p></li>
+<code><a href="initialize_project.html">initialize_project()</a></code>, or when an analysis of <code>r</code> failed. In a git
+repository, it stops when git does not ignore each file that it would
+write into a folder <code>sims_gitexclude/</code>. The error names the first 3 of
+the files that git does not ignore. It writes nothing then.</p></li>
 <li><p>It builds every results object, and the stacked object of each scenario
 with more than 1 simulation, and checks each with <code><a href="check_results.html">check_results()</a></code>. On
 a failure, it prints each failed rule with <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>, writes nothing and
 stops.</p></li>
 <li><p>For each scenario, it replaces <code>check.csv</code> with one failed assertion,
 <code>not checked yet</code>, so that <code><a href="read_results.html">read_results()</a></code> refuses the new results
-until step 4 checks them. It writes
-<code>&lt;version&gt;_results/&lt;scenario&gt;/results.qs2</code> for 1 simulation. For more
-simulations, it writes <code>&lt;version&gt;_results/&lt;scenario&gt;/sim_&lt;kkkk&gt;/results.qs2</code>
-for each, and then the stacked
-<code>&lt;version&gt;_results/&lt;scenario&gt;/results.qs2</code>. The section Stacking gives
-the rules. The files of the scenarios that are not in <code>scenarios</code> stay
-as they are.</p></li>
+until step 4 checks them. Then it writes the files of the section The
+files. The files of the scenarios that are not in <code>scenarios</code> stay as
+they are.</p></li>
 <li><p>For each scenario with a function <code>expect_&lt;scenario&gt;()</code>, it calls that
 function on the results of the scenario. <code>expect_real()</code> is optional.
 The function MUST return a data.frame with at least one row and the
@@ -189,10 +194,41 @@ assertion. This rule is the same for <code>expect_real()</code> and for the fake
 scenarios. <code>save_results()</code> writes <code>check.csv</code> to a temporary file in
 the same folder and renames it, so a reader never sees a part of it.</p></li>
 <li><p>After every scenario, it stops when a value of <code>pass</code> is not <code>TRUE</code>.
-The error lists the failed assertions. The files stay, so that you can
-find the fault, and <code><a href="read_results.html">read_results()</a></code> stops on them until the assertions
-pass.</p></li>
+It prints each failed assertion in full with <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>, because R cuts an
+error message at 1000 bytes by default. The error gives the number of
+failed assertions, their scenarios and the path of <code>check.csv</code>. The
+files stay, so that you can find the fault, and <code><a href="read_results.html">read_results()</a></code> stops
+on them until the assertions pass.</p></li>
 </ol></div>
+    <div class="section level2">
+    <h2 id="the-files">The files<a class="anchor" aria-label="anchor" href="#the-files"></a></h2>
+
+
+<p>git gets the results of each scenario as one file, <code>results.qs2</code>, and
+never the results of each simulation. These are the files of
+<code>&lt;version&gt;_results/&lt;scenario&gt;/</code>:</p>
+<p></p><div class="sourceCode"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>check.csv                  the assertions of expect_<span class="sc">&lt;</span>scenario<span class="sc">&gt;</span>()</span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a>results.qs2                the results, stacked <span class="cf">for</span> more than <span class="dv">1</span> simulation</span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a>results_gitexclude.qs2     the kinds of <span class="st">`</span><span class="at">gitexclude</span><span class="st">`</span>, stacked the same way</span>
+<span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a>sims_gitexclude<span class="sc">/</span>           only <span class="cf">for</span> more than <span class="dv">1</span> simulation</span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a>  sim_<span class="sc">&lt;</span>kkkk<span class="sc">&gt;</span>.qs2           the results of simulation <span class="sc">&lt;</span>kkkk<span class="sc">&gt;</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a>  sim_<span class="sc">&lt;</span>kkkk<span class="sc">&gt;</span>_gitexclude.qs2  the kinds of <span class="st">`</span><span class="at">gitexclude</span><span class="st">`</span> of simulation <span class="sc">&lt;</span>kkkk<span class="sc">&gt;</span></span></code></pre><p></p></div>
+<p>A scenario with 1 simulation has no folder <code>sims_gitexclude/</code>. Its
+<code>results.qs2</code> is the results object of its one simulation. For more
+simulations, <code>results.qs2</code> holds the simulations stacked, with the rules
+of the section Stacking. The name of <code>sims_gitexclude/</code> holds
+<code>gitexclude</code>, so the line <code>*gitexclude*</code> of <code>.gitignore</code> keeps it out of
+git. A clone of the repository thus has no results of one simulation.
+<code><a href="read_results.html">read_results()</a></code> with <code>sim</code> reads them.</p>
+<p>Before it writes a scenario, <code>save_results()</code> deletes each file in its
+<code>sims_gitexclude/</code>, and prints one line when there was one. So no
+simulation of an earlier run stays, for example after <code>sims</code> became
+smaller. For a scenario that now has 1 simulation, it deletes the folder.</p>
+<p>pbn 2026.11.22 and older wrote the results of each simulation to
+<code>sim_&lt;kkkk&gt;/results.qs2</code>, and git tracked them. When <code>save_results()</code>
+writes a scenario with more than 1 simulation, it deletes each folder
+<code>sim_&lt;kkkk&gt;/</code> of that scenario, and prints one line.</p>
+    </div>
     <div class="section level2">
     <h2 id="stacking">Stacking<a class="anchor" aria-label="anchor" href="#stacking"></a></h2>
 
@@ -211,18 +247,23 @@ and the error names the path and the two simulations. It also stops on a
 data.frame with a column <code>sim</code>, because pbn adds that column.</p>
 <p>The <code>manifest</code> is that of simulation 1. In it, <code>sim</code> and <code>n_rows_data</code>
 are <code>NA</code>, <code>sims</code> is the number of simulations, and <code>stacked</code> is <code>TRUE</code>.
-The columns <code>from_cache</code> and <code>cache_key</code> of <code>data_cache</code> are <code>NA</code>.
-Stacking stops when the files of the simulations are not exactly the
-simulations 1 to <code>sims</code>, for example after <code>sims</code> became smaller. Delete
-the folders of the higher simulations then.</p>
+The columns <code>from_cache</code> and <code>cache_key</code> of <code>data_cache</code> are <code>NA</code>. The
+counts <code>n_rows_before_exclusions</code> and <code>n_rows_after_exclusions</code> are <code>NA</code>
+too. The element <code>n_rows_by_sim</code> holds the counts of each simulation. It
+is a data.frame with one row for each simulation and data element. Its
+columns are <code>sim</code>, <code>data</code>, <code>n_rows_data</code>, <code>n_rows_before_exclusions</code> and
+<code>n_rows_after_exclusions</code>. The rule <code>no_row_per_person</code> of
+<code><a href="check_results.html">check_results()</a></code> reads it.</p>
     </div>
     <div class="section level2">
     <h2 id="two-files">Two files<a class="anchor" aria-label="anchor" href="#two-files"></a></h2>
 
 
 <p><code>save_results()</code> writes the results of the kinds in <code>gitexclude</code> to
-<code>results_gitexclude.qs2</code>, beside each <code>results.qs2</code>. <code>results.qs2</code> holds
-<code>manifest</code>, <code>exclusions</code> and every other kind. Use <code>gitexclude</code> for a
+<code>results_gitexclude.qs2</code>, beside <code>results.qs2</code>, and to
+<code>sim_&lt;kkkk&gt;_gitexclude.qs2</code>, beside each <code>sim_&lt;kkkk&gt;.qs2</code>. The section The
+files shows them. <code>results.qs2</code> and <code>sim_&lt;kkkk&gt;.qs2</code> hold <code>manifest</code>,
+<code>exclusions</code> and every other kind. Use <code>gitexclude</code> for a
 kind with fitted models, imputations or one row for each person. The
 project's <code>.gitignore</code> MUST hold the line <code>*gitexclude*</code>, so that git
 never tracks that file. <code><a href="read_results.html">read_results()</a></code> reads both files.</p>
@@ -230,13 +271,14 @@ never tracks that file. <code><a href="read_results.html">read_results()</a></co
 <code>gitexclude</code> is not an analysis kind of <code>p</code>.</p></li>
 <li><p>In a git repository, it also stops when git does not ignore
 <code>results_gitexclude.qs2</code>.</p></li>
-<li><p><code><a href="check_results.html">check_results()</a></code> checks <code>results.qs2</code> only. So <code>results.qs2</code> MUST hold
-an element other than <code>manifest</code>: one kind, or <code>exclusions</code>.</p></li>
+<li><p><code><a href="check_results.html">check_results()</a></code> checks <code>results.qs2</code> and <code>sim_&lt;kkkk&gt;.qs2</code>, and not
+the files of <code>gitexclude</code>.</p></li>
 <li><p>The simulations of the two files are stacked apart, with the rules of
 the section Stacking.</p></li>
 <li><p>Without kinds in <code>gitexclude</code>, <code>save_results()</code> deletes an old
-<code>results_gitexclude.qs2</code> of the scenario and of each of its
-simulations. It prints one line for each deleted file.</p></li>
+<code>results_gitexclude.qs2</code> of the scenario, and prints one line. The old
+<code>sim_&lt;kkkk&gt;_gitexclude.qs2</code> files go with the rest of
+<code>sims_gitexclude/</code>, see the section The files.</p></li>
 </ul></div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
@@ -265,7 +307,7 @@ simulations. It prints one line for each deleted file.</p></li>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span>, env <span class="op">=</span> <span class="va">env</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpjxOYQ1/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpQEQ3ZB/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>

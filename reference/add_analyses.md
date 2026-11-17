@@ -44,9 +44,9 @@ add_analyses(p, scenarios, name, fn, ..., control = FALSE)
 
 - control:
 
-  `TRUE` adds the analyses for the fake scenarios only, never for
-  `"real"`. Use it for a check that is not a result, for example a model
-  without adjustment that a fake scenario tests.
+  `TRUE` adds the kind to every fake scenario of `scenarios`, and never
+  to `"real"`. Use it for a check that is not a result, for example a
+  model without adjustment that a fake scenario tests.
 
 ## Value
 
@@ -59,9 +59,12 @@ Each analysis gets the name `<scenario>__sim_<kkkk>__<name>__<i>`, for
 example `null__sim_0003__models__2`. `<kkkk>` is the simulation with
 four digits, also for a scenario with 1 simulation. `<i>` counts the
 combinations of the extra dimensions from 1, with the last dimension of
-`...` changing fastest. A kind without extra dimensions has `<i>` 1.
-Give the name to `p$get_argset()` and `p$get_data()` to step through one
-analysis by hand.
+`...` changing fastest. A kind without extra dimensions has `<i>` 1. To
+step through one analysis by hand, use
+[`get_argset()`](https://www.rwhite.no/pbn/reference/get_data.md) and
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md). They
+take the scenario, the simulation, the kind and `<i>`, so you do not
+type the name.
 
 The argset of each analysis holds these fields:
 
@@ -143,6 +146,7 @@ builds and runs a small fake project.
 Other plan:
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
 [`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md),
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 
 ## Examples
@@ -165,7 +169,7 @@ pbn::add_analyses(
   },
   outcome = CFG$outcomes
 )
-p$get_argset("null__sim_0002__means__2")
+pbn::get_argset(p, "null", 2, "means", 2)
 #> $scenario
 #> [1] "null"
 #> 

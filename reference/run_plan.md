@@ -41,10 +41,18 @@ foreach. It starts a PSOCK cluster of `workers` new R sessions with
 registers it with
 [`doParallel::registerDoParallel()`](https://rdrr.io/pkg/doParallel/man/registerDoParallel.html),
 and calls `p$run_all()` with the foreach path of plnr. A PSOCK cluster
-does not fork, so it also works on Windows. Before the run, `run_plan()`
-gives each worker these:
+does not fork, so it also works on Windows.
 
-- the library paths of this R session, from
+Each worker starts with the library paths of this R session, from
+[`.libPaths()`](https://rdrr.io/r/base/libPaths.html). While it starts
+the cluster, `run_plan()` sets the environment variable `R_LIBS` to
+these paths, and then it sets `R_LIBS` back. So a worker also finds a
+library that this R session added with
+[`.libPaths()`](https://rdrr.io/r/base/libPaths.html), for example the
+temporary library of `R CMD build`. Before the run, `run_plan()` gives
+each worker these:
+
+- the library paths of this R session again, with
   [`.libPaths()`](https://rdrr.io/r/base/libPaths.html).
 
 - the packages attached in this R session, in the order of
@@ -141,7 +149,8 @@ builds and runs a small fake project.
 Other plan:
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md),
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
-[`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md)
+[`cohort_data()`](https://www.rwhite.no/pbn/reference/cohort_data.md),
+[`get_data()`](https://www.rwhite.no/pbn/reference/get_data.md)
 
 ## Examples
 

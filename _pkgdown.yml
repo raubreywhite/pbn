@@ -21,9 +21,14 @@ reference:
 - title: "Run a project version"
   contents:
     - initialize_project
-    - use_scenario
-    - end_if_fake_scenario
-    - run_scenarios
+    - scenarios
+    - end_unless_real
+
+- title: "The plan"
+  contents:
+    - add_data
+    - add_analyses
+    - run_plan
 
 - title: "Results"
   contents:

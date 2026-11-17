@@ -44,35 +44,14 @@ extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}.
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
 \code{"vNN"}. The detail names each argument of the call that
 \code{\link[=initialize_project]{initialize_project()}} does not have.
-\item \code{no_active_use_scenario} (FAIL): a \code{vNN_run.R} at the top level has a
-call \code{pbn::use_scenario()} or \code{use_scenario()}, or the reference
-\code{pbn::use_scenario}, that is not in a comment. A call inside a function
-body or an \code{if} counts. \code{\link[=use_scenario]{use_scenario()}} is for stepping through the
-script by hand.
-\item \code{use_scenario_lines} (FAIL): a \code{vNN_run.R} at the top level does not have
-exactly one comment \verb{# pbn::use_scenario("<name>", sim = 1)} for each
-scenario of \code{CFG$scenarios}. A comment for another scenario fails too.
-The detail names each such scenario, with the number of lines when there is
-more than one. The rule does not check the order.
-
-A comment counts only when all of these hold:
-\itemize{
-\item It is above the first call \code{pbn::initialize_project()}.
-\item It is at the top level of the script, not in a function body or a
-braced block such as an \code{if}.
-\item It is the only thing on its line.
-\item It has \code{sim = 1}. Any whitespace between its parts is allowed.
-}
-
-The rule is a WARN with the reason when the script has no call
-\code{pbn::initialize_project()}, or when pbn cannot read \code{CFG$scenarios}.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
 \verb{vNN_results/<scenario>/sim_NNNN/results.qs2} fails \code{\link[=check_results]{check_results()}},
 or a \code{results.qs2} is directly in \verb{vNN_results/}.
 \item \code{scenario_checks} (FAIL): a \verb{vNN_results/<scenario>/check.csv} has a
-value of \code{pass} that is not \code{TRUE}. \code{\link[=run_scenarios]{run_scenarios()}} writes these files.
+value of \code{pass} that is not \code{TRUE}, holds no assertion, or has no column
+\code{pass} that R can read. \code{\link[=save_results]{save_results()}} writes these files.
 \item \code{manual_manuscript_names} (FAIL): a file in \verb{manuscript/manual/} does not
 match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?\\.docx$}.
 \item \code{manuscript_reads_real} (FAIL): an \code{.R}, \code{.qmd} or \code{.Rmd} file in
@@ -89,19 +68,13 @@ counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
-\verb{vNN_test/}, \code{vNN_check_functions.R}, \code{check_project.R} and
-\code{run_scenarios.R}, among others. A top-level dotfile and a top-level
+\verb{vNN_test/}, \code{vNN_check_functions.R} and \code{check_project.R}, among
+others. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown.
 }
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
-
-\code{check_project()} runs project code. To read \code{CFG$scenarios} for the rule
-\code{use_scenario_lines}, it sources the \verb{vNN_functions/} folder of each
-\code{vNN_run.R} with \code{\link[org:initialize_project]{org::initialize_project()}} in a new R session, as
-\code{\link[=run_scenarios]{run_scenarios()}} does. Each top-level call in those files runs then, for
-example a call that writes a file.
 
 The file \code{pbn_allow.txt} in the project folder MAY list exceptions. Write
 one \verb{rule<TAB>path} per line, with the path relative to the project folder.

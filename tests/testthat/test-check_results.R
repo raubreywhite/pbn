@@ -380,6 +380,41 @@ test_that("no_row_per_person checks nothing when n_rows_data is NA", {
   x$tables$people <- data.frame(id = 1:40)
   x$manifest$n_rows_data <- NA_integer_
   expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[4],
+    "n_rows_data is NA, so nothing to check"
+  )
+})
+
+test_that("no_row_per_person checks each count of a named n_rows_data, one for each data element", {
+  x <- valid_results()
+  x$manifest$n_rows_data <- c(d = 40L, pop = 12L, lookup = NA)
+  expect_identical(failing(x), character(0))
+  expect_identical(
+    check_results(x)$detail[4],
+    paste(
+      "no data.frame has 40 or 12 rows, and no vector or matrix has 40 or 12",
+      "values in one dimension"
+    )
+  )
+  # A table with the rows of the second data element fails.
+  x$tables$pop <- data.frame(id = 1:12)
+  expect_identical(failing(x), "no_row_per_person")
+  expect_match(
+    check_results(x)$detail[4],
+    "x$tables$pop (a data.frame with 12 rows)",
+    fixed = TRUE
+  )
+  # Only NA, or only counts below 2, checks nothing.
+  x$manifest$n_rows_data <- c(d = NA_integer_, pop = NA_integer_)
+  expect_identical(failing(x), character(0))
+  x$manifest$n_rows_data <- c(d = 1L, pop = NA_integer_)
+  expect_identical(
+    check_results(x)$detail[4],
+    "n_rows_data is 1, less than 2, so nothing to check"
+  )
+  x$manifest$n_rows_data <- stats::setNames(integer(0), character(0))
+  expect_identical(failing(x), character(0))
 })
 
 test_that("manifest_scenario fails when the manifest has no scenario, sim or sims", {

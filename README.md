@@ -17,35 +17,41 @@ pak::pak("raubreywhite/pbn")
 ## Quick start
 
 A project version has a run script `v01_run.R` and a folder
-`v01_functions/`. `v01_functions/_cfg.R` names the scenarios: the real data,
-and fake data that the project writes itself. The same run script runs on
-each scenario. From the project folder, run every scenario and check the
-layout:
+`v01_functions/`. `v01_functions/_cfg.R` names the scenarios in
+`CFG$scenarios`: the real data, and fake data that the project makes itself.
+The run script is one `plnr` plan over every scenario and simulation:
 
 ```r
-pbn::run_scenarios("v01")
-pbn::check_project()
+pbn::initialize_project(version = "v01", home = ".", data_raw = "/data/raw")
+scenarios <- pbn::scenarios(CFG)
+
+p <- plnr::Plan$new()
+pbn::add_data(p, "d", fn = function(scenario, sim) get_data(scenario, sim))
+pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, outcome = CFG$outcomes)
+r <- pbn::run_plan(p)
+pbn::save_results(r, p, scenarios)
+
+pbn::end_unless_real(scenarios)
 ```
 
-`run_scenarios()` writes the run artefacts `run.log` and `run.ok` into each results folder. List both in the `.gitignore` of the project.
-
-## The results
-
-`save_results()` saves each result under the name that the run script gives it, for example `estimates = e` or `p_interaction = p`. pbn adds the element `manifest`. A result is a data.frame, an atomic vector, `NULL`, or a list of these to any depth. A fitted model is an error. Pass the analysis data as `d = d`, so pbn can refuse a result with one value for each row of the data. Pass `d = NULL` when the run has no single data table.
+From the project folder, run it with `Rscript v01_run.R`, and check the layout
+with `pbn::check_project()`.
 
 The article
 [Get started](https://www.rwhite.no/pbn/articles/pbn.html) builds a small
 fake project file by file, and runs it. Read it first.
 
-## The nine functions
+## The functions
 
 | Function | What it does |
 |---|---|
-| `initialize_project()` | Starts one simulation of one scenario with the house defaults of `org`, and sources `vNN_functions/`. |
-| `use_scenario()` | Chooses the scenario of the next `initialize_project()` when a person steps through a run script by hand. |
-| `end_if_fake_scenario()` | Ends a run script after `save_results()` when the scenario is fake. |
-| `run_scenarios()` | Runs `vNN_run.R` for each scenario and simulation in a new R session, `workers` of them at the same time. It stacks the simulations and checks the assertions. With `resume = TRUE`, it keeps each simulation with results from the same code. |
-| `save_results()` | Writes `results.qs2` with a manifest, and stops when the object fails the contract. |
+| `initialize_project()` | Sets the paths of a project version and sources `vNN_functions/` with the house defaults of `org`. |
+| `scenarios()` | Checks `CFG$scenarios` and chooses the scenarios of a run. |
+| `add_data()` | Adds a data function to a plan. plnr calls it once for each scenario and simulation. |
+| `add_analyses()` | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
+| `run_plan()` | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |
+| `save_results()` | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. |
+| `end_unless_real()` | Ends a run script after `save_results()` when the run had no real data. |
 | `read_results()` | Reads the `results.qs2` of one scenario. The default is `"real"`. |
 | `check_results()` | Checks a results object against the contract. |
 | `check_project()` | Checks a project folder against the house layout, and quits with status 1 on a failure when R is not interactive. |

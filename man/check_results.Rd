@@ -30,7 +30,7 @@ twice.
 \item \code{exclusions_table}: when \code{x} has an element \code{exclusions}, it is a
 data.frame with the columns \code{step}, \code{n_before}, \code{n_excluded} and
 \code{n_after}. When \code{manifest$stacked} is \code{TRUE}, it also has the column
-\code{sim} that \code{\link[=run_scenarios]{run_scenarios()}} adds. On every row,
+\code{sim} that \code{\link[=save_results]{save_results()}} adds when it stacks. On every row,
 \code{n_before - n_excluded == n_after}. Without an element \code{exclusions}, the
 rule passes and says so.
 \item \code{allowed_objects}: each element at each depth is one of these:
@@ -61,8 +61,9 @@ that R and data.table set: \code{names}, \code{dim}, \code{dimnames}, \code{row.
 \code{class}, \code{levels}, \code{tzone}, \code{units}, \code{comment}, \code{sorted}, \code{index} and
 \code{.internal.selfref}.
 \item \code{no_row_per_person}: no element at any depth of the results has one
-value for each row of the data. When \code{n} is \code{manifest$n_rows_data}, the
-rule fails each of these:
+value for each row of the data. \code{manifest$n_rows_data} holds one row
+count, or one for each data element. For each count \code{n} of 2 or more,
+the rule fails each of these:
 \itemize{
 \item a data.frame with \code{n} rows.
 \item an atomic vector of length \code{n}, also a factor, a \code{Date} or a
@@ -71,9 +72,10 @@ rule fails each of these:
 }
 
 The walk goes into lists, the columns and list columns of data.frames,
-and attributes. It does not go into \code{manifest}. When \code{n_rows_data} is
-\code{NA}, 0 or 1, this rule checks nothing. A table with fewer rows than the
-data passes, and so does a vector with one value for each group.
+and attributes. It does not go into \code{manifest}. A count that is \code{NA}, 0
+or 1 checks nothing, and a \code{manifest$n_rows_data} without another count
+checks nothing too. A table with fewer rows than the data passes, and
+so does a vector with one value for each group.
 \item \code{manifest_scenario}: \code{manifest} has the elements \code{scenario}, \code{sim} and
 \code{sims}, and \code{scenario} is one string.
 \item \code{manifest_data}: \code{manifest} has exactly one of \code{data_md5} and

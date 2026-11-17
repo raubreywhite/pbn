@@ -2,7 +2,7 @@
 % Please edit documentation in R/initialize_project.R
 \name{initialize_project}
 \alias{initialize_project}
-\title{Start one scenario of an analysis project version}
+\title{Start a project version}
 \usage{
 initialize_project(version, home, data_raw, env = .GlobalEnv)
 }
@@ -13,127 +13,50 @@ initialize_project(version, home, data_raw, env = .GlobalEnv)
 \item{home}{The project folder. It holds \verb{<version>_run.R} and
 \verb{<version>_functions/}.}
 
-\item{data_raw}{The folder of the real raw data. It MUST exist when the
-scenario is \code{"real"}. pbn does not read it for any other scenario.}
+\item{data_raw}{The folder of the real raw data, one string. The folder MAY
+be absent, for example on a computer without the real data. Only
+\code{\link[=save_results]{save_results()}} for the scenario \code{"real"} then stops.}
 
 \item{env}{The environment that the functions folder is sourced into.}
 }
 \value{
-Invisibly, a list with \code{version}, \code{home}, \code{scenario}, \code{sim},
-\code{sims}, \code{results}, \code{data_raw} and \code{settings}. \code{results} is the results
-folder and \code{data_raw} is the data folder of the run. \code{settings} is a
-named list of the settings of the scenario, or an empty list when
-\code{CFG$scenarios} has no setting column.
+Invisibly, a list with \code{version}, \code{home}, \code{results} and
+\code{data_raw}. \code{results} is the results folder.
 }
 \description{
-\code{initialize_project()} sets up one simulation of one scenario of a project
-version, and sources the functions folder of that version. It MUST be the
-first call in every \code{vNN_run.R}.
+\code{initialize_project()} sets the paths of a project version and sources its
+functions folder. It MUST be the first call in every \code{vNN_run.R}.
 }
 \details{
-\verb{_cfg.R} in \verb{<version>_functions/} MUST set \code{CFG$scenarios}, a data.frame
-with these columns:
-\itemize{
-\item \code{scenario}: unique names that match \verb{^[a-z0-9_]+$}. One name MUST be
-\code{"real"}.
-\item \code{sims}: the number of simulations of the scenario, a whole number of 1 or
-more.
-}
-
-Each other column is a setting of the scenario, for example \code{n_boot} for a
-number of bootstrap replicates that is smaller in the fake scenarios. A
-setting column MUST be an atomic vector with no \code{NA}. A list column or an
-\code{NA} stops \code{initialize_project()} and \code{\link[=run_scenarios]{run_scenarios()}}, and the error
-names the column. \code{p$settings} holds the value of each setting column for
-the scenario of the run. \code{\link[=save_results]{save_results()}} stores the settings as
-\code{CFG$scenarios} gives them in \code{manifest$settings}. A change that the run
-script makes to \code{p$settings} does not reach the manifest.
-
-The scenario and the simulation come from the first of these that gives
-them. pbn reads no environment variables.
-\enumerate{
-\item The trailing command-line arguments \verb{scenario=<name>} and \verb{sim=<k>}.
-\code{\link[=run_scenarios]{run_scenarios()}} gives both. When only one of them is there, the other
-one is \code{"real"} or 1.
-\item The choice of \code{\link[=use_scenario]{use_scenario()}}, for a person who steps through the
-script by hand.
-\item The scenario \code{"real"} and the simulation 1.
-}
-
-The choice of \code{\link[=use_scenario]{use_scenario()}} lasts for the R session.
-
-In an interactive R session, \code{initialize_project()} prints one line, for
-example \verb{pbn: scenario null, simulation 2 of 3 (fake)}. \code{(fake)} is there
-for each scenario other than \code{"real"}.
-
 \code{initialize_project()} does these steps in this order:
 \enumerate{
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
-them in \code{manifest$source_md5}, and \code{run_scenarios(resume = TRUE)} reads
-them.
-\item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{results} set to
-\verb{<home>/<version>_results}, \code{results_subfolder} set to the scenario,
-\code{folders_to_be_sourced} set to \verb{<version>_functions}, and
-\code{max_loc_per_file} set to 1000.
-\item It reads \code{CFG$scenarios}. The results folder is
-\verb{<version>_results/<scenario>/} when the scenario has 1 simulation, and
-\verb{<version>_results/<scenario>/sim_<kkkk>/} otherwise. \verb{<kkkk>} is the
-simulation with four digits. \code{org::project$results_today} is set to
-this folder.
-\item It calls \code{set.seed(sim)}. It also calls \code{set.seed(sim)} before step 2,
-so random work while org sources the functions folder depends on \code{sim}
-only.
-\item For \code{"real"}, the data folder is \code{data_raw}. For any other scenario, the
-data folder is \verb{data/} in the results folder. \code{initialize_project()}
-deletes it, creates it empty, and calls \verb{fake_<scenario>(dir)} with its
-path. The project MUST define \verb{fake_<scenario>()} in
-\verb{<version>_functions/}.
-\item It computes an md5 that identifies the data, and \code{\link[=save_results]{save_results()}}
-stores it in the manifest:
-\itemize{
-\item For \code{"real"}, the md5 of each file directly in the data folder, as
-\code{manifest$data_md5}. A file that the run writes later is not in the
-list.
-\item For a fake scenario, the md5 of the code of \verb{fake_<scenario>()}, as
-\code{manifest$fake_md5}. A writer such as \code{haven::write_sav()} stamps the
-time into the file. The md5 of the files would then change on every
-run, and the data would not.
-}
+them in \code{manifest$source_md5}.
+\item It computes the md5 of each file directly in \code{data_raw}, when the folder
+exists. \code{\link[=save_results]{save_results()}} stores them in \code{manifest$data_md5} of the
+scenario \code{"real"}. A file that the run writes later is not in the list.
+\item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{folders_to_be_sourced} set to
+\verb{<version>_functions}, \code{max_loc_per_file} set to 1000 and \code{data_raw} set
+to \code{data_raw}. A data function finds the folder at
+\code{org::project$data_raw}.
 }
 
-\code{initialize_project()} stops in these cases:
-\itemize{
-\item \verb{scenario=} or \verb{sim=} is given more than once.
-\item \verb{sim=} is not a whole number of 1 or more.
-\item The scenario is not in \code{CFG$scenarios}, or \code{sim} is more than its
-\code{sims}.
-\item \verb{fake_<scenario>()} is missing.
-\item A setting column of \code{CFG$scenarios} is a list or has \code{NA}.
-}
+The results folder is \verb{<home>/<version>_results}. \code{\link[=save_results]{save_results()}} creates
+it. \code{initialize_project()} creates no folder, also no folder with today's
+date. It stops when \verb{<version>_functions/} does not exist.
 
-When it stops, it deletes each empty results folder that the call created.
-The state of the run is then empty, so \code{\link[=save_results]{save_results()}} and
-\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}} stop until a call succeeds. The choice of
-\code{\link[=use_scenario]{use_scenario()}} stays. It never creates a folder with today's date.
+\code{initialize_project()} reads no scenario, no simulation, no command-line
+argument and no environment variable, and it sets no seed. \code{\link[=scenarios]{scenarios()}}
+chooses the scenarios, and \code{\link[=add_data]{add_data()}} and \code{\link[=add_analyses]{add_analyses()}} set the seeds.
 }
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-dir.create(file.path(home, "data"))
 writeLines(
-  c(
-    "CFG <- list(",
-    "  scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3))",
-    ")",
-    "fake_null <- function(dir) {",
-    "  utils::write.csv(data.frame(x = rnorm(5)), file.path(dir, 'd.csv'))",
-    "}"
-  ),
+  "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")
 )
-
-utils::write.csv(data.frame(x = 1:5), file.path(home, "data", "d.csv"))
 
 env <- new.env()
 p <- pbn::initialize_project(
@@ -142,16 +65,16 @@ p <- pbn::initialize_project(
   data_raw = file.path(home, "data"),
   env = env
 )
-p$scenario
 p$results
-list.files(p$data_raw)
+env$CFG$scenarios
 
 unlink(home, recursive = TRUE)
 }
 \seealso{
+\code{vignette("pbn")}, which builds and runs a small fake project.
+
 Other project setup:
-\code{\link[=end_if_fake_scenario]{end_if_fake_scenario()}},
-\code{\link[=run_scenarios]{run_scenarios()}},
-\code{\link[=use_scenario]{use_scenario()}}
+\code{\link[=end_unless_real]{end_unless_real()}},
+\code{\link[=scenarios]{scenarios()}}
 }
 \concept{project setup}

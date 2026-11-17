@@ -1,5 +1,7 @@
-# A valid synthetic project in a temporary folder. Every project rule passes
-# on it, and nothing in it comes from a real project.
+# A valid synthetic project in a temporary folder, on the plnr design: the
+# run script is a plnr plan, the real data is one scenario among fake ones,
+# and the data is one keyed data function. Every project rule passes on it,
+# and nothing in it comes from a real project.
 
 write_lines <- function(home, rel, lines) {
   file <- file.path(home, rel)
@@ -8,55 +10,77 @@ write_lines <- function(home, rel, lines) {
   return(invisible(file))
 }
 
-# The run script of the house skeleton: one commented use_scenario() line
-# per scenario, in the order of CFG$scenarios, and an output part after
-# end_if_fake_scenario() that writes output.txt for the real data only.
-run_script_lines <- function(version, data_raw) {
+# The run script of the house skeleton, as a project writes it. `only` gives
+# the argument `only` of scenarios() as R code, `workers` the workers of
+# run_plan(), and `extra` lines after run_plan(). The output part after
+# end_unless_real() writes output.txt for the real data only.
+run_script_lines <- function(
+  version,
+  data_raw,
+  only = NULL,
+  workers = 1,
+  extra = character(0)
+) {
   return(c(
-    "# Run one of these lines to step through a scenario by hand. The choice lasts for the R session.",
-    "# pbn::use_scenario(\"real\", sim = 1)",
-    "# pbn::use_scenario(\"known\", sim = 1)",
-    "# pbn::use_scenario(\"null\", sim = 1)",
     paste0(
-      "p <- pbn::initialize_project(version = \"",
+      "pbn::initialize_project(version = \"",
       version,
       "\", home = \".\", data_raw = \"",
       data_raw,
       "\")"
     ),
-    "d <- data.table::fread(file.path(p$data_raw, \"d.csv\"))",
-    "t1 <- pbn::table1(d, by = \"g\", vars = CFG$vars)",
-    "pbn::save_results(",
-    "  exclusions = data.frame(",
-    "    step = \"x not missing\",",
-    "    n_before = nrow(d),",
-    "    n_excluded = 0,",
-    "    n_after = nrow(d)",
-    "  ),",
-    "  estimates = data.frame(term = \"mean_x\", estimate = mean(d$x)),",
-    "  tables = list(table1 = t1),",
-    "  d = d",
-    ")",
-    "pbn::end_if_fake_scenario()",
+    if (is.null(only)) {
+      "scenarios <- pbn::scenarios(CFG)"
+    } else {
+      paste0("scenarios <- pbn::scenarios(CFG, only = ", only, ")")
+    },
+    "",
+    "p <- plnr::Plan$new()",
+    "pbn::add_data(p, \"d\", fn = function(scenario, sim) get_data(scenario, sim))",
+    "pbn::add_analyses(p, scenarios, name = \"table1\", fn = make_table1)",
+    paste0(
+      "pbn::add_analyses(p, scenarios, name = \"models\", fn = fit_models, ",
+      "outcome = CFG$outcomes)"
+    ),
+    paste0(
+      "pbn::add_analyses(p, scenarios, name = \"models_crude\", ",
+      "fn = fit_models, outcome = CFG$outcomes, adjust = \"none\", ",
+      "control = TRUE)"
+    ),
+    paste0(
+      "r <- pbn::run_plan(p",
+      if (workers != 1) paste0(", workers = ", workers),
+      ")"
+    ),
+    extra,
+    "pbn::save_results(r, p, scenarios)",
+    "",
+    "pbn::end_unless_real(scenarios)",
     "",
     "# PART 3 -- OUTPUT ====",
-    "writeLines(\"output\", file.path(p$results, \"output.txt\"))"
+    "res <- pbn::read_results(\"v01\")",
+    "writeLines(\"output\", file.path(\"v01_results\", \"real\", \"output.txt\"))"
   ))
 }
 
 # The position of the initialize_project() call in run_script_lines().
 init_line <- function(lines) {
-  return(which(startsWith(lines, "p <- pbn::initialize_project(")))
+  return(which(startsWith(lines, "pbn::initialize_project(")))
 }
 
-# The scenarios real (1 simulation), known (1) and null (3).
-cfg_lines <- function() {
+# The scenarios real (1 simulation), known (1) and null (3). n_boot is a
+# setting that each argset holds. `counter` is NULL, or the path of a file
+# that get_data() appends one line to on each call.
+cfg_lines <- function(counter = NULL) {
   return(c(
     "CFG <- list(",
     "  scenarios = data.frame(",
     "    scenario = c(\"real\", \"known\", \"null\"),",
-    "    sims = c(1, 1, 3)",
+    "    sims = c(1, 1, 3),",
+    "    n_boot = c(200, 5, 5)",
     "  ),",
+    "  outcomes = c(\"y\", \"z\"),",
+    if (!is.null(counter)) paste0("  counter = \"", counter, "\","),
     "  vars = data.table::data.table(",
     "    var = c(\"x\", \"y\"),",
     "    type = c(\"bin\", \"cont\")",
@@ -65,49 +89,74 @@ cfg_lines <- function() {
   ))
 }
 
-# Planted by hand: group a holds 4 ones of x and group b holds 1, so the mean
-# of x is 0.5.
-fake_known_lines <- function() {
+# The data function. "real" reads d.csv of data_raw. "known" plants the
+# values by hand: group a holds 4 ones of x, and the mean of y is 1 in group
+# a and 3 in group b. "null" draws with the seed that pbn sets.
+get_data_lines <- function() {
   return(c(
-    "fake_known <- function(dir) {",
-    "  d <- data.frame(",
-    "    g = rep(c(\"a\", \"b\"), each = 5),",
-    "    x = c(1, 1, 1, 1, 0, 1, 0, 0, 0, 0),",
-    "    y = 31:40",
-    "  )",
-    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
-    "}"
-  ))
-}
-
-# Draws with the seed that initialize_project() set.
-fake_null_lines <- function() {
-  return(c(
-    "fake_null <- function(dir) {",
-    "  d <- data.frame(",
+    "get_data <- function(scenario, sim) {",
+    "  if (!is.null(CFG$counter)) {",
+    "    # One string, so one write for each call, also from two workers.",
+    "    cat(paste0(scenario, \" \", sim, \"\\n\"), file = CFG$counter, append = TRUE)",
+    "  }",
+    "  if (scenario == \"real\") {",
+    "    return(utils::read.csv(file.path(org::project$data_raw, \"d.csv\")))",
+    "  }",
+    "  if (scenario == \"known\") {",
+    "    return(data.frame(",
+    "      g = rep(c(\"a\", \"b\"), each = 5),",
+    "      x = c(1, 1, 1, 1, 0, 1, 0, 0, 0, 0),",
+    "      y = c(0, 1, 1, 1, 2, 2, 3, 3, 3, 4),",
+    "      z = 1:10",
+    "    ))",
+    "  }",
+    "  return(data.frame(",
     "    g = rep(c(\"a\", \"b\"), each = 20),",
     "    x = stats::rbinom(40, 1, 0.5),",
-    "    y = stats::rnorm(40)",
-    "  )",
-    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
+    "    y = stats::rnorm(40),",
+    "    z = stats::rnorm(40)",
+    "  ))",
     "}"
   ))
 }
 
+# The action functions. fit_models() fits outcome ~ g, adjusted for x
+# unless argset$adjust is "none". It adds one draw, so a seed that differs
+# between two runs changes its results.
+analysis_lines <- function() {
+  return(c(
+    "make_table1 <- function(data, argset) {",
+    "  return(pbn::table1(data$d, by = \"g\", vars = CFG$vars))",
+    "}",
+    "",
+    "fit_models <- function(data, argset) {",
+    "  rhs <- if (identical(argset$adjust, \"none\")) \"g\" else \"g + x\"",
+    "  fit <- stats::lm(stats::as.formula(paste(argset$outcome, \"~\", rhs)), data = data$d)",
+    "  data.frame(",
+    "    term = names(stats::coef(fit)),",
+    "    estimate = unname(stats::coef(fit)),",
+    "    draw = stats::runif(1)",
+    "  )",
+    "}"
+  ))
+}
+
+# The crude model of y on g in known is the difference of the means, 3 - 1.
 expect_known_lines <- function(events_a = 4) {
   return(c(
     "expect_known <- function(results) {",
-    "  t1 <- results$tables$table1",
+    "  t1 <- results$table1",
     "  events_a <- t1$events[t1$var == \"x\" & t1$grp == \"a\"]",
-    "  mean_x <- results$estimates$estimate",
+    "  m <- results$models_crude",
+    "  diff_y <- m$estimate[m$outcome == \"y\" & m$term == \"gb\"]",
     "  data.frame(",
-    "    assertion = c(\"events of x in group a\", \"mean of x\"),",
-    paste0("    expected = c(", events_a, ", 0.5),"),
-    "    observed = c(events_a, mean_x),",
+    "    assertion = c(\"events of x in group a\", \"crude difference of y\"),",
+    paste0("    expected = c(", events_a, ", 2),"),
+    "    observed = c(events_a, diff_y),",
     paste0(
       "    pass = c(events_a == ",
       events_a,
-      ", isTRUE(all.equal(mean_x, 0.5)))"
+      ", isTRUE(all.equal(diff_y, 2)))"
     ),
     "  )",
     "}"
@@ -117,64 +166,47 @@ expect_known_lines <- function(events_a = 4) {
 expect_null_lines <- function() {
   return(c(
     "expect_null <- function(results) {",
-    "  e <- results$estimates",
-    "  n_sims <- length(unique(e$sim))",
-    "  mean_x <- mean(e$estimate)",
+    "  m <- results$models",
+    "  n_sims <- length(unique(m$sim))",
+    "  b <- mean(m$estimate[m$term == \"gb\"])",
     "  data.frame(",
-    "    assertion = c(\"simulations\", \"mean of x over the simulations\"),",
-    "    expected = c(\"3\", \"0.3 to 0.7\"),",
-    "    observed = c(as.character(n_sims), format(mean_x)),",
-    "    pass = c(n_sims == 3, mean_x > 0.3 && mean_x < 0.7)",
+    "    assertion = c(\"simulations\", \"mean difference over the simulations\"),",
+    "    expected = c(\"3\", \"-1 to 1\"),",
+    "    observed = c(as.character(n_sims), format(b)),",
+    "    pass = c(n_sims == 3, abs(b) < 1)",
     "  )",
     "}"
   ))
 }
 
-# A fake_<scenario>() that also writes the time of the call into a file,
-# like the header that haven::write_sav() writes. The data that the run reads
-# is the same on each call with one seed.
-fake_with_time_lines <- function(scenario) {
-  return(c(
-    paste0("fake_", scenario, " <- function(dir) {"),
-    "  # The time stamp, as in the header of an SPSS file.",
-    "  stamp <- format(Sys.time(), \"%Y-%m-%d %H:%M:%OS6\")",
-    "  writeLines(stamp, file.path(dir, \"header.txt\"))",
-    "  d <- data.frame(",
-    "    g = rep(c(\"a\", \"b\"), each = 20),",
-    "    x = stats::rbinom(40, 1, 0.5),",
-    "    y = stats::rnorm(40)",
-    "  )",
-    "  utils::write.csv(d, file.path(dir, \"d.csv\"), row.names = FALSE)",
-    "}"
-  ))
-}
-
-write_data <- function(folder, x, y) {
+write_data <- function(folder) {
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
-  d <- data.frame(g = rep(c("a", "b"), each = 5), x = x, y = y)
+  # Planted: group a holds 3 ones of x.
+  d <- data.frame(
+    g = rep(c("a", "b"), each = 5),
+    x = c(1, 1, 1, 0, 0, 1, 0, 0, 0, 0),
+    y = c(1, 2, 3, 4, 5, 2, 3, 4, 5, 6),
+    z = 10:1
+  )
   utils::write.csv(d, file.path(folder, "d.csv"), row.names = FALSE)
   return(invisible(folder))
 }
 
-local_project <- function(env = parent.frame()) {
+local_project <- function(env = parent.frame(), counter = NULL) {
   root <- tempfile("pbntest")
   dir.create(root)
   withr::defer(unlink(root, recursive = TRUE), envir = env)
+  root <- normalizePath(root, winslash = "/")
   home <- file.path(root, "project")
-  # Planted: group a holds 3 ones of x, so the mean of x is 0.4.
   data_default <- normalizePath(
-    write_data(
-      file.path(root, "data_default"),
-      x = c(1, 1, 1, 0, 0, 1, 0, 0, 0, 0),
-      y = 1:10
-    ),
+    write_data(file.path(root, "data_default")),
     winslash = "/"
   )
 
   write_lines(home, "v01_run.R", run_script_lines("v01", data_default))
-  write_lines(home, "v01_functions/_cfg.R", cfg_lines())
-  write_lines(home, "v01_functions/fake_known.R", fake_known_lines())
-  write_lines(home, "v01_functions/fake_null.R", fake_null_lines())
+  write_lines(home, "v01_functions/_cfg.R", cfg_lines(counter))
+  write_lines(home, "v01_functions/get_data.R", get_data_lines())
+  write_lines(home, "v01_functions/analyses.R", analysis_lines())
   write_lines(home, "v01_functions/expect_known.R", expect_known_lines())
   write_lines(home, "v01_functions/expect_null.R", expect_null_lines())
   write_lines(
@@ -188,7 +220,6 @@ local_project <- function(env = parent.frame()) {
     "testthat::expect_equal(double_it(2), 4)"
   )
   write_lines(home, "check_project.R", "pbn::check_project()")
-  write_lines(home, "run_scenarios.R", "pbn::run_scenarios(\"v01\")")
   write_lines(home, "manuscript/manual/v01_AB.docx", "")
   dir.create(file.path(home, "manuscript", "built", "v01"), recursive = TRUE)
   write_lines(home, "background/Received Protocol.PDF", "")
@@ -197,7 +228,7 @@ local_project <- function(env = parent.frame()) {
   write_lines(home, "README.md", "# A synthetic project")
   write_lines(home, "CHANGELOG.md", "# Changelog")
   write_lines(home, "AGENTS.md", "# Agents")
-  write_lines(home, ".gitignore", c("v01_results/", "run.log", "run.ok"))
+  write_lines(home, ".gitignore", "v01_results/")
 
   return(list(home = home, root = root, data_default = data_default))
 }
@@ -206,8 +237,9 @@ failed_rules <- function(findings) {
   return(unique(findings$rule[findings$status == "FAIL"]))
 }
 
-# The run-script and check_project() tests start a new R session, and that
-# session needs pbn installed. R CMD check installs it. load_all() does not.
+# The run-script, worker and check_project() tests start new R sessions, and
+# those sessions need pbn installed. R CMD check installs it. load_all() does
+# not, so run the suite with pbn in a throwaway library.
 skip_if_pbn_not_installed <- function() {
   where <- find.package("pbn", lib.loc = .libPaths(), quiet = TRUE)
   installed <- length(where) == 1 &&
@@ -216,11 +248,10 @@ skip_if_pbn_not_installed <- function() {
   return(invisible(TRUE))
 }
 
-# Runs v01_run.R in a new R session with the trailing arguments `args`.
-run_script <- function(home, args = character(0)) {
+# Runs a script of the project in a new R session.
+run_script <- function(home, script = "v01_run.R") {
   return(callr::rscript(
-    file.path(home, "v01_run.R"),
-    cmdargs = args,
+    file.path(home, script),
     wd = home,
     show = FALSE,
     stderr = "2>&1",
@@ -271,13 +302,10 @@ valid_results <- function() {
   ))
 }
 
-# Empties the run state and the session choice of use_scenario() now, and
-# again when the calling test ends. The choice lasts for the R session, so a
-# test that sets it MUST NOT leave it for the next test.
-local_clean_session <- function(env = parent.frame()) {
+# Empties the state of the project now, and again when the calling test ends.
+local_clean_state <- function(env = parent.frame()) {
   clean <- function() {
     rm(list = ls(state, all.names = TRUE), envir = state)
-    rm(list = ls(choice, all.names = TRUE), envir = choice)
     return(invisible(NULL))
   }
   clean()
@@ -285,30 +313,45 @@ local_clean_session <- function(env = parent.frame()) {
   return(invisible(NULL))
 }
 
-# Starts a scenario in this R session as a person who steps through the run
-# script by hand: use_scenario(), then initialize_project().
-# The choice lasts for the R session, so init() empties it when the calling
-# test ends.
-init <- function(
-  p,
-  scenario = "real",
-  data_raw = p$data_default,
-  sim = 1,
-  env = parent.frame()
-) {
-  local_clean_session(env)
-  testthat::local_mocked_bindings(is_interactive = function() return(TRUE))
-  utils::capture.output(use_scenario(scenario, sim))
-  out <- NULL
-  utils::capture.output(
-    out <- suppressMessages(initialize_project(
-      "v01",
-      p$home,
-      data_raw,
-      env = new.env()
-    ))
+# Starts the project in this R session, as the first line of the run script
+# does, with the functions folder sourced into a new environment. Returns
+# that environment.
+init <- function(p, data_raw = p$data_default, env = parent.frame()) {
+  local_clean_state(env)
+  # The parent is the global environment, as for a project. An environment
+  # of the test would go to each worker with the functions.
+  sourced <- new.env(parent = globalenv())
+  suppressMessages(initialize_project("v01", p$home, data_raw, env = sourced))
+  return(sourced)
+}
+
+# The plan of the run script, built in this R session from the functions in
+# `sourced`.
+build_plan <- function(sourced, scenarios) {
+  p <- plnr::Plan$new()
+  fn <- function(scenario, sim) {
+    return(sourced$get_data(scenario, sim))
+  }
+  environment(fn) <- list2env(list(sourced = sourced), parent = globalenv())
+  add_data(p, "d", fn = fn)
+  add_analyses(p, scenarios, name = "table1", fn = sourced$make_table1)
+  add_analyses(
+    p,
+    scenarios,
+    name = "models",
+    fn = sourced$fit_models,
+    outcome = sourced$CFG$outcomes
   )
-  return(out)
+  add_analyses(
+    p,
+    scenarios,
+    name = "models_crude",
+    fn = sourced$fit_models,
+    outcome = sourced$CFG$outcomes,
+    adjust = "none",
+    control = TRUE
+  )
+  return(p)
 }
 
 results_files <- function(p) {
@@ -318,3 +361,17 @@ results_files <- function(p) {
     all.files = TRUE
   )))
 }
+
+# The files that the run script of local_project() writes for every
+# scenario.
+expected_tree <- c(
+  "known/check.csv",
+  "known/results.qs2",
+  "null/check.csv",
+  "null/results.qs2",
+  "null/sim_0001/results.qs2",
+  "null/sim_0002/results.qs2",
+  "null/sim_0003/results.qs2",
+  "real/output.txt",
+  "real/results.qs2"
+)

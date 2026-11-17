@@ -1,3 +1,35 @@
+# pbn 2026.11.23
+
+The run script is now one `plnr` plan over every scenario and simulation. pbn no longer starts the run script in a new R session for each scenario. To move a project, change these items:
+
+| Removed | Use instead |
+|---|---|
+| `p <- pbn::initialize_project(...)`, with `p$scenario`, `p$sim`, `p$data_raw` and `p$settings` | `pbn::initialize_project(...)` sets the paths only. A data function reads `org::project$data_raw`, and each argset holds `scenario`, `sim` and the settings. |
+| `use_scenario()` and its commented lines in `vNN_run.R` | `p$get_argset("<scenario>__sim_<kkkk>__<name>__<i>")` and `p$get_data()` inside `if (plnr::is_run_directly())`. |
+| `run_scenarios()`, `run_scenarios.R`, `workers` and `resume` | `pbn::scenarios(CFG)`, or `pbn::scenarios(CFG, only = "null")`, and `pbn::run_plan(p, workers = 2)`. A run always runs every chosen scenario. |
+| `fake_<scenario>(dir)` and the folder `data/` of a fake run | One data function `get_data(scenario, sim)` for every scenario, added with `pbn::add_data()`. |
+| The command-line arguments `scenario=` and `sim=` | `pbn::scenarios(CFG, only = ...)` in the run script. |
+| `save_results(..., d = d)` | `pbn::save_results(r, p, scenarios)`. Each element is an analysis kind of `pbn::add_analyses()`. |
+| `end_if_fake_scenario()` | `pbn::end_unless_real(scenarios)`. |
+| `run.log` and `run.ok` | Nothing. `run_plan()` prints each failed analysis with its full error. |
+
+- New `scenarios()`, `add_data()`, `add_analyses()`, `run_plan()` and `end_unless_real()`.
+- `initialize_project()` sets no seed and reads no command line. It creates no folder, and it stops when `vNN_functions/` is missing. `data_raw` MAY be absent: only `save_results()` for `"real"` then stops.
+- A data function MUST take `scenario` and `sim` without a default, or neither. `add_data()` stops on a default for either and on `sim` without `scenario`, and it sets the seed to `sim` before each call.
+- Each analysis gets its own seed in `argset$seed`, from its kind, its counter and `sim`, and never `sim` itself for sims 1 to 9999. To step through an analysis by hand, run `set.seed(argset$seed)`.
+- With more workers, `run_plan()` gives the same results when a function reads only its arguments, the functions folder, the attached packages and the seed. R options are not copied to the workers.
+- `add_analyses(control = TRUE)` adds an analysis for the fake scenarios only. The real results never hold it.
+- `run_plan(workers > 1)` needs doParallel and foreach, which are now in Suggests. It copies the objects of the sourced environment and the paths of `org::project` to each worker, and attaches the attached packages there.
+- `run_plan()` fails an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place. When it stops, the results files of an earlier run stay.
+- `save_results()` stops on a value of `run_plan()` from another plan, and on `scenarios` with other settings than the argsets.
+- `read_results()` stops on results whose `check.csv` holds an assertion that did not pass, holds no assertion, or has no column `pass`. The error says how to read them with `qs2::qs_read()`.
+- `save_results()` marks new results "not checked yet" in `check.csv` until their `expect_` function has run. It writes each `check.csv` to a temporary file and renames it.
+- `scenario_checks` fails a `check.csv` with no assertion.
+- The manifest gains `analyses`, the analysis kinds with `control`. `n_rows_data` is a named vector with one count for each data element. `fake_md5` is the md5 of the code of the data functions of `add_data()`. The manifest no longer holds `data_raw`.
+- `no_row_per_person` checks each count of `n_rows_data` of 2 or more. A results file with one count works as before.
+- `check_project()` no longer has the rules `no_active_use_scenario` and `use_scenario_lines`, and it no longer starts an R session. `unknown_path` no longer knows `run_scenarios.R`.
+- pbn imports `plnr` (>= 2026.11.17) again. `callr` moves to Suggests.
+
 # pbn 2026.11.22
 
 - `save_results(..., d)` saves each named argument as one result under its name. A call with the names `exclusions`, `estimates`, `tables` and `extra` works as before.

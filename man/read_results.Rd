@@ -20,16 +20,22 @@ The results object, a named list. See \code{\link[=save_results]{save_results()}
 }
 \description{
 \code{read_results()} reads the \code{results.qs2} of one scenario, the file that
-\code{\link[=save_results]{save_results()}} or \code{\link[=run_scenarios]{run_scenarios()}} writes. The default reads the real
-results.
+\code{\link[=save_results]{save_results()}} writes. The default reads the real results.
 }
 \details{
 With \code{sim = NULL}, \code{read_results()} reads
 \verb{<home>/<version>_results/<scenario>/results.qs2}. That is the results of
-a scenario with 1 simulation, or the simulations that \code{\link[=run_scenarios]{run_scenarios()}}
+a scenario with 1 simulation, or the simulations that \code{\link[=save_results]{save_results()}}
 stacked. With a number \code{k}, it reads
 \verb{<home>/<version>_results/<scenario>/sim_<kkkk>/results.qs2}, where
 \verb{<kkkk>} is \code{k} with four digits.
+
+\code{read_results()} stops when \verb{<home>/<version>_results/<scenario>/check.csv}
+exists and holds a value of \code{pass} that is not \code{TRUE}, also when it reads
+one simulation. It also stops when that file holds no assertion, or has
+no column \code{pass} that R can read. \code{\link[=save_results]{save_results()}} still writes such results, so that you
+can find the fault. The error names the file and how to read it with
+\code{\link[qs2:qs_read]{qs2::qs_read()}}.
 
 A manuscript MUST read the real results only. \code{\link[=check_project]{check_project()}} fails a
 call in \verb{manuscript/built/} that gives a \code{scenario} other than \code{"real"}.

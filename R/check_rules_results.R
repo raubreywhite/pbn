@@ -135,7 +135,7 @@ rule_exclusions_table <- function(x) {
   if (!is.data.frame(e)) {
     return(result_row(rule, "exclusions is not a data.frame", ""))
   }
-  # run_scenarios() adds the column sim when it stacks simulations.
+  # save_results() adds the column sim when it stacks simulations.
   want <- if (is_stacked(x)) {
     c("sim", exclusions_columns)
   } else {
@@ -255,7 +255,10 @@ rule_no_row_per_person <- function(x) {
   } else {
     NULL
   }
-  if (length(n) != 1 || is.na(n)) {
+  # One number, or one for each data element. An element that is not a
+  # data.frame has NA.
+  n <- if (is.numeric(n)) unique(n[!is.na(n)]) else numeric(0)
+  if (length(n) == 0) {
     return(result_row(
       rule,
       character(0),
@@ -263,11 +266,17 @@ rule_no_row_per_person <- function(x) {
     ))
   }
   # One value is not a value for each person, so 0 and 1 check nothing.
-  if (n < 2) {
+  small <- n[n < 2]
+  n <- n[n >= 2]
+  if (length(n) == 0) {
     return(result_row(
       rule,
       character(0),
-      paste0("n_rows_data is ", n, ", less than 2, so nothing to check")
+      paste0(
+        "n_rows_data is ",
+        paste(small, collapse = ", "),
+        ", less than 2, so nothing to check"
+      )
     ))
   }
   # The manifest is pbn's. A vector in it, such as packages, can have n
@@ -285,26 +294,28 @@ rule_no_row_per_person <- function(x) {
   } else {
     character(0)
   }
+  sizes <- paste(n, collapse = " or ")
   return(result_row(
     rule,
     failures,
     paste0(
       "no data.frame has ",
-      n,
+      sizes,
       " rows, and no vector or matrix has ",
-      n,
+      sizes,
       " values in one dimension"
     )
   ))
 }
 
-# The size of `o` when it has one value for each of the `n` rows of the data:
-# a data.frame with `n` rows, an atomic vector of length `n`, or a matrix or
-# an array with a dimension `n`. NULL otherwise.
+# The size of `o` when it has one value for each row of the data, for one of
+# the row counts `n`: a data.frame with that many rows, an atomic vector of
+# that length, or a matrix or an array with a dimension of that size. NULL
+# otherwise.
 person_size <- function(o, n) {
   if (is.data.frame(o)) {
-    if (nrow(o) == n) {
-      return(paste("a data.frame with", n, "rows"))
+    if (nrow(o) %in% n) {
+      return(paste("a data.frame with", nrow(o), "rows"))
     }
     return(NULL)
   }
@@ -312,11 +323,11 @@ person_size <- function(o, n) {
     return(NULL)
   }
   d <- dim(o)
-  if (!is.null(d) && any(d == n)) {
+  if (!is.null(d) && any(d %in% n)) {
     return(paste("dimensions", paste(d, collapse = "x")))
   }
-  if (is.null(d) && length(o) == n) {
-    return(paste("length", n))
+  if (is.null(d) && length(o) %in% n) {
+    return(paste("length", length(o)))
   }
   return(NULL)
 }

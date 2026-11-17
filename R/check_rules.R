@@ -6,15 +6,17 @@
 # adds its PASS row.
 
 pbn_exports <- c(
+  "add_analyses",
+  "add_data",
   "check_project",
   "check_results",
-  "end_if_fake_scenario",
+  "end_unless_real",
   "initialize_project",
   "read_results",
-  "run_scenarios",
+  "run_plan",
   "save_results",
-  "table1",
-  "use_scenario"
+  "scenarios",
+  "table1"
 )
 
 run_script_pattern <- "^v[0-9]{2}_run\\.R$"
@@ -501,7 +503,6 @@ rule_unknown_path <- function(path) {
     "^v[0-9]{2}_results$",
     "^v[0-9]{2}_test$",
     "^check_project\\.R$",
-    "^run_scenarios\\.R$",
     "^v[0-9]{2}_check_functions\\.R$",
     "^manuscript$",
     "^background$",
@@ -548,17 +549,6 @@ project_rules <- function() {
     run_script_initialises = list(
       rule_run_script_initialises,
       "every vNN_run.R calls pbn::initialize_project() with its own version"
-    ),
-    no_active_use_scenario = list(
-      rule_no_active_use_scenario,
-      "no vNN_run.R has an active call pbn::use_scenario()"
-    ),
-    use_scenario_lines = list(
-      rule_use_scenario_lines,
-      paste(
-        "every vNN_run.R has one line # pbn::use_scenario(\"<name>\", sim = 1)",
-        "for each scenario in CFG$scenarios, above pbn::initialize_project()"
-      )
     ),
     version_items_complete = list(
       rule_version_items_complete,

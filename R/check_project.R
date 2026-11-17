@@ -28,33 +28,14 @@
 #'   call `pbn::initialize_project()` whose `version` argument is the string
 #'   `"vNN"`. The detail names each argument of the call that
 #'   [initialize_project()] does not have.
-#' - `no_active_use_scenario` (FAIL): a `vNN_run.R` at the top level has a
-#'   call `pbn::use_scenario()` or `use_scenario()`, or the reference
-#'   `pbn::use_scenario`, that is not in a comment. A call inside a function
-#'   body or an `if` counts. [use_scenario()] is for stepping through the
-#'   script by hand.
-#' - `use_scenario_lines` (FAIL): a `vNN_run.R` at the top level does not have
-#'   exactly one comment `# pbn::use_scenario("<name>", sim = 1)` for each
-#'   scenario of `CFG$scenarios`. A comment for another scenario fails too.
-#'   The detail names each such scenario, with the number of lines when there is
-#'   more than one. The rule does not check the order.
-#'
-#'   A comment counts only when all of these hold:
-#'   - It is above the first call `pbn::initialize_project()`.
-#'   - It is at the top level of the script, not in a function body or a
-#'     braced block such as an `if`.
-#'   - It is the only thing on its line.
-#'   - It has `sim = 1`. Any whitespace between its parts is allowed.
-#'
-#'   The rule is a WARN with the reason when the script has no call
-#'   `pbn::initialize_project()`, or when pbn cannot read `CFG$scenarios`.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
 #'   `vNN_results/<scenario>/sim_NNNN/results.qs2` fails [check_results()],
 #'   or a `results.qs2` is directly in `vNN_results/`.
 #' - `scenario_checks` (FAIL): a `vNN_results/<scenario>/check.csv` has a
-#'   value of `pass` that is not `TRUE`. [run_scenarios()] writes these files.
+#'   value of `pass` that is not `TRUE`, holds no assertion, or has no column
+#'   `pass` that R can read. [save_results()] writes these files.
 #' - `manual_manuscript_names` (FAIL): a file in `manuscript/manual/` does not
 #'   match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$`.
 #' - `manuscript_reads_real` (FAIL): an `.R`, `.qmd` or `.Rmd` file in
@@ -71,18 +52,12 @@
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
-#'   `vNN_test/`, `vNN_check_functions.R`, `check_project.R` and
-#'   `run_scenarios.R`, among others. A top-level dotfile and a top-level
+#'   `vNN_test/`, `vNN_check_functions.R` and `check_project.R`, among
+#'   others. A top-level dotfile and a top-level
 #'   `*.Rproj` file are never unknown.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.
-#'
-#' `check_project()` runs project code. To read `CFG$scenarios` for the rule
-#' `use_scenario_lines`, it sources the `vNN_functions/` folder of each
-#' `vNN_run.R` with [org::initialize_project()] in a new R session, as
-#' [run_scenarios()] does. Each top-level call in those files runs then, for
-#' example a call that writes a file.
 #'
 #' The file `pbn_allow.txt` in the project folder MAY list exceptions. Write
 #' one `rule<TAB>path` per line, with the path relative to the project folder.

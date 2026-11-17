@@ -2,102 +2,185 @@
 % Please edit documentation in R/save_results.R
 \name{save_results}
 \alias{save_results}
-\title{Save the results object of a project version}
+\title{Save the results of a run}
 \usage{
-save_results(..., d)
+save_results(r, p, scenarios, gitexclude = NULL)
 }
 \arguments{
-\item{...}{The results, each as a named argument, for example
-\code{estimates = e} or \code{p_interaction = 0.04}. Give at least one. Each name
-MUST be syntactic and MUST be there once. A result named \code{manifest} is
-an error, because pbn writes that element. An element MAY be a data.frame, an atomic vector, a factor, a date,
-\code{NULL}, or a list of these to any depth. \code{\link[=check_results]{check_results()}} lists every
-allowed object. An element named \code{exclusions} MUST be the table of the
-exclusion steps, with the columns \code{step}, \code{n_before}, \code{n_excluded} and
-\code{n_after}. It MAY have zero rows.}
+\item{r}{The value of \code{\link[=run_plan]{run_plan()}} for the plan \code{p}.}
 
-\item{d}{The analysis data, or \code{NULL}. You MUST give \code{d}. pbn stores only
-its number of rows. It then refuses a data.frame with that number of
-rows at any depth of the results. It also refuses a vector or a matrix
-with that number of values in one dimension. Give \code{d = NULL} when the
-run has no one table of the data.}
+\item{p}{The plan, with data from \code{\link[=add_data]{add_data()}} and analyses from
+\code{\link[=add_analyses]{add_analyses()}}.}
+
+\item{scenarios}{The scenarios of the run, from \code{\link[=scenarios]{scenarios()}}. They MUST
+be the scenarios of the analyses of \code{p}.}
+
+\item{gitexclude}{MUST be \code{NULL} in this version.}
 }
 \value{
-Invisibly, the path of the results file.
+Invisibly, a data.frame of every assertion, with the columns
+\code{scenario}, \code{assertion}, \code{expected}, \code{observed} and \code{pass}.
 }
 \description{
-\code{save_results()} writes \verb{<results>/results.qs2}, the one results object of
-the project version. It stops before it writes when \code{\link[=check_results]{check_results()}}
-finds a failure.
+\code{save_results()} writes one results object for each scenario and
+simulation of a run, and stacks the simulations. It checks the fake
+scenarios with their \code{expect_} functions, and writes nothing when an
+object fails \code{\link[=check_results]{check_results()}}.
 }
 \details{
-Call \code{\link[=initialize_project]{initialize_project()}} first. The results folder is the \code{results}
-element that \code{\link[=initialize_project]{initialize_project()}} returns. It is
-\verb{<home>/<version>_results/<scenario>/} for a scenario with 1 simulation,
-and \verb{<home>/<version>_results/<scenario>/sim_<kkkk>/} otherwise.
+Call \code{\link[=initialize_project]{initialize_project()}} first. For each scenario and simulation,
+\code{save_results()} builds one results object, a named list. Its first
+element is \code{manifest}. Then comes one element for each analysis kind of
+\code{\link[=add_analyses]{add_analyses()}}, under the kind name and in the order of the calls. The
+scenario \code{"real"} has no element of a kind with \code{control = TRUE}. The
+element of a kind holds the values of its analyses for that scenario and
+simulation, in the order of the plan:
+\itemize{
+\item When each value is a data.frame, the element is the values row-bound.
+Each extra dimension of the kind comes first as a column, unless the
+data.frame has a column of that name already. A data.table stays a
+data.table. A kind without extra dimensions has the data.frame of its one
+analysis.
+\item Otherwise, a kind without extra dimensions has the value of its one
+analysis.
+\item Otherwise, the element is a named list with one entry for each
+analysis. Each name is \verb{<name>__<i>}, the analysis name without the
+scenario and the simulation. So the names are the same in each
+simulation. \code{\link[=add_analyses]{add_analyses()}} gives the order of \verb{<i>}.
+}
 
-The object is a named list. Its first element is \code{manifest}, and the
-results follow in the order of the call. pbn builds the \code{manifest}, a
-list with these elements:
+The \code{manifest} is a list with these elements:
 \itemize{
 \item \code{pbn_version} and \code{r_version}.
 \item \code{packages}, a named character vector. The names are the attached and
-loaded packages that are not base packages, and the values are their
-versions. \code{qs2} is always in the list, because it writes the file.
+loaded packages of this R session that are not base packages, and the
+values are their versions. \code{qs2} is always in the list, because it writes
+the file.
 \item \code{run_date}, the date of the call as \code{YYYY-MM-DD}. It has no time, so two
 runs on one day with the same inputs and packages write the same bytes.
-\item \code{version}, \code{scenario}, \code{sim}, \code{sims} and \code{data_raw}, from
-\code{\link[=initialize_project]{initialize_project()}}. \code{data_raw} is the data folder of the run.
-\item \code{settings}, the named list of the settings of the scenario from the
-setting columns of \code{CFG$scenarios}. It is an empty list when there are
-none.
-\item \code{source_md5}, a named character vector for every scenario. It holds the
-md5 of \verb{<version>_run.R} and of each file in \verb{<version>_functions/},
-named by the path relative to \code{home} and sorted.
+\item \code{version}, \code{scenario}, \code{sim} and \code{sims}.
+\item \code{settings}, the named list of the setting columns of the scenario. It is
+an empty list when there are none.
+\item \code{source_md5}, the md5 of \verb{<version>_run.R} and of each file in
+\verb{<version>_functions/}, named by the path relative to \code{home}.
 \code{\link[=initialize_project]{initialize_project()}} computes it before it sources the files. The
-\code{check_results()} rule \code{manifest_source} needs the run script in it, so
-\code{save_results()} stops when \verb{<version>_run.R} does not exist.
-\item For the scenario \code{"real"} only, \code{data_md5}, a named character vector
-with the md5 of each file directly in \code{data_raw}. \code{\link[=initialize_project]{initialize_project()}}
-computes it, so a file that the run writes after that call is not in the
-list.
-\item For a fake scenario only, \code{fake_md5}, one string: the md5 of the code of
-\verb{fake_<scenario>()}, without its source references. Two runs of one
-simulation on one day with the same code and packages then write the
-same bytes. This holds also when \verb{fake_<scenario>()} stamps the time
-into a file. A change in a function that \verb{fake_<scenario>()} calls does
-not change \code{fake_md5}.
-\item \code{n_rows_data}, the number of rows of \code{d}, or \code{NA} when \code{d} is \code{NULL}.
+rule \code{manifest_source} needs the run script in it, so \code{save_results()}
+stops when \verb{<version>_run.R} did not exist.
+\item For the scenario \code{"real"} only, \code{data_md5}, the md5 of each file directly
+in \code{data_raw} when \code{\link[=initialize_project]{initialize_project()}} ran. \code{save_results()} stops for
+\code{"real"} when \code{data_raw} did not exist then.
+\item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
+functions of \code{\link[=add_data]{add_data()}}, without their source references. A change in
+a function that a data function calls does not change \code{fake_md5}.
+\code{source_md5} holds the md5 of the files of those functions.
+\item \code{n_rows_data}, a named integer vector with the number of rows of each
+data element, or \code{NA} for an element that is not a data.frame. The
+analysis \verb{<scenario>__sim_<kkkk>__pbn_n_rows} of \code{\link[=add_analyses]{add_analyses()}} counts
+them where the data is, also on a worker. The rule \code{no_row_per_person}
+reads it.
+\item \code{analyses}, a data.frame with the columns \code{analysis} and \code{control}: the
+analysis kinds in the object.
+}
+
+\code{save_results()} does these steps in this order. It stops at the first step
+that fails:
+\enumerate{
+\item It checks its arguments. It stops when \code{r} has no stamp of
+\code{\link[=run_plan]{run_plan()}} for \code{p}. It stops when the settings of \code{scenarios} are not
+the settings in the argsets of \code{p}. It stops when a fake scenario has no function
+\verb{expect_<scenario>(results)} in the environment of
+\code{\link[=initialize_project]{initialize_project()}}, or when an analysis of \code{r} failed. It writes
+nothing then.
+\item It builds every results object, and the stacked object of each scenario
+with more than 1 simulation, and checks each with \code{\link[=check_results]{check_results()}}. On
+a failure, it prints each failed rule with \code{cat()}, writes nothing and
+stops.
+\item For each scenario, it replaces \code{check.csv} with one failed assertion,
+\verb{not checked yet}, so that \code{\link[=read_results]{read_results()}} refuses the new results
+until step 4 checks them. It writes
+\verb{<version>_results/<scenario>/results.qs2} for 1 simulation. For more
+simulations, it writes \verb{<version>_results/<scenario>/sim_<kkkk>/results.qs2}
+for each, and then the stacked
+\verb{<version>_results/<scenario>/results.qs2}. The section Stacking gives
+the rules. The files of the scenarios that are not in \code{scenarios} stay
+as they are.
+\item For each scenario with a function \verb{expect_<scenario>()}, it calls that
+function on the results of the scenario. \code{expect_real()} is optional.
+The function MUST return a data.frame with at least one row and the
+columns \code{assertion}, \code{expected}, \code{observed} and \code{pass}.
+\code{save_results()} writes it to \verb{<version>_results/<scenario>/check.csv}
+and prints it. For \code{"real"} without \code{expect_real()}, it deletes
+\code{check.csv}. An error, zero rows or another shape is one failed
+assertion. This rule is the same for \code{expect_real()} and for the fake
+scenarios. \code{save_results()} writes \code{check.csv} to a temporary file in
+the same folder and renames it, so a reader never sees a part of it.
+\item After every scenario, it stops when a value of \code{pass} is not \code{TRUE}.
+The error lists the failed assertions. The files stay, so that you can
+find the fault, and \code{\link[=read_results]{read_results()}} stops on them until the assertions
+pass.
 }
 }
+\section{Stacking}{
+
+The stacked results hold every element of the results of simulation 1,
+in the same order. These rules apply at each depth:
+\itemize{
+\item A data.frame gets a first column \code{sim}, and the rows of the simulations
+in order. It keeps the class of simulation 1, so a data.table stays a
+data.table.
+\item A list is stacked element by element, and pbn matches the elements by
+name. So each element of a list MUST have its own name.
+\item Each other element becomes a list with one entry for each simulation,
+named \code{sim_0001}, \code{sim_0002} and so on. This includes an atomic vector,
+a matrix, a factor, a date and \code{NULL}.
+}
+
+Stacking stops when two simulations differ in the structure at one path,
+and the error names the path and the two simulations. It also stops on a
+data.frame with a column \code{sim}, because pbn adds that column.
+
+The \code{manifest} is that of simulation 1. In it, \code{sim} and \code{n_rows_data}
+are \code{NA}, \code{sims} is the number of simulations, and \code{stacked} is \code{TRUE}.
+Stacking stops when the files of the simulations are not exactly the
+simulations 1 to \code{sims}, for example after \code{sims} became smaller. Delete
+the folders of the higher simulations then.
+}
+
 \examples{
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
 writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
-  "CFG <- list(scenarios = data.frame(scenario = 'real', sims = 1))",
+  c(
+    "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = 1))",
+    "expect_null <- function(results) {",
+    "  data.frame(assertion = 'one row', expected = 1,",
+    "    observed = nrow(results$means), pass = nrow(results$means) == 1)",
+    "}"
+  ),
   file.path(home, "v01_functions", "_cfg.R")
 )
-pbn::initialize_project("v01", home, file.path(home, "data"), env = new.env())
+env <- new.env()
+pbn::initialize_project("v01", home, file.path(home, "data"), env = env)
 
-pbn::save_results(
-  exclusions = data.frame(
-    step = "age 18 or more",
-    n_before = 100,
-    n_excluded = 4,
-    n_after = 96
-  ),
-  estimates = data.frame(term = "x", estimate = 1.2),
-  counts = list(by_group = data.frame(grp = c("a", "b"), n = c(50, 46))),
-  p_interaction = 0.04,
-  d = NULL
-)
+scenarios <- pbn::scenarios(env$CFG)
+p <- plnr::Plan$new()
+pbn::add_data(p, "d", fn = function(scenario, sim) {
+  return(data.frame(x = stats::rnorm(5)))
+})
+pbn::add_analyses(p, scenarios, name = "means", fn = function(data, argset) {
+  return(data.frame(mean_x = mean(data$d$x)))
+})
+r <- pbn::run_plan(p)
+pbn::save_results(r, p, scenarios)
 names(pbn::read_results("v01", home = home))
 
 unlink(home, recursive = TRUE)
 }
 \seealso{
+\code{vignette("pbn")}, which builds and runs a small fake project.
+
 Other results:
 \code{\link[=check_results]{check_results()}},
 \code{\link[=read_results]{read_results()}}

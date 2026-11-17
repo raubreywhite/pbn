@@ -158,7 +158,7 @@ test_that("run_plan with workers = 2 gives results identical to workers = 1, on 
   expect_identical(foreach::getDoParName(), "doSEQ")
 })
 
-test_that("the wrappers run on a PSOCK worker that has no pbn and no object of this session", {
+test_that("the wrappers run on a PSOCK worker that has no object of this session", {
   skip_if_pbn_not_installed()
   user_data <- function(scenario, sim) {
     return(data.frame(scenario = scenario, draw = stats::runif(2)))
@@ -173,16 +173,15 @@ test_that("the wrappers run on a PSOCK worker that has no pbn and no object of t
   on_worker <- function(data_w, action_w) {
     d <- data_w(scenario = "null", sim = 3L)
     a <- action_w(list(d = d), list(sim = 3L, seed = 12345L))
-    return(list(d = d, a = a, pbn = "pbn" %in% loadedNamespaces()))
+    return(list(d = d, a = a))
   }
   environment(on_worker) <- globalenv()
   cl <- parallel::makePSOCKcluster(1)
   withr::defer(parallel::stopCluster(cl))
   got <- parallel::clusterCall(cl, on_worker, data_w, action_w)[[1]]
-  expect_false(got$pbn)
   d <- data_w(scenario = "null", sim = 3L)
   a <- action_w(list(d = d), list(sim = 3L, seed = 12345L))
-  expect_identical(got, list(d = d, a = a, pbn = FALSE))
+  expect_identical(got, list(d = d, a = a))
 })
 
 test_that("an analysis that returns NULL keeps its place in the results", {

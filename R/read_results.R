@@ -73,20 +73,7 @@ read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
 # that read_results() would read.
 check_assertions <- function(folder, file) {
   csv <- file.path(folder, "check.csv")
-  if (!file.exists(csv)) {
-    return(invisible(NULL))
-  }
-  found <- tryCatch(
-    utils::read.csv(csv, stringsAsFactors = FALSE),
-    error = function(e) return(NULL)
-  )
-  problem <- if (!is.data.frame(found) || !"pass" %in% names(found)) {
-    "has no column pass that R can read"
-  } else if (nrow(found) == 0) {
-    "holds no assertion"
-  } else if (!all(found$pass %in% TRUE)) {
-    "holds an assertion that did not pass"
-  }
+  problem <- assertion_problem(folder)
   if (is.null(problem)) {
     return(invisible(NULL))
   }
@@ -102,6 +89,27 @@ check_assertions <- function(folder, file) {
     "\").",
     call. = FALSE
   )
+}
+
+# What is wrong with the check.csv of the scenario folder `folder`, or NULL
+# when it does not exist or when each of its assertions passed.
+assertion_problem <- function(folder) {
+  csv <- file.path(folder, "check.csv")
+  if (!file.exists(csv)) {
+    return(NULL)
+  }
+  found <- tryCatch(
+    utils::read.csv(csv, stringsAsFactors = FALSE),
+    error = function(e) return(NULL)
+  )
+  problem <- if (!is.data.frame(found) || !"pass" %in% names(found)) {
+    "has no column pass that R can read"
+  } else if (nrow(found) == 0) {
+    "holds no assertion"
+  } else if (!all(found$pass %in% TRUE)) {
+    "holds an assertion that did not pass"
+  }
+  return(problem)
 }
 
 is_sim_number <- function(sim) {

@@ -53,7 +53,16 @@ test_that("scenarios stops on each broken rule of CFG$scenarios and on an unknow
     "sims must be a whole number of 1 or more " = cfg(sims = c(1, 0, 3)),
     "the setting column n_boot has NA" = cfg(n_boot = c(1, NA, 3)),
     "the setting column name needs another name" = cfg(name = "x"),
-    "the setting column analysis needs another name" = cfg(analysis = "x")
+    "the setting column analysis needs another name" = cfg(analysis = "x"),
+    "the column output must be TRUE or FALSE on each row" = cfg(
+      output = c(FALSE, NA, TRUE)
+    ),
+    "the column output must be TRUE or FALSE on each row " = cfg(
+      output = c("no", "yes", "yes")
+    ),
+    "the column output must be FALSE for \"real\"" = cfg(
+      output = c(TRUE, TRUE, FALSE)
+    )
   )
   for (msg in names(stops)) {
     expect_error(
@@ -73,6 +82,15 @@ test_that("scenarios stops on each broken rule of CFG$scenarios and on an unknow
     fixed = TRUE
   )
   expect_error(scenarios(cfg(), only = character(0)), "`only` must be")
+})
+
+test_that("scenarios keeps the column output after scenario and sims, and it is not a setting", {
+  out <- scenarios(cfg(output = c(FALSE, TRUE, FALSE)))
+  expect_identical(names(out), c("scenario", "sims", "output", "n_boot"))
+  expect_identical(out$output, c(FALSE, TRUE, FALSE))
+  expect_identical(scenarios(cfg(output = c(FALSE, TRUE, FALSE)), only = "known")$output, TRUE)
+  expect_identical(setting_columns(out), "n_boot")
+  expect_identical(settings_of(out, "known"), list(n_boot = 5))
 })
 
 test_that("end_unless_real returns invisibly when real is among the scenarios", {

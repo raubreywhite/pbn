@@ -37,6 +37,16 @@ reference:
     - read_results
     - check_results
 
+- title: "Checks of fake scenarios"
+  contents:
+    - expect_recovers
+    - expect_biased
+
+- title: "Output"
+  contents:
+    - make_outputs
+    - stamp_fake
+
 - title: "Checks of the layout"
   contents:
     - check_project

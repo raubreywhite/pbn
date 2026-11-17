@@ -12,12 +12,16 @@ pbn_exports <- c(
   "check_results",
   "cohort_data",
   "end_unless_real",
+  "expect_biased",
+  "expect_recovers",
   "initialize_project",
   "keep_exclusions",
+  "make_outputs",
   "read_results",
   "run_plan",
   "save_results",
   "scenarios",
+  "stamp_fake",
   "table1"
 )
 
@@ -623,6 +627,13 @@ project_rules <- function() {
     manuscript_reads_real = list(
       rule_manuscript_reads_real,
       "manuscript/built/ reads only the real results"
+    ),
+    fake_data_names = list(
+      rule_fake_data_names,
+      paste(
+        "every file in an output_fake_data/ folder, and no file elsewhere,",
+        "has a name that starts with fake_data_"
+      )
     ),
     no_local_copy_of_pbn_function = list(
       rule_no_local_copy_of_pbn_function,

@@ -7,6 +7,7 @@ project_rule_names <- c(
   "scenario_checks",
   "manual_manuscript_names",
   "manuscript_reads_real",
+  "fake_data_names",
   "no_local_copy_of_pbn_function",
   "loc_per_file",
   "no_environment_variables",
@@ -28,7 +29,7 @@ test_that("check_project prints one line per rule and a count line", {
     out[1],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "12 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "13 PASS, 0 WARN, 0 FAIL")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -291,7 +292,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "12 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(ok$stdout, "13 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -307,7 +308,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "11 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "12 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {
@@ -606,4 +607,50 @@ test_that("unknown_path warns on vNN_output.R", {
   expect_identical(failed_rules(found), character(0))
   expect_identical(found$status[found$rule == "unknown_path"], "WARN")
   expect_identical(found$path[found$rule == "unknown_path"], "v01_output.R")
+})
+
+test_that("fake_data_names passes the output folders of make_outputs and fails a name in the wrong folder", {
+  p <- local_project()
+  write_lines(p$home, "v01_results/real/output/figure.png", "")
+  write_lines(
+    p$home,
+    "v01_results/known/output_fake_data/fake_data_figure.png",
+    ""
+  )
+  write_lines(
+    p$home,
+    "v01_results/known/output_fake_data/tables/fake_data_table.csv",
+    ""
+  )
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  expect_identical(found$status[found$rule == "fake_data_names"], "PASS")
+  # unknown_path reads the top level only, so it gives no WARN on them.
+  expect_identical(found$status[found$rule == "unknown_path"], "PASS")
+
+  write_lines(p$home, "v01_results/known/output_fake_data/figure.png", "")
+  write_lines(
+    p$home,
+    "v01_results/known/output_fake_data/tables/table.csv",
+    ""
+  )
+  write_lines(p$home, "v01_results/real/output/fake_data_figure.png", "")
+  write_lines(p$home, "manuscript/built/v01/fake_data_numbers.txt", "")
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "fake_data_names")
+  failed <- found[found$status == "FAIL", ]
+  expect_identical(
+    failed$path,
+    c(
+      "v01_results/known/output_fake_data/figure.png",
+      "v01_results/known/output_fake_data/tables/table.csv",
+      "manuscript/built/v01/fake_data_numbers.txt",
+      "v01_results/real/output/fake_data_figure.png"
+    )
+  )
+  expect_match(failed$detail[1], "its name MUST start with fake_data_")
+  expect_match(
+    failed$detail[4],
+    "fake_data_ is for a file in a folder output_fake_data/ only"
+  )
 })

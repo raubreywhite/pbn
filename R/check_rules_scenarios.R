@@ -1,5 +1,6 @@
 # The project rules about scenarios: the assertions that save_results()
-# writes, and the manuscript that MUST read the real results only.
+# writes, the manuscript that MUST read the real results only, and the names
+# of the output of fake data.
 
 rule_scenario_checks <- function(path) {
   rule <- "scenario_checks"
@@ -173,4 +174,44 @@ read_scenario <- function(cl) {
     return("\"real\"")
   }
   return(paste(deparse(s), collapse = " "))
+}
+
+# A file in a folder output_fake_data/ MUST have a name that starts with
+# fake_data_, and a file with such a name MUST be in such a folder.
+rule_fake_data_names <- function(path) {
+  rule <- "fake_data_names"
+  entries <- project_entries(path)
+  files <- entries[!dir.exists(file.path(path, entries))]
+  inside <- vapply(
+    strsplit(files, "/", fixed = TRUE),
+    function(p) return("output_fake_data" %in% p[-length(p)]),
+    logical(1)
+  )
+  prefixed <- startsWith(basename(files), "fake_data_")
+  no_prefix <- files[inside & !prefixed]
+  outside <- files[!inside & prefixed]
+  return(rbind(
+    project_row(
+      rule,
+      "FAIL",
+      no_prefix,
+      paste0(
+        no_prefix,
+        ": a file in output_fake_data/ holds output of fake data, so its ",
+        "name MUST start with fake_data_",
+        recycle0 = TRUE
+      )
+    ),
+    project_row(
+      rule,
+      "FAIL",
+      outside,
+      paste0(
+        outside,
+        ": a name that starts with fake_data_ is for a file in a folder ",
+        "output_fake_data/ only",
+        recycle0 = TRUE
+      )
+    )
+  ))
 }

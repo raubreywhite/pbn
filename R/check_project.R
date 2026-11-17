@@ -53,6 +53,9 @@
 #'   a `scenario` argument that is not the string `"real"`. A call without
 #'   `scenario` passes. In `.qmd` and `.Rmd` files, the rule reads the R
 #'   chunks that [knitr::purl()] extracts and the inline R code.
+#' - `fake_data_names` (FAIL): a file in a folder `output_fake_data/` has a
+#'   name without the prefix `fake_data_`, or a file with the prefix is in
+#'   another folder. [make_outputs()] writes these folders.
 #' - `no_local_copy_of_pbn_function` (FAIL): a top-level assignment in a
 #'   `vNN_functions/*.R` file defines a function with the name of a pbn
 #'   export.
@@ -64,7 +67,9 @@
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R` and
 #'   `check_project.R`, among others. A top-level dotfile and a top-level
-#'   `*.Rproj` file are never unknown.
+#'   `*.Rproj` file are never unknown. The rule reads the top level only, so
+#'   it never warns on the folders `output/` and `output_fake_data/` that
+#'   [make_outputs()] writes in `vNN_results/<scenario>/`.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.

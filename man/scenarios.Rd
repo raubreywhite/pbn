@@ -14,9 +14,9 @@ scenarios(cfg, only = NULL)
 names.}
 }
 \value{
-A data.frame with the columns \code{scenario}, \code{sims} and each setting
-column, one row for each chosen scenario in the order of
-\code{cfg$scenarios}. \code{sims} is an integer.
+A data.frame with the columns \code{scenario}, \code{sims}, \code{output} when
+\code{cfg$scenarios} has it, and each setting column. It has one row for each
+chosen scenario in the order of \code{cfg$scenarios}. \code{sims} is an integer.
 }
 \description{
 \code{scenarios()} checks the scenario table \code{cfg$scenarios} and returns it, or
@@ -30,6 +30,10 @@ the rows of the scenarios in \code{only}. The real data is the scenario
 \code{"real"}.
 \item \code{sims}: the number of simulations of the scenario, a whole number of 1 or
 more.
+\item \code{output}: optional. \code{TRUE} or \code{FALSE} on each row, and \code{FALSE} for
+\code{"real"}. \code{\link[=make_outputs]{make_outputs()}} writes the output of a fake scenario with
+\code{TRUE}. This column is not a setting. It is not in the argsets, in the
+key of the cache or in \code{manifest$settings}.
 }
 
 Each other column is a setting of the scenario, for example \code{n_boot} for a

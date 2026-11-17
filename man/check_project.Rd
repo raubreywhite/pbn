@@ -69,6 +69,9 @@ match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?\\.docx$}.
 a \code{scenario} argument that is not the string \code{"real"}. A call without
 \code{scenario} passes. In \code{.qmd} and \code{.Rmd} files, the rule reads the R
 chunks that \code{\link[knitr:purl]{knitr::purl()}} extracts and the inline R code.
+\item \code{fake_data_names} (FAIL): a file in a folder \verb{output_fake_data/} has a
+name without the prefix \code{fake_data_}, or a file with the prefix is in
+another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders.
 \item \code{no_local_copy_of_pbn_function} (FAIL): a top-level assignment in a
 \verb{vNN_functions/*.R} file defines a function with the name of a pbn
 export.
@@ -80,7 +83,9 @@ folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R} and
 \code{check_project.R}, among others. A top-level dotfile and a top-level
-\verb{*.Rproj} file are never unknown.
+\verb{*.Rproj} file are never unknown. The rule reads the top level only, so
+it never warns on the folders \verb{output/} and \verb{output_fake_data/} that
+\code{\link[=make_outputs]{make_outputs()}} writes in \verb{vNN_results/<scenario>/}.
 }
 
 The R parser, not a regular expression, finds the calls, the assignments

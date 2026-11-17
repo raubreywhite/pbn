@@ -36,6 +36,11 @@ reserved_fields <- c(
 #' - `sims`: the number of simulations of the scenario, a whole number of 1 or
 #'   more.
 #'
+#' - `output`: optional. `TRUE` or `FALSE` on each row, and `FALSE` for
+#'   `"real"`. [make_outputs()] writes the output of a fake scenario with
+#'   `TRUE`. This column is not a setting. It is not in the argsets, in the
+#'   key of the cache or in `manifest$settings`.
+#'
 #' Each other column is a setting of the scenario, for example `n_boot` for a
 #' number of bootstrap replicates that is smaller in the fake scenarios. A
 #' setting column MUST be an atomic vector with no `NA`, and its name MUST be
@@ -45,9 +50,9 @@ reserved_fields <- c(
 #'
 #' `scenarios()` stops on a table that breaks a rule, and on a name in
 #' `only` that is not in the table. The error names the problem.
-#' @return A data.frame with the columns `scenario`, `sims` and each setting
-#'   column, one row for each chosen scenario in the order of
-#'   `cfg$scenarios`. `sims` is an integer.
+#' @return A data.frame with the columns `scenario`, `sims`, `output` when
+#'   `cfg$scenarios` has it, and each setting column. It has one row for each
+#'   chosen scenario in the order of `cfg$scenarios`. `sims` is an integer.
 #' @examples
 #' CFG <- list(
 #'   scenarios = data.frame(
@@ -125,15 +130,40 @@ check_scenario_table <- function(table, where) {
     )
   }
   out <- data.frame(scenario = table$scenario, sims = as.integer(table$sims))
+  if ("output" %in% names(table)) {
+    out$output <- check_output_column(table$output, table$scenario, where)
+  }
   for (col in setting_columns(table)) {
     out[[col]] <- check_setting(table[[col]], col, where)
   }
   return(out)
 }
 
-# Each column of CFG$scenarios other than scenario and sims is a setting.
+# Each column of CFG$scenarios other than scenario, sims and output is a
+# setting.
 setting_columns <- function(table) {
-  return(setdiff(names(table), c("scenario", "sims")))
+  return(setdiff(names(table), c("scenario", "sims", "output")))
+}
+
+# The optional column output: TRUE or FALSE on each row, and FALSE for
+# "real". make_outputs() always writes the output of "real".
+check_output_column <- function(x, scenario, where) {
+  if (!is.logical(x) || !is.null(dim(x)) || anyNA(x)) {
+    stop(
+      where,
+      ": the column output must be TRUE or FALSE on each row.",
+      call. = FALSE
+    )
+  }
+  if (any(x[scenario == "real"])) {
+    stop(
+      where,
+      ": the column output must be FALSE for \"real\". ",
+      "pbn::make_outputs() always writes the output of the real data.",
+      call. = FALSE
+    )
+  }
+  return(x)
 }
 
 check_setting <- function(x, col, where) {

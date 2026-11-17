@@ -43,6 +43,13 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - The manifest gains `n_rows_after_exclusions`, which `no_row_per_person` checks too.
 - `element_names` passes a `results.qs2` with `manifest` only when the manifest puts kinds in `results_gitexclude.qs2`.
 - New `check_project()` rule `gitexclude_not_tracked`. `results_contract` also checks each `results_gitexclude.qs2`, and `unknown_path` knows `vNN_cache_gitexclude/`.
+- New `expect_recovers()` checks the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario. Each limit is 3.89 Monte Carlo standard errors, and each row shows the smallest error that it finds with a probability of 80%.
+- New `expect_biased()`, for a control analysis that MUST be biased. Both functions fail an assertion below 100 simulations, or 288 for the coverage of a 95% interval, and above 5% missing values. They also fail an `se` of 0 or less, a `lower` above its `upper`, and estimates that are all equal.
+- New `make_outputs()` calls the output function of the project for `"real"` and for each fake scenario with `output = TRUE`. The fake output goes to `<scenario>/output_fake_data/` with the name prefix `fake_data_`, and pbn empties each folder first. It stops when the call for a fake scenario changes a file outside its folder. It deletes the output of a scenario whose checks failed.
+- New `stamp_fake()`, which puts the label "FAKE DATA" on a ggplot of a fake scenario. ggplot2 is in Suggests, and grid in Imports.
+- `CFG$scenarios` MAY have the column `output`, `TRUE` or `FALSE`, and `FALSE` for `"real"`. It is not a setting. Before, a column `output` was a setting of any atomic type.
+- New `check_project()` rule `fake_data_names`.
+- The article Get started has the scenarios `null` and `confounded`, with 140 simulations each and recovery checks, and an output part with `make_outputs()`.
 
 # pbn 2026.11.22
 

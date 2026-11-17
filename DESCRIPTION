@@ -16,7 +16,10 @@ Description: Holds the house layout of a versioned analysis project and
     as one 'plnr' plan, with a seed for each simulation, writes one
     results object for each scenario and simulation with a fixed
     contract, checks the fake scenarios against their known answers, and
-    computes the numbers of a descriptive table.
+    computes the numbers of a descriptive table. It checks the bias, the
+    standard error and the coverage of an estimate over the simulations of
+    a fake scenario against limits from their Monte Carlo standard errors
+    (Morris, White and Crowther, 2019, <doi:10.1002/sim.8086>).
 License: MIT + file LICENSE
 URL: https://www.rwhite.no/pbn/, https://github.com/raubreywhite/pbn
 BugReports: https://github.com/raubreywhite/pbn/issues
@@ -25,6 +28,7 @@ Config/Needs/website: raubreywhite/rwtemplate
 Depends: R (>= 4.1.0)
 Imports:
     data.table,
+    grid,
     knitr,
     org (>= 2026.11.16),
     parallel,
@@ -38,6 +42,7 @@ Suggests:
     cohort (>= 2026.11.18),
     doParallel,
     foreach,
+    ggplot2,
     janitor,
     R6,
     rmarkdown,

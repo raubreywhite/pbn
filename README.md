@@ -34,7 +34,7 @@ pbn::add_analyses(p, scenarios, name = "models", fn = fit_models, outcome = CFG$
 r <- pbn::run_plan(p)
 pbn::save_results(r, p, scenarios)
 
-pbn::end_unless_real(scenarios)
+pbn::make_outputs(make_output, scenarios)
 ```
 
 From the project folder, run it with `Rscript v01_run.R`, and check the layout
@@ -55,6 +55,8 @@ fake project file by file, and runs it. Read it first.
 | `add_analyses()` | Adds one analysis for each scenario, simulation and value of the extra dimensions. |
 | `run_plan()` | Runs the plan in this R session or on a PSOCK cluster, and stops with every failed analysis. |
 | `save_results()` | Writes one results object for each scenario and simulation, stacks the simulations, and checks the fake scenarios. `gitexclude` puts the results with data for each person in a file that git ignores. |
+| `expect_recovers()`, `expect_biased()` | Check the bias, the standard error and the coverage of an estimate over the simulations of a fake scenario, and the bias of a control. |
+| `make_outputs()`, `stamp_fake()` | Write the figures and the tables of the real data and of chosen fake scenarios, with fake output marked. |
 | `end_unless_real()` | Ends a run script after `save_results()` when the run had no real data. |
 | `read_results()` | Reads the results files of one scenario. The default is `"real"`. |
 | `check_results()` | Checks a results object against the contract. |

@@ -96,6 +96,10 @@ render_run <- function(version, home = ".") {
 
 # The YAML header of the copy of run.md that render_run() renders: an A4
 # page, a 9 point font and narrow margins, so that the tables fit the page.
+# A text between two |, such as |bias|, stays on one line: the Typst rule
+# puts it in a box, and Typst breaks no line inside a box. Tables get an 8
+# point font and a narrow inset left and right, so that a wide table such
+# as the history fits the page.
 pdf_header <- c(
   "---",
   "format:",
@@ -105,6 +109,11 @@ pdf_header <- c(
   "    margin:",
   "      x: 1.5cm",
   "      y: 1.5cm",
+  "    include-in-header:",
+  "      text: |",
+  "        #show regex(\"[|][A-Za-z ]+[|]\"): it => box(it)",
+  "        #set table(inset: (x: 3pt, y: 6pt))",
+  "        #show table: set text(size: 8pt)",
   "---",
   ""
 )

@@ -94,6 +94,14 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - An analysis fails when it leaves a new object in the global environment. A data function fails when it changes an object of the functions folder.
 - The data functions and the analyses set the kind of random number generator of the run before each seed. An analysis that calls `RNGkind()` then changes no later draw.
 - `run_plan()` and `save_results()` read the argsets of a plan in one pass. Before, the time grew with the square of the number of analyses.
+- `run_plan()` stops the run at its first failed analysis, because pbn saves nothing from a run with a failure. No new data function or analysis starts, and the error and the run log give the number of analyses that did not run. Before, every analysis ran.
+- With workers, a worker sees the stop before its next data function, or within 0.5 seconds before its next analysis. pbn does not stop an analysis that runs.
+- The display counts the failed analyses of each scenario, and the time left comes from the analyses without a failure. A scenario whose data failed shows its time. The header and each line of a log give the time since the start of the run.
+- The section Timings of the run log gives seconds on the clock only, and no longer sums seconds over the workers. It gives the wall seconds of each scenario. Each data step and analysis kind gets its calls, the median and the maximum of one call, and its share.
+- The run log ends with the section History, one line for each run of this version, also for a run that did not finish. A deleted `run.md` starts the history again.
+- The check of the objects of the functions folder names the first element that changed, for example `CFG$vars`, and how. The output function of `make_outputs()` and each `expect_` function get the same check.
+- The section Run gives the number of the other packages. A cohort without an exclusion step gets one sentence. The section Output gives the number of warnings of the output function. The row of dashes of a table is as wide as its column.
+- New `check_project()` rule `cyclomatic_complexity`: a function of the project MUST score at most 15 in cyclocomp. pbn imports cyclocomp.
 
 # pbn 2026.11.22
 

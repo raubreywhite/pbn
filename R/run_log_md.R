@@ -1,7 +1,7 @@
 # The Markdown of the run log. It is plain GitHub-flavoured Markdown in
 # ASCII, with short tables and no HTML, so it reads well as plain text. The
-# section When comes first after the title, and the section Timings comes
-# last. They hold everything that changes in every run, and
+# section When comes first after the title, and the sections Timings and
+# History come last. They hold everything that changes in every run, and
 # run_log_stable() removes them.
 
 # The most assertions of one scenario that the log shows in full.
@@ -10,7 +10,12 @@ log_max_assertions <- 30L
 # The lines of the run log of `log`, in ASCII.
 run_log_lines <- function(log) {
   if (identical(log$stage, "started")) {
-    return(to_ascii(c(md_title(log), md_when(log), md_run(log))))
+    return(to_ascii(c(
+      md_title(log),
+      md_when(log),
+      md_run(log),
+      md_history(log)
+    )))
   }
   lines <- c(
     md_title(log),
@@ -23,7 +28,8 @@ run_log_lines <- function(log) {
     md_assertions(log),
     md_outputs(log),
     md_files(log),
-    md_timings(log)
+    md_timings(log),
+    md_history(log)
   )
   return(to_ascii(lines))
 }
@@ -49,7 +55,8 @@ md_when <- function(log) {
     paste0(
       "The run started ",
       format(log$started, "%Y-%m-%d %H:%M:%S %z"),
-      ". This section and the section Timings change in every run. The ",
+      ". This section and the sections Timings and History change in every ",
+      "run. The ",
       "other sections change when the code, the data, the cache, the ",
       "packages or the files on the disk change."
     ),
@@ -88,10 +95,23 @@ md_run <- function(log) {
     return(c(lines, ""))
   }
   v <- log$versions
+  others <- log$other_packages
   return(c(
     lines,
     paste0("- ", log$r_version, "."),
-    paste0("- Packages: ", and_list(paste(names(v), v)), "."),
+    paste0(
+      "- Packages: ",
+      and_list(paste(names(v), v)),
+      if (!is.null(others)) {
+        paste0(
+          ", and ",
+          others,
+          if (others == 1) " other package" else " other packages",
+          if (log$saved) ", listed in the manifest of each results file"
+        )
+      },
+      "."
+    ),
     paste0("- Workers: ", log$workers, "."),
     ""
   ))
@@ -128,7 +148,12 @@ md_failures <- function(log) {
   return(c(
     lines,
     md_run_error(log$run_error, errors),
-    md_failed_analyses(log$run$failed, log$run$n_analyses, errors),
+    md_failed_analyses(
+      log$run$failed,
+      log$run$n_analyses,
+      errors,
+      log$run$not_run
+    ),
     md_failed_assertions(checks_for_log(bad, errors)),
     md_contract(log$contract, errors),
     md_error(log$error, errors),
@@ -137,15 +162,28 @@ md_failures <- function(log) {
 }
 
 # The failed analyses, grouped by their error. Each group names at most 10
-# analyses.
-md_failed_analyses <- function(failed, n, errors) {
+# analyses. `skipped` is the number of analyses that did not run, because
+# the run stopped at its first failed analysis.
+md_failed_analyses <- function(failed, n, errors, skipped = 0L) {
   if (length(failed) == 0) {
     return(character(0))
   }
   lines <- c(
     "### Failed analyses",
     "",
-    paste0(length(failed), " of ", n, " analyses failed."),
+    paste0(
+      length(failed),
+      " of ",
+      n,
+      " analyses failed.",
+      if (isTRUE(skipped > 0)) {
+        paste0(
+          " The run stopped early at the first failed analysis: ",
+          skipped,
+          " analyses did not run."
+        )
+      }
+    ),
     ""
   )
   for (msg in unique(unname(failed))) {
@@ -359,43 +397,62 @@ md_exclusions <- function(log) {
       ""
     ))
   }
+  steps <- unlist(lapply(tables, function(x) return(vapply(x, nrow, 1L))))
+  if (all(steps == 0)) {
+    return(c(lines, "No cohort of this run has an exclusion step.", ""))
+  }
   scen <- log$scenarios
   for (i in seq_len(nrow(scen))) {
-    s <- scen$scenario[i]
-    x <- tables[[s]]
-    lines <- c(lines, paste("###", s), "")
-    if (scen$sims[i] > 1) {
-      lines <- c(
-        lines,
-        paste0(
-          "The table is per simulation. This is simulation 1 of ",
-          scen$sims[i],
-          "."
-        ),
-        ""
-      )
-    }
-    if (is.null(x)) {
-      lines <- c(lines, "No exclusion table.", "")
-      next
-    }
     lines <- c(
       lines,
-      md_table(
-        data.frame(
-          Data = x$data,
-          Step = x$step,
-          `Rows before` = x$n_before,
-          Excluded = x$n_excluded,
-          `Rows after` = x$n_after,
-          check.names = FALSE
-        ),
-        right = c(FALSE, FALSE, TRUE, TRUE, TRUE)
+      md_scenario_exclusions(tables[[scen$scenario[i]]], scen[i, ])
+    )
+  }
+  return(lines)
+}
+
+# The exclusions of one scenario, the row `scen` of the scenarios: one
+# sentence for each data element whose cohort has no step, and one table for
+# the others.
+md_scenario_exclusions <- function(x, scen) {
+  lines <- c(paste("###", scen$scenario), "")
+  if (scen$sims > 1) {
+    lines <- c(
+      lines,
+      paste0(
+        "The table is per simulation. This is simulation 1 of ",
+        scen$sims,
+        "."
       ),
       ""
     )
   }
-  return(lines)
+  if (is.null(x)) {
+    return(c(lines, "No exclusion table.", ""))
+  }
+  empty <- vapply(x, nrow, 1L) == 0
+  for (d in names(x)[empty]) {
+    lines <- c(lines, paste0(md_inline(d), ": no exclusion step."), "")
+  }
+  if (all(empty)) {
+    return(lines)
+  }
+  x <- do.call(rbind, unname(x[!empty]))
+  return(c(
+    lines,
+    md_table(
+      data.frame(
+        Data = x$data,
+        Step = x$step,
+        `Rows before` = x$n_before,
+        Excluded = x$n_excluded,
+        `Rows after` = x$n_after,
+        check.names = FALSE
+      ),
+      right = c(FALSE, FALSE, TRUE, TRUE, TRUE)
+    ),
+    ""
+  ))
 }
 
 md_assertions <- function(log) {
@@ -537,16 +594,31 @@ output_items <- function(o, s) {
   note <- o$notes[[s]]
   files <- o$files[[s]]$file
   stopped <- identical(o$failed$scenario, s)
+  warned <- o$warnings[[s]]
+  warned <- if (isTRUE(warned > 0)) {
+    paste0(
+      "- ",
+      s,
+      ": ",
+      warned,
+      if (warned == 1) " warning" else " warnings",
+      " of the output function."
+    )
+  }
   if (stopped) {
-    return(paste0("- ", s, ": make_outputs() stopped here, see the section Failures."))
+    return(paste0(
+      "- ",
+      s,
+      ": make_outputs() stopped here, see the section Failures."
+    ))
   }
   if (!is.null(note)) {
     return(paste0("- ", s, ": ", md_inline(sub("^pbn: ", "", note))))
   }
   if (length(files) == 0) {
-    return(paste0("- ", s, ": no file."))
+    return(c(paste0("- ", s, ": no file."), warned))
   }
-  return(paste0("- ", s, ": ", md_inline(files)))
+  return(c(paste0("- ", s, ": ", md_inline(files)), warned))
 }
 
 md_files <- function(log) {
@@ -580,55 +652,57 @@ md_files <- function(log) {
 md_timings <- function(log) {
   run <- log$run
   analyses <- run$analyses[!is.na(run$analyses$seconds), , drop = FALSE]
-  computing <- sum(run$data$seconds) + sum(analyses$seconds)
-  where <- if (isTRUE(log$workers > 1)) {
-    paste0("Summed over the ", log$workers, " workers")
-  } else {
-    "In this R session"
-  }
+  # The work of the run: the seconds of every data step and analysis. Each
+  # share in the tables is a part of it.
+  work <- sum(run$steps$seconds) + sum(analyses$seconds)
   return(c(
     "## Timings",
     "",
     paste0(
-      "The numbers of this section change in every run. pbn measures each ",
-      "one with proc.time(), in the R session that does the work."
+      "The numbers of this section change in every run. Each one is seconds ",
+      "on the clock. pbn measures a data step and an analysis where it ",
+      "runs, also on a worker."
     ),
     "",
     "### Main session",
     "",
     md_table(main_timings(log), right = c(FALSE, TRUE)),
     "",
+    "### Scenarios",
+    "",
     paste0(
-      where,
-      ", the data and the analyses took ",
-      secs(computing),
-      " computing seconds. run_plan() took ",
-      secs(log$timing$run),
-      " wall seconds."
+      "A scenario runs from the start of its first data step or analysis to ",
+      "the end of its last one. With workers, the scenarios overlap, so ",
+      "these seconds do not add up to the seconds of run_plan()."
     ),
     "",
-    "### Scenarios, in computing seconds",
+    md_table(scenario_timings(log), right = c(FALSE, TRUE)),
     "",
-    md_table(scenario_timings(log), right = c(FALSE, TRUE, TRUE, TRUE)),
-    "",
-    "### Data steps, in computing seconds",
+    "### Data steps",
     "",
     md_seconds_table(
       run$steps,
       c("data", "scenario", "step"),
       c("Data", "Scenario", "Step"),
       "Calls",
-      log$scenarios$scenario
+      log$scenarios$scenario,
+      work
     ),
     "",
-    "### Analysis kinds, in computing seconds",
+    "### Analysis kinds",
     "",
     md_seconds_table(
       analyses,
       c("scenario", "kind"),
       c("Scenario", "Kind"),
       "Analyses",
-      log$scenarios$scenario
+      log$scenarios$scenario,
+      work
+    ),
+    "",
+    paste0(
+      "Median and Maximum are the seconds of one call. Share is the part of ",
+      "the seconds of all data steps and analyses of the run."
     ),
     ""
   ))
@@ -667,38 +741,46 @@ main_timings <- function(log) {
   ))
 }
 
-# The computing seconds of the data and the analyses of each scenario.
+# The wall seconds of each scenario: from the start of its first data step
+# or analysis to the end of its last one. Each record holds the time of the
+# clock of the computer at its end, `at`, and its elapsed seconds, so its
+# start is `at` minus the seconds. All R sessions of a run are on one
+# computer, so their clocks are the same clock. A scenario without a timed
+# record has "n/a".
 scenario_timings <- function(log) {
   s <- log$scenarios$scenario
   run <- log$run
-  data <- vapply(
-    s,
-    function(x) return(sum(run$data$seconds[run$data$scenario %in% x])),
-    numeric(1)
-  )
-  analyses <- vapply(
+  data <- run$data
+  analyses <- run$analyses
+  ends <- c(data$at, analyses$at)
+  starts <- ends - c(data$seconds, analyses$seconds)
+  of <- c(data$scenario, analyses$scenario)
+  wall <- vapply(
     s,
     function(x) {
-      return(sum(
-        run$analyses$seconds[run$analyses$scenario == x],
-        na.rm = TRUE
-      ))
+      keep <- of %in% x & !is.na(ends) & !is.na(starts)
+      if (!any(keep)) {
+        return(NA_real_)
+      }
+      return(max(ends[keep]) - min(starts[keep]))
     },
-    numeric(1)
+    numeric(1),
+    USE.NAMES = FALSE
   )
   return(data.frame(
     Scenario = s,
-    Data = secs(data),
-    Analyses = secs(analyses),
-    Total = secs(data + analyses)
+    `Wall seconds` = secs(wall),
+    check.names = FALSE
   ))
 }
 
 # A table of the seconds of `x` for each group of the columns `by`, with
-# the count, the total, the median and the maximum. The groups come in the
-# order of the scenarios `scenarios`, then in their first order in `x`. A
-# missing scenario is "all": data without the arguments scenario and sim.
-md_seconds_table <- function(x, by, labels, count, scenarios) {
+# the count, the median and the maximum of one call, and the share of the
+# group in `work`, the seconds of all data steps and analyses of the run.
+# The groups come in the order of the scenarios `scenarios`, then in their
+# first order in `x`. A missing scenario is "all": data without the
+# arguments scenario and sim.
+md_seconds_table <- function(x, by, labels, count, scenarios, work) {
   if (nrow(x) == 0) {
     return("None.")
   }
@@ -725,14 +807,24 @@ md_seconds_table <- function(x, by, labels, count, scenarios) {
     integer(1),
     USE.NAMES = FALSE
   )
-  out$Total <- secs(stat(sum))
   out$Median <- secs(stat(stats::median))
   out$Maximum <- secs(stat(max))
+  out$Share <- share(stat(sum), work)
   rownames(out) <- NULL
   return(md_table(
     out,
     right = c(rep(FALSE, length(by)), TRUE, TRUE, TRUE, TRUE)
   ))
+}
+
+# The seconds `x` as percents of `work`: one decimal below 10%, and whole
+# numbers from 10%. "n/a" when `work` is not above 0.
+share <- function(x, work) {
+  if (!isTRUE(work > 0)) {
+    return(rep("n/a", length(x)))
+  }
+  p <- 100 * x / work
+  return(ifelse(p < 10, sprintf("%.1f%%", p), sprintf("%.0f%%", p)))
 }
 
 # The lines `x` as one fenced code block. The fence is longer than each run
@@ -756,10 +848,11 @@ md_cell <- function(x) {
 }
 
 # The data.frame `df` as a Markdown pipe table, with the columns of `right`
-# aligned right. Pandoc reads the number of dashes under each header as the
-# relative width of the column when a row is wider than 72 characters, and
-# then it wraps the cells. So a long text gets a wide column, and the table
-# stays on the page in a PDF.
+# aligned right. The row of dashes under the header is as wide as each
+# column. Pandoc reads the number of dashes as the relative width of the
+# column when a row is wider than 72 characters, and then it wraps the
+# cells. So a long text gets a wide column, and the table stays on the page
+# in a PDF.
 md_table <- function(df, right = rep(FALSE, ncol(df))) {
   cells <- lapply(df, md_cell)
   header <- md_cell(names(df))
@@ -768,16 +861,25 @@ md_table <- function(df, right = rep(FALSE, ncol(df))) {
     function(j) return(max(nchar(c(header[j], cells[[j]])))),
     numeric(1)
   )
+  # In a table wider than 72 characters, each column gets at least 6% of
+  # the dashes. Pandoc then gives a short column such as Pass room for its
+  # header in a PDF.
+  if (sum(width + 3) + 1 > 72) {
+    width <- pmax(width, ceiling(0.06 * sum(width + 2)))
+  }
   # Each cell is padded to the width of its column, so the table reads well
   # as plain text. The dashes give the relative widths for pandoc.
+  # formatC() counts the \\ of an escaped | as no character, so the cells
+  # are padded with strrep() instead.
   pad <- function(x, j) {
-    return(formatC(x, width = if (right[j]) width[j] else -width[j]))
+    fill <- strrep(" ", width[j] - nchar(x))
+    return(if (right[j]) paste0(fill, x) else paste0(x, fill))
   }
   row <- function(x) {
     x <- vapply(seq_along(x), function(j) return(pad(x[[j]], j)), "")
     return(paste0("| ", paste(x, collapse = " | "), " |"))
   }
-  rule <- strrep("-", pmin(width, 60) + 2)
+  rule <- strrep("-", width + 2)
   rule[right] <- sub("-$", ":", rule[right])
   body <- vapply(
     seq_len(nrow(df)),

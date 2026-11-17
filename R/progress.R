@@ -15,6 +15,10 @@
 #' time comes from the rate of the steps of this analysis. The count of the finished
 #' analyses of the scenario does not change.
 #'
+#' After the first failed analysis of the run, no new analysis starts, and
+#' an analysis that runs goes on to its end. Its calls of `progress()` still
+#' show.
+#'
 #' `progress()` drops a call less than 0.5 seconds after the last one that it
 #' showed. So a call in each pass of a fast loop costs little. It checks its
 #' arguments at each call, also outside `run_plan()`, so a wrong argument

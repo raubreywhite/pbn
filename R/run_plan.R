@@ -1,8 +1,8 @@
 #' Run a plan
 #'
 #' `run_plan()` runs every analysis of the plnr plan `p`, in this R session or
-#' on `workers` new R sessions. It stops when an analysis fails, and then it
-#' prints each failed analysis with its error.
+#' on `workers` new R sessions. It stops the run at the first failed analysis,
+#' and then it prints each failed analysis with its error.
 #'
 #' @param p A plan from `plnr::Plan$new()`, with data from [add_data()] and
 #'   analyses from [add_analyses()].
@@ -70,18 +70,19 @@
 #' data.frame. Such a value MAY differ in `identical()` between 1 worker and
 #' more.
 #'
-#' `run_plan()` runs every analysis, also after an analysis fails. An error in
-#' an action function fails that analysis, and an error in a data function
-#' fails each analysis that gets the data. This is the same with 1 worker and
-#' with more. After the run, `run_plan()` prints each failed analysis with its
-#' name and its full error message with `cat()`, and then it stops. R cuts an
-#' error message at 1000 bytes by default, and `cat()` does not. The error
-#' message of `run_plan()` also names the first failed analysis in the order
-#' of the plan, and holds its error. pbn cuts that error to keep the message
-#' below 900 bytes. When 2 or more analyses fail and all have the same error,
-#' the message says so. pbn then saves no results, because [save_results()]
-#' needs the value of `run_plan()`. The results files of an earlier run stay
-#' as they are. After [initialize_project()], `run_plan()` writes the run log
+#' An error in an action function fails that analysis, and an error in a
+#' data function fails each analysis that gets the data. pbn saves no results
+#' of a run with a failed analysis, so the first failed analysis stops the
+#' run. The section Stop at the first failure gives the rules. After the run,
+#' `run_plan()` prints each failed analysis with its name and its full error
+#' message with `cat()`, and then it stops. R cuts an error message at 1000
+#' bytes by default, and `cat()` does not. The error message of `run_plan()`
+#' gives the number of failed analyses and of the analyses that did not run.
+#' It also names the first failed analysis in the order of the plan, and
+#' holds its error. pbn cuts that error to keep the message below 900 bytes.
+#' When 2 or more analyses fail and all have the same error, the message says
+#' so. The results files of an earlier run stay as they are. After
+#' [initialize_project()], `run_plan()` writes the run log
 #' `<version>_results/run.md` with the failures before it stops. The section
 #' The run log of [save_results()] describes it.
 #'
@@ -91,9 +92,10 @@
 #' without [save_results()] after it leaves this log.
 #'
 #' `run_plan()` measures the elapsed time of each data step and of each
-#' analysis where it runs, also on a worker. The times go to the record of
-#' the plan, and [save_results()] writes them to the run log. They are not
-#' in the value, so two runs stay `identical()`.
+#' analysis where it runs, also on a worker, and the time of the clock of the
+#' computer at its end. The times go to the record of the plan, and
+#' [save_results()] writes them to the run log. They are not in the value, so
+#' two runs stay `identical()`.
 #'
 #' The value carries the attribute `pbn_run`, a stamp of the plan. It holds
 #' no count of the runs, so two runs of one plan can be `identical()`.
@@ -125,18 +127,44 @@
 #' function that returns a `cohort::CohortPipeline` runs on the worker, and
 #' only its data.table and its exclusion table come back. The section A
 #' cohort as the data of [add_data()] gives the rules.
+#' @section Stop at the first failure:
+#' A failed data function makes each analysis of its scenario and
+#' simulation fail, and [save_results()] needs a run without a failed
+#' analysis. So no analysis after the first failure can give a result, and
+#' `run_plan()` stops the run there. There is no option to run on. These are
+#' the rules:
+#' - After the first failed analysis, no new data function and no new
+#'   analysis starts. An analysis whose data failed fails at once, also
+#'   after the stop, without a call of its action function.
+#' - With 1 worker, the stop comes directly after the failed analysis.
+#' - With workers, the failed analysis creates a folder in the temporary
+#'   folder of this R session. Each worker looks for it before each data
+#'   function, and at most every 0.5 seconds before an analysis. pbn does not
+#'   stop an analysis that runs. So the longest delay is the rest of the
+#'   longest analysis that runs at the time of the failure, plus 0.5
+#'   seconds. The batches that did not start still go to the workers, and
+#'   each of them ends at once.
+#' - Each analysis that did not run counts as not run. It is not a failure.
+#'
+#' The display shows the stop at once, and the run log says that the run
+#' stopped early and how many analyses did not run.
 #' @section Progress:
 #' `run_plan()` shows one line for each scenario: its finished analyses of
-#' all its analyses, the time since its start, and a note. The note is one
-#' of these:
+#' all its analyses, the failed ones among them, the time since its start,
+#' and a note. The note is one of these:
 #' - `"waiting"` before the scenario starts, and `"done"` at its end.
+#' - `"stopping"` after the first failed analysis of the run, and
+#'   `"stopped early"` with the analyses that did not run at the end.
 #' - the last text of [progress()] from an analysis of the scenario, while
 #'   that analysis runs.
-#' - otherwise the time left, from the finished analyses of the scenario,
-#'   after at least 3 and at least 10% of them.
+#' - otherwise the time left, from the analyses of the scenario that ended
+#'   without a failure, after at least 3 and at least 10% of them.
 #'
 #' The analyses that count the rows do not count. The display replaces the
-#' progress bar of plnr.
+#' progress bar of plnr. The header of the display in a terminal gives the
+#' time since the start of the run. So does the start of each line of a log,
+#' for example `pbn: [12m 05s] null 522/1200 analyses, 8m 53s, about 12m
+#' left`.
 #'
 #' In an interactive terminal, the display draws its lines again in place.
 #' In RStudio and in another console without ANSI codes, it draws one line
@@ -146,7 +174,10 @@
 #'
 #' Without an interactive session, for example with `Rscript` into a log,
 #' in knitr and in testthat, the display only adds lines:
-#' - nothing in the first 60 seconds of the run. A short run adds no line.
+#' - nothing in the first 60 seconds of the run, other than the line of the
+#'   first failed analysis. A short run without a failure adds no line.
+#' - one line at once when the first analysis fails, also in the first 60
+#'   seconds.
 #' - after 60 seconds, a header, and one line for each scenario that started.
 #' - one line when a scenario finishes.
 #' - one line for a running scenario at most every 60 seconds. The line
@@ -199,7 +230,7 @@ run_plan <- function(p, workers = 1) {
   }
   # run.md says that this run started and has not finished, until the full
   # log replaces it.
-  write_started_log(plan_scenarios(index), started)
+  write_started_log(plan_scenarios(index), started, workers)
   # The md5 of the raw data of this run, also after a change of a file since
   # initialize_project(). The stamp carries it to the manifest.
   if (!is.null(state$results)) {
@@ -232,7 +263,7 @@ run_plan <- function(p, workers = 1) {
     print_cache_lines(r, info)
   }
   info$run <- run_record(p, info, r, taken, workers, start, started)
-  if (length(info$run$failed) > 0) {
+  if (length(info$run$failed) > 0 || info$run$not_run > 0) {
     write_failed_run(info$run)
   }
   stop_on_failed(r)
@@ -266,7 +297,8 @@ run_shown <- function(p, info, index, workers, started) {
     plan_scenarios(index),
     workers,
     started,
-    display_mode()
+    display_mode(),
+    lag = max(0, as.numeric(Sys.time()) - as.numeric(started))
   )
   console <- display$mode != "log"
   return(progressr::with_progress(
@@ -287,10 +319,13 @@ run_shown <- function(p, info, index, workers, started) {
 # progressr keeps a vector as long as the steps, and walks it at each
 # progression, so the progressor has 1 step and each count has the amount
 # 0. The value is a list: `r`, the value of p$run_all(), and `packages`,
-# NULL or the packages of the workers.
+# NULL or the packages of the workers. The first failed analysis creates
+# the folder `stop_path`, see run_failed(), and the folder goes at the end.
 run_progressed <- function(p, info, index, workers, display) {
   progressor <- progressr::progressor(steps = 1, on_exit = FALSE)
-  run <- run_context(info, index, workers, progressor)
+  stop_path <- tempfile("pbn_stop_")
+  on.exit(unlink(stop_path, recursive = TRUE), add = TRUE)
+  run <- run_context(info, index, workers, progressor, stop_path)
   set_run(info, run)
   on.exit(set_run(info, NULL), add = TRUE)
   old_option <- options(pbn.run = run)
@@ -304,12 +339,42 @@ run_progressed <- function(p, info, index, workers, display) {
   } else {
     out <- run_on_cluster(p, workers, future_chunk_size(info, index, workers))
   }
-  rest <- display_rest(display)
-  if (sum(rest) > 0) {
-    progressor(amount = 0, pbn_done = rest[rest > 0])
+  if (length(out$r) == nrow(index)) {
+    progressor(amount = 0, pbn_final = final_counts(out$r, index))
+  } else {
+    rest <- display_rest(display)
+    if (sum(rest) > 0) {
+      progressor(amount = 0, pbn_done = rest[rest > 0])
+    }
   }
   progressor(amount = 1)
   return(out)
+}
+
+# The counts of each scenario at the end of the run, from `r`, the value of
+# p$run_all(), without the analyses that count the rows: `done`, the
+# analyses that ran, `failed`, those of them that failed, and `not_run`,
+# those that did not run because the run stopped. Each is named by the
+# scenario.
+final_counts <- function(r, index) {
+  shown <- !index$hidden
+  value <- lapply(r[shown], function(x) {
+    return(if (inherits(x, "pbn_timed")) x[["value"]] else x)
+  })
+  skipped <- vapply(value, inherits, logical(1), what = "pbn_not_run")
+  failed <- vapply(
+    value,
+    inherits,
+    logical(1),
+    what = c("pbn_failed_analysis", "try-error")
+  )
+  s <- factor(index$scenario[shown], levels = unique(index$scenario))
+  count <- function(x) return(c(tapply(x, s, sum, default = 0L)))
+  return(list(
+    done = count(!skipped),
+    failed = count(failed),
+    not_run = count(skipped)
+  ))
 }
 
 # The progressr progressor of the plnr plan `p`, from its private fields, or
@@ -545,29 +610,45 @@ failed_analyses <- function(r) {
 }
 
 # Prints each failed analysis in full with cat(), and stops when there is
-# one.
+# one, or when an analysis did not run because the run stopped early.
 stop_on_failed <- function(r) {
   failed <- failed_analyses(r)
-  if (length(failed) == 0) {
+  skipped <- sum(vapply(r, inherits, logical(1), what = "pbn_not_run"))
+  if (length(failed) == 0 && skipped == 0) {
     return(invisible(NULL))
   }
   for (nm in names(failed)) {
     cat("pbn: the analysis ", nm, " failed:\n", failed[[nm]], "\n", sep = "")
   }
   utils::flush.console()
-  stop(failed_message(failed, length(r)), call. = FALSE)
+  if (length(failed) == 0) {
+    stop(
+      "The run stopped early: ",
+      skipped,
+      " of ",
+      length(r),
+      " analyses did not run. pbn saved nothing.",
+      call. = FALSE
+    )
+  }
+  stop(failed_message(failed, length(r), skipped), call. = FALSE)
 }
 
-# The message of stop_on_failed(): the count, then the name and the error of
-# the first failed analysis. A knitr build or a log can keep the message and
-# lose the output of cat(). The error is cut so that the message holds at
-# most `max_bytes` bytes, below the 1000 bytes where R cuts it.
-failed_message <- function(failed, n, max_bytes = 899L) {
+# The message of stop_on_failed(): the count, the analyses that did not run
+# because the run stopped early, then the name and the error of the first
+# failed analysis. A knitr build or a log can keep the message and lose the
+# output of cat(). The error is cut so that the message holds at most
+# `max_bytes` bytes, below the 1000 bytes where R cuts it.
+failed_message <- function(failed, n, skipped = 0L, max_bytes = 899L) {
   fixed <- paste0(
     length(failed),
     " of ",
     n,
-    " analyses failed. pbn printed each failed analysis and its error above, ",
+    " analyses failed",
+    if (skipped > 0) {
+      paste0(", and the run stopped early: ", skipped, " analyses did not run")
+    },
+    ". pbn printed each failed analysis and its error above, ",
     "and saved nothing. The results files of an earlier run stay as they are.",
     " The first failed analysis is ",
     names(failed)[1],

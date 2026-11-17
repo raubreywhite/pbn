@@ -355,12 +355,14 @@ check_column <- function(a, b, k, where, col, scenario) {
 }
 # Calls expect_<scenario>() on the results of the scenario under `root`,
 # writes check.csv and prints the table. An error, zero rows or a wrong shape
-# is one failed assertion.
+# is one failed assertion. A change of an object of the functions folder in
+# place, such as CFG, adds one failed assertion.
 check_expectations <- function(fn, root, scenario) {
   folder <- file.path(root, scenario)
   fn_name <- paste0("expect_", scenario, "()")
   main <- file.path(folder, "results.qs2")
   results <- merge_gitexclude(qs2::qs_read(main), main)
+  objects <- main_fingerprint()
   found <- tryCatch(fn(results), error = function(e) {
     return(failed_assertion(
       paste(fn_name, "runs without an error"),
@@ -391,6 +393,22 @@ check_expectations <- function(fn, root, scenario) {
     )
   }
   found <- as.data.frame(found)[, columns, drop = FALSE]
+  changed <- main_change(objects)
+  if (!is.null(changed)) {
+    found <- rbind(
+      found,
+      failed_assertion(
+        paste(fn_name, "changes no object of the functions folder"),
+        paste0(
+          fn_name,
+          " changed ",
+          changed$where,
+          " in place: ",
+          changed$how
+        )
+      )
+    )
+  }
   write_csv_atomic(found, file.path(folder, "check.csv"))
   cat("Assertions of the scenario \"", scenario, "\":\n", sep = "")
   print(found, row.names = FALSE)

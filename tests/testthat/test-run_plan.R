@@ -84,7 +84,7 @@ test_that("run_plan with workers > 1 stops with a message when future or doFutur
   expect_identical(run_plan(p)[["null__sim_0002__a__1"]], 1)
 })
 
-test_that("a failing analysis: run_plan prints every failed analysis in full and stops, the same with 1 and 2 workers", {
+test_that("a failing analysis: run_plan prints each failed analysis in full and stops early, with 1 and 2 workers", {
   skip_if_pbn_not_installed()
   failed_output <- function(workers) {
     p <- failing_plan()
@@ -94,33 +94,32 @@ test_that("a failing analysis: run_plan prints every failed analysis in full and
     return(list(out = out, err = conditionMessage(err)))
   }
   one <- failed_output(1)
-  two <- failed_output(2)
-  expect_identical(two, one)
-  # The message names the first failed analysis and holds the start of its
-  # error, cut below 900 bytes. The errors differ, so no "All" sentence.
+  # With 1 worker the analyses that count the rows come first. The data of
+  # null 2 fails, its analyses fail with it, and the run stops. The message
+  # names the first failed analysis and holds the start of its error, cut
+  # below 900 bytes. The analysis of real, with another error, did not run.
   expect_true(startsWith(
     one$err,
     paste0(
-      "3 of 6 analyses failed. pbn printed each failed analysis and its ",
+      "2 of 6 analyses failed, and the run stopped early: 2 analyses did not ",
+      "run. pbn printed each failed analysis and its ",
       "error above, and saved nothing. The results files of an earlier run ",
       "stay as they are. The first failed analysis is ",
       "null__sim_0002__pbn_n_rows, with this error: \"The data function 'd' ",
       "failed: planted data error xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
     )
   ))
-  expect_true(endsWith(one$err, "xxxx [...]\"."))
+  expect_true(endsWith(one$err, "xxxx [...]\". All 2 failed with this error."))
   expect_lt(nchar(one$err, "bytes"), 900)
-  expect_no_match(one$err, "failed with this error", fixed = TRUE)
   text <- paste(one$out, collapse = "\n")
   expect_identical(
     grep("^pbn: the analysis", one$out, value = TRUE),
     c(
       "pbn: the analysis null__sim_0002__pbn_n_rows failed:",
-      "pbn: the analysis real__sim_0001__a__1 failed:",
       "pbn: the analysis null__sim_0002__a__1 failed:"
     )
   )
-  expect_match(text, "Error: planted action error", fixed = TRUE)
+  expect_no_match(text, "planted action error", fixed = TRUE)
   # The whole message of more than 1000 bytes, with its end.
   expect_match(
     text,
@@ -131,6 +130,23 @@ test_that("a failing analysis: run_plan prints every failed analysis in full and
     ),
     fixed = TRUE
   )
+  # With 2 workers, each worker stops at its next analysis after the first
+  # failure, so a worker MAY fail an analysis before it sees the stop. Each
+  # printed failure is one of the 3 analyses that fail, in full.
+  two <- failed_output(2)
+  expect_match(
+    two$err,
+    "^[1-3] of 6 analyses failed, and the run stopped early: [0-4] analyses did not run\\. "
+  )
+  printed <- grep("^pbn: the analysis", two$out, value = TRUE)
+  expect_true(length(printed) >= 1)
+  expect_true(all(printed %in% c(
+    "pbn: the analysis null__sim_0002__pbn_n_rows failed:",
+    "pbn: the analysis real__sim_0001__a__1 failed:",
+    "pbn: the analysis null__sim_0002__a__1 failed:"
+  )))
+  n <- as.integer(sub(" of 6 .*", "", two$err))
+  expect_identical(length(printed), n)
 })
 
 test_that("every analysis fails with one long error: the message holds it cut below 900 bytes and says all failed with it, with 1 and 2 workers", {
@@ -148,18 +164,39 @@ test_that("every analysis fails with one long error: the message holds it cut be
     )
     msg <- conditionMessage(err)
     expect_lt(nchar(msg, "bytes"), 900)
+    # With 1 worker the 2 analyses of real fail, and the run stops. With 2
+    # workers, each worker MAY fail its analyses before it sees the stop.
+    expect_match(
+      msg,
+      if (workers == 1) {
+        "^2 of 6 analyses failed, and the run stopped early: 4 analyses did not run\\. "
+      } else {
+        "^[2-6] of 6 analyses failed(, and the run stopped early: [0-4] analyses did not run)?\\. "
+      }
+    )
     expect_match(
       msg,
       paste0(
-        "6 of 6 analyses failed. pbn printed each failed analysis and its ",
+        "pbn printed each failed analysis and its ",
         "error above, and saved nothing. The results files of an earlier ",
-        "run stay as they are. The first failed analysis is ",
-        "real__sim_0001__pbn_n_rows, with this error: \"The data function ",
-        "'d' failed: one error zzzz"
+        "run stay as they are. The first failed analysis is "
       ),
       fixed = TRUE
     )
-    expect_true(endsWith(msg, "zzzz [...]\". All 6 failed with this error."))
+    # With 2 workers, a worker that started later MAY fail first.
+    expect_match(
+      msg,
+      paste0(
+        if (workers == 1) "real__sim_0001" else "[a-z]+__sim_000[12]",
+        "__pbn_n_rows, with this error: \"The data function 'd' failed: ",
+        "one error zzzz"
+      )
+    )
+    n <- sub(" of 6 .*", "", msg)
+    expect_true(endsWith(
+      msg,
+      paste0("zzzz [...]\". All ", n, " failed with this error.")
+    ))
   }
 })
 
@@ -502,4 +539,85 @@ test_that("run_error_message cuts a long error at a whole character below 900 by
   expect_lt(nchar(msg, "bytes"), 900)
   expect_true(endsWith(msg, "\u00e9 [...]\"."))
   expect_true(endsWith(run_error_message("short"), "The error is: \"short\"."))
+})
+
+test_that("a run stops at its first failed analysis: no later data function or analysis runs, with 1 worker, and with 2 workers fewer than all", {
+  skip_if_pbn_not_installed()
+  marks <- withr::local_tempdir()
+  data_fn <- function(scenario, sim) {
+    if (scenario == "real") {
+      stop("the raw data is missing")
+    }
+    file.create(file.path(marks, paste0("data_", sim)))
+    return(data.frame(x = 1))
+  }
+  action_fn <- function(data, argset) {
+    file.create(file.path(marks, paste0("analysis_", argset$sim)))
+    Sys.sleep(0.2)
+    return(1)
+  }
+  environment(data_fn) <- list2env(list(marks = marks), parent = globalenv())
+  environment(action_fn) <- environment(data_fn)
+  sc <- scenarios(list(
+    scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 20))
+  ))
+  for (workers in 1:2) {
+    unlink(list.files(marks, full.names = TRUE))
+    p <- plnr::Plan$new()
+    add_data(p, "d", fn = data_fn)
+    add_analyses(p, sc, "a", fn = action_fn)
+    out <- utils::capture.output(
+      err <- tryCatch(run_plan(p, workers = workers), error = function(e) e)
+    )
+    ran <- list.files(marks, pattern = "^analysis_")
+    if (workers == 1) {
+      # The analyses that count the rows come first, so the data of real
+      # fails before any data of null.
+      expect_match(
+        conditionMessage(err),
+        "^2 of 42 analyses failed, and the run stopped early: 40 analyses did not run\\. "
+      )
+      expect_identical(list.files(marks), character(0))
+    } else {
+      expect_match(
+        conditionMessage(err),
+        "^2 of 42 analyses failed, and the run stopped early: [0-9]+ analyses did not run\\. "
+      )
+      expect_lt(length(ran), 20)
+    }
+    expect_identical(
+      grep("^pbn: the analysis", out, value = TRUE),
+      c(
+        "pbn: the analysis real__sim_0001__pbn_n_rows failed:",
+        "pbn: the analysis real__sim_0001__a__1 failed:"
+      ),
+      info = paste("workers:", workers)
+    )
+  }
+})
+
+test_that("run_stopping sees the folder of a stop that another R session made, before each data function and at most every 0.5 seconds before an analysis", {
+  run <- new.env()
+  run$stop_path <- file.path(withr::local_tempdir(), "stop")
+  run$every <- 0.5
+  run$progressor <- NULL
+  run_reset(run)
+  expect_false(run_stopping(run))
+  # Another R session fails an analysis.
+  dir.create(run$stop_path)
+  # Within 0.5 seconds of the last look, an analysis does not look again.
+  expect_false(run_stopping(run))
+  expect_true(run_stopping(run, force = TRUE))
+  expect_true(run_stopping(run))
+  # A new future of a worker forgets the stop, and finds the folder again.
+  run_reset(run)
+  expect_true(run_stopping(run))
+  # The first failure in this R session stops it at once, and makes the
+  # folder for the others.
+  unlink(run$stop_path, recursive = TRUE)
+  run_reset(run)
+  run_failed(run, list(scenario = "real"))
+  expect_true(run$stopped)
+  expect_true(dir.exists(run$stop_path))
+  expect_true(run_stopping(run))
 })

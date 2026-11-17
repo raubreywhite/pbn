@@ -128,6 +128,7 @@ log_data <- function(name, where, done, start) {
     sim = if (is.null(where)) NA_integer_ else as.integer(where[["sim"]]),
     steps = .pbn_clock[["steps"]],
     seconds = proc.time()[["elapsed"]] - start,
+    at = as.numeric(Sys.time()),
     reused = isTRUE(.pbn_clock[["reused"]]),
     line = if (is.null(.pbn_clock[["line"]])) {
       NA_character_

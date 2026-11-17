@@ -59,8 +59,9 @@ display_now <- function() {
 
 # The state of the display of one run. `scenarios` is plan_scenarios() of
 # the plan: the scenarios in the order of the plan, with their number of
-# analyses that count.
-new_display <- function(scenarios, workers, started, mode) {
+# analyses that count. `lag` is the seconds of the run before the display
+# starts, so that the clock of the run starts with run_plan().
+new_display <- function(scenarios, workers, started, mode, lag = 0) {
   d <- new.env(parent = emptyenv())
   n <- nrow(scenarios)
   d$mode <- mode
@@ -70,6 +71,8 @@ new_display <- function(scenarios, workers, started, mode) {
   d$scenario <- scenarios$scenario
   d$total <- scenarios$analyses
   d$done <- rep(0, n)
+  d$failed <- rep(0, n)
+  d$not_run <- rep(0, n)
   d$start <- rep(NA_real_, n)
   d$finished <- rep(NA_real_, n)
   d$details <- rep(list(list()), n)
@@ -79,6 +82,10 @@ new_display <- function(scenarios, workers, started, mode) {
   d$logged_key <- rep(NA_character_, n)
   d$logged_done <- rep(FALSE, n)
   d$t_start <- display_now()
+  # The clock of the run starts with run_plan().
+  d$t_run <- d$t_start - lag
+  # The time when the display learned that the run stops, see run_failed().
+  d$stop_at <- NA_real_
   d$header <- paste0(
     "pbn: ",
     n,
@@ -132,24 +139,34 @@ display_handler <- function(d) {
 }
 
 # Adds the progression `p` to the display `d` and shows it:
-# - pbn_done, the number of finished analyses of each scenario, and pbn_t0,
-#   the time when the worker started them.
+# - pbn_done, the number of finished analyses of each scenario, pbn_failed,
+#   the number of them that failed, and pbn_t0, the time when the worker
+#   started them.
 # - pbn_ended, the analyses whose text of pbn::progress() ends.
 # - pbn_detail, a text of pbn::progress().
+# - pbn_stop, the scenario of an analysis that failed, so the run stops.
+# - pbn_final, the counts of each scenario at the end of the run.
 display_update <- function(d, p) {
   now <- display_now()
-  done <- p[["pbn_done"]]
-  i <- match(names(done), d$scenario)
-  keep <- !is.na(i)
-  i <- i[keep]
-  d$done[i] <- d$done[i] + done[keep]
-  t0 <- p[["pbn_t0"]]
-  if (length(i) > 0 && !is.null(t0)) {
-    d$start[i] <- pmin(d$start[i], t0, na.rm = TRUE)
+  if (!is.null(p[["pbn_final"]])) {
+    return(display_final(d, p[["pbn_final"]], now))
   }
+  if (!is.null(p[["pbn_stop"]]) && is.na(d$stop_at)) {
+    d$stop_at <- now
+    display_stop_line(d, p[["pbn_stop"]], now)
+  }
+  i <- display_counts(d, p)
   newly <- i[d$done[i] >= d$total[i] & is.na(d$finished[i])]
   d$finished[newly] <- now
   d$details[newly] <- list(list())
+  display_details(d, p, now)
+  return(display_show(d, now, force = length(newly) > 0))
+}
+
+# Adds the texts of pbn::progress() of the progression `p` to the display
+# `d` at the time `now`: pbn_ended removes the texts of the analyses that
+# ended, and pbn_detail adds a text.
+display_details <- function(d, p, now) {
   ended <- p[["pbn_ended"]]
   for (k in seq_along(ended)) {
     j <- match(names(ended)[k], d$scenario)
@@ -164,7 +181,60 @@ display_update <- function(d, p) {
     d$details[[j]][[detail[["key"]]]] <- detail
     d$start[j] <- min(d$start[j], detail[["t0"]], na.rm = TRUE)
   }
-  return(display_show(d, now, force = length(newly) > 0))
+  return(invisible(NULL))
+}
+
+# Adds the counts of the progression `p` to the display `d`: pbn_done,
+# pbn_failed and pbn_t0. Returns the positions of their scenarios.
+display_counts <- function(d, p) {
+  done <- p[["pbn_done"]]
+  i <- match(names(done), d$scenario)
+  keep <- !is.na(i)
+  i <- i[keep]
+  d$done[i] <- d$done[i] + done[keep]
+  failed <- p[["pbn_failed"]]
+  if (length(failed) == length(done)) {
+    d$failed[i] <- d$failed[i] + failed[keep]
+  }
+  t0 <- p[["pbn_t0"]]
+  if (length(i) > 0 && !is.null(t0)) {
+    d$start[i] <- pmin(d$start[i], t0, na.rm = TRUE)
+  }
+  return(i)
+}
+
+# The counts `final` of the end of the run in the display `d`: for each
+# scenario, the analyses that ran, that failed and that did not run. Each
+# scenario then ends, also one that the stop of the run cut short.
+display_final <- function(d, final, now) {
+  i <- match(names(final$done), d$scenario)
+  keep <- !is.na(i)
+  i <- i[keep]
+  d$done[i] <- final$done[keep]
+  d$failed[i] <- final$failed[keep]
+  d$not_run[i] <- final$not_run[keep]
+  ended <- i[is.na(d$finished[i]) & (d$done[i] >= d$total[i] | d$not_run[i] > 0)]
+  d$finished[ended] <- now
+  d$details[ended] <- list(list())
+  return(display_show(d, now, force = TRUE))
+}
+
+# In a log, one line at once when the display learns that an analysis of
+# the scenario `s` failed, also in the first 60 seconds of the run. In a
+# console, the header says it instead.
+display_stop_line <- function(d, s, now) {
+  if (d$mode != "log") {
+    return(invisible(NULL))
+  }
+  display_write(
+    d,
+    "pbn: [",
+    format_duration(now - d$t_run),
+    "] an analysis of the scenario ",
+    s,
+    " failed, so the run stops early: no new analysis starts.\n"
+  )
+  return(invisible(NULL))
 }
 
 # Shows the display `d` at the time `now`. In a console the display is drawn
@@ -242,8 +312,9 @@ display_rest <- function(d) {
   return(stats::setNames(pmax(d$total - d$done, 0), d$scenario))
 }
 
-# The lines of the display at the time `now`: the header and one line for
-# each scenario, with aligned columns.
+# The lines of the display at the time `now`: the header with the time
+# since the start of the run, and one line for each scenario, with aligned
+# columns.
 display_lines <- function(d, now) {
   name <- formatC(d$scenario, width = -max(nchar(d$scenario)))
   w <- nchar(format(max(d$total)))
@@ -251,8 +322,10 @@ display_lines <- function(d, now) {
     formatC(d$done, width = w),
     "/",
     formatC(d$total, width = -w),
-    " analyses"
+    " analyses",
+    ifelse(d$failed > 0, paste0(", ", d$failed, " failed"), "")
   )
+  count <- formatC(count, width = -max(nchar(count)))
   time <- vapply(
     seq_along(d$scenario),
     function(i) return(scenario_time(d, i, now)),
@@ -265,16 +338,30 @@ display_lines <- function(d, now) {
   )
   lines <- paste0("  ", name, "  ", count, "  ", formatC(time, width = 7))
   lines <- ifelse(nzchar(note), paste0(lines, "  ", note), lines)
-  return(c(d$header, lines))
+  header <- paste0(d$header, ", ", format_duration(now - d$t_run))
+  if (!is.na(d$stop_at) && all(!is.na(d$finished) | d$not_run > 0)) {
+    header <- paste0(header, ", stopped early: an analysis failed")
+  } else if (!is.na(d$stop_at)) {
+    header <- paste0(header, ", stopping: an analysis failed")
+  }
+  return(c(header, lines))
 }
 
 # The one line of the "line" mode: the time since the start, the count of
 # each scenario, and the latest text of pbn::progress().
 display_one_line <- function(d, now) {
-  parts <- paste0(d$scenario, " ", d$done, "/", d$total)
+  parts <- paste0(
+    d$scenario,
+    " ",
+    d$done,
+    "/",
+    d$total,
+    ifelse(d$failed > 0, paste0(" (", d$failed, " failed)"), "")
+  )
   out <- paste0(
     "pbn: ",
-    format_duration(now - d$t_start),
+    format_duration(now - d$t_run),
+    if (!is.na(d$stop_at)) " stopping",
     " | ",
     paste(parts, collapse = " | ")
   )
@@ -301,12 +388,19 @@ scenario_time <- function(d, i, now) {
   return(format_duration(end - d$start[i]))
 }
 
-# The note of scenario `i`: "done", the latest text of pbn::progress(),
-# "waiting", or the time left. The time left comes from the finished
-# analyses of the scenario, after at least 3 and at least 10% of them.
+# The note of scenario `i`: "done", "stopped early" with the analyses that
+# did not run, "stopping", the latest text of pbn::progress(), "waiting", or
+# the time left. The time left comes from the analyses of the scenario that
+# ran without a failure, after at least 3 and at least 10% of them.
 scenario_note <- function(d, i, now) {
+  if (d$not_run[i] > 0) {
+    return(paste0("stopped early: ", d$not_run[i], " did not run"))
+  }
   if (!is.na(d$finished[i])) {
     return("done")
+  }
+  if (!is.na(d$stop_at)) {
+    return("stopping")
   }
   det <- latest_detail(d, i)
   if (!is.null(det)) {
@@ -319,7 +413,13 @@ scenario_note <- function(d, i, now) {
   if (is.na(d$start[i])) {
     return("waiting")
   }
-  left <- progress_left(now - d$start[i], d$done[i], d$total[i])
+  # A failed analysis is not done for the time left. After a failed data
+  # step its analyses end at once, and the rate would say nothing.
+  left <- progress_left(
+    now - d$start[i],
+    d$done[i] - d$failed[i],
+    d$total[i] - d$failed[i]
+  )
   if (is.na(left)) {
     return("")
   }
@@ -403,26 +503,26 @@ log_detail <- function(d, i) {
   return(det)
 }
 
-# One line of a log for scenario `i`, for example "pbn: null 252/400
-# analyses, 12m 05s, about 7m left".
+# One line of a log for scenario `i`, with the time since the start of the
+# run first, for example "pbn: [12m 05s] null 252/400 analyses, 3 failed,
+# 8m 53s, about 7m left". A scenario that did not start has no time.
 log_line <- function(d, i, now) {
-  head <- paste0(
-    "pbn: ",
-    d$scenario[i],
-    " ",
-    d$done[i],
-    "/",
-    d$total[i],
-    " analyses, "
-  )
-  if (!is.na(d$finished[i])) {
-    return(paste0(head, "done in ", scenario_time(d, i, now)))
-  }
+  time <- scenario_time(d, i, now)
   note <- scenario_note(d, i, now)
+  parts <- c(
+    paste0(d$scenario[i], " ", d$done[i], "/", d$total[i], " analyses"),
+    if (d$failed[i] > 0) paste(d$failed[i], "failed")
+  )
+  if (!is.na(d$finished[i]) && d$not_run[i] == 0) {
+    parts <- c(parts, if (nzchar(time)) paste("done in", time) else "done")
+  } else {
+    parts <- c(parts, if (nzchar(time)) time, if (nzchar(note)) note)
+  }
   return(paste0(
-    head,
-    scenario_time(d, i, now),
-    if (nzchar(note)) paste0(", ", note) else ""
+    "pbn: [",
+    format_duration(now - d$t_run),
+    "] ",
+    paste(parts, collapse = ", ")
   ))
 }
 

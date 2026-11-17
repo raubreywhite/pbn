@@ -119,7 +119,7 @@ test_that("a count takes only the records of its own R session, and unwrap_timed
   rec <- function(pid, data) return(list(pid = pid, data = data))
   timed <- function(value, data) {
     return(structure(
-      list(value = value, seconds = 0.5, data = data),
+      list(value = value, seconds = 0.5, at = 100, data = data),
       class = "pbn_timed"
     ))
   }
@@ -137,6 +137,7 @@ test_that("a count takes only the records of its own R session, and unwrap_timed
   )
   expect_identical(got$r, list(1, NULL, "plain"))
   expect_identical(got$seconds, c(0.5, 0.5, NA))
+  expect_identical(got$at, c(100, 100, NA))
   expect_identical(
     vapply(got$data, function(d) return(d$data), ""),
     c("mine", "main")

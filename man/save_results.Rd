@@ -141,7 +141,10 @@ columns \code{assertion}, \code{expected}, \code{observed} and \code{pass}.
 \code{save_results()} writes it to \verb{<version>_results/<scenario>/check.csv}
 and prints it. For \code{"real"} without \code{expect_real()}, it deletes
 \code{check.csv}. An error, zero rows or another shape is one failed
-assertion. This rule is the same for \code{expect_real()} and for the fake
+assertion. A change of an object of the functions folder in place, for
+example \code{CFG}, adds one failed assertion that names the first element
+that changed. The section on these objects in \code{\link[=add_analyses]{add_analyses()}} gives
+the rules. This rule is the same for \code{expect_real()} and for the fake
 scenarios. \code{save_results()} writes \code{check.csv} to a temporary file in
 the same folder and renames it, so a reader never sees a part of it.
 \item It writes the run log \verb{<version>_results/run.md}, also after a stop in
@@ -160,24 +163,37 @@ on them until the assertions pass.
 that the run has not finished. A run that ends before the next log, for
 example when R stops, leaves that log. \code{\link[=run_plan]{run_plan()}} also writes the full
 log when it stops on failed analyses, and \code{\link[=make_outputs]{make_outputs()}} adds its files
-to it in the same R session. Each run replaces the file. The log is GitHub-flavoured Markdown in ASCII, with
-these sections in this order:
+to it in the same R session. Each run replaces the file, and carries its
+section \code{History} forward. The log is GitHub-flavoured Markdown in ASCII,
+with these sections in this order:
 \itemize{
 \item \code{When}: the date and the time of the start of the run.
 \item \code{Run}: the result in one sentence and the scenarios of the run. Then the
 run date of each other scenario on the disk, from its manifest. Then the
-versions of R, pbn, plnr and cohort, and the number of workers.
+versions of R, pbn, plnr and cohort, the number of the other packages,
+and the number of workers. The manifest of each results file lists the
+other packages.
 \item \code{Failures}, only after a failure: the failed analyses with their errors,
-the failed assertions, and the failed rules of \code{\link[=check_results]{check_results()}}.
+the number of analyses that did not run after the stop of the run, the
+failed assertions, and the failed rules of \code{\link[=check_results]{check_results()}}.
 \item \code{Scenarios}: the simulations and the analyses of each scenario.
 \item \code{Data}: the cache and the rows of each data element.
-\item \code{Exclusions}: the exclusion table of simulation 1 of each scenario.
+\item \code{Exclusions}: the exclusion table of simulation 1 of each scenario. A
+cohort without an exclusion step gets one sentence instead.
 \item \code{Assertions}: the count for each scenario, and its assertions. For more
 than 30 assertions, the failed ones only.
-\item \code{Output} and \code{Files}: the files of \code{\link[=make_outputs]{make_outputs()}} and the results
-files, with their sizes.
-\item \code{Timings}: the seconds of each data step, of each analysis kind, and of
-each step of the main session.
+\item \code{Output} and \code{Files}: the files of \code{\link[=make_outputs]{make_outputs()}} and the number of
+warnings of the output function for each scenario, without their text.
+Then the results files, with their sizes.
+\item \code{Timings}: seconds on the clock. The wall seconds of each step of the
+main session, and of each scenario. Then the calls of each data step and
+analysis kind of each scenario, with the median and the maximum seconds
+of one call. The share gives its part of the seconds of all data steps
+and analyses.
+\item \code{History}: one line for each run of this version, oldest first. Each
+line gives the start and the result in a few words. It also gives the
+scenarios, the workers, the wall seconds of \code{run_plan()},
+\code{save_results()} and \code{\link[=make_outputs]{make_outputs()}}, and the version of pbn.
 }
 
 The log holds counts, exclusion tables and the rows of \code{check.csv}. It
@@ -205,16 +221,28 @@ A project string outside a table, for example a file name of
 is on one line too. So a line end in a string cannot start a heading or a
 list item.
 
-Only the sections \code{When} and \code{Timings} change in every run. Two runs of the
-same code on one day, with the same data and cache, give the same other
-lines. So put \code{run.md} in git, and \verb{git diff} shows the real changes of a
-run. \code{\link[=render_run]{render_run()}} renders the log to a PDF.
+Only the sections \code{When}, \code{Timings} and \code{History} change in every run. Two
+runs of the same code on one day, with the same data and cache, give the
+same other lines. So put \code{run.md} in git, and \verb{git diff} shows the real
+changes of a run. \code{\link[=render_run]{render_run()}} renders the log to a PDF.
 
 pbn measures each time with \code{proc.time()} in the R session that does the
 work, also on a worker. A data step gets the time of its function. Data
 from the cache gets the time of the read. An analysis gets the time of its
-action function. No timing goes to the value of \code{\link[=run_plan]{run_plan()}}, a results
-file, \code{check.csv} or a cache key.
+action function. Each one also records the time of the clock of the
+computer at its end. A scenario runs from the start of its first data step
+or analysis to the end of its last one. All workers run on this computer,
+so their clocks are one clock. With workers, the scenarios overlap, so
+their seconds do not add up to those of \code{run_plan()}. No timing goes to
+the value of \code{\link[=run_plan]{run_plan()}}, a results file, \code{check.csv} or a cache key.
+
+The history is in \code{run.md} only. The log at the start of \code{\link[=run_plan]{run_plan()}}
+adds the line "did not finish" for the run. The full log replaces that
+line, so each run has one line. A run that R stops keeps its line "did not
+finish". pbn reads the history from the \code{run.md} on the disk. When it
+cannot read a line, for example after a hand edit, it leaves the line out
+and prints one line. The run goes on. A deleted \code{run.md} starts the
+history again.
 }
 
 \section{The files}{

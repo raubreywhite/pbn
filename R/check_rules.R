@@ -544,6 +544,98 @@ rule_loc_per_file <- function(path) {
   return(bind_rows(out))
 }
 
+# The largest cyclomatic complexity of one function that the rule
+# cyclomatic_complexity allows. lintr's cyclocomp_linter(15) in the gate of
+# the packages fails a score above 15 too.
+max_cyclocomp <- 15L
+
+# The rule cyclomatic_complexity: each function that a top-level assignment
+# of an .R file defines, also a function in a list of a top-level
+# assignment, scores at most max_cyclocomp. It reads the files of
+# loc_per_file. It parses each file and evaluates nothing. A function inside
+# another function counts toward that function, as in cyclocomp. A file that
+# R cannot parse fails loc_per_file, so this rule skips it.
+rule_cyclomatic_complexity <- function(path) {
+  rule <- "cyclomatic_complexity"
+  entries <- project_entries(path)
+  files <- entries[
+    grepl("\\.[rR]$", entries) & !dir.exists(file.path(path, entries))
+  ]
+  out <- list()
+  for (f in sort(files, method = "radix")) {
+    scores <- function_scores(file.path(path, f))
+    scores <- sort(scores[scores > max_cyclocomp], decreasing = TRUE)
+    if (length(scores) > 0) {
+      out[[f]] <- project_row(
+        rule,
+        "FAIL",
+        rep(f, length(scores)),
+        paste0(
+          f,
+          ": ",
+          names(scores),
+          " scores ",
+          scores,
+          " (limit ",
+          max_cyclocomp,
+          ")"
+        )
+      )
+    }
+  }
+  return(bind_rows(out))
+}
+
+# The cyclomatic complexity of each function of the file `file`, named by
+# the function: each top-level assignment of a function, and each function
+# in a list() of a top-level assignment, named <list>$<element>. cyclocomp
+# scores the parsed expression, as lintr's cyclocomp_linter() does, so no
+# code of the file runs. Empty for a file that R cannot parse.
+function_scores <- function(file) {
+  exprs <- parse_or_null(file)
+  out <- integer(0)
+  for (i in seq_along(exprs)) {
+    e <- exprs[[i]]
+    if (is_function_assignment(e)) {
+      out[[as.character(e[[2]])]] <- cyclocomp::cyclocomp(exprs[i])
+    } else if (is_list_assignment(e)) {
+      out <- c(out, list_scores(e))
+    }
+  }
+  return(out)
+}
+
+# The cyclomatic complexity of each function in the list() that `e`
+# assigns, named <list>$<element>.
+list_scores <- function(e) {
+  parts <- as.list(e[[3]])[-1]
+  out <- integer(0)
+  for (k in which(nzchar(names(parts)))) {
+    value <- parts[[k]]
+    if (is.call(value) && identical(value[[1]], as.name("function"))) {
+      name <- paste0(as.character(e[[2]]), "$", names(parts)[k])
+      out[[name]] <- cyclocomp::cyclocomp(as.expression(list(value)))
+    }
+  }
+  return(out)
+}
+
+# TRUE when `e` assigns a call of list() with named arguments to a name.
+is_list_assignment <- function(e) {
+  if (!is.call(e) || length(e) != 3 || !is.symbol(e[[1]])) {
+    return(FALSE)
+  }
+  if (!as.character(e[[1]]) %in% c("<-", "=", "<<-") || !is.symbol(e[[2]])) {
+    return(FALSE)
+  }
+  value <- e[[3]]
+  return(
+    is.call(value) &&
+      identical(value[[1]], as.name("list")) &&
+      !is.null(names(value))
+  )
+}
+
 rule_no_environment_variables <- function(path) {
   rule <- "no_environment_variables"
   files <- c(run_scripts(path), functions_files(path))
@@ -685,6 +777,13 @@ project_rules <- function() {
     loc_per_file = list(
       rule_loc_per_file,
       paste0("no .R file has more than ", max_code_lines, " code lines")
+    ),
+    cyclomatic_complexity = list(
+      rule_cyclomatic_complexity,
+      paste0(
+        "no function of an .R file has a cyclomatic complexity above ",
+        max_cyclocomp
+      )
     ),
     no_environment_variables = list(
       rule_no_environment_variables,

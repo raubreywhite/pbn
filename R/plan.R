@@ -68,7 +68,8 @@ registry_finalizer <- function(key, registry) {
 # .pbn_fn, .pbn_catch, .pbn_shape, .pbn_finish, .pbn_log, .pbn_drain,
 # .pbn_cache, .pbn_plan, .pbn_clock, .pbn_run, .pbn_enter, .pbn_begin,
 # .pbn_done, .pbn_take, .pbn_objects, .pbn_objects_value, .pbn_data_checked,
-# .pbn_rng, .pbn_globals and .pbn_action live in the environment of each
+# .pbn_rng, .pbn_globals, .pbn_stopping, .pbn_failed, .pbn_not_run,
+# .pbn_action and .pbn_call live in the environment of each
 # wrapper, which wrapper_env(),
 # action_wrapper() and data_wrapper_env() make.
 utils::globalVariables(c(
@@ -91,7 +92,11 @@ utils::globalVariables(c(
   ".pbn_data_checked",
   ".pbn_rng",
   ".pbn_globals",
-  ".pbn_action"
+  ".pbn_stopping",
+  ".pbn_failed",
+  ".pbn_not_run",
+  ".pbn_action",
+  ".pbn_call"
 ))
 
 # The log of the timings of the data of a plan. Each data wrapper adds one
@@ -139,6 +144,9 @@ wrapper_env <- function(fn, log = NULL, drain = FALSE) {
       .pbn_data_checked = data_checked,
       .pbn_rng = run_rng,
       .pbn_globals = new_globals,
+      .pbn_stopping = run_stopping,
+      .pbn_failed = run_failed,
+      .pbn_not_run = not_run,
       .pbn_log = log,
       .pbn_drain = drain
     ),
@@ -196,8 +204,10 @@ analysis_seed <- function(name, k, sim) {
 # cohort::CohortPipeline into its data, and reads or writes the cache while
 # run_plan() runs with cache = TRUE.
 # While run_plan() runs, an error becomes an object of class pbn_data_error,
-# so the error reaches each analysis that needs the data. `log` is the log of
-# the timings of the plan, or NULL.
+# so the error reaches each analysis that needs the data. After the first
+# failed analysis of the run, the wrapper calls nothing and returns a
+# pbn_not_run, see run_stopping(). `log` is the log of the timings of the
+# plan, or NULL.
 data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
   keys <- key_fields(fn)
   call <- as.call(c(
@@ -246,6 +256,9 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
       return(.(value))
     }
     .pbn_enter(.pbn_run, data = TRUE)
+    if (.pbn_stopping(.pbn_run, force = TRUE)) {
+      return(.pbn_not_run())
+    }
     .pbn_before <- .pbn_objects(.pbn_run)
     .pbn_out <- tryCatch(.(value), error = function(e) {
       return(structure(
@@ -267,13 +280,16 @@ data_wrapper <- function(fn, name, plan_key = NULL, steps = NULL, log = NULL) {
 # fails.
 # While run_plan() runs, the wrapper returns an object of class pbn_timed:
 # `value`, the value above, `seconds`, the elapsed time of fn(data, argset)
-# only, and `data`, the records that it took from the log `log`. Only the
+# only, `at`, the time of the clock of the computer at its end, and `data`,
+# the records that it took from the log `log`. Only the
 # analysis that counts the rows gets a `log`. run_plan() takes the value out
 # again, so the timings never reach its value.
 # While run_plan() runs, an analysis that changes an object of the functions
 # folder also fails, see objects_value(). Each analysis that does not count
 # the rows tells the run context in .pbn_run that it finished, see
-# run_done().
+# run_done(). A failed analysis stops the run, see run_failed(). After that,
+# the wrapper calls nothing, and its value is a pbn_not_run, unless its data
+# failed: then the analysis fails at once.
 # plnr keeps one copy of the wrapper for each analysis, and each future of
 # run_plan() serialises each copy. So the wrapper is one call, and its body
 # is action_run() in the environment that the analyses of one kind share.
@@ -285,6 +301,9 @@ action_wrapper <- function(fn, log = NULL) {
   action <- action_run
   environment(action) <- e
   assign(".pbn_action", action, envir = e)
+  call <- action_call
+  environment(call) <- e
+  assign(".pbn_call", call, envir = e)
   environment(wrapper) <- e
   return(wrapper)
 }
@@ -301,62 +320,90 @@ action_run <- function(data, argset) {
   if (.pbn_drain) {
     taken <- .pbn_take(.pbn_log)
   }
-  seconds <- NA_real_
+  # An analysis whose data failed fails at no cost, also after the stop, so
+  # each analysis of that data counts as failed.
   failed <- Filter(function(x) return(inherits(x, "pbn_data_error")), data)
+  if (length(failed) == 0 && .pbn_stopping(run)) {
+    return(structure(
+      list(value = .pbn_not_run(), seconds = NA_real_, at = NA_real_, data = taken),
+      class = "pbn_timed"
+    ))
+  }
   if (length(failed) > 0) {
-    out <- structure(
-      list(
-        message = paste0(
-          "The data function '",
-          failed[[1]][["data"]],
-          "' failed: ",
-          failed[[1]][["message"]]
-        )
-      ),
-      class = "pbn_failed_analysis"
-    )
-    end <- proc.time()[["elapsed"]]
-  } else {
-    before <- .pbn_shape(data)
-    objects <- if (.pbn_drain) NULL else .pbn_objects(run)
-    globals <- if (.pbn_drain) NULL else .pbn_globals(run, NULL)
-    .pbn_rng(run)
-    set.seed(argset[["seed"]])
-    start <- proc.time()[["elapsed"]]
-    if (!.pbn_drain) {
-      .pbn_begin(run, argset, start)
-    }
-    out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
-      call <- conditionCall(e)
-      return(structure(
+    done <- list(
+      out = structure(
         list(
           message = paste0(
-            # The call of the wrapper itself, .pbn_fn(data, argset), names
-            # nothing that the project wrote.
-            if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
-              paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
-            } else {
-              "Error: "
-            },
-            conditionMessage(e)
+            "The data function '",
+            failed[[1]][["data"]],
+            "' failed: ",
+            failed[[1]][["message"]]
           )
         ),
         class = "pbn_failed_analysis"
-      ))
-    })
-    end <- proc.time()[["elapsed"]]
-    seconds <- end - start
-    out <- .pbn_finish(out, before, .pbn_shape(data))
-    out <- .pbn_objects_value(out, run, objects)
-    out <- .pbn_globals(run, globals, out)
+      ),
+      seconds = NA_real_,
+      end = proc.time()[["elapsed"]]
+    )
+  } else {
+    done <- .pbn_call(data, argset, run)
+  }
+  bad <- inherits(done$out, "pbn_failed_analysis")
+  if (bad) {
+    .pbn_failed(run, argset)
   }
   if (!.pbn_drain) {
-    .pbn_done(run, argset, end)
+    .pbn_done(run, argset, done$end, bad)
   }
   return(structure(
-    list(value = out, seconds = seconds, data = taken),
+    list(
+      value = done$out,
+      seconds = done$seconds,
+      at = as.numeric(Sys.time()),
+      data = taken
+    ),
     class = "pbn_timed"
   ))
+}
+
+# The call of fn(data, argset) of action_run(), with the run context `run`,
+# and the checks of the data, the objects and the global environment after
+# it. Returns a list: `out`, the value, `seconds`, the elapsed time of the
+# call, and `end`, the elapsed time at its end. Its environment is that of
+# the wrapper.
+action_call <- function(data, argset, run) {
+  before <- .pbn_shape(data)
+  objects <- if (.pbn_drain) NULL else .pbn_objects(run)
+  globals <- if (.pbn_drain) NULL else .pbn_globals(run, NULL)
+  .pbn_rng(run)
+  set.seed(argset[["seed"]])
+  start <- proc.time()[["elapsed"]]
+  if (!.pbn_drain) {
+    .pbn_begin(run, argset, start)
+  }
+  out <- tryCatch(.pbn_fn(data, argset), error = function(e) {
+    call <- conditionCall(e)
+    return(structure(
+      list(
+        message = paste0(
+          # The call of the wrapper itself, .pbn_fn(data, argset), names
+          # nothing that the project wrote.
+          if (!is.null(call) && !identical(call[[1]], as.name(".pbn_fn"))) {
+            paste0("Error in ", paste(deparse(call), collapse = " "), ": ")
+          } else {
+            "Error: "
+          },
+          conditionMessage(e)
+        )
+      ),
+      class = "pbn_failed_analysis"
+    ))
+  })
+  end <- proc.time()[["elapsed"]]
+  out <- .pbn_finish(out, before, .pbn_shape(data))
+  out <- .pbn_objects_value(out, run, objects)
+  out <- .pbn_globals(run, globals, out)
+  return(list(out = out, seconds = end - start, end = end))
 }
 
 # The value of an analysis after fn(data, argset) returned `out`: `out`, or
@@ -803,7 +850,12 @@ add_data <- function(
 #' before and after the analysis. That finds a new value, a new element and
 #' a new attribute. It compares them before and after each data function or
 #' data step too. A data function that changes such an object fails each
-#' analysis that gets its data.
+#' analysis that gets its data. The error names the first top-level element
+#' that changed, for example `CFG$table`. It also says how: a new attribute
+#' such as the index of a data.table, a new or a gone element, or another
+#' value. The
+#' output function of [make_outputs()] and each `expect_` function of
+#' [save_results()] get the same check in this R session.
 #'
 #' While [run_plan()] runs, two more parts of the state of an R session
 #' cannot pass from one analysis to the next:
@@ -827,9 +879,8 @@ add_data <- function(
 #'   example that of a formula. It does not call an active binding.
 #' - It does not see a change of an object that already was in the global
 #'   environment, other than an object of the functions folder.
-#' - The analysis that made the change fails, and the change stays for the
-#'   later analyses of that R session. With more workers, each batch of a
-#'   worker gets its own copy, so one analysis of each batch can fail.
+#' - The analysis that made the change fails, and the change stays in that
+#'   R session. The run stops at that failure, see [run_plan()].
 #' - Without [initialize_project()], pbn checks no object.
 #'
 #' The check costs time in proportion to the size of the objects. One

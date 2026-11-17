@@ -17,27 +17,30 @@ progress_plan <- function(fn = function(data, argset) return(argset$k)) {
   return(p)
 }
 
-# Records each progression that reaches the display, and the analyses that
-# the display did not get at the end of the run.
+# Records each progression that reaches the display, and the counts of the
+# display just before the counts of the end of the run replace them.
 local_recorder <- function(env = parent.frame()) {
   seen <- new.env()
   seen$p <- list()
-  seen$rest <- list()
+  seen$before_final <- NULL
   real_update <- display_update
-  real_rest <- display_rest
   local_mocked_bindings(
     display_update = function(d, p) {
       seen$p <- c(seen$p, list(p))
+      if (!is.null(p[["pbn_final"]])) {
+        seen$before_final <- stats::setNames(d$done, d$scenario)
+      }
       return(real_update(d, p))
-    },
-    display_rest = function(d) {
-      rest <- real_rest(d)
-      seen$rest <- c(seen$rest, list(rest))
-      return(rest)
     },
     .env = env
   )
   return(seen)
+}
+
+# The counts of the end of the run that reached the display.
+final_of <- function(seen) {
+  finals <- Filter(function(p) return(!is.null(p[["pbn_final"]])), seen$p)
+  return(lapply(finals, function(p) return(p[["pbn_final"]])))
 }
 
 # The texts of pbn::progress() in the progressions `ps`.
@@ -66,16 +69,21 @@ test_that("the display gets each analysis once, with 1 and 2 workers, and not th
     p <- progress_plan()
     out <- utils::capture.output(r <- run_plan(p, workers = workers))
     done <- unlist(lapply(seen$p, function(x) return(x[["pbn_done"]])))
-    # Each count reached the display while the run ran: none was left for
-    # the end.
+    # Each count reached the display while the run ran, before the counts
+    # of the end.
     expect_identical(
       vapply(c("real", "null"), function(s) sum(done[names(done) == s]), 1),
       c(real = 2, null = 6),
       info = paste("workers:", workers)
     )
+    expect_identical(seen$before_final, c(real = 2, null = 6))
     expect_identical(
-      seen$rest,
-      list(c(real = 0, null = 0)),
+      final_of(seen),
+      list(list(
+        done = c(real = 2L, null = 6L),
+        failed = c(real = 0L, null = 0L),
+        not_run = c(real = 0L, null = 0L)
+      )),
       info = paste("workers:", workers)
     )
     header <- grep("^pbn: [0-9]+ scenarios", out, value = TRUE)
@@ -90,8 +98,11 @@ test_that("the display gets each analysis once, with 1 and 2 workers, and not th
       ),
       info = paste("workers:", workers)
     )
+    # Each line starts with the time since the start of the run.
+    done_lines <- grep("done in", out, value = TRUE)
+    expect_match(done_lines, "^pbn: \\[[0-9]+s\\] ")
     expect_identical(
-      sub(" in [0-9]+s$", "", grep("done in", out, value = TRUE)),
+      sub(" in [0-9]+s$", "", sub("^pbn: \\[[0-9]+s\\] ", "pbn: ", done_lines)),
       c("pbn: real 2/2 analyses, done", "pbn: null 6/6 analyses, done"),
       info = paste("workers:", workers)
     )
@@ -148,11 +159,7 @@ test_that("pbn::progress() in an analysis reaches the line of its scenario, from
     # The end of the analysis ends its text.
     ended <- unlist(lapply(seen$p, function(p) return(p[["pbn_ended"]])))
     expect_identical(ended, c(real = details[[1]]$pbn_detail$key))
-    expect_identical(
-      seen$rest,
-      list(c(real = 0, null = 0)),
-      info = paste("workers:", workers)
-    )
+    expect_identical(seen$before_final, c(real = 2, null = 6))
   }
 })
 
@@ -277,8 +284,8 @@ test_that("a log shows nothing for 60 seconds, then the header and one line for 
     show(list(pbn_done = c(null = 4)), 61),
     c(
       "pbn: 2 scenarios, 2 workers, started 14:02",
-      "pbn: real 1/1 analyses, done in 50s",
-      "pbn: null 8/40 analyses, 1m 01s, about 5m left"
+      "pbn: [1m 01s] real 1/1 analyses, done in 50s",
+      "pbn: [1m 01s] null 8/40 analyses, 1m 01s, about 5m left"
     )
   )
   # 10% more, but within 60 seconds: no line.
@@ -286,7 +293,7 @@ test_that("a log shows nothing for 60 seconds, then the header and one line for 
   # 60 seconds later, with 10% more: one line.
   expect_identical(
     show(list(pbn_done = c(null = 1)), 121),
-    "pbn: null 17/40 analyses, 2m 01s, about 3m left"
+    "pbn: [2m 01s] null 17/40 analyses, 2m 01s, about 3m left"
   )
   # 60 seconds later, but less than 10% more: no line.
   expect_identical(show(list(pbn_done = c(null = 3)), 200), character(0))
@@ -301,11 +308,11 @@ test_that("a log shows nothing for 60 seconds, then the header and one line for 
   )
   expect_identical(
     show(list(pbn_detail = detail), 260),
-    "pbn: null 20/40 analyses, 4m 20s, a (1) boot 30/100 30%"
+    "pbn: [4m 20s] null 20/40 analyses, 4m 20s, a (1) boot 30/100 30%"
   )
   expect_identical(
     show(list(pbn_done = c(null = 20), pbn_ended = c(null = "9")), 300),
-    "pbn: null 40/40 analyses, done in 5m 00s"
+    "pbn: [5m 00s] null 40/40 analyses, done in 5m 00s"
   )
   # A scenario gets its last line once.
   expect_identical(show(list(pbn_done = c(null = 0)), 400), character(0))
@@ -326,7 +333,7 @@ test_that("in a terminal, the display draws its lines again in place, and hides 
   expect_identical(
     first,
     c(
-      "\033[2Kpbn: 2 scenarios, 2 workers, started 14:02",
+      "\033[2Kpbn: 2 scenarios, 2 workers, started 14:02, 0s",
       "\033[2K  real   0/1  analyses           waiting",
       "\033[2K  null   0/40 analyses           waiting"
     )
@@ -340,7 +347,7 @@ test_that("in a terminal, the display draws its lines again in place, and hides 
   expect_identical(
     second,
     c(
-      "\033[3A\r\033[2Kpbn: 2 scenarios, 2 workers, started 14:02",
+      "\033[3A\r\033[2Kpbn: 2 scenarios, 2 workers, started 14:02, 6m 12s",
       "\033[2K  real   0/1  analyses           waiting",
       "\033[2K  null  12/40 analyses   6m 12s  about 15m left"
     )
@@ -507,7 +514,7 @@ test_that("in a console without ANSI codes, the display draws one line again in 
       paste0(
         "\r",
         strrep(" ", 59),
-        "\rpbn: 2 scenarios, 1 worker, started 14:02"
+        "\rpbn: 2 scenarios, 1 worker, started 14:02, 1m 20s"
       ),
       "  real   0/1  analyses           waiting",
       "  null   4/40 analyses   1m 20s  about 12m left"
@@ -525,10 +532,123 @@ test_that("a wrong argument of pbn::progress() fails its analysis, also right af
   out <- utils::capture.output(
     err <- tryCatch(run_plan(progress_plan(fast)), error = function(e) e)
   )
-  expect_match(conditionMessage(err), "^8 of 12 analyses failed")
+  expect_match(
+    conditionMessage(err),
+    "^1 of 12 analyses failed, and the run stopped early: 7 analyses did not run\\. "
+  )
   expect_match(
     paste(out, collapse = "\n"),
     "pbn::progress() needs `done`, one number of 0 or more",
     fixed = TRUE
   )
+})
+
+test_that("the display counts failed analyses: a line shows them, a finished scenario with failures says so with its time, and the time left counts only the analyses without a failure", {
+  clock <- new.env()
+  clock$now <- 0
+  local_mocked_bindings(display_now = function() return(clock$now))
+  local_eager_log()
+  d <- new_display(
+    data.frame(scenario = c("real", "null"), analyses = c(11, 40)),
+    1,
+    as.POSIXct("2026-11-23 14:02:00"),
+    "log"
+  )
+  show <- function(p, at) {
+    clock$now <- at
+    return(utils::capture.output(display_update(d, p)))
+  }
+  # Each analysis of real fails after its data failed.
+  out <- show(list(pbn_done = c(real = 11), pbn_failed = c(real = 11), pbn_t0 = 0), 2)
+  expect_identical(
+    out[length(out)],
+    "pbn: [2s] real 11/11 analyses, 11 failed, done in 2s"
+  )
+  # 8 of null ran in 100 seconds, and 4 of them failed. The time left comes
+  # from the 4 without a failure: 100 * 32 / 4 seconds, 14 minutes. With
+  # the failed ones as done, it would be 100 * 32 / 8 seconds, 7 minutes.
+  out <- show(list(pbn_done = c(null = 8), pbn_failed = c(null = 4), pbn_t0 = 0), 100)
+  expect_identical(
+    out,
+    "pbn: [1m 40s] null 8/40 analyses, 4 failed, 1m 40s, about 14m left"
+  )
+  # In a terminal, the count column holds the failures, padded to the
+  # widest count.
+  expect_identical(
+    display_lines(d, 100)[2:3],
+    c(
+      "  real  11/11 analyses, 11 failed       2s  done",
+      "  null   8/40 analyses, 4 failed    1m 40s  about 14m left"
+    )
+  )
+})
+
+test_that("the time of a scenario whose data failed is not blank: its batch starts at its data, or now", {
+  sent <- new.env()
+  sent$p <- list()
+  index <- data.frame(
+    scenario = "real",
+    sim = 1L,
+    hidden = FALSE,
+    analysis = "a"
+  )
+  run <- run_context(
+    list(dims = list(), data = list()),
+    index,
+    1,
+    function(...) {
+      sent$p <- c(sent$p, list(list(...)))
+      return(invisible(NULL))
+    },
+    tempfile()
+  )
+  # The data of the analysis failed, so no analysis began: no t0 of the
+  # data, and no start of the analysis.
+  run$t0 <- NULL
+  run_done(run, list(scenario = "real", index_analysis = 1L), 5, failed = TRUE)
+  expect_length(sent$p, 1)
+  expect_false(is.na(sent$p[[1]]$pbn_t0))
+  expect_identical(sent$p[[1]]$pbn_failed, c(real = 1))
+  expect_identical(sent$p[[1]]$pbn_done, c(real = 1))
+})
+
+test_that("after the stop of the run, the display says so at once in a log, and each scenario ends with the analyses that did not run", {
+  clock <- new.env()
+  clock$now <- 0
+  local_mocked_bindings(display_now = function() return(clock$now))
+  d <- new_display(
+    data.frame(scenario = c("real", "null"), analyses = c(1, 40)),
+    2,
+    as.POSIXct("2026-11-23 14:02:00"),
+    "log"
+  )
+  clock$now <- 3
+  # In the first 60 seconds of a log, only the line of the stop.
+  expect_identical(
+    utils::capture.output(display_update(d, list(pbn_stop = "real"))),
+    "pbn: [3s] an analysis of the scenario real failed, so the run stops early: no new analysis starts."
+  )
+  expect_identical(
+    utils::capture.output(display_update(d, list(pbn_stop = "null"))),
+    character(0)
+  )
+  expect_identical(scenario_note(d, 2, 3), "stopping")
+  display_final(
+    d,
+    list(
+      done = c(real = 1L, null = 0L),
+      failed = c(real = 1L, null = 0L),
+      not_run = c(real = 0L, null = 40L)
+    ),
+    4
+  )
+  expect_identical(
+    log_line(d, 1, 4),
+    "pbn: [4s] real 1/1 analyses, 1 failed, done"
+  )
+  expect_identical(
+    log_line(d, 2, 4),
+    "pbn: [4s] null 0/40 analyses, stopped early: 40 did not run"
+  )
+  expect_match(display_lines(d, 4)[1], ", 4s, stopped early: an analysis failed$")
 })

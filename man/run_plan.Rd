@@ -20,8 +20,8 @@ function of analysis \code{i}. Give it to \code{\link[=save_results]{save_result
 }
 \description{
 \code{run_plan()} runs every analysis of the plnr plan \code{p}, in this R session or
-on \code{workers} new R sessions. It stops when an analysis fails, and then it
-prints each failed analysis with its error.
+on \code{workers} new R sessions. It stops the run at the first failed analysis,
+and then it prints each failed analysis with its error.
 }
 \details{
 With \code{workers = 1}, \code{run_plan()} calls \code{p$run_all()} in this R session.
@@ -86,18 +86,19 @@ depth. It does not do this for a data.table in a list column of a
 data.frame. Such a value MAY differ in \code{identical()} between 1 worker and
 more.
 
-\code{run_plan()} runs every analysis, also after an analysis fails. An error in
-an action function fails that analysis, and an error in a data function
-fails each analysis that gets the data. This is the same with 1 worker and
-with more. After the run, \code{run_plan()} prints each failed analysis with its
-name and its full error message with \code{cat()}, and then it stops. R cuts an
-error message at 1000 bytes by default, and \code{cat()} does not. The error
-message of \code{run_plan()} also names the first failed analysis in the order
-of the plan, and holds its error. pbn cuts that error to keep the message
-below 900 bytes. When 2 or more analyses fail and all have the same error,
-the message says so. pbn then saves no results, because \code{\link[=save_results]{save_results()}}
-needs the value of \code{run_plan()}. The results files of an earlier run stay
-as they are. After \code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} writes the run log
+An error in an action function fails that analysis, and an error in a
+data function fails each analysis that gets the data. pbn saves no results
+of a run with a failed analysis, so the first failed analysis stops the
+run. The section Stop at the first failure gives the rules. After the run,
+\code{run_plan()} prints each failed analysis with its name and its full error
+message with \code{cat()}, and then it stops. R cuts an error message at 1000
+bytes by default, and \code{cat()} does not. The error message of \code{run_plan()}
+gives the number of failed analyses and of the analyses that did not run.
+It also names the first failed analysis in the order of the plan, and
+holds its error. pbn cuts that error to keep the message below 900 bytes.
+When 2 or more analyses fail and all have the same error, the message says
+so. The results files of an earlier run stay as they are. After
+\code{\link[=initialize_project]{initialize_project()}}, \code{run_plan()} writes the run log
 \verb{<version>_results/run.md} with the failures before it stops. The section
 The run log of \code{\link[=save_results]{save_results()}} describes it.
 
@@ -107,9 +108,10 @@ one that says that the run has not finished, and deletes the errors file
 without \code{\link[=save_results]{save_results()}} after it leaves this log.
 
 \code{run_plan()} measures the elapsed time of each data step and of each
-analysis where it runs, also on a worker. The times go to the record of
-the plan, and \code{\link[=save_results]{save_results()}} writes them to the run log. They are not
-in the value, so two runs stay \code{identical()}.
+analysis where it runs, also on a worker, and the time of the clock of the
+computer at its end. The times go to the record of the plan, and
+\code{\link[=save_results]{save_results()}} writes them to the run log. They are not in the value, so
+two runs stay \code{identical()}.
 
 The value carries the attribute \code{pbn_run}, a stamp of the plan. It holds
 no count of the runs, so two runs of one plan can be \code{identical()}.
@@ -142,21 +144,51 @@ function that returns a \code{cohort::CohortPipeline} runs on the worker, and
 only its data.table and its exclusion table come back. The section A
 cohort as the data of \code{\link[=add_data]{add_data()}} gives the rules.
 }
+\section{Stop at the first failure}{
+
+A failed data function makes each analysis of its scenario and
+simulation fail, and \code{\link[=save_results]{save_results()}} needs a run without a failed
+analysis. So no analysis after the first failure can give a result, and
+\code{run_plan()} stops the run there. There is no option to run on. These are
+the rules:
+\itemize{
+\item After the first failed analysis, no new data function and no new
+analysis starts. An analysis whose data failed fails at once, also
+after the stop, without a call of its action function.
+\item With 1 worker, the stop comes directly after the failed analysis.
+\item With workers, the failed analysis creates a folder in the temporary
+folder of this R session. Each worker looks for it before each data
+function, and at most every 0.5 seconds before an analysis. pbn does not
+stop an analysis that runs. So the longest delay is the rest of the
+longest analysis that runs at the time of the failure, plus 0.5
+seconds. The batches that did not start still go to the workers, and
+each of them ends at once.
+\item Each analysis that did not run counts as not run. It is not a failure.
+}
+
+The display shows the stop at once, and the run log says that the run
+stopped early and how many analyses did not run.
+}
+
 \section{Progress}{
 
 \code{run_plan()} shows one line for each scenario: its finished analyses of
-all its analyses, the time since its start, and a note. The note is one
-of these:
+all its analyses, the failed ones among them, the time since its start,
+and a note. The note is one of these:
 \itemize{
 \item \code{"waiting"} before the scenario starts, and \code{"done"} at its end.
+\item \code{"stopping"} after the first failed analysis of the run, and
+\code{"stopped early"} with the analyses that did not run at the end.
 \item the last text of \code{\link[=progress]{progress()}} from an analysis of the scenario, while
 that analysis runs.
-\item otherwise the time left, from the finished analyses of the scenario,
-after at least 3 and at least 10\% of them.
+\item otherwise the time left, from the analyses of the scenario that ended
+without a failure, after at least 3 and at least 10\% of them.
 }
 
 The analyses that count the rows do not count. The display replaces the
-progress bar of plnr.
+progress bar of plnr. The header of the display in a terminal gives the
+time since the start of the run. So does the start of each line of a log,
+for example \verb{pbn: [12m 05s] null 522/1200 analyses, 8m 53s, about 12m left}.
 
 In an interactive terminal, the display draws its lines again in place.
 In RStudio and in another console without ANSI codes, it draws one line
@@ -167,7 +199,10 @@ warnings, and shows them above it.
 Without an interactive session, for example with \code{Rscript} into a log,
 in knitr and in testthat, the display only adds lines:
 \itemize{
-\item nothing in the first 60 seconds of the run. A short run adds no line.
+\item nothing in the first 60 seconds of the run, other than the line of the
+first failed analysis. A short run without a failure adds no line.
+\item one line at once when the first analysis fails, also in the first 60
+seconds.
 \item after 60 seconds, a header, and one line for each scenario that started.
 \item one line when a scenario finishes.
 \item one line for a running scenario at most every 60 seconds. The line

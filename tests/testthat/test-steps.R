@@ -43,7 +43,9 @@ steps_plan <- function(...) {
   return(p)
 }
 
-# The printed lines of a run_plan() that MUST fail.
+# The printed lines of a run_plan() that MUST fail. The run stops at its
+# first failed analysis, so a data that fails for each scenario fails the 2
+# analyses of real only: the one that counts the rows and "a".
 failed_lines <- function(p) {
   return(utils::capture.output(
     testthat::expect_error(run_plan(p), "analyses failed")
@@ -187,12 +189,12 @@ test_that("a clean step that drops a row, or returns no data.frame, fails the da
   )
   out <- failed_lines(p)
   expect_identical(
-    out[match("pbn: the analysis null__sim_0002__a__1 failed:", out) + 1],
+    out[match("pbn: the analysis real__sim_0001__a__1 failed:", out) + 1],
     paste0("The data function 'd' failed: ", msg)
   )
   expect_identical(
     sum(out == paste0("The data function 'd' failed: ", msg)),
-    6L
+    2L
   )
   expect_error(p$get_data("null__sim_0001__a__1"), msg, fixed = TRUE)
 
@@ -223,7 +225,7 @@ test_that("a cohort step that drops rows before its first tracked exclusion, or 
   out <- failed_lines(p)
   expect_identical(
     sum(out == paste0("The data function 'd' failed: ", msg)),
-    6L
+    2L
   )
   expect_error(p$get_data("null__sim_0001__a__1"), msg, fixed = TRUE)
 
@@ -439,7 +441,7 @@ test_that("an after_cohort step MAY return the cohort that it got, and a new coh
   out <- failed_lines(fresh)
   expect_identical(
     sum(out == paste0("The data function 'd' failed: ", msg)),
-    6L
+    2L
   )
   expect_error(fresh$get_data("real__sim_0001__a__1"), msg, fixed = TRUE)
 })
@@ -484,7 +486,8 @@ test_that("an analysis that changes the data of the steps in place fails, as wit
     out <- failed_lines(p)
     return(out[grepl("in place", out, fixed = TRUE)])
   })
-  expect_length(failed$steps, 3)
+  # The first analysis that changes the data stops the run.
+  expect_length(failed$steps, 1)
   expect_true(all(startsWith(
     failed$steps,
     "The analysis changed the data 'd' in place"

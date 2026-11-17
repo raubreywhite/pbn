@@ -60,6 +60,7 @@ base_log <- function(run, scenarios) {
     workers = run$workers,
     r_version = R.version.string,
     versions = log_versions(),
+    other_packages = other_packages(run$packages),
     run = run,
     scenarios = run$scenarios,
     earlier = earlier_scenarios(state$results, scenarios),
@@ -95,14 +96,9 @@ run_result <- function(log) {
   if (!is.null(stopped)) {
     return(stopped)
   }
-  failed <- log$run$failed
-  if (length(failed) > 0) {
-    return(paste0(
-      length(failed),
-      " of ",
-      log$run$n_analyses,
-      " analyses failed, so save_results() did not run."
-    ))
+  failed <- failed_result(log$run)
+  if (!is.null(failed)) {
+    return(failed)
   }
   if (length(log$contract) > 0) {
     return(paste0(
@@ -126,6 +122,24 @@ run_result <- function(log) {
   return(paste0(bad, " of ", nrow(checks), " assertions failed."))
 }
 
+# The result of the run record `run` with a failed analysis, or NULL.
+failed_result <- function(run) {
+  failed <- run$failed
+  skipped <- if (is.null(run$not_run)) 0L else run$not_run
+  if (length(failed) == 0 && skipped == 0) {
+    return(NULL)
+  }
+  return(paste0(
+    length(failed),
+    " of ",
+    run$n_analyses,
+    " analyses failed, so save_results() did not run.",
+    if (skipped > 0) {
+      paste0(" The run stopped early: ", skipped, " analyses did not run.")
+    }
+  ))
+}
+
 # The result of a run that stopped before its analyses could all end, or
 # NULL: save_results() stopped in the checks of its arguments, or run_plan()
 # stopped outside an analysis.
@@ -143,6 +157,16 @@ stopped_result <- function(log) {
     ))
   }
   return(NULL)
+}
+
+# The number of the other packages of the manifest, see loaded_packages():
+# those of this R session and of the workers `workers`, without pbn, plnr
+# and cohort.
+other_packages <- function(workers = NULL) {
+  return(length(setdiff(
+    names(loaded_packages(workers)),
+    c("pbn", "plnr", "cohort")
+  )))
 }
 
 # The versions of pbn, plnr and cohort. A package that is not loaded has its
@@ -262,6 +286,7 @@ write_run_log <- function(log) {
     delete_paths(errors_file)
   }
   file <- file.path(root, "run.md")
+  log$history <- history_rows(file, log)
   write_lines_atomic(run_log_lines(log), file)
   state$run_log <- log
   cat(
@@ -277,8 +302,9 @@ write_run_log <- function(log) {
 # a log that says the run started and has not finished, and deletes the
 # errors file. The full log replaces it when save_results() ends, or when
 # run_plan() stops on failed analyses. A run that ends in between, for
-# example when R stops, leaves this log, which is then true.
-write_started_log <- function(scenarios, started) {
+# example when R stops, leaves this log, which is then true. Its history
+# holds the line "did not finish" for this run, which the full log replaces.
+write_started_log <- function(scenarios, started, workers = NULL) {
   if (is.null(state$results)) {
     return(invisible(NULL))
   }
@@ -290,14 +316,18 @@ write_started_log <- function(scenarios, started) {
     folder = basename(state$home),
     version = state$version,
     started = started,
+    workers = workers,
     scenarios = scenarios,
     earlier = earlier_scenarios(root, scenarios$scenario),
+    timing = list(run = NULL, save = NULL, outputs = NULL),
     result = paste(
       "The run has not finished. run_plan() started it, and no later step",
       "wrote this log again."
     )
   )
-  write_lines_atomic(run_log_lines(log), file.path(root, "run.md"))
+  file <- file.path(root, "run.md")
+  log$history <- history_rows(file, log)
+  write_lines_atomic(run_log_lines(log), file)
   state$run_log <- NULL
   return(invisible(NULL))
 }
@@ -340,21 +370,25 @@ empty_run <- function(started) {
     analyses = data.frame(
       scenario = character(0),
       kind = character(0),
-      seconds = numeric(0)
+      seconds = numeric(0),
+      at = numeric(0)
     ),
     failed = character(0),
+    packages = NULL,
+    not_run = 0L,
     n_analyses = 0L
   ))
 }
 
-# The lines of the run log `lines` without the sections When and Timings,
-# which change in every run. Two runs of the same code on the same inputs
-# give the same lines. A CR at the end of a line goes.
+# The lines of the run log `lines` without the sections When, Timings and
+# History, which change in every run. Two runs of the same code on the same
+# inputs give the same lines. A CR at the end of a line goes.
 run_log_stable <- function(lines) {
   lines <- sub("\r$", "", lines)
   heads <- grep("^## ", lines)
   drop <- logical(length(lines))
-  for (h in heads[lines[heads] %in% c("## When", "## Timings")]) {
+  varying <- c("## When", "## Timings", "## History")
+  for (h in heads[lines[heads] %in% varying]) {
     after <- heads[heads > h]
     end <- if (length(after) > 0) after[1] - 1 else length(lines)
     drop[seq(h, end)] <- TRUE

@@ -191,7 +191,7 @@ test_that("workers = 2 gives results identical to workers = 1, with the function
   }
 })
 
-test_that("a failing analysis in the run script lists every failure in full and saves nothing, with 1 and 2 workers", {
+test_that("a failing analysis in the run script lists the failure in full, stops early and saves nothing, with 1 and 2 workers", {
   skip_if_pbn_not_installed()
   outputs <- list()
   for (workers in 1:2) {
@@ -228,8 +228,10 @@ test_that("a failing analysis in the run script lists every failure in full and 
     )
     expect_match(
       res$stdout,
-      "1 of 28 analyses failed. pbn printed each failed analysis",
-      fixed = TRUE
+      paste0(
+        "1 of 28 analyses failed, and the run stopped early: [0-9]+ analyses ",
+        "did not run\\. pbn printed each failed analysis"
+      )
     )
     outputs[[workers]] <- grep(
       "^pbn: the analysis",

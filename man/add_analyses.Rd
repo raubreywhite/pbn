@@ -108,7 +108,12 @@ checks each object that the functions folder made or changed when
 before and after the analysis. That finds a new value, a new element and
 a new attribute. It compares them before and after each data function or
 data step too. A data function that changes such an object fails each
-analysis that gets its data.
+analysis that gets its data. The error names the first top-level element
+that changed, for example \code{CFG$table}. It also says how: a new attribute
+such as the index of a data.table, a new or a gone element, or another
+value. The
+output function of \code{\link[=make_outputs]{make_outputs()}} and each \code{expect_} function of
+\code{\link[=save_results]{save_results()}} get the same check in this R session.
 
 While \code{\link[=run_plan]{run_plan()}} runs, two more parts of the state of an R session
 cannot pass from one analysis to the next:
@@ -135,9 +140,8 @@ function after some calls.
 example that of a formula. It does not call an active binding.
 \item It does not see a change of an object that already was in the global
 environment, other than an object of the functions folder.
-\item The analysis that made the change fails, and the change stays for the
-later analyses of that R session. With more workers, each batch of a
-worker gets its own copy, so one analysis of each batch can fail.
+\item The analysis that made the change fails, and the change stays in that
+R session. The run stops at that failure, see \code{\link[=run_plan]{run_plan()}}.
 \item Without \code{\link[=initialize_project]{initialize_project()}}, pbn checks no object.
 }
 

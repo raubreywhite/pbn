@@ -16,28 +16,31 @@ reset_log <- function(info) {
 
 # `r`, the value of p$run_all(), with each pbn_timed value replaced by the
 # value of its analysis. `seconds` holds the seconds of each analysis, NA
-# where there are none. `data` holds the records of the data that came back
+# where there are none, and `at` the time of the clock at its end. `data`
+# holds the records of the data that came back
 # with the values, and those still in `log`, the log of this R session. A
 # value holds the records of its own R session only, see take_records(), so
 # each record is there once.
 unwrap_timed <- function(r, log) {
   seconds <- rep(NA_real_, length(r))
+  at <- rep(NA_real_, length(r))
   parts <- vector("list", length(r))
   for (i in seq_along(r)) {
     x <- r[[i]]
     if (inherits(x, "pbn_timed")) {
       r[i] <- list(x[["value"]])
       seconds[i] <- x[["seconds"]]
+      at[i] <- x[["at"]]
       parts[[i]] <- x[["data"]]
     }
   }
   data <- c(do.call(c, parts), log[["pending"]])
-  return(list(r = r, seconds = seconds, data = data))
+  return(list(r = r, seconds = seconds, at = at, data = data))
 }
 
 # One row for each record of the data: the data, its scenario and
-# simulation, whether it came from the cache or failed, its cache line and
-# its elapsed seconds.
+# simulation, whether it came from the cache or failed, its cache line, its
+# elapsed seconds and the time of the clock at its end.
 data_records <- function(records) {
   field <- function(name, type) {
     return(vapply(records, function(d) return(d[[name]]), type))
@@ -49,7 +52,8 @@ data_records <- function(records) {
     reused = field("reused", logical(1)),
     failed = field("failed", logical(1)),
     line = field("line", character(1)),
-    seconds = field("seconds", numeric(1))
+    seconds = field("seconds", numeric(1)),
+    at = field("at", numeric(1))
   ))
 }
 
@@ -82,7 +86,9 @@ step_records <- function(records) {
 run_record <- function(p, info, r, taken, workers, start, started) {
   index <- analysis_index(p, info)
   kinds <- !index$hidden
-  seconds <- if (is.null(taken)) rep(NA_real_, nrow(index)) else taken$seconds
+  none <- rep(NA_real_, nrow(index))
+  seconds <- if (is.null(taken)) none else taken$seconds
+  at <- if (is.null(taken$at)) none else taken$at
   records <- if (is.null(taken)) list() else taken$data
   return(list(
     started = started,
@@ -96,9 +102,12 @@ run_record <- function(p, info, r, taken, workers, start, started) {
     analyses = data.frame(
       scenario = index$scenario[kinds],
       kind = index$analysis[kinds],
-      seconds = seconds[kinds]
+      seconds = seconds[kinds],
+      at = at[kinds]
     ),
     failed = failed_analyses(r),
+    packages = info$worker_packages,
+    not_run = sum(vapply(r, inherits, logical(1), what = "pbn_not_run")),
     n_analyses = length(r)
   ))
 }
@@ -144,13 +153,14 @@ data_rows <- function(r, index) {
   ))
 }
 
-# The exclusion table of simulation 1 of each scenario, named by the
-# scenario. NULL for a scenario without a cohort or whose count failed.
+# The exclusion tables of simulation 1 of each scenario, named by the
+# scenario: a list with the table of each data element with a cohort, named
+# by the data. NULL for a scenario without a cohort or whose count failed.
 first_exclusions <- function(r, index) {
   out <- list()
   for (i in which(index$hidden & index$sim == 1)) {
     tables <- attr(r[[i]], "exclusions", exact = TRUE)
-    out[index$scenario[i]] <- list(exclusions_element(tables)$exclusions)
+    out[index$scenario[i]] <- list(if (length(tables) > 0) tables)
   }
   return(out)
 }

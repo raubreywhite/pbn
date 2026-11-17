@@ -76,6 +76,8 @@ scenarios <- function(cfg, only = NULL) {
   if (!"real" %in% table$scenario) {
     stop("CFG$scenarios must have a scenario named \"real\".", call. = FALSE)
   }
+  # The run log names the scenarios of a run with only = in its history.
+  state$all_scenarios <- table$scenario
   if (is.null(only)) {
     state$scenarios <- table
     return(table)

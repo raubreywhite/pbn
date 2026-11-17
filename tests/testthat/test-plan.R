@@ -448,7 +448,12 @@ test_that("an analysis that changes the shared data in place fails, and one that
     out <- utils::capture.output(
       err <- tryCatch(run_plan(p), error = function(e) e)
     )
-    expect_match(conditionMessage(err), "3 of 6 analyses failed", info = nm)
+    # The first failed analysis stops the run.
+    expect_match(
+      conditionMessage(err),
+      "^1 of 6 analyses failed, and the run stopped early: 2 analyses did not run\\. ",
+      info = nm
+    )
     expect_true(any(grepl(
       "The analysis changed the data 'd' in place",
       out,
@@ -502,9 +507,14 @@ test_that("an analysis on a worker that changes the shared data in place fails t
   out <- utils::capture.output(
     err <- tryCatch(run_plan(p, workers = 2), error = function(e) e)
   )
-  expect_match(conditionMessage(err), "3 of 6 analyses failed")
+  # A worker that does not know of the stop yet MAY fail its analysis too.
+  expect_match(
+    conditionMessage(err),
+    "^[1-3] of 6 analyses failed, and the run stopped early: [0-5] analyses did not run\\. "
+  )
+  n <- as.integer(sub(" of 6 .*", "", conditionMessage(err)))
   expect_identical(
     sum(grepl("The analysis changed the data 'd' in place", out, fixed = TRUE)),
-    3L
+    n
   )
 })

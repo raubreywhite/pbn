@@ -46,10 +46,19 @@ example because another program holds a file open on Windows. After each
 scenario, it prints one line with the folder and the number of files.
 
 After \code{\link[=save_results]{save_results()}} in the same R session, \code{make_outputs()} adds its
-files and its seconds for each scenario to the run log
-\verb{<version>_results/run.md}. When it stops, the result of the log says so,
-and the errors file of the log holds the error. In another R session it
-does not change the run log.
+files, its seconds and the number of warnings of \code{fn} for each scenario to
+the run log \verb{<version>_results/run.md}. A warning still reaches the
+console, and the log holds no text of it. When \code{make_outputs()} stops, the
+result of the log says so, and the errors file of the log holds the error.
+In another R session it does not change the run log.
+
+\code{fn} MUST NOT change an object of the functions folder in place, for
+example with the index that a data.table subset \code{CFG$table[x == 1]} adds.
+The next call of \code{fn} or of an \code{expect_} function in this R session would
+see the change. \code{make_outputs()} compares these objects before and after
+each call of \code{fn}, with the rules of the check of \code{\link[=add_analyses]{add_analyses()}}. A
+change fails the scenario, with the first element that changed, for
+example \code{CFG$table}.
 
 \code{make_outputs()} skips a scenario with one printed line when its
 \code{results.qs2} does not exist, or when its \code{check.csv} holds an assertion

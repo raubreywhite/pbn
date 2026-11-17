@@ -36,10 +36,19 @@ output_state <- new.env(parent = emptyenv())
 #' scenario, it prints one line with the folder and the number of files.
 #'
 #' After [save_results()] in the same R session, `make_outputs()` adds its
-#' files and its seconds for each scenario to the run log
-#' `<version>_results/run.md`. When it stops, the result of the log says so,
-#' and the errors file of the log holds the error. In another R session it
-#' does not change the run log.
+#' files, its seconds and the number of warnings of `fn` for each scenario to
+#' the run log `<version>_results/run.md`. A warning still reaches the
+#' console, and the log holds no text of it. When `make_outputs()` stops, the
+#' result of the log says so, and the errors file of the log holds the error.
+#' In another R session it does not change the run log.
+#'
+#' `fn` MUST NOT change an object of the functions folder in place, for
+#' example with the index that a data.table subset `CFG$table[x == 1]` adds.
+#' The next call of `fn` or of an `expect_` function in this R session would
+#' see the change. `make_outputs()` compares these objects before and after
+#' each call of `fn`, with the rules of the check of [add_analyses()]. A
+#' change fails the scenario, with the first element that changed, for
+#' example `CFG$table`.
 #'
 #' `make_outputs()` skips a scenario with one printed line when its
 #' `results.qs2` does not exist, or when its `check.csv` holds an assertion
@@ -80,7 +89,12 @@ make_outputs <- function(fn, scenarios) {
     stop("`fn` must be a function(results, dir).", call. = FALSE)
   }
   table <- check_scenario_table(scenarios, "`scenarios`")
-  done <- list(files = list(), notes = list(), seconds = numeric(0))
+  done <- list(
+    files = list(),
+    notes = list(),
+    seconds = numeric(0),
+    warnings = list()
+  )
   failed <- NULL
   for (i in seq_len(nrow(table))) {
     s <- table$scenario[i]
@@ -97,6 +111,7 @@ make_outputs <- function(fn, scenarios) {
       }
       done$files[[s]] <- got$files
       done$notes[s] <- list(got$note)
+      done$warnings[s] <- list(got$warnings)
     }
   }
   log_outputs(done)
@@ -113,8 +128,8 @@ make_outputs <- function(fn, scenarios) {
 
 # The output of one scenario: calls fn, renames the files of a fake scenario,
 # and prints one line. Returns a list: `files`, the files written relative
-# to the project, and `note`, the printed line when pbn skipped the scenario,
-# or NULL.
+# to the project, `note`, the printed line when pbn skipped the scenario,
+# or NULL, and `warnings`, the number of warnings of fn.
 output_scenario <- function(fn, s) {
   fake <- s != "real"
   folder <- file.path(state$results, s)
@@ -130,9 +145,10 @@ output_scenario <- function(fn, s) {
   dir.create(dir, recursive = TRUE)
   skip <- file.path(s, sub)
   before <- if (fake) hash_recent(results_listing(state$results, skip))
+  warned <- 0L
   failed <- tryCatch(
     {
-      call_output(fn, results, dir, fake, s)
+      warned <- call_output(fn, results, dir, fake, s)
       NULL
     },
     error = function(e) return(e)
@@ -162,7 +178,8 @@ output_scenario <- function(fn, s) {
       scenario = rep(s, length(files)),
       file = file.path(rel, files)
     ),
-    note = NULL
+    note = NULL,
+    warnings = warned
   ))
 }
 
@@ -258,20 +275,44 @@ check_outside <- function(root, before, skip, rel, s) {
 }
 
 # Calls fn(results, dir), with stamp_fake() set for a fake scenario. An error
-# of fn names the scenario.
+# of fn names the scenario. It also stops when fn changed an object of the
+# functions folder, such as CFG, in place: the next call of project code in
+# this R session would see the change. Returns the number of warnings of fn.
+# Each warning still reaches the console, as R gives it.
 call_output <- function(fn, results, dir, fake, scenario) {
   output_state$fake <- fake
   on.exit(rm(list = ls(output_state), envir = output_state), add = TRUE)
-  tryCatch(fn(results, dir), error = function(e) {
+  before <- main_fingerprint()
+  warned <- 0L
+  withCallingHandlers(
+    tryCatch(fn(results, dir), error = function(e) {
+      stop(
+        "The output function failed for the scenario \"",
+        scenario,
+        "\": ",
+        conditionMessage(e),
+        call. = FALSE
+      )
+    }),
+    warning = function(w) {
+      warned <<- warned + 1L
+      return(invisible(NULL))
+    }
+  )
+  found <- main_change(before)
+  if (!is.null(found)) {
     stop(
-      "The output function failed for the scenario \"",
+      "The output function changed ",
+      objects_change_text(found),
+      ", for the scenario \"",
       scenario,
-      "\": ",
-      conditionMessage(e),
+      "\". A later call of the output function or of an expect_ function ",
+      "would see the change. Change a copy, for example ",
+      "x <- data.table::copy(CFG$table).",
       call. = FALSE
     )
-  })
-  return(invisible(NULL))
+  }
+  return(warned)
 }
 
 # Renames each file of `files` in `dir` so that its name starts with

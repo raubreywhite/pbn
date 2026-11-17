@@ -63,12 +63,12 @@ test_that("initialize_project records the objects that the functions folder defi
   expect_identical(checked_names(sourced2), "CFG")
 })
 
-test_that("an analysis that adds an index to a data.table of CFG fails, with 1 and 2 workers, and names CFG", {
+test_that("an analysis that adds an index to a data.table of CFG fails, with 1 and 2 workers, and names CFG$vars and the index", {
   skip_if_pbn_not_installed()
   # data.table adds the index once. With 1 worker the first peek adds it in
-  # this R session. With 2 workers each of the 3 futures gets its own copy
-  # of CFG, one for each simulation, and its peek adds the index.
-  failing <- list(1L, 1:3)
+  # this R session, and the run stops there. With 2 workers each of the 3
+  # futures gets its own copy of CFG, one for each simulation, so a peek of
+  # another simulation MAY fail before its worker sees the stop.
   for (workers in 1:2) {
     p <- local_index_project()
     sourced <- init(p)
@@ -79,23 +79,23 @@ test_that("an analysis that adds an index to a data.table of CFG fails, with 1 a
     expect_s3_class(err, "error")
     expect_match(
       conditionMessage(err),
-      paste0("^", length(failing[[workers]]), " of 9 analyses failed"),
+      if (workers == 1) {
+        "^1 of 9 analyses failed, and the run stopped early: 5 analyses did not run\\. "
+      } else {
+        "^[1-3] of 9 analyses failed, and the run stopped early: [0-9] analyses did not run\\. "
+      },
       info = paste("workers:", workers)
     )
     failed <- grep("^pbn: the analysis", out, value = TRUE)
-    expect_identical(
-      failed,
-      paste0(
-        "pbn: the analysis null__sim_000",
-        failing[[workers]],
-        "__peek__1 failed:"
-      ),
-      info = paste("workers:", workers)
-    )
+    expect_true("pbn: the analysis null__sim_0001__peek__1 failed:" %in% failed)
+    expect_match(failed, "^pbn: the analysis null__sim_000[1-3]__peek__1 failed:$")
     text <- paste(out, collapse = "\n")
     expect_match(
       text,
-      "The analysis changed the object 'CFG' of the functions folder in place.",
+      paste0(
+        "The analysis changed the object 'CFG' of the functions folder in ",
+        "place, at CFG$vars: a new attribute 'index'."
+      ),
       fixed = TRUE
     )
     expect_match(text, "data.table::copy(CFG$table)", fixed = TRUE)
@@ -167,7 +167,7 @@ test_that("a data function that changes CFG fails each analysis that gets its da
     )
     expect_match(
       conditionMessage(err),
-      "^2 of 10 analyses failed",
+      "^2 of 10 analyses failed, and the run stopped early: [0-9] analyses did not run\\. ",
       info = paste("workers:", workers)
     )
     expect_identical(
@@ -180,7 +180,10 @@ test_that("a data function that changes CFG fails each analysis that gets its da
     )
     expect_match(
       paste(out, collapse = "\n"),
-      "The data function 'd' failed: it changed the object 'CFG' of the functions folder in place.",
+      paste0(
+        "The data function 'd' failed: it changed the object 'CFG' of the ",
+        "functions folder in place, at CFG$vars: a new attribute 'index'."
+      ),
       fixed = TRUE
     )
   }
@@ -323,4 +326,111 @@ test_that("objects_fingerprint sees an index and a new value, and not a compiled
   invisible(peek(env$x$t))
   expect_false(is.null(attr(env$x$t, "index")))
   expect_false(identical(objects_fingerprint(env, "x"), before))
+})
+
+test_that("object_change names the first top-level element of a list that changed, and how: an attribute, the value, a new element or a gone one", {
+  fp <- function(x) {
+    env <- new.env()
+    env$x <- x
+    return(objects_fingerprint(env, "x")[["x"]])
+  }
+  cfg <- list(
+    outcomes = c("y", "z"),
+    vars = data.table::data.table(var = c("x", "y"))
+  )
+  before <- fp(cfg)
+  indexed <- data.table::copy(cfg$vars)
+  data.table::setindexv(indexed, "var")
+  changed <- cfg
+  changed$vars <- indexed
+  expect_identical(
+    object_change("CFG", before, fp(changed)),
+    c("CFG$vars", "a new attribute 'index'")
+  )
+  changed <- cfg
+  changed$outcomes <- "y"
+  expect_identical(
+    object_change("CFG", before, fp(changed)),
+    c("CFG$outcomes", "the value changed")
+  )
+  expect_identical(
+    object_change("CFG", before, fp(c(cfg, list(level = 0.95)))),
+    c("CFG$level", "a new element")
+  )
+  expect_identical(
+    object_change("CFG", before, fp(cfg["vars"])),
+    c("CFG$outcomes", "the element is gone")
+  )
+  expect_identical(
+    object_change("CFG", before, fp(structure(cfg, note = "x"))),
+    c("CFG", "a new attribute 'note'")
+  )
+  expect_identical(
+    object_change("k", fp(1:3), fp(1:4)),
+    c("k", "the value changed")
+  )
+  expect_identical(
+    object_change("u", fp(list(1, 2)), fp(list(1, 3))),
+    c("u[[2]]", "the value changed")
+  )
+})
+
+test_that("an output function that changes CFG in place fails its scenario through make_outputs, and names CFG$vars", {
+  p <- local_index_project()
+  run <- save_run(p)
+  fn <- function(results, dir) {
+    peek <- function() return(CFG$vars[var == "x", type])
+    environment(peek) <- state$env
+    peek()
+    writeLines("x", file.path(dir, "figure.png"))
+    return(invisible(NULL))
+  }
+  err <- NULL
+  utils::capture.output(
+    err <- tryCatch(make_outputs(fn, run$scenarios), error = function(e) e)
+  )
+  expect_identical(
+    conditionMessage(err),
+    paste0(
+      "The output function changed the object 'CFG' of the functions folder ",
+      "in place, at CFG$vars: a new attribute 'index', for the scenario ",
+      "\"real\". A later call of the output function or of an expect_ ",
+      "function would see the change. Change a copy, for example ",
+      "x <- data.table::copy(CFG$table)."
+    )
+  )
+  lines <- readLines(file.path(p$home, "v01_results", "run.md"))
+  expect_true(any(grepl("make_outputs() failed for the scenario real.", lines, fixed = TRUE)))
+  # Without the change, the same output passes.
+  quiet <- function(results, dir) {
+    writeLines("x", file.path(dir, "figure.png"))
+    return(invisible(NULL))
+  }
+  sourced <- init(p)
+  run <- save_run(p)
+  utils::capture.output(expect_no_error(make_outputs(quiet, run$scenarios)))
+})
+
+test_that("an expect_ function that changes CFG in place fails one assertion, which names CFG$vars", {
+  p <- local_index_project()
+  write_lines(p$home, "v01_functions/expect_known.R", c(
+    expect_known_lines(),
+    "expect_known_plain <- expect_known",
+    "expect_known <- function(results) {",
+    "  CFG$vars[var == \"x\", type]",
+    "  return(expect_known_plain(results))",
+    "}"
+  ))
+  run <- save_run(p)
+  expect_match(conditionMessage(run$err), "assertions failed")
+  check <- utils::read.csv(file.path(p$home, "v01_results", "known", "check.csv"))
+  bad <- check[!check$pass, ]
+  expect_identical(bad$assertion, "expect_known() changes no object of the functions folder")
+  expect_identical(
+    bad$observed,
+    "expect_known() changed CFG$vars in place: a new attribute 'index'"
+  )
+  # The assertions of the function itself stay.
+  expect_true(all(check$pass[check$assertion != bad$assertion]))
+  expect_gt(nrow(check), 1)
 })

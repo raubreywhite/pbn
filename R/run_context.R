@@ -6,14 +6,17 @@
 # Their environment is the base environment.
 
 # The run context of one run. `index` is analysis_index() of the plan,
-# `progressor` the progressr progressor of the run.
-run_context <- function(info, index, workers, progressor) {
+# `progressor` the progressr progressor of the run, and `stop_path` the path
+# of the folder that the first failed analysis creates, see run_failed().
+run_context <- function(info, index, workers, progressor, stop_path) {
   run <- new.env(parent = emptyenv())
   # The R session that set up its copy of the context. run_enter() sets up
   # each other R session once.
   run$here <- Sys.getpid()
   run$progressor <- progressor
+  run$stop_path <- stop_path
   run$send <- run_send
+  run$batch_add <- run_batch_add
   run$reset_state <- run_reset
   # A session sends the count of its finished analyses at most every this
   # many seconds, and after each analysis of flush_points().
@@ -29,6 +32,9 @@ run_context <- function(info, index, workers, progressor) {
   run$env <- if (is.environment(env)) env else emptyenv()
   run$checked <- checked_names(env)
   run$fingerprint <- objects_fingerprint
+  run$changed <- objects_changed
+  run$describe <- object_change
+  run$change_text <- objects_change_text
   run$globals <- NULL
   run$global_names <- character(0)
   if (workers > 1) {
@@ -41,13 +47,17 @@ run_context <- function(info, index, workers, progressor) {
 }
 
 # Empties the state of one R session in the run context `run`: the batch of
-# finished analyses not sent yet, with its scenario `bs`, its count `bn`
-# and its start `t0`, the current analysis and the fingerprint of the
-# objects.
+# finished analyses not sent yet, with its scenario `bs`, its count `bn`,
+# its failed analyses `bf` and its start `t0`, the current analysis, the
+# fingerprint of the objects, and whether this session knows that the run
+# stops, see run_stopping().
 run_reset <- function(run) {
   run$sent <- -Inf
   run$bs <- NULL
   run$bn <- 0
+  run$bf <- 0
+  run$stopped <- FALSE
+  run$stop_checked <- -Inf
   run$t0 <- NULL
   run$ended <- character(0)
   run$cur_argset <- NULL
@@ -193,12 +203,13 @@ run_begin <- function(run, argset, start) {
 environment(run_begin) <- baseenv()
 
 # Counts the analysis with the argset `argset` as finished, at the elapsed
-# time `now`. A batch holds the analyses of one scenario. The session sends
-# it with run_send() when the analysis is a flush point, when it called
-# pbn::progress(), when `run$every` seconds passed since the last count, or
-# before an analysis of another scenario. `t0` of a batch is the start of
-# its data, or of its first analysis.
-run_done <- function(run, argset, now) {
+# time `now`, and as failed with `failed`. A batch holds the analyses of one
+# scenario. The session sends it with run_send() when the analysis failed or
+# is a flush point, when it called pbn::progress(), when `run$every` seconds
+# passed since the last count, or before an analysis of another scenario.
+# `t0` of a batch is the start of its data, or of its first analysis, or the
+# time now when neither is known, for example after its data failed.
+run_done <- function(run, argset, now, failed = FALSE) {
   if (is.null(run)) {
     return(invisible(NULL))
   }
@@ -208,41 +219,65 @@ run_done <- function(run, argset, now) {
   if (wrote) {
     run$ended <- c(run$ended, structure(as.character(i), names = s))
   }
-  if (run$bn > 0 && !identical(run$bs, s)) {
-    run$send(run, now)
-  }
-  if (run$bn == 0) {
-    run$bs <- s
-    run$t0 <- min(run$t0, as.numeric(Sys.time()) - (now - run$cur_start))
-  }
-  run$bn <- run$bn + 1
+  run$batch_add(run, s, now, failed)
   run$cur_argset <- NULL
+  run$cur_start <- NA_real_
   run$cur_wrote <- FALSE
   # i is the position of the analysis, so a flush point is TRUE there.
-  if (wrote || isTRUE(run$flush[i]) || now - run$sent >= run$every) {
+  if (
+    failed || wrote || isTRUE(run$flush[i]) || now - run$sent >= run$every
+  ) {
     run$send(run, now)
   }
   return(invisible(NULL))
 }
 environment(run_done) <- baseenv()
 
+# Adds the analysis of the scenario `s` that ended at the elapsed time
+# `now`, and failed with `failed`, to the batch of `run`. A batch of another
+# scenario goes first. The start `t0` of a new batch is the start of its
+# data, or of the current analysis, whichever came first, or the time now
+# when neither is known, for example after the data failed.
+run_batch_add <- function(run, s, now, failed) {
+  if (run$bn > 0 && !identical(run$bs, s)) {
+    run$send(run, now)
+  }
+  if (run$bn == 0) {
+    run$bs <- s
+    begun <- c(run$t0, as.numeric(Sys.time()) - (now - run$cur_start))
+    begun <- begun[!is.na(begun)]
+    run$t0 <- if (length(begun) > 0) min(begun) else as.numeric(Sys.time())
+  }
+  run$bn <- run$bn + 1
+  if (failed) {
+    run$bf <- run$bf + 1
+  }
+  return(invisible(NULL))
+}
+environment(run_batch_add) <- baseenv()
+
 # Sends the batch of `run` with its progressor, at the elapsed time `now`,
 # and empties it. A count is the number of analyses of the scenario, named
-# by it, with `t0` and the analyses whose text of pbn::progress() ends,
-# named by their scenario. The display counts the analyses itself, and an
-# amount of 0 keeps the cost of a progression in progressr fixed.
+# by it, with the number of them that failed, `t0`, and the analyses whose
+# text of pbn::progress() ends, named by their scenario. The display counts
+# the analyses itself, and an amount of 0 keeps the cost of a progression in
+# progressr fixed.
 run_send <- function(run, now) {
   done <- run$bn
   names(done) <- run$bs
+  failed <- run$bf
+  names(failed) <- run$bs
   if (is.function(run$progressor)) {
     run$progressor(
       amount = 0,
       pbn_done = done,
+      pbn_failed = failed,
       pbn_t0 = run$t0,
       pbn_ended = run$ended
     )
   }
   run$bn <- 0
+  run$bf <- 0
   run$bs <- NULL
   run$t0 <- NULL
   run$ended <- character(0)
@@ -250,6 +285,58 @@ run_send <- function(run, now) {
   return(invisible(NULL))
 }
 environment(run_send) <- baseenv()
+
+# The stop of a run at its first failed analysis. run_plan() saves nothing
+# when an analysis fails, so no later analysis can change the result of the
+# run. The first failed analysis, in this R session or on a worker, creates
+# the folder `run$stop_path`. All R sessions of the run are on this
+# computer, so each of them sees it.
+
+# Marks the run `run` as stopped after the analysis with the argset `argset`
+# failed: in this R session at once, and for the other R sessions with the
+# folder `run$stop_path`. It also tells the display. A second call creates
+# nothing new.
+run_failed <- function(run, argset) {
+  if (is.null(run)) {
+    return(invisible(NULL))
+  }
+  run$stopped <- TRUE
+  # A second worker MAY create the folder at the same time. dir.create()
+  # then gives FALSE and a warning, and the folder is there all the same.
+  suppressWarnings(dir.create(run$stop_path))
+  if (is.function(run$progressor)) {
+    run$progressor(amount = 0, pbn_stop = argset[["scenario"]])
+  }
+  return(invisible(NULL))
+}
+environment(run_failed) <- baseenv()
+
+# TRUE when the run `run` stops, so that no new data function or analysis
+# starts. This R session knows it after its own failure. Otherwise it looks
+# for the folder `run$stop_path`: with `force`, before each data function,
+# and else at most every `run$every` seconds, before an analysis.
+run_stopping <- function(run, force = FALSE) {
+  if (is.null(run)) {
+    return(FALSE)
+  }
+  if (isTRUE(run$stopped)) {
+    return(TRUE)
+  }
+  now <- proc.time()[["elapsed"]]
+  if (force || now - run$stop_checked >= run$every) {
+    run$stop_checked <- now
+    run$stopped <- dir.exists(run$stop_path)
+  }
+  return(run$stopped)
+}
+environment(run_stopping) <- baseenv()
+
+# The value of an analysis or of a data function that did not run, because
+# the run stopped before it.
+not_run <- function() {
+  return(structure(list(), class = "pbn_not_run"))
+}
+environment(not_run) <- baseenv()
 
 # Sets the kind of random number generator of the run `run` again, when an
 # earlier analysis or data function of this R session changed it. The

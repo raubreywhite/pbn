@@ -85,6 +85,16 @@ function \code{get_data(scenario, sim)}, and a run script calls the export
 as \code{pbn::get_data()}.
 \item \code{loc_per_file} (FAIL): an \code{.R} file has more than 1000 code lines, as
 counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}.
+\item \code{cyclomatic_complexity} (FAIL): a function scores above 15 in
+\code{\link[cyclocomp:cyclocomp]{cyclocomp::cyclocomp()}}, the limit of the lint gate of the house
+packages. The rule reads the \code{.R} files of \code{loc_per_file}. It scores each
+function that a top-level assignment defines, and each function in a
+\code{list()} of a top-level assignment, as \verb{<list>$<name>}. A function
+inside a function counts toward the outer function. Top-level code that
+is not a function gets no score. The rule parses each file and runs no
+code of it. It skips a file that R cannot parse, which \code{loc_per_file}
+fails. The detail gives the file, the function and its score. An entry
+of \code{pbn_allow.txt} allows each function of one file.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or

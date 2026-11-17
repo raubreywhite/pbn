@@ -69,6 +69,16 @@
 #'   as `pbn::get_data()`.
 #' - `loc_per_file` (FAIL): an `.R` file has more than 1000 code lines, as
 #'   counted by [org::loc_per_file()].
+#' - `cyclomatic_complexity` (FAIL): a function scores above 15 in
+#'   [cyclocomp::cyclocomp()], the limit of the lint gate of the house
+#'   packages. The rule reads the `.R` files of `loc_per_file`. It scores each
+#'   function that a top-level assignment defines, and each function in a
+#'   `list()` of a top-level assignment, as `<list>$<name>`. A function
+#'   inside a function counts toward the outer function. Top-level code that
+#'   is not a function gets no score. The rule parses each file and runs no
+#'   code of it. It skips a file that R cannot parse, which `loc_per_file`
+#'   fails. The detail gives the file, the function and its score. An entry
+#'   of `pbn_allow.txt` allows each function of one file.
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or

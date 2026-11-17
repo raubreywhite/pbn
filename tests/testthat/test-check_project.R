@@ -10,6 +10,7 @@ project_rule_names <- c(
   "fake_data_names",
   "no_local_copy_of_pbn_function",
   "loc_per_file",
+  "cyclomatic_complexity",
   "no_environment_variables",
   "unknown_path"
 )
@@ -29,7 +30,7 @@ test_that("check_project prints one line per rule and a count line", {
     out[1],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "13 PASS, 0 WARN, 0 FAIL")
+  expect_identical(out[length(out)], "14 PASS, 0 WARN, 0 FAIL")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -235,6 +236,113 @@ test_that("loc_per_file fails on a file with 1001 code lines and passes 1000", {
   expect_identical(found$path[found$status == "FAIL"], "adhoc/long.R")
 })
 
+# The lines of a function `name` with `ifs` branches. cyclocomp scores it
+# ifs + 1.
+branchy_function <- function(name, ifs) {
+  return(c(
+    paste0(name, " <- function(x) {"),
+    "  y <- 0",
+    paste0("  if (x == ", seq_len(ifs), ") y <- ", seq_len(ifs)),
+    "  return(y)",
+    "}"
+  ))
+}
+
+test_that("cyclomatic_complexity passes a function that scores 15 and fails one that scores 16, with the file, the name and the score", {
+  p <- local_project()
+  write_lines(p$home, "v01_functions/branchy.R", branchy_function("fit_a", 14))
+  expect_identical(
+    function_scores(file.path(p$home, "v01_functions", "branchy.R")),
+    c(fit_a = 15L)
+  )
+  expect_identical(failed_rules(project_findings(p$home)), character(0))
+
+  write_lines(
+    p$home,
+    "v01_functions/branchy.R",
+    c(branchy_function("fit_a", 15), branchy_function("fit_b", 20))
+  )
+  write_lines(p$home, "adhoc/more.R", branchy_function("tidy", 16))
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "cyclomatic_complexity")
+  bad <- found[found$status == "FAIL", ]
+  # Sorted by the file, then by the score.
+  expect_identical(
+    bad$detail,
+    c(
+      "adhoc/more.R: tidy scores 17 (limit 15)",
+      "v01_functions/branchy.R: fit_b scores 21 (limit 15)",
+      "v01_functions/branchy.R: fit_a scores 16 (limit 15)"
+    )
+  )
+  expect_identical(
+    bad$path,
+    c("adhoc/more.R", "v01_functions/branchy.R", "v01_functions/branchy.R")
+  )
+})
+
+test_that("cyclomatic_complexity scores a function in a top-level list, ignores top-level code, and counts a nested function toward its parent", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/zz_cfg.R",
+    c(
+      "helpers <- list(",
+      "  size = 3,",
+      "  pick = function(x) {",
+      paste0("    if (x == ", 1:15, ") x <- 1"),
+      "    return(x)",
+      "  }",
+      ")",
+      "# Top-level code that is not a function is not scored.",
+      paste0("if (x == ", 1:30, ") y <- 1"),
+      "outer <- function(x) {",
+      "  inner <- function(y) {",
+      paste0("    if (y == ", 1:8, ") y <- 1"),
+      "    return(y)",
+      "  }",
+      paste0("  if (x == ", 1:8, ") x <- inner(x)"),
+      "  return(x)",
+      "}"
+    )
+  )
+  expect_identical(
+    function_scores(file.path(p$home, "v01_functions", "zz_cfg.R")),
+    c("helpers$pick" = 16L, outer = 17L)
+  )
+  found <- project_findings(p$home)
+  expect_identical(
+    found$detail[found$rule == "cyclomatic_complexity"],
+    c(
+      "v01_functions/zz_cfg.R: outer scores 17 (limit 15)",
+      "v01_functions/zz_cfg.R: helpers$pick scores 16 (limit 15)"
+    )
+  )
+})
+
+test_that("cyclomatic_complexity skips a file that R cannot parse, which loc_per_file fails, and an allowed file warns", {
+  p <- local_project()
+  write_lines(p$home, "adhoc/broken.R", "f <- function( {")
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), "loc_per_file")
+  expect_identical(
+    found$status[found$rule == "cyclomatic_complexity"],
+    "PASS"
+  )
+  unlink(file.path(p$home, "adhoc", "broken.R"))
+
+  write_lines(p$home, "adhoc/more.R", branchy_function("tidy", 16))
+  write_lines(p$home, "pbn_allow.txt", "cyclomatic_complexity\tadhoc/more.R")
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+  row <- found[found$rule == "cyclomatic_complexity", ]
+  expect_identical(row$status, "WARN")
+  expect_identical(
+    row$detail,
+    "adhoc/more.R: tidy scores 17 (limit 15) (allowed)"
+  )
+})
+
 test_that("no_environment_variables fails on Sys.getenv in a functions folder", {
   p <- local_project()
   write_lines(
@@ -316,7 +424,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fail_on_status = FALSE
   )
   expect_identical(ok$status, 0L)
-  expect_match(ok$stdout, "13 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
+  expect_match(ok$stdout, "14 PASS, 0 WARN, 0 FAIL", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -332,7 +440,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "12 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
+  expect_match(bad$stdout, "13 PASS, 0 WARN, 1 FAIL", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {

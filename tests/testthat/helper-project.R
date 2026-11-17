@@ -414,3 +414,21 @@ log_files <- c("run.md", "run_errors_gitexclude.md")
 no_log <- function(files) {
   return(setdiff(files, log_files))
 }
+
+# Runs and saves the scenarios `only` of the project `p` in this R session.
+# Returns the printed lines of save_results(), or its error.
+save_run <- function(p, only = NULL, workers = 1, env = parent.frame()) {
+  sourced <- init(p, env = env)
+  sc <- if (is.null(only)) {
+    scenarios(sourced$CFG)
+  } else {
+    scenarios(sourced$CFG, only = only)
+  }
+  plan <- build_plan(sourced, sc)
+  r <- run_plan(plan, workers = workers)
+  err <- NULL
+  out <- utils::capture.output(
+    err <- tryCatch(save_results(r, plan, sc), error = function(e) return(e))
+  )
+  return(list(out = out, err = err, plan = plan, scenarios = sc))
+}

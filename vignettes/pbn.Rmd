@@ -357,14 +357,26 @@ An analysis MUST NOT change `CFG` or another object of `v01_functions/`. A later
 `run_plan()` shows one line for each scenario: its finished analyses, the time since its start, and a note. In an interactive terminal, it draws the lines again in place, for example:
 
 ```text
-pbn: 4 scenarios, 2 workers, started 14:02
+pbn: 4 scenarios, 2 workers, started 14:02, 1m 11s
   real          3/3   analyses       5s  done
   known         4/4   analyses       1s  done
   null        168/560 analyses   1m 05s  models (x, sim 43) imputations 2/3 66%
   confounded    0/560 analyses           waiting
 ```
 
-In RStudio, it draws one line again in place. A run with `Rscript` into a log adds lines instead. It adds none in the first 60 seconds of the run, so a short run adds none. After that, it adds one line when a scenario finishes. A running scenario gets at most one line every 60 seconds, and only with 10% more done. The section Progress of `?run_plan` gives the rules.
+The header gives the time since the start of the run. In RStudio, it draws one line again in place. A run with `Rscript` into a log adds lines instead, and each line starts with the time since the start of the run:
+
+```text
+pbn: [12m 05s] null 522/1200 analyses, 8m 53s, about 12m left
+```
+
+It adds none in the first 60 seconds of the run, so a short run adds none. After that, it adds one line when a scenario finishes. A running scenario gets at most one line every 60 seconds, and only with 10% more done. The section Progress of `?run_plan` gives the rules.
+
+A line counts the failed analyses too, for example `null 37/1200 analyses, 12 failed`. The time left comes from the analyses without a failure. The first failed analysis stops the run, because pbn saves nothing from a run with a failure. The display says so at once, also in the first 60 seconds of a log:
+
+```text
+pbn: [3s] an analysis of the scenario real failed, so the run stops early: no new analysis starts.
+```
 
 `fit_models()` calls `pbn::progress()` in its loop over the imputations. While the analysis runs, the line of its scenario shows its text, as for `null` above. The text holds the kind, the values of the extra dimensions, the simulation, the step and the percent. Outside `run_plan()`, `pbn::progress()` only checks its arguments, so the function also runs by hand.
 
@@ -446,6 +458,7 @@ file.rename(file.path(root, "kept.qs2"), private)
 - the scenarios, the cache and the rows of the data, and the exclusion tables
 - the assertions, the output files and the results files
 - the timings
+- the history, one line for each run of this version
 
 It holds counts and assertions only, as `check.csv` does. It never holds the text of an error, because an error message can hold a value of the data. It gives each error a number, and `v01_results/run_errors_gitexclude.md` holds the text, out of git. `?save_results` lists the errors. These are the first sections of the log of the run above:
 
@@ -458,11 +471,15 @@ cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
 stopifnot(identical(log[1], "# Run log of `project`, version v01"), any(log == "- Result: All 9 assertions passed."))
 ```
 
-The log is Markdown, so it reads well as plain text and on GitHub. Put it in git. Only the sections When and Timings change in every run, so `git diff` on the log shows the real changes of a run. The section Timings comes last. pbn measures each data step and each analysis where it runs, also on a worker. With workers, the computing seconds are the sum over the workers:
+The log is Markdown, so it reads well as plain text and on GitHub. Put it in git. Only the sections When, Timings and History change in every run, so `git diff` on the log shows the real changes of a run. The sections Timings and History come last.
+
+The timings are seconds on the clock. pbn measures each data step and each analysis where it runs, also on a worker. A scenario runs from the start of its first data step or analysis to the end of its last one. With 2 workers the scenarios overlap, so their seconds do not add up to those of `run_plan()`. Each data step and analysis kind gets the median and the maximum seconds of one call, and its share of all the seconds:
 
 ```{r}
-cat(log[seq(grep("^## Timings", log), length(log))], sep = "\n")
+cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n")
 ```
+
+The section History has one line for each run of this version, oldest first, with its result and the wall seconds of its steps. At its start, `run_plan()` adds the line "did not finish", and the full log replaces it. A run that R stops thus keeps that line. The history is in `run.md` only, so a deleted `run.md` starts it again. The section A check that goes red below adds lines to it.
 
 `pbn::render_run("v01")` renders the log to `v01_results/run.pdf`. It needs Quarto, and no LaTeX. The PDF is made from `run.md`, so keep it out of git, for example with the line `run.pdf` in `.gitignore`:
 
@@ -574,7 +591,7 @@ cat(lines[grep(" failed:$", lines)[1] + 0:1], sep = "\n")
 stopifnot(out$status == 1, any(grepl("returned 388 rows, but the step raw returned 400 rows.", lines, fixed = TRUE)))
 ```
 
-Each analysis of the run fails in the same way, and `save_results()` does not run. Put the copy back:
+Each analysis gets the failed data, so each one fails, and `save_results()` does not run. In a longer run, the first failed analysis stops the run, and the analyses after it do not run. `?run_plan` gives the rules of the stop. Put the copy back:
 
 ```{r}
 file.copy(file.path(root, "data_clean_copy.R"), clean_file, overwrite = TRUE)
@@ -612,6 +629,18 @@ fourth <- run_lines()
 
 ```{r, include = FALSE}
 if (!(length(fourth) == 2 && all(endsWith(fourth, ": computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.")))) stop(paste(c("unexpected cache lines:", fourth), collapse = " | "))
+```
+
+The section History of the run log now has one line for each run of this article. The runs with `only = c("real", "known")` name their scenarios:
+
+```{r}
+log <- readLines(file.path(home, "v01_results", "run.md"))
+cat(log[seq(grep("^## History", log) + 4, length(log))], sep = "\n")
+```
+
+```{r, include = FALSE}
+rows <- grep("^\\| 20", log, value = TRUE)
+stopifnot(length(rows) == 6, grepl("| 9 of 9 analyses failed ", rows[4], fixed = TRUE), grepl("| real, known ", rows[2], fixed = TRUE))
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. Keep the data code in `data_*.R` files: a change in another file does not change the key. To compute every value again, delete `v01_cache_gitexclude/`.
@@ -684,7 +713,7 @@ A script with output code after the run that is not in a function MAY use `pbn::
 pbn::check_project()
 ```
 
-`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count.
+`check_project()` checks a project folder against the layout. It prints one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does.
 
 ```{r}
 pbn::check_project(home)
@@ -742,7 +771,7 @@ The default `home = "."` is the working directory, so this file MUST run with th
 - `check_project()` checks only that `results_gitexclude.qs2` holds the kinds that the manifest names. It does not check what is in them.
 - The SE of the relative error of the model SE assumes a normal estimate, and an `se` independent of the estimate.
 - `make_outputs()` cannot see a file that the output function writes outside `dir`.
-- With workers, the run log cannot give the wall seconds of one scenario. It gives the computing seconds of each scenario, and the wall seconds of the whole run.
+- pbn does not stop an analysis that runs. With workers, the stop of the run waits for the analyses that run at the time of the first failure.
 
 ```{r, include = FALSE}
 unlink(root, recursive = TRUE)

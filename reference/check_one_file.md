@@ -41,8 +41,9 @@ again in this R session.
     with these paths in memory, and compares them with the file, line by
     line. Only the line of the header with the version of pbn and the
     date does not count. When a line differs, the file is older than the
-    code of the project. It prints FAIL with the first line that
-    differs, and says to run
+    code of the project. It prints FAIL with the number of the first
+    line that differs and the line in both files, each cut to 80
+    characters. It says to run
     [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
     again. It prints FAIL also when the project has no such file.
 

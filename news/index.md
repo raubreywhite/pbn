@@ -587,6 +587,14 @@ each scenario. To move a project, change these items:
   again from its value, so a multi-line string became one long line. A
   raw string, and a string with an escape `\x` or an octal escape, still
   come from the value.
+- [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md)
+  puts one label over the whole figure of a ggplot too, also with
+  facets. Before, each panel of a faceted figure clipped its own copy of
+  the label. ggplot2 and patchwork move from Suggests to Imports.
+- The FAIL of
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  for an old one file cuts each quoted line to 80 characters, with ”
+  \[…\]“.
 
 ## pbn 2026.11.22
 

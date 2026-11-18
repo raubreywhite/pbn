@@ -269,6 +269,9 @@
 <code><a href="../reference/check_one_file.html">check_one_file()</a></code> first compares <code>&lt;version&gt;_one_file.R</code> in the project with the file of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> now, with the paths of the server from that file. It prints FAIL with the first line that differs, or when there is no such file. Then it runs the file of the project, with temporary paths in place of the paths of the server. Before, it ran a new file and passed while the file in git was older.</li>
 <li>
 <code><a href="../reference/to_one_file.html">to_one_file()</a></code> changes only the characters that are not ASCII in a string, and keeps its quotes, escapes and line breaks. Before, it wrote each such string again from its value, so a multi-line string became one long line. A raw string, and a string with an escape <code>\x</code> or an octal escape, still come from the value.</li>
+<li>
+<code><a href="../reference/stamp_fake.html">stamp_fake()</a></code> puts one label over the whole figure of a ggplot too, also with facets. Before, each panel of a faceted figure clipped its own copy of the label. ggplot2 and patchwork move from Suggests to Imports.</li>
+<li>The FAIL of <code><a href="../reference/check_one_file.html">check_one_file()</a></code> for an old one file cuts each quoted line to 80 characters, with ” […]“.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

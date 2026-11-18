@@ -75,18 +75,17 @@ it returns the figure as it is.</p>
 saved: <code>q &lt;- pbn::stamp_fake(q)</code>. For <code>"real"</code> on real data, and outside
 a call of <code><a href="make_outputs.html">make_outputs()</a></code>, it returns <code>q</code> unchanged. For <code>"real"</code> whose
 manifest has <code>fake_real_data</code> <code>TRUE</code>, it adds the label.</p>
-<p>On a ggplot, the label is on each panel. On a patchwork, it is one label
-over the whole figure. <code>stamp_fake()</code> wraps the patchwork in one element
-with <code><a href="https://patchwork.data-imaginist.com/reference/wrap_elements.html" class="external-link">patchwork::wrap_elements()</a></code>, and puts the label on it with
+<p>The label is one label over the whole figure, also for a ggplot with
+facets. <code>stamp_fake()</code> wraps the figure in one element with
+<code><a href="https://patchwork.data-imaginist.com/reference/wrap_elements.html" class="external-link">patchwork::wrap_elements()</a></code>, and puts the label on it with
 <code><a href="https://patchwork.data-imaginist.com/reference/inset_element.html" class="external-link">patchwork::inset_element()</a></code>. The label has no background, so each panel
-stays visible. Call <code>stamp_fake()</code> last, just before the figure is saved.
-A <code>+</code> after it applies to the label, and a theme with a background then
+stays visible. The value is a patchwork, which <code><a href="https://ggplot2.tidyverse.org/reference/ggsave.html" class="external-link">ggplot2::ggsave()</a></code> saves
+as before. Call <code>stamp_fake()</code> last, just before the figure is saved. A
+<code>+</code> after it applies to the label, and a theme with a background then
 hides the figure.</p>
-<p>For a fake scenario, <code>stamp_fake()</code> needs the package ggplot2, and
-patchwork for a patchwork. It stops when the package is not installed.
-It also stops when <code>q</code> is not a ggplot or a patchwork, for example a
-grob or a gtable of <code>gridExtra::arrangeGrob()</code>. Stamp each ggplot before
-you combine it in such an object.</p>
+<p>It stops when <code>q</code> is not a ggplot or a patchwork, for example a grob or a
+gtable of <code>gridExtra::arrangeGrob()</code>. Stamp each ggplot before you combine
+it in such an object.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -114,8 +114,10 @@ value for each row of the data. <code>manifest$n_rows_data</code> holds one row
 count, or one for each data element. For a cohort,
 <code>manifest$n_rows_before_exclusions</code> and
 <code>manifest$n_rows_after_exclusions</code> hold the rows before and after the
-exclusions too. For each count <code>n</code> of 2 or more in any of the three, the
-rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
+exclusions too. <code>manifest$n_rows_lists</code> holds the rows of each
+data.frame of a data element that is a list of data.frames with 2 or
+more numbers of rows. For each count <code>n</code> of 2 or more in any of the
+four, the rule fails each of these:</p><ul><li><p>a data.frame with <code>n</code> rows.</p></li>
 <li><p>an atomic vector of length <code>n</code>, also a factor, a <code>Date</code> or a
 <code>POSIXct</code>.</p></li>
 <li><p>a matrix or an array with a dimension <code>n</code>.</p></li>
@@ -144,7 +146,9 @@ with the columns <code>file</code>, <code>size</code> and <code>mtime</code>. Ea
 comes once, each <code>size</code> a number of 0 or more, and each <code>mtime</code> a
 number. It has 0 rows when the data folders have no file. A manifest
 with <code>data_md5</code>, the md5 of the data files of an older pbn, fails this
-rule: run the scenario again.</p></li>
+rule: run the scenario again. For <code>"real"</code>, <code>manifest$fake_real_data</code>
+MUST be <code>TRUE</code> or <code>FALSE</code>. A real manifest of an older pbn has no
+<code>fake_real_data</code>, so it fails this rule: run the scenario again.</p></li>
 <li><p><code>manifest_source</code>: <code>manifest$source_md5</code> is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script <code>&lt;version&gt;_run.R</code> of <code>manifest$version</code>, or a <code>vNN_run.R</code> when
@@ -171,6 +175,7 @@ files of <code><a href="save_results.html">save_results()</a></code>.</p>
 <span class="r-in"><span>    sim <span class="op">=</span> <span class="fl">1L</span>,</span></span>
 <span class="r-in"><span>    sims <span class="op">=</span> <span class="fl">1L</span>,</span></span>
 <span class="r-in"><span>    data_files <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>file <span class="op">=</span> <span class="st">"main/d.csv"</span>, size <span class="op">=</span> <span class="fl">120</span>, mtime <span class="op">=</span> <span class="fl">1.8e9</span><span class="op">)</span>,</span></span>
+<span class="r-in"><span>    fake_real_data <span class="op">=</span> <span class="cn">FALSE</span>,</span></span>
 <span class="r-in"><span>    source_md5 <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>v01_run.R <span class="op">=</span> <span class="st">"fedcba9876543210fedcba9876543210"</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>    n_rows_data <span class="op">=</span> <span class="fl">100L</span></span></span>
 <span class="r-in"><span>  <span class="op">)</span>,</span></span>
@@ -192,14 +197,14 @@ files of <code><a href="save_results.html">save_results()</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 5 manifest_scenario   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 6     manifest_data   PASS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 7   manifest_source   PASS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                detail</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1                       manifest, and each other element with a unique syntactic name</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2                                   n_before - n_excluded != n_after on these rows: 1</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3       each element is a data.frame, an atomic vector, NULL or a plain list of these</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4 no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5                 the manifest names the scenario, the simulation and the simulations</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6              the manifest has data_files for "real" or fake_md5 for a fake scenario</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 7                         the manifest has source_md5, with the md5 of the run script</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                                                                                       detail</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1                              manifest, and each other element with a unique syntactic name</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2                                          n_before - n_excluded != n_after on these rows: 1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3              each element is a data.frame, an atomic vector, NULL or a plain list of these</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4        no data.frame has 100 rows, and no vector or matrix has 100 values in one dimension</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5                        the manifest names the scenario, the simulation and the simulations</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6 the manifest has data_files and fake_real_data for "real", or fake_md5 for a fake scenario</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 7                                the manifest has source_md5, with the md5 of the run script</span>
 </code></pre></div>
     </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

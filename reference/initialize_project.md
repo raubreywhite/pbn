@@ -12,6 +12,7 @@ initialize_project(
   folders,
   env = .GlobalEnv,
   one_file = NULL,
+  fake_real_data = FALSE,
   ...
 )
 ```
@@ -48,6 +49,12 @@ initialize_project(
   [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
   gives a value here. Do not write it by hand. See the section One file.
 
+- fake_real_data:
+
+  `TRUE` when the folders of `folders` on this computer hold fake files
+  in the formats of the real data, and `FALSE`, the default, otherwise.
+  See the section Fake real data.
+
 - ...:
 
   Nothing. A call with the removed argument `data_raw` stops, and the
@@ -72,7 +79,8 @@ folders.
 2.  It computes the md5 of `<version>_run.R` and of each file in
     `<version>_functions/`, before it sources them.
     [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
-    stores them in `manifest$source_md5`.
+    stores them in `manifest$source_md5`, without
+    `<version>_functions/blocks.R`.
 
 3.  It lists each file under each folder of `folders` that exists, at
     any depth, with its size and its modification time. This is the
@@ -141,6 +149,54 @@ modification time, is not seen. A copy that does not keep the
 modification times looks like changed data, so the cache computes the
 data again. `file.copy(..., copy.date = TRUE)` keeps them.
 
+## Fake real data
+
+The real data of a project MAY be on a server only. Its folders on this
+computer MAY then hold fake files in the formats of the real data. Then
+the code that reads the real data runs here, and
+[`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+has results to compare. Give `fake_real_data = TRUE` in the run script
+of such a computer. It is about the scenario `"real"` only:
+
+- The manifest of the real results gets `fake_real_data = TRUE`. It is
+  `FALSE` without the flag. A fake scenario has no such field.
+
+- The run log says that the scenario real ran on fake real data, in the
+  sections Run and History. The sections Data and Exclusions name the
+  scenario `real (fake real data)`.
+
+- [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  writes the output of `"real"` as fake output, into
+  `real/output_fake_data/` with the prefix `fake_data_`, and
+  [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md)
+  marks its figures. It deletes an old `real/output/`.
+
+- [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  print `FAKE REAL DATA`.
+
+The argument decides only what
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+writes into the manifest.
+[`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
+[`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md),
+[`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+and [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+read `fake_real_data` from the manifest of the real results on the disk.
+So an R session without the argument still marks such results, and an R
+session with it never marks results from real data.
+
+- The rule `real_results_are_fake` of
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  warns while such real results are on the disk.
+
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+reads such results as usual. The file of
+[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+never gives `fake_real_data`, because the server holds the real data.
+`fake_real_data = TRUE` together with `one_file` stops.
+
 ## One file
 
 The file of
@@ -192,11 +248,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpSHRrJ6/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpTKEnl2/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpSHRrJ6/pbn_initialize_example/v01_results"
+#> [1] "/tmp/RtmpTKEnl2/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmpSHRrJ6/pbn_initialize_example/data"
+#> [1] "/tmp/RtmpTKEnl2/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

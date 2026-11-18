@@ -46,10 +46,15 @@ chosen scenario in the order of `cfg$scenarios`. `sims` is an integer.
 
 Each other column is a setting of the scenario, for example `n_boot` for
 a number of bootstrap replicates that is smaller in the fake scenarios.
-A setting column MUST be an atomic vector with no `NA`, and its name
-MUST be syntactic. Its name MUST NOT be one of `scenario`, `sim`,
-`analysis`, `seed`, `index_analysis`, `name`, `fn`, `fn_name`, `data`
-and `argset`.
+A setting column MUST be an atomic vector, and its name MUST be
+syntactic. It MUST have a value for each fake scenario. It MAY have `NA`
+for `"real"`, when only the fake scenarios use the setting. The argsets
+of `"real"`, its cache key and its `manifest$settings` then do not hold
+the setting. A data function MUST NOT take such a setting as an
+argument: plnr finds no value of it for `"real"`, and
+[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) stops.
+Its name MUST NOT be one of `scenario`, `sim`, `analysis`, `seed`,
+`index_analysis`, `name`, `fn`, `fn_name`, `data` and `argset`.
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
 puts the setting of the scenario into each argset.
 

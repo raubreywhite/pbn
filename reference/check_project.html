@@ -190,13 +190,36 @@ builds stays outside the rule.</p>
 <p>The detail is <code>&lt;file&gt;:&lt;line&gt;: "&lt;the string, cut at 40 characters&gt;"</code>, or
 <code>&lt;file&gt;:&lt;line&gt;: file.path("&lt;the first argument, cut at 40 characters&gt;", ...)</code>. A path under <code>allow</code> allows each finding of one
 file.</p></li>
-<li><p><code>blocks_list</code> (FAIL): the functions folder defines the object <code>blocks</code>
-of <code><a href="show_blocks.html">show_block()</a></code>, and one of these is true:</p><ul><li><p>more than one top-level assignment assigns it.</p></li>
+<li><p><code>blocks_list</code> (FAIL): for each functions folder, one of these is true:</p><ul><li><p>a file other than <code>vNN_functions/blocks.R</code> assigns <code>blocks</code> at its
+top level. pbn leaves <code>blocks.R</code> out of <code>manifest$source_md5</code>, so the
+blocks MUST be in that file.</p></li>
+<li><p>more than one top-level assignment of <code>blocks.R</code> assigns it.</p></li>
 <li><p>its value is not a call of <code><a href="https://rdrr.io/r/base/list.html" class="external-link">list()</a></code>, or the list is empty.</p></li>
 <li><p>an element has no name, or a name comes twice.</p></li>
 <li><p>an element is not a <code>function</code>, or the name of a function that a
 top-level assignment of the functions folder defines.</p></li>
-</ul><p>A project without <code>blocks</code> passes.</p></li>
+<li><p>a top-level expression of <code>blocks.R</code> is not an assignment with <code>&lt;-</code>
+or <code>=</code> of a name to <code>function(...)</code>, or of <code>blocks</code> to <code>list(...)</code>.
+Examples are <code><a href="https://rdrr.io/r/base/library.html" class="external-link">library(x)</a></code>, <code>options(...)</code>, <code>set.seed(1)</code>, an <code>if</code> and
+<code>fmt &lt;- sprintf</code>. Such code runs when pbn sources the folder, so it
+can change the results.</p></li>
+<li><p>a name that <code>blocks.R</code> assigns at its top level, and another file of
+the folder assigns too. The detail names both places.</p></li>
+<li><p>another file of the folder, or <code>vNN_run.R</code>, uses a name that
+<code>blocks.R</code> assigns at its top level. Examples are a helper <code>fmt()</code>,
+and <code>CFG</code> after <code>CFG$labels &lt;- ...</code> in <code>blocks.R</code>. The run would then
+depend on a file outside <code>source_md5</code>. A name after <code>$</code> or <code>@</code> and
+the name of an argument do not count.</p></li>
+</ul><p>The detail is <code>&lt;file&gt;:&lt;line&gt;: &lt;what&gt;</code>. A folder without <code>blocks</code> and
+without <code>blocks.R</code> passes. <code><a href="initialize_project.html">initialize_project()</a></code> makes the same checks
+of <code>blocks.R</code>, and puts it back into <code>manifest$source_md5</code> when one
+fails, also when this rule is <code>warn</code> or <code>off</code>.</p></li>
+<li><p><code>real_results_are_fake</code> (WARN): a file <code>vNN_results/real/results.qs2</code>
+holds <code>manifest$fake_real_data</code> <code>TRUE</code>. Its run had
+<code>fake_real_data = TRUE</code> of <code><a href="initialize_project.html">initialize_project()</a></code>, so its numbers are
+not those of the real data. It passes when no such file is in the
+list of files. In a git repository, a real results file that git
+ignores is not in the list, so the rule does not see it.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code>,
@@ -240,8 +263,11 @@ the rules above gives their house values.</p>
 change merges into the entry of the set. So <code>cyclomatic_complexity: {limit: 25}</code> keeps the level <code>fail</code>. The short form <code>lower_case_names: warn</code> changes the level only. <code>forbid</code> MAY list fewer constructs than the
 house set.</p>
 <p>The key <code>allow</code> MAY list paths for each rule, relative to <code>path</code>. A path
-allows the findings with exactly that path. A folder MAY end in <code>/</code>, and it
-does not allow the files in it. An allowed finding is WARN, with
+allows the findings with that path and the findings of each path under
+it. So the folder <code>adhoc</code> allows <code>adhoc/Notes.txt</code> and
+<code>adhoc/Old/Data.csv</code>, but not <code>adhoc2/x.R</code>. A final <code>/</code> changes nothing:
+<code>adhoc</code> and <code>adhoc/</code> are the same entry. pbn does not look on the disk
+for a file or a folder of that name. An allowed finding is WARN, with
 <code>(allowed)</code> at the end. A path that matches no finding is a WARN of the
 rule <code>allow</code>.</p>
 <p>Three rules are locked: <code>results_contract</code>, <code>gitexclude_not_tracked</code> and
@@ -305,9 +331,10 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when the functions folder has it, is a list of named functions</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 17 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 18 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

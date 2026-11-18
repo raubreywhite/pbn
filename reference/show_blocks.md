@@ -64,6 +64,23 @@ it.
       "Results para 1: exclusions" = function(results) results$exclusions
     )
 
+Put `blocks` in the file `<version>_functions/blocks.R`, and nowhere
+else. pbn leaves that file out of `manifest$source_md5`, so a change of
+a block does not make the results stale. The rule `blocks_list` of
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+fails a use of a name of that file in the other code, because the run
+then depends on it.
+
+A block MAY run where the packages of the run script are missing.
+Examples are the console after
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+and the new R session of
+[`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md).
+`show_block()` attaches no package. So a block function MUST name the
+package of each function that it calls, for example
+[`data.table::data.table()`](https://rdrr.io/pkg/data.table/man/data.table.html).
+When R does not find a function, the error says so.
+
 The results include the kinds of `gitexclude`, so a block MAY show rows
 for each person, for example to find a fault. What a person copies or
 screenshots from the screen is the responsibility of that person.
@@ -91,6 +108,11 @@ stops, it prints the error in the place of the rows, and goes on.
 2.  the page, for example `page 2 of 4, rows 36 to 70 of 140`,
 
 3.  the rows of the page.
+
+Real results MAY come from fake real data, see `fake_real_data` of
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+Then `show_block()` prints the line `FAKE REAL DATA` between the first
+two lines. `show_blocks()` prints it under its first line.
 
 It stops on a block function that stops, and the error names the block.
 During the call, the option `width` is 270 and the row names are off. No

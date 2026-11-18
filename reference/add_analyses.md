@@ -104,10 +104,10 @@ The seed depends on the kind `name`, the counter `<i>` and `sim` only:
 - It is 10000 or more, so it differs from the seed `sim` of the data of
   simulations 1 to 9999.
 
-The seed is a polynomial hash with base 257, modulo the prime
-2147483629, of the code points of `"<name>__<i>__<sim>"`, plus 10000.
-Two analyses of one simulation with the same seed stop `add_analyses()`
-with an error that names both kinds.
+The seed is `10000 + h %% 2147473629`. `h` is a polynomial hash with
+base 257, modulo the prime 2147483629, of the code points of
+`"<name>__<i>__<sim>"`. Two analyses of one simulation with the same
+seed stop `add_analyses()` with an error that names both kinds.
 
 While [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
 runs, an analysis fails when it changes the shared data in place. plnr

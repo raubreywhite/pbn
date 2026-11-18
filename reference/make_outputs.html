@@ -83,7 +83,14 @@ row for each file written. <code>file</code> is relative to the project folder.<
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Call <code><a href="initialize_project.html">initialize_project()</a></code> first. For each scenario of <code>scenarios</code>,
 <code>make_outputs()</code> does this:</p><ul><li><p><code>"real"</code>: it calls <code>fn(results, dir)</code> with
-<code>dir = &lt;version&gt;_results/real/output/</code>.</p></li>
+<code>dir = &lt;version&gt;_results/real/output/</code>. The output is fake output when
+the manifest of the real results on the disk has <code>fake_real_data</code>
+<code>TRUE</code>. It then goes to <code>real/output_fake_data/</code>, as for a fake
+scenario below. The
+manifest decides, and never the argument <code>fake_real_data</code> of
+<code><a href="initialize_project.html">initialize_project()</a></code> in this R session. <code>make_outputs()</code> deletes the
+other of the two folders of <code>"real"</code> with one printed line, so no
+output of an earlier run on other data stays.</p></li>
 <li><p>A fake scenario with <code>output = TRUE</code>: it calls <code>fn</code> with
 <code>dir = &lt;version&gt;_results/&lt;scenario&gt;/output_fake_data/</code>. Then it renames
 each file in <code>dir</code> that <code>fn</code> wrote, so that the name starts with
@@ -92,8 +99,10 @@ in <code>dir</code>. It ignores the case of the letters, as Windows and macOS do
 The results of a scenario with more than 1 simulation are the stacked
 results, with a column <code>sim</code> in each data.frame.</p></li>
 <li><p>A fake scenario without <code>output = TRUE</code>: nothing.</p></li>
-</ul><p>Before it calls <code>fn</code>, <code>make_outputs()</code> deletes the folder <code>dir</code> and
-creates it again. So no file of an earlier run stays. Keep no other file
+</ul><p><code><a href="save_results.html">save_results()</a></code> deletes <code>output/</code> and <code>output_fake_data/</code> of each
+scenario that it writes, so no output of an earlier run stays beside new
+results. Before it calls <code>fn</code>, <code>make_outputs()</code> deletes the folder <code>dir</code>
+and creates it again. So no file of an earlier run stays. Keep no other file
 in that folder. It stops when the folder is still there afterwards, for
 example because another program holds a file open on Windows. After each
 scenario, it prints one line with the folder and the number of files.</p>

@@ -40,7 +40,8 @@ Call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
 for `version` first, in the project on this computer. `to_one_file()`
 takes the project from that call. It stops when the run script or a file
-of the functions folder changed after it.
+of the functions folder changed after it. It needs no results. So you
+MAY generate and read the file before the first full run.
 
 The file holds these parts, in this order:
 
@@ -73,8 +74,35 @@ checks that the file gives the real results of the project.
 
 The functions `expect_<scenario>()` of the fake scenarios of
 `CFG$scenarios` are not in the file, because the run has the real data
-only. `expect_real()` stays. The fake data code stays, because it is
-inside the data functions.
+only. The comment lines directly above such a function go with it, up to
+a blank line or a line with code. `expect_real()` stays. The fake data
+code stays, because it is inside the data functions.
+
+The call of
+[`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+in the file never has `fake_real_data`, because the server holds the
+real data. The run script MAY have it for this computer.
+
+The file is ASCII, because it goes through a clipboard, which can change
+a byte that is not ASCII. pbn reads each file of the project as UTF-8
+and changes each character that is not ASCII on the parse data, token by
+token. The files of the project stay as they are:
+
+- In a string, the character becomes its escape, `\uXXXX`, or
+  `\UXXXXXXXX` beyond the BMP, for example `"\u2265"` for the sign
+  greater than or equal. pbn writes such a string again from its value,
+  in double quotes. So a raw string `r"(...)"` becomes a normal string,
+  and an escape that the string held keeps its meaning. The code of the
+  file is [`identical()`](https://rdrr.io/r/base/identical.html) to the
+  code of the project. Such a string gets the encoding mark `"UTF-8"`
+  where the string of the project MAY have `"unknown"`, and
+  [`identical()`](https://rdrr.io/r/base/identical.html) treats the two
+  as equal.
+
+- In a comment, the character becomes the text `<U+XXXX>`.
+
+- In a name, for example a name in backticks, `to_one_file()` stops,
+  because R reads a name only as it is written.
 
 `to_one_file()` stops when, and writes no file:
 
@@ -83,9 +111,9 @@ inside the data functions.
   or not exactly one call `pbn::scenarios(CFG)` with no other argument.
   It names what it found.
 
-- a file in the file holds a byte that is not ASCII, or a NUL. The error
-  names the file and the line. The file goes through a clipboard, which
-  can change such a byte.
+- a file in the file holds a name that is not ASCII, a NUL, or a line
+  that is not UTF-8. It also stops on a string that is not valid UTF-8
+  after its escapes. The error names the file and the line.
 
 - `home`, a path of `folders` or the name of the project folder is not
   ASCII.
@@ -117,8 +145,9 @@ of this R session. The printed line names that folder.
 
 These are limits of the file:
 
-- The comments of the code go into the file as they are written. So a
-  comment with a path of this computer reaches the server.
+- The comments of the code go into the file as they are written, with
+  `<U+XXXX>` for a character that is not ASCII. So a comment with a path
+  of this computer reaches the server.
 
 - The rule `no_absolute_paths` of
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

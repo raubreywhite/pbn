@@ -89,8 +89,12 @@ more.</p></li>
 key of the cache or in <code>manifest$settings</code>.</p></li>
 </ul><p>Each other column is a setting of the scenario, for example <code>n_boot</code> for a
 number of bootstrap replicates that is smaller in the fake scenarios. A
-setting column MUST be an atomic vector with no <code>NA</code>, and its name MUST be
-syntactic. Its name MUST NOT be one of <code>scenario</code>, <code>sim</code>, <code>analysis</code>,
+setting column MUST be an atomic vector, and its name MUST be syntactic.
+It MUST have a value for each fake scenario. It MAY have <code>NA</code> for
+<code>"real"</code>, when only the fake scenarios use the setting. The argsets of
+<code>"real"</code>, its cache key and its <code>manifest$settings</code> then do not hold the
+setting. A data function MUST NOT take such a setting as an argument:
+plnr finds no value of it for <code>"real"</code>, and <code><a href="run_plan.html">run_plan()</a></code> stops. Its name MUST NOT be one of <code>scenario</code>, <code>sim</code>, <code>analysis</code>,
 <code>seed</code>, <code>index_analysis</code>, <code>name</code>, <code>fn</code>, <code>fn_name</code>, <code>data</code> and <code>argset</code>.
 <code><a href="add_analyses.html">add_analyses()</a></code> puts the setting of the scenario into each argset.</p>
 <p><code>scenarios()</code> stops on a table that breaks a rule, and on a name in

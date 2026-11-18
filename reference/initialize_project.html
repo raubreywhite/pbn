@@ -57,6 +57,7 @@ functions folder. It MUST be the first call in every <code>vNN_run.R</code>.</p>
 <span>  <span class="va">folders</span>,</span>
 <span>  env <span class="op">=</span> <span class="va">.GlobalEnv</span>,</span>
 <span>  one_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  fake_real_data <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  <span class="va">...</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
@@ -93,6 +94,12 @@ data. Only <code><a href="save_results.html">save_results()</a></code> for the s
 not write it by hand. See the section One file.</p></dd>
 
 
+<dt id="arg-fake-real-data">fake_real_data<a class="anchor" aria-label="anchor" href="#arg-fake-real-data"></a></dt>
+<dd><p><code>TRUE</code> when the folders of <code>folders</code> on this
+computer hold fake files in the formats of the real data, and <code>FALSE</code>,
+the default, otherwise. See the section Fake real data.</p></dd>
+
+
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Nothing. A call with the removed argument <code>data_raw</code> stops, and
 the error says how to use <code>folders</code>.</p></dd>
@@ -111,7 +118,7 @@ on each error of <code>pbn.yml</code> that stops <code><a href="check_project.ht
 file is missing.</p></li>
 <li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
 <code>&lt;version&gt;_functions/</code>, before it sources them. <code><a href="save_results.html">save_results()</a></code> stores
-them in <code>manifest$source_md5</code>.</p></li>
+them in <code>manifest$source_md5</code>, without <code>&lt;version&gt;_functions/blocks.R</code>.</p></li>
 <li><p>It lists each file under each folder of <code>folders</code> that exists, at any
 depth, with its size and its modification time. This is the
 fingerprint of the data. pbn never reads the content of a data file, so
@@ -159,6 +166,34 @@ modification time, is not seen. A copy that does not keep the modification times
 like changed data, so the cache computes the data again. <code>file.copy(..., copy.date = TRUE)</code> keeps them.</p>
     </div>
     <div class="section level2">
+    <h2 id="fake-real-data">Fake real data<a class="anchor" aria-label="anchor" href="#fake-real-data"></a></h2>
+
+
+<p>The real data of a project MAY be on a server only. Its folders on this
+computer MAY then hold fake files in the formats of the real data. Then the code
+that reads the real data runs here, and <code><a href="check_one_file.html">check_one_file()</a></code> has results to
+compare. Give <code>fake_real_data = TRUE</code> in the run script of such a
+computer. It is about the scenario <code>"real"</code> only:</p><ul><li><p>The manifest of the real results gets <code>fake_real_data = TRUE</code>. It is
+<code>FALSE</code> without the flag. A fake scenario has no such field.</p></li>
+<li><p>The run log says that the scenario real ran on fake real data, in the
+sections Run and History. The sections Data and Exclusions name the
+scenario <code>real (fake real data)</code>.</p></li>
+<li><p><code><a href="make_outputs.html">make_outputs()</a></code> writes the output of <code>"real"</code> as fake output, into
+<code>real/output_fake_data/</code> with the prefix <code>fake_data_</code>, and
+<code><a href="stamp_fake.html">stamp_fake()</a></code> marks its figures. It deletes an old <code>real/output/</code>.</p></li>
+<li><p><code><a href="show_blocks.html">show_blocks()</a></code> and <code><a href="show_blocks.html">show_block()</a></code> print <code>FAKE REAL DATA</code>.</p></li>
+</ul><p>The argument decides only what <code><a href="save_results.html">save_results()</a></code> writes into the
+manifest. <code><a href="make_outputs.html">make_outputs()</a></code>, <code><a href="stamp_fake.html">stamp_fake()</a></code>, <code><a href="show_blocks.html">show_blocks()</a></code> and
+<code><a href="show_blocks.html">show_block()</a></code> read <code>fake_real_data</code> from the manifest of the real
+results on the disk. So an R session without the argument still marks
+such results, and an R session with it never marks results from real
+data.</p><ul><li><p>The rule <code>real_results_are_fake</code> of <code><a href="check_project.html">check_project()</a></code> warns while such
+real results are on the disk.</p></li>
+</ul><p><code><a href="read_results.html">read_results()</a></code> reads such results as usual. The file of <code><a href="to_one_file.html">to_one_file()</a></code>
+never gives <code>fake_real_data</code>, because the server holds the real data.
+<code>fake_real_data = TRUE</code> together with <code>one_file</code> stops.</p>
+    </div>
+    <div class="section level2">
     <h2 id="one-file">One file<a class="anchor" aria-label="anchor" href="#one-file"></a></h2>
 
 
@@ -202,11 +237,11 @@ file.</p>
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpSHRrJ6/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpTKEnl2/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpSHRrJ6/pbn_initialize_example/v01_results"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpTKEnl2/pbn_initialize_example/v01_results"</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="folder.html">folder</a></span><span class="op">(</span><span class="st">"main"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpSHRrJ6/pbn_initialize_example/data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpTKEnl2/pbn_initialize_example/data"</span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">$</span><span class="va">scenarios</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scenario sims</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     real    1</span>

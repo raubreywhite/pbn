@@ -468,7 +468,7 @@ prints one line for each scenario and simulation, and
 lines of the data:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span>, chdir <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpW81cWA/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpptkSA5/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
 <span><span class="va">data_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^pbn: data"</span>, <span class="va">out</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"^pbn: data d, [a-z]+ sim_[0-9]{4}: "</span>, <span class="st">""</span>, <span class="va">data_lines</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -495,13 +495,24 @@ other. The data and each analysis set their own seed. So one analysis by
 hand in this R session gives the value of the worker:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">by_hand</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">run_one</span><span class="op">(</span><span class="st">"confounded__sim_0003__models__1"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, confounded sim_0003: reused the cache of 2026-11-17 22:33.</span></span>
+<span><span class="co">#&gt; pbn: data d, confounded sim_0003: reused the cache of 2026-11-18 05:57.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">by_hand</span>, <span class="va">r</span><span class="op">[[</span><span class="st">"confounded__sim_0003__models__1"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 <p>This holds for functions that depend only on their arguments, the
 functions and <code>CFG</code> of <code>v01_functions/</code>, the
 attached packages and the seed. pbn does not copy the R options to the
 workers.</p>
+<p>Each worker runs with 1 thread. Without this, packages such as
+data.table, fixest and a threaded BLAS start many threads in each
+worker. The computer then runs far more threads than it has cores.
+<code><a href="../reference/run_plan.html">run_plan()</a></code> starts each worker with
+<code>OMP_NUM_THREADS</code>, <code>OPENBLAS_NUM_THREADS</code> and
+<code>MKL_NUM_THREADS</code> at 1, and calls
+<code>data.table::setDTthreads(1)</code> there. An analysis that needs
+more threads sets them in its own code, for example
+<code>data.table::setDTthreads(4)</code> at the top of its function.
+With <code>workers = 1</code>, pbn changes no thread setting.
+<code><a href="../reference/run_plan.html">?run_plan</a></code> gives the caveat of a threaded BLAS.</p>
 <p>An analysis MUST NOT change <code>CFG</code> or another object of
 <code>v01_functions/</code>. A later analysis in the same R session
 would see the change, so its result would depend on the analyses before
@@ -618,9 +629,9 @@ stacked results of <code>confounded</code> have a first column
 versions of R, pbn and the packages of this R session and of the
 workers, the date, the scenario and the simulation.
 <code>source_md5</code> holds the md5 of <code>v01_run.R</code> and of
-each file in <code>v01_functions/</code>. For the real data,
-<code>data_files</code> holds the name, the size and the modification
-time of each data file. The name is
+each file in <code>v01_functions/</code> but <code>blocks.R</code>. For
+the real data, <code>data_files</code> holds the name, the size and the
+modification time of each data file. The name is
 <code>&lt;folder&gt;/&lt;path in the folder&gt;</code>, for example
 <code>main/d.csv</code>. It never holds the path of a folder. So the
 same files in another place give the same results, when the copy keeps
@@ -678,7 +689,7 @@ returns the other elements, with one warning:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: The manifest names the analysis kinds predicted in</span></span>
-<span><span class="co">#&gt; /tmp/RtmpW81cWA/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,</span></span>
+<span><span class="co">#&gt; /tmp/RtmpptkSA5/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,</span></span>
 <span><span class="co">#&gt; and that file is missing, for example in a clone of the repository.</span></span>
 <span><span class="co">#&gt; read_results() returns the other elements.</span></span>
 <span><span class="co">#&gt; [1] "manifest"   "exclusions" "table1"     "models"</span></span>
@@ -720,7 +731,7 @@ sections of the log of the run above:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ## When</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The run started 2026-11-17 22:33:34 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.</span></span>
+<span><span class="co">#&gt; The run started 2026-11-18 05:57:14 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ## Run</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -779,13 +790,13 @@ seconds:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Step                                               | Wall seconds |</span></span>
 <span><span class="co">#&gt; |----------------------------------------------------|-------------:|</span></span>
-<span><span class="co">#&gt; | run_plan()                                         |        12.57 |</span></span>
-<span><span class="co">#&gt; | save_results(): build, write and stack the results |         2.14 |</span></span>
-<span><span class="co">#&gt; | save_results(): the checks of check_results()      |         1.21 |</span></span>
-<span><span class="co">#&gt; | save_results(): the expect_ functions              |         0.13 |</span></span>
-<span><span class="co">#&gt; | save_results() in total                            |         3.59 |</span></span>
-<span><span class="co">#&gt; | make_outputs(): real                               |         0.67 |</span></span>
-<span><span class="co">#&gt; | make_outputs(): known                              |         0.45 |</span></span>
+<span><span class="co">#&gt; | run_plan()                                         |        12.35 |</span></span>
+<span><span class="co">#&gt; | save_results(): build, write and stack the results |         2.17 |</span></span>
+<span><span class="co">#&gt; | save_results(): the checks of check_results()      |         1.11 |</span></span>
+<span><span class="co">#&gt; | save_results(): the expect_ functions              |         0.02 |</span></span>
+<span><span class="co">#&gt; | save_results() in total                            |         3.41 |</span></span>
+<span><span class="co">#&gt; | make_outputs(): real                               |         0.73 |</span></span>
+<span><span class="co">#&gt; | make_outputs(): known                              |         0.41 |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ### Scenarios</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -793,29 +804,29 @@ seconds:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Scenario   | Wall seconds |</span></span>
 <span><span class="co">#&gt; |------------|-------------:|</span></span>
-<span><span class="co">#&gt; | real       |         0.69 |</span></span>
-<span><span class="co">#&gt; | known      |         0.13 |</span></span>
-<span><span class="co">#&gt; | null       |         5.44 |</span></span>
-<span><span class="co">#&gt; | confounded |         5.27 |</span></span>
+<span><span class="co">#&gt; | real       |         0.60 |</span></span>
+<span><span class="co">#&gt; | known      |         0.11 |</span></span>
+<span><span class="co">#&gt; | null       |         5.16 |</span></span>
+<span><span class="co">#&gt; | confounded |         5.13 |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ### Data steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Data | Scenario   | Step         | Calls | Median | Maximum | Share |</span></span>
 <span><span class="co">#&gt; |------|------------|--------------|------:|-------:|--------:|------:|</span></span>
 <span><span class="co">#&gt; | d    | real       | raw          |     1 |   0.02 |    0.02 |  0.2% |</span></span>
-<span><span class="co">#&gt; | d    | real       | clean        |     1 |   0.36 |    0.36 |  3.6% |</span></span>
+<span><span class="co">#&gt; | d    | real       | clean        |     1 |   0.30 |    0.30 |  3.1% |</span></span>
 <span><span class="co">#&gt; | d    | real       | cohort       |     1 |   0.01 |    0.01 |  0.1% |</span></span>
-<span><span class="co">#&gt; | d    | real       | after_cohort |     1 |   0.03 |    0.03 |  0.3% |</span></span>
+<span><span class="co">#&gt; | d    | real       | after_cohort |     1 |   0.02 |    0.02 |  0.2% |</span></span>
 <span><span class="co">#&gt; | d    | known      | raw          |     1 |   0.00 |    0.00 |  0.0% |</span></span>
 <span><span class="co">#&gt; | d    | known      | clean        |     1 |   0.01 |    0.01 |  0.1% |</span></span>
 <span><span class="co">#&gt; | d    | known      | cohort       |     1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.1% |</span></span>
+<span><span class="co">#&gt; | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.0% |</span></span>
 <span><span class="co">#&gt; | d    | null       | raw          |   140 |   0.00 |    0.02 |  0.7% |</span></span>
-<span><span class="co">#&gt; | d    | null       | clean        |   140 |   0.01 |    0.22 |   14% |</span></span>
-<span><span class="co">#&gt; | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.6% |</span></span>
-<span><span class="co">#&gt; | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  6.7% |</span></span>
+<span><span class="co">#&gt; | d    | null       | clean        |   140 |   0.01 |    0.20 |   13% |</span></span>
+<span><span class="co">#&gt; | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.5% |</span></span>
+<span><span class="co">#&gt; | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  7.0% |</span></span>
 <span><span class="co">#&gt; | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.5% |</span></span>
-<span><span class="co">#&gt; | d    | confounded | clean        |   140 |   0.01 |    0.01 |   11% |</span></span>
+<span><span class="co">#&gt; | d    | confounded | clean        |   140 |   0.01 |    0.02 |   12% |</span></span>
 <span><span class="co">#&gt; | d    | confounded | cohort       |   140 |   0.00 |    0.00 |  1.4% |</span></span>
 <span><span class="co">#&gt; | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  6.3% |</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -826,18 +837,18 @@ seconds:</p>
 <span><span class="co">#&gt; | real       | table1    |        1 |   0.00 |    0.00 |  0.0% |</span></span>
 <span><span class="co">#&gt; | real       | models    |        1 |   0.12 |    0.12 |  1.2% |</span></span>
 <span><span class="co">#&gt; | real       | predicted |        1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | known      | table1    |        1 |   0.01 |    0.01 |  0.1% |</span></span>
-<span><span class="co">#&gt; | known      | models    |        1 |   0.01 |    0.01 |  0.1% |</span></span>
+<span><span class="co">#&gt; | known      | table1    |        1 |   0.00 |    0.00 |  0.1% |</span></span>
+<span><span class="co">#&gt; | known      | models    |        1 |   0.00 |    0.00 |  0.1% |</span></span>
 <span><span class="co">#&gt; | known      | crude     |        1 |   0.01 |    0.01 |  0.1% |</span></span>
 <span><span class="co">#&gt; | known      | predicted |        1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | null       | table1    |      140 |   0.00 |    0.01 |  4.0% |</span></span>
-<span><span class="co">#&gt; | null       | models    |      140 |   0.01 |    0.11 |   11% |</span></span>
-<span><span class="co">#&gt; | null       | crude     |      140 |   0.01 |    0.01 |  9.2% |</span></span>
-<span><span class="co">#&gt; | null       | predicted |      140 |   0.00 |    0.01 |  2.9% |</span></span>
-<span><span class="co">#&gt; | confounded | table1    |      140 |   0.00 |    0.01 |  3.9% |</span></span>
-<span><span class="co">#&gt; | confounded | models    |      140 |   0.01 |    0.01 | 10.0% |</span></span>
-<span><span class="co">#&gt; | confounded | crude     |      140 |   0.01 |    0.01 |  8.3% |</span></span>
-<span><span class="co">#&gt; | confounded | predicted |      140 |   0.00 |    0.00 |  2.7% |</span></span>
+<span><span class="co">#&gt; | null       | table1    |      140 |   0.00 |    0.01 |  3.7% |</span></span>
+<span><span class="co">#&gt; | null       | models    |      140 |   0.01 |    0.12 |   11% |</span></span>
+<span><span class="co">#&gt; | null       | crude     |      140 |   0.01 |    0.01 |  9.0% |</span></span>
+<span><span class="co">#&gt; | null       | predicted |      140 |   0.00 |    0.01 |  3.0% |</span></span>
+<span><span class="co">#&gt; | confounded | table1    |      140 |   0.00 |    0.01 |  3.7% |</span></span>
+<span><span class="co">#&gt; | confounded | models    |      140 |   0.01 |    0.01 |   10% |</span></span>
+<span><span class="co">#&gt; | confounded | crude     |      140 |   0.01 |    0.01 |  8.8% |</span></span>
+<span><span class="co">#&gt; | confounded | predicted |      140 |   0.00 |    0.01 |  2.9% |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Median and Maximum are the seconds of one call. Share is the part of the seconds of all data steps and analyses of the run.</span></span></code></pre></div>
 <p>The section History has one line for each run of this version, oldest
@@ -983,8 +994,8 @@ copy of the file first.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"rhs &lt;-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "    rhs &lt;- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""</span></span>
 <span><span class="va">red</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span>status <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 22:33.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 22:33.</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-18 05:57.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-18 05:57.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"known"</span>, <span class="st">"check.csv"</span><span class="op">)</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; "assertion","expected","observed","pass"</span></span>
 <span><span class="co">#&gt; "outcome events in group b",6,6,TRUE</span></span>
@@ -998,14 +1009,14 @@ results files stay, so that you can find the fault, but
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"known"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpW81cWA/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpW81cWA/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpW81cWA/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpptkSA5/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpptkSA5/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpptkSA5/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
 <p>Put the copy back, and run the script again. Its assertions pass.</p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"fit_models_copy.R"</span><span class="op">)</span>, <span class="va">file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">green</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 22:33.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 22:33.</span></span></code></pre></div>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-18 05:57.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-18 05:57.</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-cleaning-step-that-drops-a-row">A cleaning step that drops a row<a class="anchor" aria-label="anchor" href="#a-cleaning-step-that-drops-a-row"></a>
@@ -1062,8 +1073,8 @@ imputations. The data comes from the cache again:</p>
 <span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"upper = mean(est) + z * se)"</span>, <span class="st">"upper = mean(est) + z * se, n_imp = length(est))"</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">code</span>, <span class="va">file</span><span class="op">)</span></span>
 <span><span class="va">third</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-17 22:33.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-17 22:33.</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-18 05:57.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-18 05:57.</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">models</span></span>
 <span><span class="co">#&gt;   adjust    term estimate        se     lower     upper n_imp</span></span>
 <span><span class="co">#&gt; 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3</span></span></code></pre></div>
@@ -1085,12 +1096,12 @@ their scenarios:</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">log</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^## History"</span>, <span class="va">log</span><span class="op">)</span> <span class="op">+</span> <span class="fl">4</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">log</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; | Started             | Result                   | Scenarios   |  Workers | run_plan() | save_results() | make_outputs() | pbn        |</span></span>
 <span><span class="co">#&gt; |---------------------|--------------------------|-------------|---------:|-----------:|---------------:|---------------:|------------|</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:33:34 | All 9 assertions passed  | 4           |        2 |      12.57 |           3.59 |           1.12 | 2026.11.23 |</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:33:53 | 1 of 2 assertions failed | real, known |        2 |       1.69 |           0.03 |                | 2026.11.23 |</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:33:56 | All 2 assertions passed  | real, known |        2 |       1.65 |           0.04 |           1.05 | 2026.11.23 |</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:33:59 | 9 of 9 analyses failed   | real, known |        2 |       1.86 |                |                | 2026.11.23 |</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:34:02 | All 2 assertions passed  | real, known |        2 |       1.60 |           0.04 |           1.07 | 2026.11.23 |</span></span>
-<span><span class="co">#&gt; | 2026-11-17 22:34:05 | All 2 assertions passed  | real, known |        2 |       1.93 |           0.04 |           1.07 | 2026.11.23 |</span></span></code></pre></div>
+<span><span class="co">#&gt; | 2026-11-18 05:57:14 | All 9 assertions passed  | 4           |        2 |      12.35 |           3.41 |           1.14 | 2026.11.23 |</span></span>
+<span><span class="co">#&gt; | 2026-11-18 05:57:32 | 1 of 2 assertions failed | real, known |        2 |       1.54 |           0.03 |                | 2026.11.23 |</span></span>
+<span><span class="co">#&gt; | 2026-11-18 05:57:35 | All 2 assertions passed  | real, known |        2 |       1.55 |           0.03 |           1.05 | 2026.11.23 |</span></span>
+<span><span class="co">#&gt; | 2026-11-18 05:57:38 | 9 of 9 analyses failed   | real, known |        2 |       1.80 |                |                | 2026.11.23 |</span></span>
+<span><span class="co">#&gt; | 2026-11-18 05:57:41 | All 2 assertions passed  | real, known |        2 |       1.57 |           0.03 |           1.01 | 2026.11.23 |</span></span>
+<span><span class="co">#&gt; | 2026-11-18 05:57:44 | All 2 assertions passed  | real, known |        2 |       1.81 |           0.03 |           1.04 | 2026.11.23 |</span></span></code></pre></div>
 <p>The cache key holds the md5 of each <code>data_*.R</code> file of
 <code>v01_functions/</code>, and <code>CFG$data</code>. It also holds
 the code of each step, the fingerprint of the raw data, the settings,
@@ -1125,7 +1136,7 @@ lines load that analysis:</p>
 <div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">upto</span> <span class="op">&lt;-</span> <span class="va">script</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"run_plan"</span>, <span class="va">script</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/eval.html" class="external-link">eval</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse</a></span><span class="op">(</span>text <span class="op">=</span> <span class="va">upto</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpW81cWA/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpptkSA5/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
 <span><span class="va">argset</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/get_data.html">get_argset</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"confounded"</span>, <span class="fl">3</span>, <span class="st">"models"</span><span class="op">)</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/get_data.html">get_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"confounded"</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.</span></span>
@@ -1208,9 +1219,10 @@ gets its value on the line that names it.</p>
 <span><span class="co">#&gt; PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span></span>
 <span><span class="co">#&gt; PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span></span>
 <span><span class="co">#&gt; PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()</span></span>
-<span><span class="co">#&gt; PASS  blocks_list  blocks, when the functions folder has it, is a list of named functions</span></span>
+<span><span class="co">#&gt; PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span></span>
+<span><span class="co">#&gt; PASS  real_results_are_fake  no real results on the disk come from fake real data</span></span>
 <span><span class="co">#&gt; PASS  unknown_path  the house layout names every top-level path</span></span>
-<span><span class="co">#&gt; 17 PASS, 0 WARN, 0 FAIL, 0 OFF</span></span></code></pre></div>
+<span><span class="co">#&gt; 18 PASS, 0 WARN, 0 FAIL, 0 OFF</span></span></code></pre></div>
 <p>In a non-interactive R session, <code><a href="../reference/check_project.html">check_project()</a></code> quits R
 with status 1 when a rule fails. Add a file with a capital letter in its
 name, and run <code>check_project.R</code> in a new R session:</p>
@@ -1222,7 +1234,7 @@ name, and run <code>check_project.R</code> in a new R session:</p>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"FAIL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\r?\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter</span></span>
-<span><span class="co">#&gt; 16 PASS, 0 WARN, 1 FAIL, 0 OFF</span></span>
+<span><span class="co">#&gt; 17 PASS, 0 WARN, 1 FAIL, 0 OFF</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><code>pbn.yml</code> MAY change the set. Under <code>rules</code>, it
 changes the level or a parameter of a rule. Under <code>allow</code>, it
@@ -1256,12 +1268,17 @@ letter:</p>
 <span><span class="co">#&gt; PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span></span>
 <span><span class="co">#&gt; PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span></span>
 <span><span class="co">#&gt; PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()</span></span>
-<span><span class="co">#&gt; PASS  blocks_list  blocks, when the functions folder has it, is a list of named functions</span></span>
+<span><span class="co">#&gt; PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span></span>
+<span><span class="co">#&gt; PASS  real_results_are_fake  no real results on the disk come from fake real data</span></span>
 <span><span class="co">#&gt; OFF  unknown_path  off in pbn.yml</span></span>
-<span><span class="co">#&gt; 15 PASS, 1 WARN, 0 FAIL, 1 OFF</span></span></code></pre></div>
+<span><span class="co">#&gt; 16 PASS, 1 WARN, 0 FAIL, 1 OFF</span></span></code></pre></div>
 <p>The allowed file is now a WARN, and <code>unknown_path</code> is OFF.
-<code><a href="../reference/check_project.html">?check_project</a></code> lists the levels, the parameters, and the
-locked rules that <code>pbn.yml</code> cannot change.</p>
+An entry covers its path and each path under it, with or without a final
+<code>/</code>. So <code>lower_case_names: [archive]</code> allows each
+finding in <code>archive/</code> at any depth, and no finding in
+<code>archive2/</code>. <code><a href="../reference/check_project.html">?check_project</a></code> lists the levels,
+the parameters, and the locked rules that <code>pbn.yml</code> cannot
+change.</p>
 </div>
 <div class="section level2">
 <h2 id="manuscripts">Manuscripts<a class="anchor" aria-label="anchor" href="#manuscripts"></a>
@@ -1316,28 +1333,45 @@ character vector of lines, and it formats the numbers itself:</p>
 <span>    <span class="op">)</span></span>
 <span>  <span class="op">}</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>The rule <code>blocks_list</code> of <code><a href="../reference/check_project.html">check_project()</a></code>
-fails a <code>blocks</code> that is not a list of named functions. The
-new file changes the md5 of the functions folder, so run the project
-again. Then start the project in this R session, as you do at the
-console in the project folder:</p>
+<p>Write <code>blocks</code> in <code>v01_functions/blocks.R</code>
+only. pbn leaves that file out of <code>manifest$source_md5</code>, so a
+change of a block needs no new run. The rule <code>blocks_list</code> of
+<code><a href="../reference/check_project.html">check_project()</a></code> fails each of these:</p>
+<ul>
+<li>a <code>blocks</code> in another file,</li>
+<li>a <code>blocks</code> that is not a list of named functions,</li>
+<li>other code at the top level of <code>blocks.R</code>, such as
+<code><a href="https://rdrr.io/r/base/library.html" class="external-link">library()</a></code> or <code><a href="https://rdrr.io/r/base/options.html" class="external-link">options()</a></code>,</li>
+<li>a name of <code>blocks.R</code> that another file assigns too, or
+that other code uses.</li>
+</ul>
+<p>When <code>blocks.R</code> breaks one of the last two,
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> puts it back into
+<code>manifest$source_md5</code>.</p>
+<p>A block runs at the console, where the packages of the run script MAY
+be missing. So a block function names the package of each call, for
+example <code><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table::data.table()</a></code>. The sections above
+changed other code of the project, so run it again here. Then start the
+project in this R session, as you do at the console in the project
+folder:</p>
 <div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="va">run_file</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">out</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
 <span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"../data"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpW81cWA/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span></code></pre></div>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpptkSA5/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-one-file">The one file<a class="anchor" aria-label="anchor" href="#the-one-file"></a>
 </h3>
 <p><code><a href="../reference/to_one_file.html">pbn::to_one_file()</a></code> writes <code>v01_one_file.R</code> in
-the project folder. <code>home</code> and <code>folders</code> are the
-paths on the server, and <code>folders</code> MUST name the same folders
-as the project:</p>
+the project folder. It needs no results, so you MAY write and read the
+file before the first full run. <code>home</code> and
+<code>folders</code> are the paths on the server, and
+<code>folders</code> MUST name the same folders as the project:</p>
 <div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/to_one_file.html">to_one_file</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"N:/durable/project"</span>, folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"N:/durable/data"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: wrote v01_one_file.R in the project folder /tmp/RtmpW81cWA/pbn_get_started/project: 220 lines, 8575 bytes, the longest line 138 characters.</span></span></code></pre></div>
+<span><span class="co">#&gt; pbn: wrote v01_one_file.R in the project folder /tmp/RtmpptkSA5/pbn_get_started/project: 219 lines, 8506 bytes, the longest line 138 characters.</span></span></code></pre></div>
 <p>The file starts with a header and the call of
 <code><a href="../reference/initialize_project.html">pbn::initialize_project()</a></code> with the paths of the server:</p>
 <div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
@@ -1346,7 +1380,7 @@ as the project:</p>
 <span><span class="co">#&gt; # v01_one_file.R: the run of the real data of the project project, version v01,</span></span>
 <span><span class="co">#&gt; # as one file for a computer without the project folder.</span></span>
 <span><span class="co">#&gt; #</span></span>
-<span><span class="co">#&gt; # pbn 2026.11.23 generated it on 2026-11-17 from the project folder project.</span></span>
+<span><span class="co">#&gt; # pbn 2026.11.23 generated it on 2026-11-18 from the project folder project.</span></span>
 <span><span class="co">#&gt; # Do not edit: change the project and generate again with pbn::to_one_file().</span></span>
 <span><span class="co">#&gt; #</span></span>
 <span><span class="co">#&gt; # The md5 of each file in this file:</span></span>
@@ -1413,8 +1447,12 @@ next:</p>
 <span><span class="co">#&gt; #   pbn::show_block(1)</span></span>
 <span><span class="co">#&gt; #   pbn::show_block(1, page = 2)</span></span></code></pre></div>
 <p>The file is ASCII with LF line ends, because it goes through a
-clipboard. Put it in git: it is what ran on the server.
-<code><a href="../reference/to_one_file.html">?to_one_file</a></code> gives the rules.</p>
+clipboard. A label MAY hold a character that is not ASCII, such as the
+sign greater than or equal. pbn writes it in the file as its escape,
+here <code>"\u2265"</code>, and the code of the file is
+<code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to the code of the project. A name that is not
+ASCII stops <code><a href="../reference/to_one_file.html">to_one_file()</a></code>. Put the file in git: it is what
+ran on the server. <code><a href="../reference/to_one_file.html">?to_one_file</a></code> gives the rules.</p>
 </div>
 <div class="section level3">
 <h3 id="the-local-proof">The local proof<a class="anchor" aria-label="anchor" href="#the-local-proof"></a>
@@ -1422,14 +1460,29 @@ clipboard. Put it in git: it is what ran on the server.
 <p><code><a href="../reference/check_one_file.html">pbn::check_one_file()</a></code> runs the file in a new R session
 on this computer. The project folder there is an empty folder, and the
 folder <code>main</code> is a copy that keeps the modification times. It
-compares the real results of that run with those of the project, and
-prints PASS or the first difference:</p>
+compares the real results of that run with those of the project. Then it
+runs each block on both results in a new R session, which attaches no
+package of the run script. It compares each page as text. It prints PASS
+or the first difference:</p>
 <div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">said</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">pass</span> <span class="op">&lt;-</span> <span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_one_file.html">check_one_file</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<pre><code><span><span class="co">#&gt; PASS: the file of pbn::to_one_file() gives the real results of the project, apart from manifest$run_date, manifest$packages and manifest$data_cache$from_cache.</span></span></code></pre>
+<pre><code><span><span class="co">#&gt; PASS: the file of pbn::to_one_file() gives the real results of the project, apart from manifest$run_date, manifest$packages, manifest$data_cache$from_cache and manifest$fake_real_data. Each page of the 3 blocks prints the same for both.</span></span></code></pre>
 <p>Run it before you go to the server. It cannot find a difference of
-the server itself, such as another version of R or of a package
-there.</p>
+the server itself, such as another version of R or of a package there.
+When the code changed after the last run, it says that the results are
+older than the code, and runs nothing. Without real results, it runs the
+checks of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> and stops.</p>
+<p>On a computer without the real data, the folders MAY hold fake files
+in the formats of the real data. The code that reads the real data then
+runs there. Say so in the run script of that computer. pbn then labels
+the real results as fake real data in the run log, the output and the
+blocks:</p>
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"../data"</span><span class="op">)</span>, fake_real_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
+<p>The file of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> never holds
+<code>fake_real_data</code>, and <code><a href="../reference/check_one_file.html">check_one_file()</a></code> leaves
+that field out of the comparison. <code><a href="../reference/initialize_project.html">?initialize_project</a></code> gives
+the rules.</p>
 </div>
 <div class="section level3">
 <h3 id="on-the-server">On the server<a class="anchor" aria-label="anchor" href="#on-the-server"></a>
@@ -1444,9 +1497,9 @@ blocks.</li>
 <li>Take a screenshot of each page.</li>
 </ol>
 <p>These are the index and block 1 of this project:</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/show_blocks.html">show_blocks</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: 3 blocks of v01, from the real results of 2026-11-17:</span></span>
+<span><span class="co">#&gt; pbn: 3 blocks of v01, from the real results of 2026-11-18:</span></span>
 <span><span class="co">#&gt;   1  Table 1                              6 rows, 1 page</span></span>
 <span><span class="co">#&gt;   2  Results para 1: exclusions           1 row, 1 page</span></span>
 <span><span class="co">#&gt;   3  Results para 2: adjusted odds ratio  1 row, 1 page</span></span>
@@ -1492,10 +1545,9 @@ for example <code>data$d[1, x := 0]</code>. Copy the data first with
 <code>v01_functions/</code>, such as <code>CFG</code>. It does not find
 a change of a function inside the object, a change inside an environment
 of the object, or a change by a data function.</li>
-<li>
-<code>workers</code> limits the number of R sessions. It does not
-limit the threads that R or the BLAS library starts in each of
-them.</li>
+<li>With 2 or more workers, each worker has 1 thread. A threaded BLAS
+MAY then give a matrix product that differs in its last digits from that
+of <code>workers = 1</code>.</li>
 <li>
 <code>workers</code> limits the R sessions of pbn only. An analysis
 that starts its own processes in a worker multiplies them, for example

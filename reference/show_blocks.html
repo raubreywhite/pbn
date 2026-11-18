@@ -106,6 +106,16 @@ element. The function formats the numbers for the manuscript, and
 <span>  <span class="st">"Table 1"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="va">results</span><span class="op">$</span><span class="va">table1</span>,</span>
 <span>  <span class="st">"Results para 1: exclusions"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="va">results</span><span class="op">$</span><span class="va">exclusions</span></span>
 <span><span class="op">)</span></span></code></pre><p></p></div>
+<p>Put <code>blocks</code> in the file <code>&lt;version&gt;_functions/blocks.R</code>, and nowhere
+else. pbn leaves that file out of <code>manifest$source_md5</code>, so a change of
+a block does not make the results stale. The rule <code>blocks_list</code> of
+<code><a href="check_project.html">check_project()</a></code> fails a use of a name of that file in the other code,
+because the run then depends on it.</p>
+<p>A block MAY run where the packages of the run script are missing.
+Examples are the console after <code><a href="initialize_project.html">initialize_project()</a></code> and the new R
+session of <code><a href="check_one_file.html">check_one_file()</a></code>. <code>show_block()</code> attaches no package. So a block function MUST name the package of each function that
+it calls, for example <code><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class="external-link">data.table::data.table()</a></code>. When R does not find a
+function, the error says so.</p>
 <p>The results include the kinds of <code>gitexclude</code>, so a block MAY show rows
 for each person, for example to find a fault. What a person copies or
 screenshots from the screen is the responsibility of that person.</p>
@@ -121,7 +131,11 @@ it prints the error in the place of the rows, and goes on.</p>
 <p><code>show_block()</code> prints these lines:</p><ol><li><p>the number and the name of the block,</p></li>
 <li><p>the page, for example <code>page 2 of 4, rows 36 to 70 of 140</code>,</p></li>
 <li><p>the rows of the page.</p></li>
-</ol><p>It stops on a block function that stops, and the error names the block.
+</ol><p>Real results MAY come from fake real data, see <code>fake_real_data</code> of
+<code><a href="initialize_project.html">initialize_project()</a></code>. Then <code>show_block()</code> prints the line
+<code>FAKE REAL DATA</code> between the first two lines. <code>show_blocks()</code> prints it
+under its first line.</p>
+<p>It stops on a block function that stops, and the error names the block.
 During the call, the option <code>width</code> is 270 and the row names are off. No
 option of R or of data.table cuts a row or a column, and a wide table
 wraps its columns. Both functions record the options before a block

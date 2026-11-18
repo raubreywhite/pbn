@@ -110,11 +110,33 @@ The `manifest` is a list with these elements:
   is an empty list when there are none.
 
 - `source_md5`, the md5 of `<version>_run.R` and of each file in
-  `<version>_functions/`, named by the path relative to `home`.
+  `<version>_functions/` at any depth, also a file that is not an `.R`
+  file, named by the path relative to `home`. The one file that it MAY
+  leave out is `<version>_functions/blocks.R`, the blocks of
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md).
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  computes it before it sources the files. The rule `manifest_source`
-  needs the run script in it, so `save_results()` stops when
-  `<version>_run.R` did not exist.
+  leaves it out only when it cannot change the results, which is when
+  each of these holds:
+
+  - it parses.
+
+  - each top-level expression assigns with `<-` or `=` a name to
+    `function(...)`, or `blocks` to `list(...)`.
+
+  - no other file of the folder assigns one of its names.
+
+  - no other file and no run script uses one of its names.
+
+  Otherwise `source_md5` holds it, also when the rule `blocks_list` of
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  is `warn` or `off`. A change of a blocks file of that shape thus keeps
+  the results current.
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  computes the md5 before it sources the files. The cache key of
+  [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) holds
+  the md5 of the files `data_*.R` only, so it never held `blocks.R`. The
+  rule `manifest_source` needs the run script in `source_md5`, so
+  `save_results()` stops when `<version>_run.R` did not exist.
 
 - For the scenario `"real"` only, `data_files`, the fingerprint of the
   files under the folders of `folders` of
@@ -134,6 +156,10 @@ The `manifest` is a list with these elements:
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   ran.
 
+- For the scenario `"real"` only, `fake_real_data`, `TRUE` or `FALSE`:
+  the argument `fake_real_data` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+
 - For a fake scenario only, `fake_md5`, one md5 of the code of the data
   functions of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
@@ -145,7 +171,14 @@ The `manifest` is a list with these elements:
 - `n_rows_data`, a named integer vector with the number of rows of each
   data element. A list of data.frames with one number of rows, for
   example a list of imputed data sets, has the rows of one of them. Each
-  other element that is not a data.frame has `NA`. The analysis
+  other element that is not a data.frame has `NA`.
+
+- `n_rows_lists`, a named list with one entry for each data element that
+  is a list of data.frames with 2 or more numbers of rows. The entry is
+  an integer vector with the rows of each data.frame, in the order of
+  the list. Such an element has `NA` in `n_rows_data`. The list is empty
+  when no data element is such a list. The rule `no_row_per_person`
+  checks each of these numbers. The analysis
   `<scenario>__sim_<kkkk>__pbn_n_rows` of
   [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
   counts them where the data is, also on a worker. The rule
@@ -198,9 +231,14 @@ step that fails:
 3.  For each scenario, it replaces `check.csv` with one failed
     assertion, `not checked yet`, so that
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-    refuses the new results until step 4 checks them. Then it writes the
-    files of the section The files. The files of the scenarios that are
-    not in `scenarios` stay as they are.
+    refuses the new results until step 4 checks them. It deletes the
+    folders `output/` and `output_fake_data/` of each scenario that it
+    writes, with one printed line. That output belongs to the results of
+    an earlier run. The section Output of the run log then says that
+    this run made no output, until
+    [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+    runs. Then it writes the files of the section The files. The files
+    of the scenarios that are not in `scenarios` stay as they are.
 
 4.  For each scenario with a function `expect_<scenario>()`, it calls
     that function on the results of the scenario. `expect_real()` is
@@ -407,10 +445,13 @@ The `manifest` is that of simulation 1. In it, `sim` and `n_rows_data`
 are `NA`, `sims` is the number of simulations, and `stacked` is `TRUE`.
 The columns `from_cache` and `cache_key` of `data_cache` are `NA`. The
 counts `n_rows_before_exclusions` and `n_rows_after_exclusions` are `NA`
-too. The element `n_rows_by_sim` holds the counts of each simulation. It
-is a data.frame with one row for each simulation and data element. Its
-columns are `sim`, `data`, `n_rows_data`, `n_rows_before_exclusions` and
-`n_rows_after_exclusions`. The rule `no_row_per_person` of
+too, and `n_rows_lists` is an empty list. The element `n_rows_by_sim`
+holds the counts of each simulation. It is a data.frame with one row for
+each simulation and data element. Its columns are `sim`, `data`,
+`n_rows_data`, `n_rows_before_exclusions` and `n_rows_after_exclusions`.
+Each data.frame of an entry of `n_rows_lists` adds a row with the `data`
+`<element>[[i]]` and its rows in `n_rows_data`. The rule
+`no_row_per_person` of
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
 reads it.
 
@@ -478,7 +519,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpSHRrJ6/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpTKEnl2/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

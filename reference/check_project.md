@@ -219,12 +219,13 @@ The rules, with their level in the set `house_2026_11_17`:
   `<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)`.
   A path under `allow` allows each finding of one file.
 
-- `blocks_list` (FAIL): the functions folder defines the object `blocks`
-  of
-  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
-  and one of these is true:
+- `blocks_list` (FAIL): for each functions folder, one of these is true:
 
-  - more than one top-level assignment assigns it.
+  - a file other than `vNN_functions/blocks.R` assigns `blocks` at its
+    top level. pbn leaves `blocks.R` out of `manifest$source_md5`, so
+    the blocks MUST be in that file.
+
+  - more than one top-level assignment of `blocks.R` assigns it.
 
   - its value is not a call of
     [`list()`](https://rdrr.io/r/base/list.html), or the list is empty.
@@ -234,7 +235,35 @@ The rules, with their level in the set `house_2026_11_17`:
   - an element is not a `function`, or the name of a function that a
     top-level assignment of the functions folder defines.
 
-  A project without `blocks` passes.
+  - a top-level expression of `blocks.R` is not an assignment with `<-`
+    or `=` of a name to `function(...)`, or of `blocks` to `list(...)`.
+    Examples are [`library(x)`](https://rdrr.io/r/base/library.html),
+    `options(...)`, `set.seed(1)`, an `if` and `fmt <- sprintf`. Such
+    code runs when pbn sources the folder, so it can change the results.
+
+  - a name that `blocks.R` assigns at its top level, and another file of
+    the folder assigns too. The detail names both places.
+
+  - another file of the folder, or `vNN_run.R`, uses a name that
+    `blocks.R` assigns at its top level. Examples are a helper `fmt()`,
+    and `CFG` after `CFG$labels <- ...` in `blocks.R`. The run would
+    then depend on a file outside `source_md5`. A name after `$` or `@`
+    and the name of an argument do not count.
+
+  The detail is `<file>:<line>: <what>`. A folder without `blocks` and
+  without `blocks.R` passes.
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  makes the same checks of `blocks.R`, and puts it back into
+  `manifest$source_md5` when one fails, also when this rule is `warn` or
+  `off`.
+
+- `real_results_are_fake` (WARN): a file `vNN_results/real/results.qs2`
+  holds `manifest$fake_real_data` `TRUE`. Its run had
+  `fake_real_data = TRUE` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+  so its numbers are not those of the real data. It passes when no such
+  file is in the list of files. In a git repository, a real results file
+  that git ignores is not in the list, so the rule does not see it.
 
 - `unknown_path` (WARN): the house layout does not name a top-level file
   or folder. The layout names `vNN_run.R`, `vNN_functions/`,
@@ -296,8 +325,11 @@ form `lower_case_names: warn` changes the level only. `forbid` MAY list
 fewer constructs than the house set.
 
 The key `allow` MAY list paths for each rule, relative to `path`. A path
-allows the findings with exactly that path. A folder MAY end in `/`, and
-it does not allow the files in it. An allowed finding is WARN, with
+allows the findings with that path and the findings of each path under
+it. So the folder `adhoc` allows `adhoc/Notes.txt` and
+`adhoc/Old/Data.csv`, but not `adhoc2/x.R`. A final `/` changes nothing:
+`adhoc` and `adhoc/` are the same entry. pbn does not look on the disk
+for a file or a folder of that name. An allowed finding is WARN, with
 `(allowed)` at the end. A path that matches no finding is a WARN of the
 rule `allow`.
 
@@ -382,9 +414,10 @@ pbn::check_project(home)
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
 #> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()
-#> PASS  blocks_list  blocks, when the functions folder has it, is a list of named functions
+#> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
+#> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path
-#> 17 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 18 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

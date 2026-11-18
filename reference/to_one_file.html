@@ -86,7 +86,9 @@ lines, the size in bytes and the length of the longest line.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Call <code><a href="initialize_project.html">initialize_project()</a></code> for <code>version</code> first, in the project on this
 computer. <code>to_one_file()</code> takes the project from that call. It stops when
-the run script or a file of the functions folder changed after it.</p>
+the run script or a file of the functions folder changed after it. It
+needs no results. So you MAY generate and read the file before the first
+full run.</p>
 <p>The file holds these parts, in this order:</p><ol><li><p>A header with the version of pbn, the date, the project folder and the
 version. It also gives the md5 of each file in it and the workers.</p></li>
 <li><p><code>setwd(home)</code>, so that the run script runs in its project folder, as
@@ -107,14 +109,32 @@ the md5 of the files of this computer. On this computer,
 project.</p>
 <p>The functions <code>expect_&lt;scenario&gt;()</code> of the fake scenarios of
 <code>CFG$scenarios</code> are not in the file, because the run has the real data
-only. <code>expect_real()</code> stays. The fake data code stays, because it is
-inside the data functions.</p>
-<p><code>to_one_file()</code> stops when, and writes no file:</p><ul><li><p>the run script has not exactly one top-level call
+only. The comment lines directly above such a function go with it, up to
+a blank line or a line with code. <code>expect_real()</code> stays. The fake data
+code stays, because it is inside the data functions.</p>
+<p>The call of <code><a href="initialize_project.html">pbn::initialize_project()</a></code> in the file never has
+<code>fake_real_data</code>, because the server holds the real data. The run script
+MAY have it for this computer.</p>
+<p>The file is ASCII, because it goes through a clipboard, which can change
+a byte that is not ASCII. pbn reads each file of the project as UTF-8 and
+changes each character that is not ASCII on the parse data, token by
+token. The files of the project stay as they are:</p><ul><li><p>In a string, the character becomes its escape, <code>\uXXXX</code>, or
+<code>\UXXXXXXXX</code> beyond the BMP, for example <code>"\u2265"</code> for the sign
+greater than or equal. pbn writes such a string again from its value,
+in double quotes. So a raw string <code>r"(...)"</code> becomes a normal string,
+and an escape that the string held keeps its meaning. The code of the
+file is <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to the code of the project. Such a string gets
+the encoding mark <code>"UTF-8"</code> where the string of the project MAY have
+<code>"unknown"</code>, and <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> treats the two as equal.</p></li>
+<li><p>In a comment, the character becomes the text <code>&lt;U+XXXX&gt;</code>.</p></li>
+<li><p>In a name, for example a name in backticks, <code>to_one_file()</code> stops,
+because R reads a name only as it is written.</p></li>
+</ul><p><code>to_one_file()</code> stops when, and writes no file:</p><ul><li><p>the run script has not exactly one top-level call
 <code><a href="initialize_project.html">pbn::initialize_project()</a></code>, or not exactly one call
 <code>pbn::scenarios(CFG)</code> with no other argument. It names what it found.</p></li>
-<li><p>a file in the file holds a byte that is not ASCII, or a NUL. The error
-names the file and the line. The file goes through a clipboard, which
-can change such a byte.</p></li>
+<li><p>a file in the file holds a name that is not ASCII, a NUL, or a line
+that is not UTF-8. It also stops on a string that is not valid UTF-8
+after its escapes. The error names the file and the line.</p></li>
 <li><p><code>home</code>, a path of <code>folders</code> or the name of the project folder is not
 ASCII.</p></li>
 <li><p><code>folders</code> misses a folder of the project, or names one that the project
@@ -134,8 +154,9 @@ for Windows too, for example <code>"N:/durable/project"</code>.</p>
 <p>The file is always <code>&lt;version&gt;_one_file.R</code> in the folder of the project of
 the last <code><a href="initialize_project.html">initialize_project()</a></code> of this R session. The printed line names
 that folder.</p>
-<p>These are limits of the file:</p><ul><li><p>The comments of the code go into the file as they are written. So a
-comment with a path of this computer reaches the server.</p></li>
+<p>These are limits of the file:</p><ul><li><p>The comments of the code go into the file as they are written, with
+<code>&lt;U+XXXX&gt;</code> for a character that is not ASCII. So a comment with a path
+of this computer reaches the server.</p></li>
 <li><p>The rule <code>no_absolute_paths</code> of <code><a href="check_project.html">check_project()</a></code> does not see a path
 with one name such as <code>"/data"</code>, or a path that <code><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0()</a></code> or
 <code><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf()</a></code> builds. Such a path in the code reaches the server too.</p></li>

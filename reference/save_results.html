@@ -131,10 +131,23 @@ runs on one day with the same inputs and packages write the same bytes.</p></li>
 <li><p><code>settings</code>, the named list of the setting columns of the scenario. It is
 an empty list when there are none.</p></li>
 <li><p><code>source_md5</code>, the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
-<code>&lt;version&gt;_functions/</code>, named by the path relative to <code>home</code>.
-<code><a href="initialize_project.html">initialize_project()</a></code> computes it before it sources the files. The
-rule <code>manifest_source</code> needs the run script in it, so <code>save_results()</code>
-stops when <code>&lt;version&gt;_run.R</code> did not exist.</p></li>
+<code>&lt;version&gt;_functions/</code> at any depth, also a file that is not an <code>.R</code>
+file, named by the path relative to <code>home</code>. The one file that it MAY
+leave out is <code>&lt;version&gt;_functions/blocks.R</code>, the blocks of
+<code><a href="show_blocks.html">show_block()</a></code>. <code><a href="initialize_project.html">initialize_project()</a></code> leaves it out only when it
+cannot change the results, which is when each of these holds:</p><ul><li><p>it parses.</p></li>
+<li><p>each top-level expression assigns with <code>&lt;-</code> or <code>=</code> a name to
+<code>function(...)</code>, or <code>blocks</code> to <code>list(...)</code>.</p></li>
+<li><p>no other file of the folder assigns one of its names.</p></li>
+<li><p>no other file and no run script uses one of its names.</p></li>
+</ul><p>Otherwise
+<code>source_md5</code> holds it, also when the rule <code>blocks_list</code> of
+<code><a href="check_project.html">check_project()</a></code> is <code>warn</code> or <code>off</code>. A change of a blocks file of that
+shape thus keeps the results current. <code><a href="initialize_project.html">initialize_project()</a></code> computes the md5 before it
+sources the files. The cache key of <code><a href="add_data.html">add_data()</a></code> holds the md5 of the
+files <code>data_*.R</code> only, so it never held <code>blocks.R</code>. The rule
+<code>manifest_source</code> needs the run script in <code>source_md5</code>, so
+<code>save_results()</code> stops when <code>&lt;version&gt;_run.R</code> did not exist.</p></li>
 <li><p>For the scenario <code>"real"</code> only, <code>data_files</code>, the fingerprint of the
 files under the folders of <code>folders</code> of <code><a href="initialize_project.html">initialize_project()</a></code> when
 <code><a href="run_plan.html">run_plan()</a></code> started. It is a data.frame with the columns <code>file</code>, <code>size</code>
@@ -147,6 +160,8 @@ that the run read, also after a change of a file since
 modification times, give the same manifest.
 <code>save_results()</code> stops for <code>"real"</code> when a folder did not exist when
 <code><a href="initialize_project.html">initialize_project()</a></code> ran.</p></li>
+<li><p>For the scenario <code>"real"</code> only, <code>fake_real_data</code>, <code>TRUE</code> or <code>FALSE</code>:
+the argument <code>fake_real_data</code> of <code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
 <li><p>For a fake scenario only, <code>fake_md5</code>, one md5 of the code of the data
 functions of <code><a href="add_data.html">add_data()</a></code>, without their source references: each <code>fn</code>,
 and each step of the steps form. A change in a function that <code>fn</code> or a
@@ -155,7 +170,13 @@ the files of those functions.</p></li>
 <li><p><code>n_rows_data</code>, a named integer vector with the number of rows of each
 data element. A list of data.frames with one number of rows, for
 example a list of imputed data sets, has the rows of one of them. Each
-other element that is not a data.frame has <code>NA</code>. The
+other element that is not a data.frame has <code>NA</code>.</p></li>
+<li><p><code>n_rows_lists</code>, a named list with one entry for each data element that
+is a list of data.frames with 2 or more numbers of rows. The entry is
+an integer vector with the rows of each data.frame, in the order of the
+list. Such an element has <code>NA</code> in <code>n_rows_data</code>. The list is empty when
+no data element is such a list. The rule <code>no_row_per_person</code> checks
+each of these numbers. The
 analysis <code>&lt;scenario&gt;__sim_&lt;kkkk&gt;__pbn_n_rows</code> of <code><a href="add_analyses.html">add_analyses()</a></code> counts
 them where the data is, also on a worker. The rule <code>no_row_per_person</code>
 reads it.</p></li>
@@ -189,9 +210,13 @@ a failure, it prints each failed rule with <code><a href="https://rdrr.io/r/base
 file and stops.</p></li>
 <li><p>For each scenario, it replaces <code>check.csv</code> with one failed assertion,
 <code>not checked yet</code>, so that <code><a href="read_results.html">read_results()</a></code> refuses the new results
-until step 4 checks them. Then it writes the files of the section The
-files. The files of the scenarios that are not in <code>scenarios</code> stay as
-they are.</p></li>
+until step 4 checks them. It deletes the folders <code>output/</code> and
+<code>output_fake_data/</code> of each scenario that it writes, with one printed
+line. That output belongs to the results of an earlier run.
+The section Output of the run log then says that this run made no
+output, until <code><a href="make_outputs.html">make_outputs()</a></code> runs. Then it writes the files of the
+section The files. The files of the scenarios that are not in
+<code>scenarios</code> stay as they are.</p></li>
 <li><p>For each scenario with a function <code>expect_&lt;scenario&gt;()</code>, it calls that
 function on the results of the scenario. <code>expect_real()</code> is optional.
 The function MUST return a data.frame with at least one row and the
@@ -343,11 +368,13 @@ data.frame with a column <code>sim</code>, because pbn adds that column.</p>
 are <code>NA</code>, <code>sims</code> is the number of simulations, and <code>stacked</code> is <code>TRUE</code>.
 The columns <code>from_cache</code> and <code>cache_key</code> of <code>data_cache</code> are <code>NA</code>. The
 counts <code>n_rows_before_exclusions</code> and <code>n_rows_after_exclusions</code> are <code>NA</code>
-too. The element <code>n_rows_by_sim</code> holds the counts of each simulation. It
-is a data.frame with one row for each simulation and data element. Its
-columns are <code>sim</code>, <code>data</code>, <code>n_rows_data</code>, <code>n_rows_before_exclusions</code> and
-<code>n_rows_after_exclusions</code>. The rule <code>no_row_per_person</code> of
-<code><a href="check_results.html">check_results()</a></code> reads it.</p>
+too, and <code>n_rows_lists</code> is an empty list. The element <code>n_rows_by_sim</code>
+holds the counts of each simulation. It is a data.frame with one row for
+each simulation and data element. Its columns are <code>sim</code>, <code>data</code>,
+<code>n_rows_data</code>, <code>n_rows_before_exclusions</code> and <code>n_rows_after_exclusions</code>.
+Each data.frame of an entry of <code>n_rows_lists</code> adds a row with the <code>data</code>
+<code>&lt;element&gt;[[i]]</code> and its rows in <code>n_rows_data</code>. The rule
+<code>no_row_per_person</code> of <code><a href="check_results.html">check_results()</a></code> reads it.</p>
     </div>
     <div class="section level2">
     <h2 id="two-files">Two files<a class="anchor" aria-label="anchor" href="#two-files"></a></h2>
@@ -403,7 +430,7 @@ the section Stacking.</p></li>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span>, env <span class="op">=</span> <span class="va">env</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpSHRrJ6/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpTKEnl2/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>

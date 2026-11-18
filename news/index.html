@@ -237,6 +237,32 @@
 <li>
 <code>unknown_path</code> knows <code>vNN_one_file.R</code>, and the code rules do not read it.</li>
 <li>New <code><a href="../reference/show_blocks.html">show_blocks()</a></code> and <code><a href="../reference/show_blocks.html">show_block()</a></code> print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.</li>
+<li>
+<code><a href="../reference/to_one_file.html">to_one_file()</a></code> writes an ASCII file from code that is not ASCII. Each such character of a string becomes its escape <code>\uXXXX</code>, and of a comment the text <code>&lt;U+XXXX&gt;</code>. The code of the file is <code><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical()</a></code> to that of the project. A name that is not ASCII stops. Before, any such byte stopped.</li>
+<li>
+<code><a href="../reference/to_one_file.html">to_one_file()</a></code> drops the comment lines directly above a left-out <code>expect_</code> function. It stops with the file and the line on a string that is not valid UTF-8 after its escapes.</li>
+<li>
+<code>manifest$source_md5</code> leaves out <code>vNN_functions/blocks.R</code>, so a change of a block keeps the results current. <code><a href="../reference/check_one_file.html">check_one_file()</a></code> leaves it out too, also for older results.</li>
+<li>The rule <code>blocks_list</code> needs <code>blocks</code> in <code>vNN_functions/blocks.R</code> only. It fails a top-level expression of that file other than an assignment of a name to <code>function(...)</code> or of <code>blocks</code> to <code>list(...)</code>. It also fails a name that another file assigns too, and a use of one of its names in the other code. Its detail gives the file and the line.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> leaves <code>blocks.R</code> out of <code>source_md5</code> only when it passes these checks, also when the rule is off.</li>
+<li>
+<code><a href="../reference/save_results.html">save_results()</a></code> deletes <code>output/</code> and <code>output_fake_data/</code> of each scenario that it writes, with one printed line. The run log then says that the run made no output until <code><a href="../reference/make_outputs.html">make_outputs()</a></code> runs.</li>
+<li>
+<code><a href="../reference/check_one_file.html">check_one_file()</a></code> runs each block on both real results, in a new R session without the packages of the run script. It fails a block that stops or prints other text. Its PASS line counts the blocks.</li>
+<li>
+<code><a href="../reference/check_one_file.html">check_one_file()</a></code> says that the results are older than the code, and runs nothing, when a file of the project changed after the run. Without results, it runs the checks of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> and stops.</li>
+<li>A block that calls a function that R does not find stops with the hint to name its package. <code><a href="../reference/show_blocks.html">show_block()</a></code> attaches no package.</li>
+<li>An entry of <code>allow:</code> in <code>pbn.yml</code> covers its path and each path under it, with or without a final <code>/</code>. Before, a folder entry covered the folder only. An entry <code>/</code>, <code>.</code>, a path from <code>/</code> or a path with <code>..</code> stops.</li>
+<li>
+<code>run_plan(workers &gt; 1)</code> starts each worker with <code>OMP_NUM_THREADS</code>, <code>OPENBLAS_NUM_THREADS</code> and <code>MKL_NUM_THREADS</code> at 1, and calls <code>data.table::setDTthreads(1)</code> there. With 1 worker, nothing changes.</li>
+<li>In a log, each line of the display gives the time of its event, for example the end of a scenario. The lines come in that order. Before, each line had the time of the first line after 60 seconds.</li>
+<li>
+<code><a href="../reference/stamp_fake.html">stamp_fake()</a></code> puts one label over the whole figure of a patchwork. Before, the label was on its last panel. patchwork is in Suggests.</li>
+<li>A setting column of <code>CFG$scenarios</code> MAY have <code>NA</code> for <code>"real"</code>. <code>"real"</code> then has no such setting in its argsets, its cache key and its manifest.</li>
+<li>The manifest gains <code>n_rows_lists</code>, the rows of each data.frame of a list of data.frames with 2 or more numbers of rows. <code>no_row_per_person</code> checks each of them.</li>
+<li>New argument <code>fake_real_data</code> of <code><a href="../reference/initialize_project.html">initialize_project()</a></code>, for folders that hold fake files in the formats of the real data. The real manifest gains <code>fake_real_data</code>, and <code>manifest_data</code> fails a real manifest without it. The run log, <code><a href="../reference/make_outputs.html">make_outputs()</a></code>, <code><a href="../reference/stamp_fake.html">stamp_fake()</a></code> and the blocks label such results. All but the run log read the flag from the manifest of the real results, never from the R session. The file of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> never has the argument.</li>
+<li>New <code><a href="../reference/check_project.html">check_project()</a></code> rule <code>real_results_are_fake</code>, a warning while the real results on the disk come from fake real data. The set <code>house_2026_11_17</code> gets it and the new <code>blocks_list</code>, and its md5 changes before the first release.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

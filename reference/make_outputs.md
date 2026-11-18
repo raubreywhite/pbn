@@ -38,7 +38,15 @@ Call
 first. For each scenario of `scenarios`, `make_outputs()` does this:
 
 - `"real"`: it calls `fn(results, dir)` with
-  `dir = <version>_results/real/output/`.
+  `dir = <version>_results/real/output/`. The output is fake output when
+  the manifest of the real results on the disk has `fake_real_data`
+  `TRUE`. It then goes to `real/output_fake_data/`, as for a fake
+  scenario below. The manifest decides, and never the argument
+  `fake_real_data` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  in this R session. `make_outputs()` deletes the other of the two
+  folders of `"real"` with one printed line, so no output of an earlier
+  run on other data stays.
 
 - A fake scenario with `output = TRUE`: it calls `fn` with
   `dir = <version>_results/<scenario>/output_fake_data/`. Then it
@@ -50,10 +58,13 @@ first. For each scenario of `scenarios`, `make_outputs()` does this:
 
 - A fake scenario without `output = TRUE`: nothing.
 
-Before it calls `fn`, `make_outputs()` deletes the folder `dir` and
-creates it again. So no file of an earlier run stays. Keep no other file
-in that folder. It stops when the folder is still there afterwards, for
-example because another program holds a file open on Windows. After each
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+deletes `output/` and `output_fake_data/` of each scenario that it
+writes, so no output of an earlier run stays beside new results. Before
+it calls `fn`, `make_outputs()` deletes the folder `dir` and creates it
+again. So no file of an earlier run stays. Keep no other file in that
+folder. It stops when the folder is still there afterwards, for example
+because another program holds a file open on Windows. After each
 scenario, it prints one line with the folder and the number of files.
 
 After

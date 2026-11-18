@@ -130,8 +130,9 @@ numbers.</p></li>
 and in <code>real</code> of one simulation are the same.</p></li>
 <li><p>It is 10000 or more, so it differs from the seed <code>sim</code> of the data of
 simulations 1 to 9999.</p></li>
-</ul><p>The seed is a polynomial hash with base 257, modulo the prime 2147483629,
-of the code points of <code>"&lt;name&gt;__&lt;i&gt;__&lt;sim&gt;"</code>, plus 10000. Two analyses of
+</ul><p>The seed is <code>10000 + h %% 2147473629</code>. <code>h</code> is a polynomial hash with base
+257, modulo the prime 2147483629, of the code points of
+<code>"&lt;name&gt;__&lt;i&gt;__&lt;sim&gt;"</code>. Two analyses of
 one simulation with the same seed stop <code>add_analyses()</code> with an error
 that names both kinds.</p>
 <p>While <code><a href="run_plan.html">run_plan()</a></code> runs, an analysis fails when it changes the shared data

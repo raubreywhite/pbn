@@ -15,7 +15,7 @@ stamp_fake(q)
 
 - q:
 
-  A ggplot.
+  A ggplot, or a patchwork of ggplots.
 
 ## Value
 
@@ -24,13 +24,22 @@ stamp_fake(q)
 ## Details
 
 Call it in the figure code of the output function, before the figure is
-saved: `q <- pbn::stamp_fake(q)`. For `"real"`, and outside a call of
+saved: `q <- pbn::stamp_fake(q)`. For `"real"` on real data, and outside
+a call of
 [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
-it returns `q` unchanged. The label is on each panel.
+it returns `q` unchanged. For `"real"` whose manifest has
+`fake_real_data` `TRUE`, it adds the label.
 
-For a fake scenario, `stamp_fake()` needs the package ggplot2. It stops
-with an error when ggplot2 is not installed, and when `q` is not a
-ggplot.
+On a ggplot, the label is on each panel. On a patchwork, it is one label
+over the whole figure, with
+[`patchwork::inset_element()`](https://patchwork.data-imaginist.com/reference/inset_element.html).
+Without it, `+` would put the label on the last panel only.
+
+For a fake scenario, `stamp_fake()` needs the package ggplot2, and
+patchwork for a patchwork. It stops when the package is not installed.
+It also stops when `q` is not a ggplot or a patchwork, for example a
+grob or a gtable of `gridExtra::arrangeGrob()`. Stamp each ggplot before
+you combine it in such an object.
 
 ## See also
 

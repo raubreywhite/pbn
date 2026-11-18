@@ -55,11 +55,22 @@ the cluster, `run_plan()` sets the environment variable `R_LIBS` to
 these paths, and then it sets `R_LIBS` back. So a worker also finds a
 library that this R session added with
 [`.libPaths()`](https://rdrr.io/r/base/libPaths.html), for example the
-temporary library of `R CMD build`. Before the run, `run_plan()` gives
-each worker these:
+temporary library of `R CMD build`. Each worker runs with 1 thread.
+While `run_plan()` starts the cluster, it sets the environment variables
+`OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and `MKL_NUM_THREADS` to 1, as
+it sets `R_LIBS`. Then it sets them back in this R session. OpenMP and
+the BLAS libraries OpenBLAS and MKL read them when they start their
+threads, so the variables MUST be there when the worker starts. The
+section One thread for each worker gives the rules.
+
+Before the run, `run_plan()` gives each worker these:
 
 - the library paths of this R session again, with
   [`.libPaths()`](https://rdrr.io/r/base/libPaths.html).
+
+- 1 thread: the three variables again, for a library that the worker
+  loads later, and `data.table::setDTthreads(1)` when data.table is
+  installed.
 
 - the packages attached in this R session, in the order of
   [`search()`](https://rdrr.io/r/base/search.html), for example
@@ -199,6 +210,28 @@ runs on the worker, and only its data.table and its exclusion table come
 back. The section A cohort as the data of
 [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) gives
 the rules.
+
+## One thread for each worker
+
+Some packages start threads of their own, for example data.table,
+fixest, a threaded BLAS and OpenMP code. By default, such a package uses
+many cores. data.table, for example, uses half of the cores of the
+computer. With `workers` 2 or more, each worker would do that, and the
+computer would run far more threads than cores. So `run_plan()` makes
+each worker use 1 thread. There is no argument to change it. An analysis
+that needs more threads in its worker sets them in its own code, for
+example `data.table::setDTthreads(4)` at the top of its action function.
+
+With `workers = 1`, `run_plan()` changes no thread setting, and the
+analyses run with the settings of this R session.
+
+The results of the test projects of pbn are
+[`identical()`](https://rdrr.io/r/base/identical.html) with 1 and 2
+workers. pbn does not check this for other code. A threaded BLAS MAY sum
+in another order with another number of threads. So a matrix product of
+such a BLAS MAY differ in its last digits between `workers = 1` and more
+workers. With 1 worker it has the threads of this R session, and with
+more it has 1 thread.
 
 ## Stop at the first failure
 

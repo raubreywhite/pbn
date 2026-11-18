@@ -74,7 +74,16 @@ the last <code><a href="initialize_project.html">initialize_project()</a></code>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Run the project as normal first, so that <code>&lt;version&gt;_results/real/</code> holds
 its real results, and call <code><a href="initialize_project.html">initialize_project()</a></code> again in this R session.
-<code>check_one_file()</code> then does these steps:</p><ol><li><p>It makes a temporary folder with an empty project folder, and a copy of
+Without real results, <code>check_one_file()</code> runs the checks of
+<code><a href="to_one_file.html">to_one_file()</a></code> that need no results, and stops. So the file of a project
+MAY be checked for ASCII, for a parse and for a left-out function before
+the first full run.</p>
+<p><code>check_one_file()</code> then does these steps:</p><ol><li><p>It compares <code>manifest$source_md5</code> of the real results with the md5 of
+the files of the project now, without <code>&lt;version&gt;_functions/blocks.R</code>.
+When they differ, the results of the project are older than its code.
+It prints FAIL with the changed files and says to run
+<code>&lt;version&gt;_run.R</code> again. It runs nothing.</p></li>
+<li><p>It makes a temporary folder with an empty project folder, and a copy of
 each folder of the project with all its files. The empty project folder
 stands for the server, where there is no functions folder and no
 <code>pbn.yml</code>.</p></li>
@@ -82,13 +91,23 @@ stands for the server, where there is no functions folder and no
 <code>Rscript</code> in a new R session.</p></li>
 <li><p>It compares <code>results.qs2</code> and <code>results_gitexclude.qs2</code> of the real
 results of the run with those of the project, element by element.</p></li>
-</ol><p>Three fields of the manifest MAY differ, and the comparison leaves them
+<li><p>It calls each block of <code><a href="show_blocks.html">show_block()</a></code> on the real results of the
+project and on those of the run, in one more new R session. That
+session attaches no package of the run script. It compares what
+<code><a href="show_blocks.html">show_block()</a></code> prints for each page of each block, as text, without
+the line <code>FAKE REAL DATA</code>. A block that stops on either results, or
+that prints other text, is a FAIL that names the block.</p></li>
+</ol><p>Four fields of the manifest MAY differ, and the comparison leaves them
 out:</p><ul><li><p><code>run_date</code>, the date of the run.</p></li>
 <li><p><code>packages</code>, the loaded packages, because the new R session loads other
 packages than the R session of the normal run.</p></li>
 <li><p>the column <code>from_cache</code> of <code>data_cache</code>, because the copy has no cache.</p></li>
-</ul><p>Every other element MUST be identical, also <code>source_md5</code>, <code>data_files</code>
-and <code>cache_key</code>. So the results do not depend on the place of the project
+<li><p><code>fake_real_data</code>, because the file never runs on fake real data. See
+<code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
+</ul><p>The comparison also leaves <code>&lt;version&gt;_functions/blocks.R</code> out of
+<code>source_md5</code>, also for results of an older pbn that hold it. Every other
+element MUST be identical, also <code>source_md5</code>, <code>data_files</code> and
+<code>cache_key</code>. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,
 with <code>file.copy(copy.date = TRUE)</code>. That is why <code>data_files</code> and the cache
 key agree. pbn reads no content of a data file, so a copy with new times
@@ -105,8 +124,8 @@ R and of the packages there.</p></li>
 <li><p>It runs the file with <code>Rscript</code>, and on the server a person pastes it
 into an interactive R session. So it does not cover code that depends
 on <code><a href="https://rdrr.io/r/base/interactive.html" class="external-link">interactive()</a></code>.</p></li>
-<li><p>It compares the results files, and not what the blocks of
-<code><a href="show_blocks.html">show_block()</a></code> print.</p></li>
+<li><p>It compares the blocks on the real data of this computer. A block that
+stops only on other data, for example on an empty table, passes here.</p></li>
 <li><p>pbn reads no content of a data file. A data file that changed in place
 and kept its size and its modification time is not seen.</p></li>
 </ul></div>

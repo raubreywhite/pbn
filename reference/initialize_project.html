@@ -56,9 +56,11 @@ functions folder. It MUST be the first call in every <code>vNN_run.R</code>.</p>
 <span>  <span class="va">home</span>,</span>
 <span>  <span class="va">folders</span>,</span>
 <span>  env <span class="op">=</span> <span class="va">.GlobalEnv</span>,</span>
-<span>  one_file <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  <span class="va">...</span>,</span>
 <span>  fake_real_data <span class="op">=</span> <span class="cn">FALSE</span>,</span>
-<span>  <span class="va">...</span></span>
+<span>  one_file_home <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  one_file_folders <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  generated <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span></code></pre></div>
     </div>
 
@@ -89,9 +91,10 @@ data. Only <code><a href="save_results.html">save_results()</a></code> for the s
 <dd><p>The environment that the functions folder is sourced into.</p></dd>
 
 
-<dt id="arg-one-file">one_file<a class="anchor" aria-label="anchor" href="#arg-one-file"></a></dt>
-<dd><p><code>NULL</code>. The file of <code><a href="to_one_file.html">to_one_file()</a></code> gives a value here. Do
-not write it by hand. See the section One file.</p></dd>
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Nothing. A call with the removed argument <code>data_raw</code> stops, and
+the error says how to use <code>folders</code>. Each argument after <code>...</code> MUST be
+given with its full name.</p></dd>
 
 
 <dt id="arg-fake-real-data">fake_real_data<a class="anchor" aria-label="anchor" href="#arg-fake-real-data"></a></dt>
@@ -100,9 +103,23 @@ computer hold fake files in the formats of the real data, and <code>FALSE</code>
 the default, otherwise. See the section Fake real data.</p></dd>
 
 
-<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
-<dd><p>Nothing. A call with the removed argument <code>data_raw</code> stops, and
-the error says how to use <code>folders</code>.</p></dd>
+<dt id="arg-one-file-home">one_file_home<a class="anchor" aria-label="anchor" href="#arg-one-file-home"></a></dt>
+<dd><p>The project folder on the server without a network,
+one string, for example <code>"N:/durable/project"</code>, or <code>NULL</code>, the default.
+<code><a href="to_one_file.html">to_one_file()</a></code> writes it into its file. See the section Paths of the
+server.</p></dd>
+
+
+<dt id="arg-one-file-folders">one_file_folders<a class="anchor" aria-label="anchor" href="#arg-one-file-folders"></a></dt>
+<dd><p>The folders of <code>folders</code> on the server, as a named
+character vector, or <code>NULL</code>, the default. It MUST name exactly the
+folders of <code>folders</code>. One folder MAY have no name on both sides, and it
+then gets the name <code>main</code>.</p></dd>
+
+
+<dt id="arg-generated">generated<a class="anchor" aria-label="anchor" href="#arg-generated"></a></dt>
+<dd><p><code>NULL</code>. The file of <code><a href="to_one_file.html">to_one_file()</a></code> gives a value here.
+Do not write it by hand. See the section One file.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -118,7 +135,9 @@ on each error of <code>pbn.yml</code> that stops <code><a href="check_project.ht
 file is missing.</p></li>
 <li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
 <code>&lt;version&gt;_functions/</code>, before it sources them. <code><a href="save_results.html">save_results()</a></code> stores
-them in <code>manifest$source_md5</code>, without <code>&lt;version&gt;_functions/blocks.R</code>.</p></li>
+them in <code>manifest$source_md5</code>, without <code>&lt;version&gt;_functions/blocks.R</code>.
+The section The md5 of the run script gives the text of the run script
+that the md5 leaves out.</p></li>
 <li><p>It lists each file under each folder of <code>folders</code> that exists, at any
 depth, with its size and its modification time. This is the
 fingerprint of the data. pbn never reads the content of a data file, so
@@ -191,20 +210,72 @@ data.</p><ul><li><p>The rule <code>real_results_are_fake</code> of <code><a href
 real results are on the disk.</p></li>
 </ul><p><code><a href="read_results.html">read_results()</a></code> reads such results as usual. The file of <code><a href="to_one_file.html">to_one_file()</a></code>
 never gives <code>fake_real_data</code>, because the server holds the real data.
-<code>fake_real_data = TRUE</code> together with <code>one_file</code> stops.</p>
+<code>fake_real_data = TRUE</code> together with <code>generated</code> stops.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="paths-of-the-server">Paths of the server<a class="anchor" aria-label="anchor" href="#paths-of-the-server"></a></h2>
+
+
+<p>Give <code>one_file_home</code> and <code>one_file_folders</code> together, or neither. A
+project that never goes to a server gives neither. The run script holds
+the paths, and a commented line <code># pbn::to_one_file()</code> follows the call:</p>
+<p></p><div class="sourceCode r"><pre><code><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span></span>
+<span>  version <span class="op">=</span> <span class="st">"v01"</span>,</span>
+<span>  home <span class="op">=</span> <span class="st">"."</span>,</span>
+<span>  folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"../data"</span><span class="op">)</span>,</span>
+<span>  one_file_home <span class="op">=</span> <span class="st">"N:/durable/project"</span>,</span>
+<span>  one_file_folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"N:/durable/data"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span><span class="co"># pbn::to_one_file()</span></span></code></pre><p></p></div>
+<p>Write both values as literal strings: <code>one_file_home</code> as one string, and
+<code>one_file_folders</code> as one string or as <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code> of strings. Only then does
+the md5 of the run script leave them out, because a value that is code
+could change the results. See the section The md5 of the run script.</p>
+<p>The paths are text only. <code>initialize_project()</code> stops on one of the two
+without the other, and on a folder of <code>folders</code> that <code>one_file_folders</code>
+does not name, or the reverse. It checks no folder on the disk,
+normalises no path and uses no path in the run. The paths never go into
+the manifest, a cache key or the run log.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="the-md-of-the-run-script">The md5 of the run script<a class="anchor" aria-label="anchor" href="#the-md-of-the-run-script"></a></h2>
+
+
+<p><code>manifest$source_md5</code> holds the md5 of <code>&lt;version&gt;_run.R</code> without the
+text that cannot change the results and that a project adds for the
+server:</p><ul><li><p>each argument <code>one_file_home</code> and <code>one_file_folders</code> of a top-level call
+<code>pbn::initialize_project()</code> with a literal value, from the comma before
+its name to the end of its value. A literal value of <code>one_file_home</code> is
+one string constant. A literal value of <code>one_file_folders</code> is one string
+constant, or a call <code><a href="https://rdrr.io/r/base/c.html" class="external-link">c()</a></code> whose arguments are each one string constant,
+with or without a name. pbn reads this from the parse data and
+evaluates nothing.</p></li>
+<li><p>each line that holds only a comment with a call of <code><a href="to_one_file.html">to_one_file()</a></code> or
+<code><a href="check_one_file.html">check_one_file()</a></code> without arguments, for example
+<code># pbn::to_one_file()</code>, with its line end. The call MAY have <code>pbn::</code>
+and any spaces.</p></li>
+</ul><p>So the results of a run before such an edit stay current. A run script
+without such text has the md5 of its bytes, as before. An argument
+without a comma before it, for example the first argument of the call,
+stays in the md5, and so does an argument with another value, for
+example <code>paste0(base, "/a")</code>, a name or a block <code><a href="https://rdrr.io/r/base/Paren.html" class="external-link">{ }</a></code>. Such a value
+counts as code: its edit makes the results of an earlier run older than
+the code.
+<code><a href="to_one_file.html">to_one_file()</a></code> works with such a value too. The md5 of each other file
+is the md5 of its bytes.</p>
     </div>
     <div class="section level2">
     <h2 id="one-file">One file<a class="anchor" aria-label="anchor" href="#one-file"></a></h2>
 
 
-<p>The file of <code><a href="to_one_file.html">to_one_file()</a></code> calls <code>initialize_project()</code> with <code>one_file</code>, a
-list with these elements:</p><ul><li><p><code>project</code>, the name of the project folder on the computer that made the
+<p>The file of <code><a href="to_one_file.html">to_one_file()</a></code> calls <code>initialize_project()</code> with <code>generated</code>,
+a list with these elements:</p><ul><li><p><code>project</code>, the name of the project folder on the computer that made the
 file. The run log names the project with it.</p></li>
 <li><p><code>source_md5</code>, the md5 of the run script and of each file of the
 functions folder on that computer. The manifest stores it.</p></li>
 <li><p><code>code</code>, the code of the functions folder as one quoted block, in the
 order that org sources the files.</p></li>
-</ul><p>With <code>one_file</code>, <code>initialize_project()</code> reads no <code>pbn.yml</code>, needs no
+</ul><p>With <code>generated</code>, <code>initialize_project()</code> reads no <code>pbn.yml</code>, needs no
 functions folder, and checks no code lines. It evaluates <code>code</code> in <code>env</code>
 in the place of the source of the functions folder. A use of the cache then
 does not check the <code>data_*.R</code> files on the disk, because the code is in the
@@ -237,11 +308,11 @@ file.</p>
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmppiM411/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmp7XF2mV/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmppiM411/pbn_initialize_example/v01_results"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/v01_results"</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="folder.html">folder</a></span><span class="op">(</span><span class="st">"main"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmppiM411/pbn_initialize_example/data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/data"</span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">$</span><span class="va">scenarios</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scenario sims</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     real    1</span>

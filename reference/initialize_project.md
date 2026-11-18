@@ -11,9 +11,11 @@ initialize_project(
   home,
   folders,
   env = .GlobalEnv,
-  one_file = NULL,
+  ...,
   fake_real_data = FALSE,
-  ...
+  one_file_home = NULL,
+  one_file_folders = NULL,
+  generated = NULL
 )
 ```
 
@@ -43,11 +45,11 @@ initialize_project(
 
   The environment that the functions folder is sourced into.
 
-- one_file:
+- ...:
 
-  `NULL`. The file of
-  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-  gives a value here. Do not write it by hand. See the section One file.
+  Nothing. A call with the removed argument `data_raw` stops, and the
+  error says how to use `folders`. Each argument after `...` MUST be
+  given with its full name.
 
 - fake_real_data:
 
@@ -55,10 +57,25 @@ initialize_project(
   in the formats of the real data, and `FALSE`, the default, otherwise.
   See the section Fake real data.
 
-- ...:
+- one_file_home:
 
-  Nothing. A call with the removed argument `data_raw` stops, and the
-  error says how to use `folders`.
+  The project folder on the server without a network, one string, for
+  example `"N:/durable/project"`, or `NULL`, the default.
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  writes it into its file. See the section Paths of the server.
+
+- one_file_folders:
+
+  The folders of `folders` on the server, as a named character vector,
+  or `NULL`, the default. It MUST name exactly the folders of `folders`.
+  One folder MAY have no name on both sides, and it then gets the name
+  `main`.
+
+- generated:
+
+  `NULL`. The file of
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  gives a value here. Do not write it by hand. See the section One file.
 
 ## Value
 
@@ -80,7 +97,8 @@ folders.
     `<version>_functions/`, before it sources them.
     [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
     stores them in `manifest$source_md5`, without
-    `<version>_functions/blocks.R`.
+    `<version>_functions/blocks.R`. The section The md5 of the run
+    script gives the text of the run script that the md5 leaves out.
 
 3.  It lists each file under each folder of `folders` that exists, at
     any depth, with its size and its modification time. This is the
@@ -195,13 +213,73 @@ session with it never marks results from real data.
 reads such results as usual. The file of
 [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
 never gives `fake_real_data`, because the server holds the real data.
-`fake_real_data = TRUE` together with `one_file` stops.
+`fake_real_data = TRUE` together with `generated` stops.
+
+## Paths of the server
+
+Give `one_file_home` and `one_file_folders` together, or neither. A
+project that never goes to a server gives neither. The run script holds
+the paths, and a commented line `# pbn::to_one_file()` follows the call:
+
+    pbn::initialize_project(
+      version = "v01",
+      home = ".",
+      folders = c(main = "../data"),
+      one_file_home = "N:/durable/project",
+      one_file_folders = c(main = "N:/durable/data")
+    )
+    # pbn::to_one_file()
+
+Write both values as literal strings: `one_file_home` as one string, and
+`one_file_folders` as one string or as
+[`c()`](https://rdrr.io/r/base/c.html) of strings. Only then does the
+md5 of the run script leave them out, because a value that is code could
+change the results. See the section The md5 of the run script.
+
+The paths are text only. `initialize_project()` stops on one of the two
+without the other, and on a folder of `folders` that `one_file_folders`
+does not name, or the reverse. It checks no folder on the disk,
+normalises no path and uses no path in the run. The paths never go into
+the manifest, a cache key or the run log.
+
+## The md5 of the run script
+
+`manifest$source_md5` holds the md5 of `<version>_run.R` without the
+text that cannot change the results and that a project adds for the
+server:
+
+- each argument `one_file_home` and `one_file_folders` of a top-level
+  call `pbn::initialize_project()` with a literal value, from the comma
+  before its name to the end of its value. A literal value of
+  `one_file_home` is one string constant. A literal value of
+  `one_file_folders` is one string constant, or a call
+  [`c()`](https://rdrr.io/r/base/c.html) whose arguments are each one
+  string constant, with or without a name. pbn reads this from the parse
+  data and evaluates nothing.
+
+- each line that holds only a comment with a call of
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  or
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  without arguments, for example `# pbn::to_one_file()`, with its line
+  end. The call MAY have `pbn::` and any spaces.
+
+So the results of a run before such an edit stay current. A run script
+without such text has the md5 of its bytes, as before. An argument
+without a comma before it, for example the first argument of the call,
+stays in the md5, and so does an argument with another value, for
+example `paste0(base, "/a")`, a name or a block
+[`{ }`](https://rdrr.io/r/base/Paren.html). Such a value counts as code:
+its edit makes the results of an earlier run older than the code.
+[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+works with such a value too. The md5 of each other file is the md5 of
+its bytes.
 
 ## One file
 
 The file of
 [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-calls `initialize_project()` with `one_file`, a list with these
+calls `initialize_project()` with `generated`, a list with these
 elements:
 
 - `project`, the name of the project folder on the computer that made
@@ -213,7 +291,7 @@ elements:
 - `code`, the code of the functions folder as one quoted block, in the
   order that org sources the files.
 
-With `one_file`, `initialize_project()` reads no `pbn.yml`, needs no
+With `generated`, `initialize_project()` reads no `pbn.yml`, needs no
 functions folder, and checks no code lines. It evaluates `code` in `env`
 in the place of the source of the functions folder. A use of the cache
 then does not check the `data_*.R` files on the disk, because the code
@@ -248,11 +326,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmppiM411/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp7XF2mV/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmppiM411/pbn_initialize_example/v01_results"
+#> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmppiM411/pbn_initialize_example/data"
+#> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

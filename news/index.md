@@ -595,6 +595,38 @@ each scenario. To move a project, change these items:
   [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
   for an old one file cuts each quoted line to 80 characters, with ”
   \[…\]“.
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  gains `one_file_home` and `one_file_folders`, the paths on the server
+  for
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+  Give both or neither, with the folder names of `folders`.
+- [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  and
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  take no argument: the version and the paths of the server come from
+  the last
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  A call with the old arguments stops, and so does a call without the
+  paths. This changes the unreleased
+  `to_one_file(version, home, folders)` and `check_one_file(version)`.
+- The argument `one_file` of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  in the one file is now `generated`. Generate each one file again with
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  says when an older pbn wrote the file.
+- [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  takes the paths of the server from the R session, not from the one
+  file. A file with other paths is older than the run script.
+- The one file leaves out each line that holds only a comment
+  `# pbn::to_one_file()` or `# pbn::check_one_file()`.
+- `manifest$source_md5` leaves out the paths of the server, when they
+  are literal strings, and those two comment lines of the run script. So
+  a run script that gains them keeps its results current.
+  [`?initialize_project`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  gives the rule.
+- `no_absolute_paths` no longer exempts the arguments of
+  [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
 
 ## pbn 2026.11.22
 

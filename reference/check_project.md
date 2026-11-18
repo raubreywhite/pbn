@@ -162,10 +162,9 @@ The rules, with their level in the set `house_2026_11_17`:
   constant. The rule reads the strings from the parse data, so a comment
   does not count. The arguments of a call
   [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  or
-  [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-  are exempt, because a project declares its paths there. A string is an
-  absolute path when it starts with one of these:
+  are exempt, because a project declares its paths there, also
+  `one_file_home` and `one_file_folders`. A string is an absolute path
+  when it starts with one of these:
 
   - `/`, a name of letters, digits, `.`, `_` or `-` that starts with a
     letter or `_`, and `/` again, as in `"/home/a/x.csv"` or `"/data/"`.
@@ -413,7 +412,7 @@ pbn::check_project(home)
 #> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
-#> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()
+#> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path

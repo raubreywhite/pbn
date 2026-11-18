@@ -272,6 +272,18 @@
 <li>
 <code><a href="../reference/stamp_fake.html">stamp_fake()</a></code> puts one label over the whole figure of a ggplot too, also with facets. Before, each panel of a faceted figure clipped its own copy of the label. ggplot2 and patchwork move from Suggests to Imports.</li>
 <li>The FAIL of <code><a href="../reference/check_one_file.html">check_one_file()</a></code> for an old one file cuts each quoted line to 80 characters, with ” […]“.</li>
+<li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> gains <code>one_file_home</code> and <code>one_file_folders</code>, the paths on the server for <code><a href="../reference/to_one_file.html">to_one_file()</a></code>. Give both or neither, with the folder names of <code>folders</code>.</li>
+<li>
+<code><a href="../reference/to_one_file.html">to_one_file()</a></code> and <code><a href="../reference/check_one_file.html">check_one_file()</a></code> take no argument: the version and the paths of the server come from the last <code><a href="../reference/initialize_project.html">initialize_project()</a></code>. A call with the old arguments stops, and so does a call without the paths. This changes the unreleased <code>to_one_file(version, home, folders)</code> and <code>check_one_file(version)</code>.</li>
+<li>The argument <code>one_file</code> of <code><a href="../reference/initialize_project.html">initialize_project()</a></code> in the one file is now <code>generated</code>. Generate each one file again with <code><a href="../reference/to_one_file.html">to_one_file()</a></code>. <code><a href="../reference/check_one_file.html">check_one_file()</a></code> says when an older pbn wrote the file.</li>
+<li>
+<code><a href="../reference/check_one_file.html">check_one_file()</a></code> takes the paths of the server from the R session, not from the one file. A file with other paths is older than the run script.</li>
+<li>The one file leaves out each line that holds only a comment <code># pbn::to_one_file()</code> or <code># pbn::check_one_file()</code>.</li>
+<li>
+<code>manifest$source_md5</code> leaves out the paths of the server, when they are literal strings, and those two comment lines of the run script. So a run script that gains them keeps its results current. <code><a href="../reference/initialize_project.html">?initialize_project</a></code> gives the rule.</li>
+<li>
+<code>no_absolute_paths</code> no longer exempts the arguments of <code><a href="../reference/to_one_file.html">pbn::to_one_file()</a></code>.</li>
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.22" id="pbn-20261122">pbn 2026.11.22<a class="anchor" aria-label="anchor" href="#pbn-20261122"></a></h2>

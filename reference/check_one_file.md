@@ -8,16 +8,17 @@ difference.
 ## Usage
 
 ``` r
-check_one_file(version)
+check_one_file(...)
 ```
 
 ## Arguments
 
-- version:
+- ...:
 
-  The version, for example `"v01"`. It MUST be the version of the last
+  Nothing. A call with an argument stops. `check_one_file()` takes the
+  version and the paths of the server from the last
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  in this R session.
+  of this R session.
 
 ## Value
 
@@ -30,22 +31,27 @@ its real results. Write the file with
 [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md),
 and call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-again in this R session.
+again in this R session, with `one_file_home` and `one_file_folders`.
 
 `check_one_file()` then does these steps:
 
-1.  It reads `home` and `folders` from the call
-    [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-    of `<version>_one_file.R` in the project. It makes the lines of
+1.  It makes the lines of
     [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-    with these paths in memory, and compares them with the file, line by
-    line. Only the line of the header with the version of pbn and the
-    date does not count. When a line differs, the file is older than the
-    code of the project. It prints FAIL with the number of the first
-    line that differs and the line in both files, each cut to 80
-    characters. It says to run
+    in memory, with the code of the project and the paths of the server
+    of the last
+    [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+    It compares them with `<version>_one_file.R` in the project, line by
+    line. This R session is the one source of the paths, so a change of
+    `one_file_home` in the run script also makes the file older. Only
+    the line of the header with the version of pbn and the date does not
+    count. When a line differs, the file is older than the code of the
+    project. It prints FAIL with the number of the first line that
+    differs and the line in both files, each cut to 80 characters. It
+    says to run
     [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-    again. It prints FAIL also when the project has no such file.
+    again. A file of an older pbn, with the argument `one_file`, also
+    gets this FAIL, and the text says so. It prints FAIL also when the
+    project has no such file.
 
 2.  Without real results, it stops here. So the file of a project MAY be
     checked for ASCII, for a parse and for a left-out function before

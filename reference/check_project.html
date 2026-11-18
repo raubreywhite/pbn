@@ -159,8 +159,8 @@ path under <code>allow</code> allows each finding of one file.</p></li>
 <code>loc_per_file</code> is an absolute path, or a path starts from a string
 constant. The rule reads the strings from the
 parse data, so a comment does not count. The arguments of a call
-<code><a href="initialize_project.html">pbn::initialize_project()</a></code> or <code><a href="to_one_file.html">pbn::to_one_file()</a></code> are exempt, because
-a project declares its paths there. A string is an absolute path when it
+<code><a href="initialize_project.html">pbn::initialize_project()</a></code> are exempt, because a project declares its
+paths there, also <code>one_file_home</code> and <code>one_file_folders</code>. A string is an absolute path when it
 starts with one of these:</p><ul><li><p><code>/</code>, a name of letters, digits, <code>.</code>, <code>_</code> or <code>-</code> that starts with a
 letter or <code>_</code>, and <code>/</code> again, as in <code>"/home/a/x.csv"</code> or <code>"/data/"</code>.</p></li>
 <li><p><code>~/</code> or <code>~\</code>, the home folder.</p></li>
@@ -330,7 +330,7 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project() and pbn::to_one_file()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>

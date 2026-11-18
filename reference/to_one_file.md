@@ -7,26 +7,15 @@ R there and runs it from the top to the end.
 ## Usage
 
 ``` r
-to_one_file(version, home, folders)
+to_one_file(...)
 ```
 
 ## Arguments
 
-- version:
+- ...:
 
-  The version, for example `"v01"`. It MUST be the version of the last
-  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-  in this R session.
-
-- home:
-
-  The project folder on the server, one string, for example
-  `"N:/durable/project"`. The results go to `<home>/<version>_results/`.
-
-- folders:
-
-  The folders of the project on the server, as a named character vector.
-  It MUST name exactly the folders of `folders` of
+  Nothing. A call with an argument stops, and the error names the
+  arguments `one_file_home` and `one_file_folders` of
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
 
 ## Value
@@ -38,10 +27,14 @@ lines, the size in bytes and the length of the longest line.
 
 Call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-for `version` first, in the project on this computer. `to_one_file()`
-takes the project from that call. It stops when the run script or a file
-of the functions folder changed after it. It needs no results. So you
-MAY generate and read the file before the first full run.
+first, in the project on this computer, with the paths of the server as
+`one_file_home` and `one_file_folders`. `to_one_file()` takes the
+version, the project and the paths from that call. Without the paths, it
+stops and prints the two arguments to add. It stops when the run script
+or a file of the functions folder changed after that call. It needs no
+results. So you MAY generate and read the file before the first full
+run. The results on the server go to
+`<one_file_home>/<version>_results/`.
 
 The file holds these parts, in this order:
 
@@ -52,23 +45,29 @@ The file holds these parts, in this order:
 2.  `setwd(home)`, so that the run script runs in its project folder, as
     `Rscript <version>_run.R` does.
 
-3.  The run script as it is written, with two changes. Its call of
+3.  The run script as it is written, with three changes. Its call of
     [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-    gets the paths of the server and the argument `one_file`. `one_file`
-    holds the code of each `.R` file of the functions folder, in the
-    order that org sources them. The call `pbn::scenarios(CFG)` becomes
-    `pbn::scenarios(CFG, only = "real")`.
+    gets the paths of the server as `home` and `folders`, and the
+    argument `generated`. `generated` holds the code of each `.R` file
+    of the functions folder, in the order that org sources them. The
+    call has no `one_file_home`, `one_file_folders` or `fake_real_data`.
+    The call `pbn::scenarios(CFG)` becomes
+    `pbn::scenarios(CFG, only = "real")`. A line with only a comment
+    such as `# pbn::to_one_file()` is not in the file. The section The
+    md5 of the run script of
+    [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+    gives the rule.
 
 4.  A comment that says what to type next, for example
     [`pbn::show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md).
 
 The section One file of
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-gives the rules of `one_file`. On the server, the run needs no `pbn.yml`
-and no functions folder. pbn writes the results and the run log under
-`home`, and, for a data function with `cache = TRUE`, the cache there
-too. The manifest holds the md5 of the files of this computer. On this
-computer,
+gives the rules of `generated`. On the server, the run needs no
+`pbn.yml` and no functions folder. pbn writes the results and the run
+log under `one_file_home`, and, for a data function with `cache = TRUE`,
+the cache there too. The manifest holds the md5 of the files of this
+computer. On this computer,
 [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
 checks that the file gives the real results of the project.
 
@@ -78,10 +77,8 @@ only. The comment lines directly above such a function go with it, up to
 a blank line or a line with code. `expect_real()` stays. The fake data
 code stays, because it is inside the data functions.
 
-The call of
-[`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-in the file never has `fake_real_data`, because the server holds the
-real data. The run script MAY have it for this computer.
+The run script MAY give `fake_real_data = TRUE` for this computer. The
+file never does, because the server holds the real data.
 
 The file is ASCII, because it goes through a clipboard, which can change
 a byte that is not ASCII. pbn reads each file of the project as UTF-8
@@ -119,11 +116,7 @@ token. The files of the project stay as they are:
   that is not UTF-8. It also stops on a string that is not valid UTF-8
   after its escapes. The error names the file and the line.
 
-- `home`, a path of `folders` or the name of the project folder is not
-  ASCII.
-
-- `folders` misses a folder of the project, or names one that the
-  project does not have. The error names it.
+- a path of the server or the name of the project folder is not ASCII.
 
 - code that stays in the file uses a name of an `expect_<scenario>()`
   that the file leaves out. The file would stop on the server. The error

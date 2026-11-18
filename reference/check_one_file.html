@@ -57,16 +57,17 @@ difference.</p>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
-    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_one_file</span><span class="op">(</span><span class="va">version</span><span class="op">)</span></span></code></pre></div>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">check_one_file</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span></code></pre></div>
     </div>
 
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
 
 
-<dl><dt id="arg-version">version<a class="anchor" aria-label="anchor" href="#arg-version"></a></dt>
-<dd><p>The version, for example <code>"v01"</code>. It MUST be the version of
-the last <code><a href="initialize_project.html">initialize_project()</a></code> in this R session.</p></dd>
+<dl><dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Nothing. A call with an argument stops. <code>check_one_file()</code>
+takes the version and the paths of the server from the last
+<code><a href="initialize_project.html">initialize_project()</a></code> of this R session.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -77,16 +78,20 @@ the last <code><a href="initialize_project.html">initialize_project()</a></code>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Run the project as normal first, so that <code>&lt;version&gt;_results/real/</code> holds
 its real results. Write the file with <code><a href="to_one_file.html">to_one_file()</a></code>, and call
-<code><a href="initialize_project.html">initialize_project()</a></code> again in this R session.</p>
-<p><code>check_one_file()</code> then does these steps:</p><ol><li><p>It reads <code>home</code> and <code>folders</code> from the call <code><a href="initialize_project.html">pbn::initialize_project()</a></code>
-of <code>&lt;version&gt;_one_file.R</code> in the project. It makes the lines of
-<code><a href="to_one_file.html">to_one_file()</a></code> with these paths in memory, and compares them with the
-file, line by line. Only the line of the header with the version of pbn
-and the date does not count. When a line differs, the file is older
-than the code of the project. It prints FAIL with the number of the
-first line that differs and the line in both files, each cut to 80
-characters. It says to run <code><a href="to_one_file.html">to_one_file()</a></code> again. It prints FAIL also
-when the project has no such file.</p></li>
+<code><a href="initialize_project.html">initialize_project()</a></code> again in this R session, with <code>one_file_home</code> and
+<code>one_file_folders</code>.</p>
+<p><code>check_one_file()</code> then does these steps:</p><ol><li><p>It makes the lines of <code><a href="to_one_file.html">to_one_file()</a></code> in memory, with the code of the
+project and the paths of the server of the last
+<code><a href="initialize_project.html">initialize_project()</a></code>. It compares them with <code>&lt;version&gt;_one_file.R</code> in
+the project, line by line. This R session is the one source of the
+paths, so a change of <code>one_file_home</code> in the run script also makes the
+file older. Only the line of the header with the version of pbn and the
+date does not count. When a line differs, the file is older than the
+code of the project. It prints FAIL with the number of the first line
+that differs and the line in both files, each cut to 80 characters. It
+says to run <code><a href="to_one_file.html">to_one_file()</a></code> again. A file of an older pbn, with the
+argument <code>one_file</code>, also gets this FAIL, and the text says so. It
+prints FAIL also when the project has no such file.</p></li>
 <li><p>Without real results, it stops here. So the file of a project MAY be
 checked for ASCII, for a parse and for a left-out function before the
 first full run.</p></li>

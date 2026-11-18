@@ -190,8 +190,8 @@ test_that("run_script_initialises accepts fake_real_data, and the file of to_one
   writeLines(run, file.path(p$home, "v01_run.R"))
   found <- project_findings(p$home)
   expect_identical(found$status[found$rule == "run_script_initialises"], "PASS")
-  init(p, fake_real_data = TRUE)
-  utils::capture.output(file <- to_one_file("v01", "N:/x", c(main = "N:/d")))
+  init_server(p, fake_real_data = TRUE)
+  utils::capture.output(file <- to_one_file())
   gen <- parse(file, keep.source = FALSE)
   call <- Filter(
     function(e) {
@@ -201,13 +201,13 @@ test_that("run_script_initialises accepts fake_real_data, and the file of to_one
   )[[1]]
   expect_false("fake_real_data" %in% names(call))
   expect_false(any(grepl("fake_real_data", readLines(file), fixed = TRUE)))
-  one <- eval(call$one_file)
+  one <- eval(call$generated)
   expect_error(
     initialize_project(
       "v01",
       file.path(p$root),
       p$data_default,
-      one_file = one,
+      generated = one,
       fake_real_data = TRUE
     ),
     "The file of pbn::to_one_file() runs on real data, so it takes no fake_real_data = TRUE.",
@@ -227,9 +227,9 @@ test_that("check_one_file passes a project on fake real data: the fresh run has 
   expect_identical(res$status, 0L, info = res$stdout)
   real <- qs2::qs_read(file.path(p$home, "v01_results", "real", "results.qs2"))
   expect_true(real$manifest$fake_real_data)
-  init(p, fake_real_data = TRUE)
-  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
-  out <- utils::capture.output(ok <- check_one_file("v01"))
+  init_server(p, fake_real_data = TRUE)
+  utils::capture.output(to_one_file())
+  out <- utils::capture.output(ok <- check_one_file())
   expect_match(
     out,
     "^PASS: .* manifest\\$fake_real_data\\. Each page of the 2 blocks prints the same for both\\.$"

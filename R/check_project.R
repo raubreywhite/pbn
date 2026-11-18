@@ -100,8 +100,8 @@
 #'   `loc_per_file` is an absolute path, or a path starts from a string
 #'   constant. The rule reads the strings from the
 #'   parse data, so a comment does not count. The arguments of a call
-#'   `pbn::initialize_project()` or `pbn::to_one_file()` are exempt, because
-#'   a project declares its paths there. A string is an absolute path when it
+#'   `pbn::initialize_project()` are exempt, because a project declares its
+#'   paths there, also `one_file_home` and `one_file_folders`. A string is an absolute path when it
 #'   starts with one of these:
 #'   - `/`, a name of letters, digits, `.`, `_` or `-` that starts with a
 #'     letter or `_`, and `/` again, as in `"/home/a/x.csv"` or `"/data/"`.

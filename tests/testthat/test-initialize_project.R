@@ -39,7 +39,17 @@ test_that("initialize_project sets no seed and reads no command-line argument", 
   expect_identical(.Random.seed, before)
   expect_identical(
     names(formals(initialize_project)),
-    c("version", "home", "folders", "env", "one_file", "fake_real_data", "...")
+    c(
+      "version",
+      "home",
+      "folders",
+      "env",
+      "...",
+      "fake_real_data",
+      "one_file_home",
+      "one_file_folders",
+      "generated"
+    )
   )
   expect_false(any(grepl("commandArgs", deparse(initialize_project))))
 })

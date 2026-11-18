@@ -360,7 +360,9 @@ init <- function(
   p,
   folders = p$data_default,
   env = parent.frame(),
-  fake_real_data = FALSE
+  fake_real_data = FALSE,
+  one_file_home = NULL,
+  one_file_folders = NULL
 ) {
   local_clean_state(env)
   # The parent is the global environment, as for a project. An environment
@@ -371,9 +373,23 @@ init <- function(
     p$home,
     folders,
     env = sourced,
-    fake_real_data = fake_real_data
+    fake_real_data = fake_real_data,
+    one_file_home = one_file_home,
+    one_file_folders = one_file_folders
   ))
   return(sourced)
+}
+
+# init() with the paths of the server "N:/x" and c(main = "N:/d"), for
+# to_one_file() and check_one_file().
+init_server <- function(p, env = parent.frame(), ...) {
+  return(init(
+    p,
+    env = env,
+    one_file_home = "N:/x",
+    one_file_folders = c(main = "N:/d"),
+    ...
+  ))
 }
 
 # The plan of the run script, built in this R session from the functions in
@@ -438,15 +454,17 @@ no_log <- function(files) {
 }
 
 # Runs and saves the scenarios `only` of the project `p` in this R session.
-# Returns the printed lines of save_results(), or its error.
+# `...` goes to init(). Returns the printed lines of save_results(), or its
+# error.
 save_run <- function(
   p,
   only = NULL,
   workers = 1,
   env = parent.frame(),
-  fake_real_data = FALSE
+  fake_real_data = FALSE,
+  ...
 ) {
-  sourced <- init(p, env = env, fake_real_data = fake_real_data)
+  sourced <- init(p, env = env, fake_real_data = fake_real_data, ...)
   sc <- if (is.null(only)) {
     scenarios(sourced$CFG)
   } else {

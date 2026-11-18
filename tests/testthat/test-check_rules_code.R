@@ -53,7 +53,7 @@ test_that("is_absolute_path() fails absolute paths and passes regular expression
   )
 })
 
-test_that("no_absolute_paths fails each absolute string with its file and line, cut at 40 characters, and passes comments and the arguments of initialize_project() and to_one_file()", {
+test_that("no_absolute_paths fails each absolute string with its file and line, cut at 40 characters, and passes comments and the arguments of initialize_project(), also one_file_home, but not those of to_one_file()", {
   p <- local_project()
   long <- paste0("/home/someone/", strrep("a", 40), "/x.csv")
   write_lines(
@@ -74,12 +74,14 @@ test_that("no_absolute_paths fails each absolute string with its file and line, 
     p$home,
     "adhoc/server.R",
     c(
-      "pbn::to_one_file(",
-      "  \"v01\",",
-      "  home = \"N:/durable/project\",",
-      "  folders = c(main = \"N:/durable/data\")",
+      "pbn::initialize_project(",
+      "  version = \"v01\",",
+      "  home = \".\",",
+      "  folders = c(main = \"../data\"),",
+      "  one_file_home = \"N:/x\",",
+      "  one_file_folders = c(main = \"N:/durable/data\")",
       ")",
-      "to_one_file(\"v01\", \"N:/durable/other\")"
+      "pbn::to_one_file(home = \"N:/durable/other\")"
     )
   )
   found <- findings_of(p$home, "no_absolute_paths")
@@ -87,7 +89,7 @@ test_that("no_absolute_paths fails each absolute string with its file and line, 
   expect_identical(
     found$detail,
     c(
-      "adhoc/server.R:6: \"N:/durable/other\"",
+      "adhoc/server.R:8: \"N:/durable/other\"",
       "v01_functions/paths.R:3: \"/home/a/codes.csv\"",
       paste0("v01_functions/paths.R:6: \"", substr(long, 1, 40), "\"..."),
       "v01_functions/paths.R:7: \"C:\\\\data\""
@@ -274,7 +276,7 @@ test_that("no_absolute_paths fails file.path() and fs::path() that start from a 
     p$home,
     "adhoc/server.R",
     c(
-      "pbn::to_one_file(\"v01\", home = file.path(\"N:\", \"x\"), folders = c(main = \"N:/d\"))"
+      "pbn::initialize_project(\"v01\", \".\", \"../d\", one_file_home = file.path(\"N:\", \"x\"), one_file_folders = c(main = \"N:/d\"))"
     )
   )
   found <- findings_of(p$home, "no_absolute_paths")
@@ -444,9 +446,9 @@ test_that("initialize_project leaves blocks.R out of source_md5 only when it can
     "v01_functions/blocks.R",
     c(conform, "options(digits = 4)")
   )
-  init(p)
-  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
-  out <- utils::capture.output(ok <- check_one_file("v01"))
+  init_server(p)
+  utils::capture.output(to_one_file())
+  out <- utils::capture.output(ok <- check_one_file())
   expect_false(ok)
   expect_identical(
     out,

@@ -86,8 +86,8 @@ test_that("to_one_file writes each character that is not ASCII of a string as an
   md5_before <- md5_of(labels)
   bytes <- readBin(labels, "raw", file.size(labels))
   expect_true(any(bytes > as.raw(127)))
-  init(p)
-  utils::capture.output(file <- to_one_file("v01", "N:/x", c(main = "N:/d")))
+  init_server(p)
+  utils::capture.output(file <- to_one_file())
   # The project keeps its files, and the file is ASCII.
   expect_identical(md5_of(labels), md5_before)
   out <- readBin(file, "raw", file.size(file))
@@ -109,7 +109,7 @@ test_that("to_one_file writes each character that is not ASCII of a string as an
     },
     logical(1)
   )
-  one <- eval(gen[[which(is_init)]]$one_file)
+  one <- eval(gen[[which(is_init)]]$generated)
   in_file <- as.list(one$code)[-1]
   from_project <- list()
   for (f in org_order(p)) {
@@ -170,9 +170,9 @@ test_that("to_one_file stops on a name that is not ASCII, with its file and line
       "`\u00e6x` <- function() return(2)"
     )
   )
-  init(p)
+  init_server(p)
   expect_error(
-    to_one_file("v01", "N:/x", c(main = "N:/d")),
+    to_one_file(),
     "v01_functions/odd.R:2 has the name `\u00e6x`, which is not ASCII.",
     fixed = TRUE
   )
@@ -192,8 +192,8 @@ test_that("to_one_file drops the comment block directly above a dropped expect_ 
       expect_null_lines()
     )
   )
-  init(p)
-  utils::capture.output(file <- to_one_file("v01", "N:/x", c(main = "N:/d")))
+  init_server(p)
+  utils::capture.output(file <- to_one_file())
   lines <- readLines(file)
   at <- which(lines == "# ---- v01_functions/expect_null.R ----")
   expect_identical(
@@ -210,9 +210,9 @@ test_that("check_one_file passes a project whose labels are not ASCII, and compa
   add_label_files(p)
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
-  init(p)
-  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
-  out <- utils::capture.output(ok <- check_one_file("v01"))
+  init_server(p)
+  utils::capture.output(to_one_file())
+  out <- utils::capture.output(ok <- check_one_file())
   expect_identical(
     out,
     paste0(
@@ -235,9 +235,9 @@ test_that("to_one_file stops with the file and the line on a string that is not 
       "y <- \"caf\\xE9 \u2265 1\""
     )
   )
-  init(p)
+  init_server(p)
   expect_error(
-    to_one_file("v01", "N:/x", c(main = "N:/d")),
+    to_one_file(),
     "v01_functions/odd.R:2 holds a string that is not valid UTF-8",
     fixed = TRUE
   )
@@ -334,8 +334,8 @@ test_that("to_one_file keeps a multi-line label table on its own lines", {
     "v01_functions/label_table.R",
     c("LABEL_TEXT <- \"key,label", rows, "\"")
   )
-  init(p)
-  utils::capture.output(file <- to_one_file("v01", "N:/x", c(main = "N:/d")))
+  init_server(p)
+  utils::capture.output(file <- to_one_file())
   lines <- readLines(file)
   at <- which(lines == "LABEL_TEXT <- \"key,label")
   expect_length(at, 1)

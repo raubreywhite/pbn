@@ -9,9 +9,11 @@ initialize_project(
   home,
   folders,
   env = .GlobalEnv,
-  one_file = NULL,
+  ...,
   fake_real_data = FALSE,
-  ...
+  one_file_home = NULL,
+  one_file_folders = NULL,
+  generated = NULL
 )
 }
 \arguments{
@@ -30,15 +32,26 @@ data. Only \code{\link[=save_results]{save_results()}} for the scenario \code{"r
 
 \item{env}{The environment that the functions folder is sourced into.}
 
-\item{one_file}{\code{NULL}. The file of \code{\link[=to_one_file]{to_one_file()}} gives a value here. Do
-not write it by hand. See the section One file.}
+\item{...}{Nothing. A call with the removed argument \code{data_raw} stops, and
+the error says how to use \code{folders}. Each argument after \code{...} MUST be
+given with its full name.}
 
 \item{fake_real_data}{\code{TRUE} when the folders of \code{folders} on this
 computer hold fake files in the formats of the real data, and \code{FALSE},
 the default, otherwise. See the section Fake real data.}
 
-\item{...}{Nothing. A call with the removed argument \code{data_raw} stops, and
-the error says how to use \code{folders}.}
+\item{one_file_home}{The project folder on the server without a network,
+one string, for example \code{"N:/durable/project"}, or \code{NULL}, the default.
+\code{\link[=to_one_file]{to_one_file()}} writes it into its file. See the section Paths of the
+server.}
+
+\item{one_file_folders}{The folders of \code{folders} on the server, as a named
+character vector, or \code{NULL}, the default. It MUST name exactly the
+folders of \code{folders}. One folder MAY have no name on both sides, and it
+then gets the name \code{main}.}
+
+\item{generated}{\code{NULL}. The file of \code{\link[=to_one_file]{to_one_file()}} gives a value here.
+Do not write it by hand. See the section One file.}
 }
 \value{
 Invisibly, a list with \code{version}, \code{home}, \code{results} and
@@ -58,6 +71,8 @@ file is missing.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
 them in \code{manifest$source_md5}, without \verb{<version>_functions/blocks.R}.
+The section The md5 of the run script gives the text of the run script
+that the md5 leaves out.
 \item It lists each file under each folder of \code{folders} that exists, at any
 depth, with its size and its modification time. This is the
 fingerprint of the data. pbn never reads the content of a data file, so
@@ -144,13 +159,71 @@ real results are on the disk.
 
 \code{\link[=read_results]{read_results()}} reads such results as usual. The file of \code{\link[=to_one_file]{to_one_file()}}
 never gives \code{fake_real_data}, because the server holds the real data.
-\code{fake_real_data = TRUE} together with \code{one_file} stops.
+\code{fake_real_data = TRUE} together with \code{generated} stops.
+}
+
+\section{Paths of the server}{
+
+Give \code{one_file_home} and \code{one_file_folders} together, or neither. A
+project that never goes to a server gives neither. The run script holds
+the paths, and a commented line \verb{# pbn::to_one_file()} follows the call:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{pbn::initialize_project(
+  version = "v01",
+  home = ".",
+  folders = c(main = "../data"),
+  one_file_home = "N:/durable/project",
+  one_file_folders = c(main = "N:/durable/data")
+)
+# pbn::to_one_file()
+}\if{html}{\out{</div>}}
+
+Write both values as literal strings: \code{one_file_home} as one string, and
+\code{one_file_folders} as one string or as \code{c()} of strings. Only then does
+the md5 of the run script leave them out, because a value that is code
+could change the results. See the section The md5 of the run script.
+
+The paths are text only. \code{initialize_project()} stops on one of the two
+without the other, and on a folder of \code{folders} that \code{one_file_folders}
+does not name, or the reverse. It checks no folder on the disk,
+normalises no path and uses no path in the run. The paths never go into
+the manifest, a cache key or the run log.
+}
+
+\section{The md5 of the run script}{
+
+\code{manifest$source_md5} holds the md5 of \verb{<version>_run.R} without the
+text that cannot change the results and that a project adds for the
+server:
+\itemize{
+\item each argument \code{one_file_home} and \code{one_file_folders} of a top-level call
+\code{pbn::initialize_project()} with a literal value, from the comma before
+its name to the end of its value. A literal value of \code{one_file_home} is
+one string constant. A literal value of \code{one_file_folders} is one string
+constant, or a call \code{c()} whose arguments are each one string constant,
+with or without a name. pbn reads this from the parse data and
+evaluates nothing.
+\item each line that holds only a comment with a call of \code{to_one_file()} or
+\code{check_one_file()} without arguments, for example
+\verb{# pbn::to_one_file()}, with its line end. The call MAY have \verb{pbn::}
+and any spaces.
+}
+
+So the results of a run before such an edit stay current. A run script
+without such text has the md5 of its bytes, as before. An argument
+without a comma before it, for example the first argument of the call,
+stays in the md5, and so does an argument with another value, for
+example \code{paste0(base, "/a")}, a name or a block \code{{ }}. Such a value
+counts as code: its edit makes the results of an earlier run older than
+the code.
+\code{\link[=to_one_file]{to_one_file()}} works with such a value too. The md5 of each other file
+is the md5 of its bytes.
 }
 
 \section{One file}{
 
-The file of \code{\link[=to_one_file]{to_one_file()}} calls \code{initialize_project()} with \code{one_file}, a
-list with these elements:
+The file of \code{\link[=to_one_file]{to_one_file()}} calls \code{initialize_project()} with \code{generated},
+a list with these elements:
 \itemize{
 \item \code{project}, the name of the project folder on the computer that made the
 file. The run log names the project with it.
@@ -160,7 +233,7 @@ functions folder on that computer. The manifest stores it.
 order that org sources the files.
 }
 
-With \code{one_file}, \code{initialize_project()} reads no \code{pbn.yml}, needs no
+With \code{generated}, \code{initialize_project()} reads no \code{pbn.yml}, needs no
 functions folder, and checks no code lines. It evaluates \code{code} in \code{env}
 in the place of the source of the functions folder. A use of the cache then
 does not check the \code{data_*.R} files on the disk, because the code is in the

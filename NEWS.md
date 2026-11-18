@@ -145,6 +145,13 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - `to_one_file()` changes only the characters that are not ASCII in a string, and keeps its quotes, escapes and line breaks. Before, it wrote each such string again from its value, so a multi-line string became one long line. A raw string, and a string with an escape `\x` or an octal escape, still come from the value.
 - `stamp_fake()` puts one label over the whole figure of a ggplot too, also with facets. Before, each panel of a faceted figure clipped its own copy of the label. ggplot2 and patchwork move from Suggests to Imports.
 - The FAIL of `check_one_file()` for an old one file cuts each quoted line to 80 characters, with " [...]".
+- `initialize_project()` gains `one_file_home` and `one_file_folders`, the paths on the server for `to_one_file()`. Give both or neither, with the folder names of `folders`.
+- `to_one_file()` and `check_one_file()` take no argument: the version and the paths of the server come from the last `initialize_project()`. A call with the old arguments stops, and so does a call without the paths. This changes the unreleased `to_one_file(version, home, folders)` and `check_one_file(version)`.
+- The argument `one_file` of `initialize_project()` in the one file is now `generated`. Generate each one file again with `to_one_file()`. `check_one_file()` says when an older pbn wrote the file.
+- `check_one_file()` takes the paths of the server from the R session, not from the one file. A file with other paths is older than the run script.
+- The one file leaves out each line that holds only a comment `# pbn::to_one_file()` or `# pbn::check_one_file()`.
+- `manifest$source_md5` leaves out the paths of the server, when they are literal strings, and those two comment lines of the run script. So a run script that gains them keeps its results current. `?initialize_project` gives the rule.
+- `no_absolute_paths` no longer exempts the arguments of `pbn::to_one_file()`.
 
 # pbn 2026.11.22
 

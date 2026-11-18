@@ -18,13 +18,22 @@ state <- new.env(parent = emptyenv())
 #'   once. A folder MAY be absent, for example on a computer without the real
 #'   data. Only [save_results()] for the scenario `"real"` then stops.
 #' @param env The environment that the functions folder is sourced into.
-#' @param one_file `NULL`. The file of [to_one_file()] gives a value here. Do
-#'   not write it by hand. See the section One file.
+#' @param ... Nothing. A call with the removed argument `data_raw` stops, and
+#'   the error says how to use `folders`. Each argument after `...` MUST be
+#'   given with its full name.
 #' @param fake_real_data `TRUE` when the folders of `folders` on this
 #'   computer hold fake files in the formats of the real data, and `FALSE`,
 #'   the default, otherwise. See the section Fake real data.
-#' @param ... Nothing. A call with the removed argument `data_raw` stops, and
-#'   the error says how to use `folders`.
+#' @param one_file_home The project folder on the server without a network,
+#'   one string, for example `"N:/durable/project"`, or `NULL`, the default.
+#'   [to_one_file()] writes it into its file. See the section Paths of the
+#'   server.
+#' @param one_file_folders The folders of `folders` on the server, as a named
+#'   character vector, or `NULL`, the default. It MUST name exactly the
+#'   folders of `folders`. One folder MAY have no name on both sides, and it
+#'   then gets the name `main`.
+#' @param generated `NULL`. The file of [to_one_file()] gives a value here.
+#'   Do not write it by hand. See the section One file.
 #' @details
 #' `initialize_project()` does these steps in this order:
 #' 1. It reads the rules of [check_project()] from `home/pbn.yml`. It stops
@@ -33,6 +42,8 @@ state <- new.env(parent = emptyenv())
 #' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
 #'    them in `manifest$source_md5`, without `<version>_functions/blocks.R`.
+#'    The section The md5 of the run script gives the text of the run script
+#'    that the md5 leaves out.
 #' 3. It lists each file under each folder of `folders` that exists, at any
 #'    depth, with its size and its modification time. This is the
 #'    fingerprint of the data. pbn never reads the content of a data file, so
@@ -108,10 +119,61 @@ state <- new.env(parent = emptyenv())
 #'
 #' [read_results()] reads such results as usual. The file of [to_one_file()]
 #' never gives `fake_real_data`, because the server holds the real data.
-#' `fake_real_data = TRUE` together with `one_file` stops.
+#' `fake_real_data = TRUE` together with `generated` stops.
+#' @section Paths of the server:
+#' Give `one_file_home` and `one_file_folders` together, or neither. A
+#' project that never goes to a server gives neither. The run script holds
+#' the paths, and a commented line `# pbn::to_one_file()` follows the call:
+#'
+#' ```r
+#' pbn::initialize_project(
+#'   version = "v01",
+#'   home = ".",
+#'   folders = c(main = "../data"),
+#'   one_file_home = "N:/durable/project",
+#'   one_file_folders = c(main = "N:/durable/data")
+#' )
+#' # pbn::to_one_file()
+#' ```
+#'
+#' Write both values as literal strings: `one_file_home` as one string, and
+#' `one_file_folders` as one string or as `c()` of strings. Only then does
+#' the md5 of the run script leave them out, because a value that is code
+#' could change the results. See the section The md5 of the run script.
+#'
+#' The paths are text only. `initialize_project()` stops on one of the two
+#' without the other, and on a folder of `folders` that `one_file_folders`
+#' does not name, or the reverse. It checks no folder on the disk,
+#' normalises no path and uses no path in the run. The paths never go into
+#' the manifest, a cache key or the run log.
+#' @section The md5 of the run script:
+#' `manifest$source_md5` holds the md5 of `<version>_run.R` without the
+#' text that cannot change the results and that a project adds for the
+#' server:
+#' - each argument `one_file_home` and `one_file_folders` of a top-level call
+#'   `pbn::initialize_project()` with a literal value, from the comma before
+#'   its name to the end of its value. A literal value of `one_file_home` is
+#'   one string constant. A literal value of `one_file_folders` is one string
+#'   constant, or a call `c()` whose arguments are each one string constant,
+#'   with or without a name. pbn reads this from the parse data and
+#'   evaluates nothing.
+#' - each line that holds only a comment with a call of `to_one_file()` or
+#'   `check_one_file()` without arguments, for example
+#'   `# pbn::to_one_file()`, with its line end. The call MAY have `pbn::`
+#'   and any spaces.
+#'
+#' So the results of a run before such an edit stay current. A run script
+#' without such text has the md5 of its bytes, as before. An argument
+#' without a comma before it, for example the first argument of the call,
+#' stays in the md5, and so does an argument with another value, for
+#' example `paste0(base, "/a")`, a name or a block `{ }`. Such a value
+#' counts as code: its edit makes the results of an earlier run older than
+#' the code.
+#' [to_one_file()] works with such a value too. The md5 of each other file
+#' is the md5 of its bytes.
 #' @section One file:
-#' The file of [to_one_file()] calls `initialize_project()` with `one_file`, a
-#' list with these elements:
+#' The file of [to_one_file()] calls `initialize_project()` with `generated`,
+#' a list with these elements:
 #' - `project`, the name of the project folder on the computer that made the
 #'   file. The run log names the project with it.
 #' - `source_md5`, the md5 of the run script and of each file of the
@@ -119,7 +181,7 @@ state <- new.env(parent = emptyenv())
 #' - `code`, the code of the functions folder as one quoted block, in the
 #'   order that org sources the files.
 #'
-#' With `one_file`, `initialize_project()` reads no `pbn.yml`, needs no
+#' With `generated`, `initialize_project()` reads no `pbn.yml`, needs no
 #' functions folder, and checks no code lines. It evaluates `code` in `env`
 #' in the place of the source of the functions folder. A use of the cache then
 #' does not check the `data_*.R` files on the disk, because the code is in the
@@ -156,23 +218,32 @@ initialize_project <- function(
   home,
   folders,
   env = .GlobalEnv,
-  one_file = NULL,
+  ...,
   fake_real_data = FALSE,
-  ...
+  one_file_home = NULL,
+  one_file_folders = NULL,
+  generated = NULL
 ) {
   # The state stays empty until the last step sets it. A call that stops
   # leaves no project for run_plan() or save_results().
   rm(list = ls(state, all.names = TRUE), envir = state)
   check_no_dots(...names(), ...length())
-  folders <- check_init_args(version, home, folders, env, one_file)
-  check_fake_real_data(fake_real_data, one_file)
+  folders <- check_init_args(version, home, folders, env, generated)
+  check_fake_real_data(fake_real_data, generated)
+  server <- check_one_file_paths(
+    one_file_home,
+    one_file_folders,
+    folders,
+    generated
+  )
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
-  if (is.null(one_file)) {
+  if (is.null(generated)) {
     code <- functions_folder_code(version, home)
   } else {
     code <- list(
-      md5 = one_file$source_md5,
-      manifest_md5 = one_file$source_md5,
+      md5 = generated$source_md5,
+      raw_md5 = generated$source_md5,
+      manifest_md5 = generated$source_md5,
       stat = NULL
     )
   }
@@ -180,7 +251,7 @@ initialize_project <- function(
   # The objects that the folder defines are the new ones and those with a
   # new address. run_plan() fails an analysis that changes one of them.
   before <- object_addresses(env)
-  if (is.null(one_file)) {
+  if (is.null(generated)) {
     # results = NULL: org then creates no folder, also no folder with today's
     # date.
     org::initialize_project(
@@ -195,7 +266,7 @@ initialize_project <- function(
       home = home,
       folders_to_be_sourced = character(0)
     )
-    eval(one_file$code, envir = env)
+    eval(generated$code, envir = env)
   }
   out <- list(
     version = version,
@@ -211,11 +282,14 @@ initialize_project <- function(
         folders_absent = found$absent,
         data_files = found$files,
         source_md5 = code$md5,
+        source_raw_md5 = code$raw_md5,
         manifest_md5 = code$manifest_md5,
         source_stat = code$stat,
-        one_file = !is.null(one_file),
+        generated = !is.null(generated),
         fake_real_data = fake_real_data,
-        project = if (is.null(one_file)) basename(home) else one_file$project,
+        one_file_home = server$home,
+        one_file_folders = server$folders,
+        project = if (is.null(generated)) basename(home) else generated$project,
         env = env,
         sourced = defined_names(env, before)
       )
@@ -240,9 +314,11 @@ functions_folder_code <- function(version, home) {
   max_loc <- org_max_loc(read_rules(home))
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
-  md5 <- source_md5(home, version)
+  raw_md5 <- source_md5(home, version, raw = TRUE)
+  md5 <- with_run_script_md5(raw_md5, home, version)
   return(list(
     md5 = md5,
+    raw_md5 = raw_md5,
     manifest_md5 = manifest_md5_of(home, version, md5),
     stat = file_stat(file.path(home, names(md5)), names(md5)),
     max_loc = max_loc
@@ -264,16 +340,24 @@ check_no_dots <- function(names, n) {
       call. = FALSE
     )
   }
+  if ("one_file" %in% names) {
+    stop(
+      "pbn::initialize_project() has no argument one_file. An older ",
+      "pbn::to_one_file() wrote this file. Generate the file again with ",
+      "pbn::to_one_file() in the project folder.",
+      call. = FALSE
+    )
+  }
   named <- names[!is.na(names) & nzchar(names)]
   stop(
     "pbn::initialize_project() has no argument ",
-    if (length(named) > 0) named[1] else "after fake_real_data",
+    if (length(named) > 0) named[1] else "without a name after env",
     ".",
     call. = FALSE
   )
 }
 
-check_init_args <- function(version, home, folders, env, one_file) {
+check_init_args <- function(version, home, folders, env, generated) {
   check_version(version)
   if (!is_one_string(home) || !dir.exists(home)) {
     stop("`home` must be the path of one existing folder.", call. = FALSE)
@@ -282,18 +366,18 @@ check_init_args <- function(version, home, folders, env, one_file) {
   if (!is.environment(env)) {
     stop("`env` must be an environment.", call. = FALSE)
   }
-  check_one_file_arg(one_file)
+  check_generated_arg(generated)
   return(folders)
 }
 
 # Stops when `fake_real_data` is not TRUE or FALSE, and on TRUE with
-# `one_file`: the file of to_one_file() runs on the server, where the data
+# `generated`: the file of to_one_file() runs on the server, where the data
 # is real.
-check_fake_real_data <- function(fake_real_data, one_file) {
+check_fake_real_data <- function(fake_real_data, generated) {
   if (!isTRUE(fake_real_data) && !isFALSE(fake_real_data)) {
     stop("`fake_real_data` must be TRUE or FALSE.", call. = FALSE)
   }
-  if (fake_real_data && !is.null(one_file)) {
+  if (fake_real_data && !is.null(generated)) {
     stop(
       "The file of pbn::to_one_file() runs on real data, so it takes no ",
       "fake_real_data = TRUE.",
@@ -303,26 +387,85 @@ check_fake_real_data <- function(fake_real_data, one_file) {
   return(invisible(NULL))
 }
 
-# Stops when `one_file` is not NULL and not the list that the file of
+# Stops when `generated` is not NULL and not the list that the file of
 # to_one_file() writes: `project`, `source_md5` and `code`.
-check_one_file_arg <- function(one_file) {
-  if (is.null(one_file)) {
+check_generated_arg <- function(generated) {
+  if (is.null(generated)) {
     return(invisible(NULL))
   }
-  shape <- is.list(one_file) &&
-    identical(names(one_file), c("project", "source_md5", "code"))
+  shape <- is.list(generated) &&
+    identical(names(generated), c("project", "source_md5", "code"))
   ok <- shape &&
-    is_one_string(one_file$project) &&
-    is_data_md5(one_file$source_md5) &&
-    is_block_call(one_file$code)
+    is_one_string(generated$project) &&
+    is_data_md5(generated$source_md5) &&
+    is_block_call(generated$code)
   if (!ok) {
     stop(
-      "`one_file` is for the file of pbn::to_one_file() only. Generate the ",
+      "`generated` is for the file of pbn::to_one_file() only. Generate the ",
       "file again with pbn::to_one_file().",
       call. = FALSE
     )
   }
   return(invisible(NULL))
+}
+
+# The paths of the server, `one_file_home` as `home` and `one_file_folders`
+# as `folders`, after their checks: `folders` gets the names and the order
+# of the folders `project` of the project. Both are NULL without the paths.
+# pbn never uses the paths on this computer, so it checks no folder on the
+# disk and normalises no path. Stops on one of the two without the other,
+# on the paths in the file of to_one_file() (`generated`), and on a folder
+# of the project that `folders` does not name, or the reverse.
+check_one_file_paths <- function(home, folders, project, generated) {
+  given <- c(
+    one_file_home = !is.null(home),
+    one_file_folders = !is.null(folders)
+  )
+  if (!any(given)) {
+    return(list(home = NULL, folders = NULL))
+  }
+  if (!is.null(generated)) {
+    stop(
+      "The file of pbn::to_one_file() runs on the server, so it takes no ",
+      "one_file_home and no one_file_folders.",
+      call. = FALSE
+    )
+  }
+  if (!all(given)) {
+    stop(
+      "Give one_file_home and one_file_folders together, or neither. This ",
+      "call gives ",
+      names(given)[given],
+      " only.",
+      call. = FALSE
+    )
+  }
+  if (!is_one_string(home) || !nzchar(home)) {
+    stop(
+      "`one_file_home` must be one path, the project folder on the server, ",
+      "for example \"N:/durable/project\".",
+      call. = FALSE
+    )
+  }
+  folders <- check_folders(folders, "one_file_folders")
+  want <- names(project)
+  missing <- setdiff(want, names(folders))
+  extra <- setdiff(names(folders), want)
+  if (length(missing) > 0 || length(extra) > 0) {
+    stop(
+      "`one_file_folders` must name exactly the folders of `folders`: ",
+      paste(want, collapse = ", "),
+      ".",
+      if (length(missing) > 0) {
+        paste0(" Missing: ", paste(missing, collapse = ", "), ".")
+      },
+      if (length(extra) > 0) {
+        paste0(" Not of the project: ", paste(extra, collapse = ", "), ".")
+      },
+      call. = FALSE
+    )
+  }
+  return(list(home = home, folders = folders[want]))
 }
 
 # TRUE when `x` is a call of `{`, the block of quote({ ... }).
@@ -393,8 +536,10 @@ function_md5 <- function(fns) {
 
 # The md5 of the run script and of each file in the functions folder of
 # `version`, named by the path relative to `home` and sorted in the C locale.
-# A file that does not exist is not in the vector.
-source_md5 <- function(home, version) {
+# A file that does not exist is not in the vector. With `raw = FALSE`, the
+# md5 of the run script is that of run_script_md5(). With `raw = TRUE`, each
+# md5 is that of the bytes of the file.
+source_md5 <- function(home, version, raw = FALSE) {
   folder <- paste0(version, "_functions")
   inner <- list.files(
     file.path(home, folder),
@@ -406,6 +551,19 @@ source_md5 <- function(home, version) {
   rel <- sort(rel[file.exists(file.path(home, rel))], method = "radix")
   md5 <- unname(tools::md5sum(file.path(home, rel)))
   names(md5) <- rel
+  if (raw) {
+    return(md5)
+  }
+  return(with_run_script_md5(md5, home, version))
+}
+
+# The md5 values `md5` of source_md5(raw = TRUE), with the md5 of
+# run_script_md5() for the run script of `version` in `home`.
+with_run_script_md5 <- function(md5, home, version) {
+  script <- paste0(version, "_run.R")
+  if (script %in% names(md5)) {
+    md5[[script]] <- run_script_md5(file.path(home, script), md5[[script]])
+  }
   return(md5)
 }
 

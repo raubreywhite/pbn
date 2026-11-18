@@ -619,7 +619,7 @@ record_skip <- function() {
 # with the size and mtime of the record is not hashed again. The file of
 # to_one_file() holds the code, so there it checks nothing.
 check_data_code <- function(done) {
-  if (isTRUE(state$one_file)) {
+  if (isTRUE(state$generated)) {
     return(invisible(NULL))
   }
   folder <- paste0(state$version, "_functions")

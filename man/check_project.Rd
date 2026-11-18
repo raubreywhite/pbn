@@ -116,8 +116,8 @@ path under \code{allow} allows each finding of one file.
 \code{loc_per_file} is an absolute path, or a path starts from a string
 constant. The rule reads the strings from the
 parse data, so a comment does not count. The arguments of a call
-\code{pbn::initialize_project()} or \code{pbn::to_one_file()} are exempt, because
-a project declares its paths there. A string is an absolute path when it
+\code{pbn::initialize_project()} are exempt, because a project declares its
+paths there, also \code{one_file_home} and \code{one_file_folders}. A string is an absolute path when it
 starts with one of these:
 \itemize{
 \item \code{/}, a name of letters, digits, \code{.}, \verb{_} or \code{-} that starts with a

@@ -96,8 +96,8 @@ check_folder_part <- function(part, name) {
 
 # The argument `folders` of initialize_project() after its checks: a named
 # character vector of one or more paths. One folder without a name gets the
-# name main.
-check_folders <- function(folders) {
+# name main. `arg` is the name of the argument in the errors.
+check_folders <- function(folders, arg = "folders") {
   if (
     !is.character(folders) ||
       length(folders) == 0 ||
@@ -105,7 +105,9 @@ check_folders <- function(folders) {
       !all(nzchar(folders))
   ) {
     stop(
-      "`folders` must be one or more paths of folders, as a named character ",
+      "`",
+      arg,
+      "` must be one or more paths of folders, as a named character ",
       "vector such as c(main = \"../data\").",
       call. = FALSE
     )
@@ -114,7 +116,7 @@ check_folders <- function(folders) {
   if (is.null(nm)) {
     if (length(folders) > 1) {
       stop(
-        "`folders` has ",
+        paste0("`", arg, "` has "),
         length(folders),
         " folders without names. Give each a name, for example ",
         "c(main = \"../data\", lookup = \"../codes\").",
@@ -126,7 +128,9 @@ check_folders <- function(folders) {
   bad <- is.na(nm) | !nzchar(nm) | make.names(nm) != nm
   if (any(bad)) {
     stop(
-      "Each name of `folders` must be a syntactic R name, such as main or ",
+      "Each name of `",
+      arg,
+      "` must be a syntactic R name, such as main or ",
       "lookup. These are not: ",
       paste(encodeString(nm[bad], quote = "\""), collapse = ", "),
       ".",
@@ -135,7 +139,9 @@ check_folders <- function(folders) {
   }
   if (anyDuplicated(nm) > 0) {
     stop(
-      "Each name of `folders` must come once. These come more than once: ",
+      "Each name of `",
+      arg,
+      "` must come once. These come more than once: ",
       paste(unique(nm[duplicated(nm)]), collapse = ", "),
       ".",
       call. = FALSE
@@ -187,7 +193,10 @@ check_nested_folders <- function(folders, home, version) {
       }
     }
   }
-  written <- file.path(home, paste0(version, c("_results", "_cache_gitexclude")))
+  written <- file.path(
+    home,
+    paste0(version, c("_results", "_cache_gitexclude"))
+  )
   for (i in seq_along(folders)) {
     hit <- vapply(
       written,

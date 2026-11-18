@@ -811,8 +811,7 @@ project_rules <- function() {
       rule_no_absolute_paths,
       paste(
         "no .R file has an absolute path or a file.path() from a string,",
-        "outside the arguments of pbn::initialize_project() and",
-        "pbn::to_one_file()"
+        "outside the arguments of pbn::initialize_project()"
       )
     ),
     blocks_list = list(

@@ -4,36 +4,39 @@
 #' project on a server without a network. A person pastes the file into R
 #' there and runs it from the top to the end.
 #'
-#' @param version The version, for example `"v01"`. It MUST be the version of
-#'   the last [initialize_project()] in this R session.
-#' @param home The project folder on the server, one string, for example
-#'   `"N:/durable/project"`. The results go to `<home>/<version>_results/`.
-#' @param folders The folders of the project on the server, as a named
-#'   character vector. It MUST name exactly the folders of `folders` of
+#' @param ... Nothing. A call with an argument stops, and the error names
+#'   the arguments `one_file_home` and `one_file_folders` of
 #'   [initialize_project()].
 #' @details
-#' Call [initialize_project()] for `version` first, in the project on this
-#' computer. `to_one_file()` takes the project from that call. It stops when
-#' the run script or a file of the functions folder changed after it. It
-#' needs no results. So you MAY generate and read the file before the first
-#' full run.
+#' Call [initialize_project()] first, in the project on this computer, with
+#' the paths of the server as `one_file_home` and `one_file_folders`.
+#' `to_one_file()` takes the version, the project and the paths from that
+#' call. Without the paths, it stops and prints the two arguments to add. It
+#' stops when the run script or a file of the functions folder changed after
+#' that call. It needs no results. So you MAY generate and read the file
+#' before the first full run. The results on the server go to
+#' `<one_file_home>/<version>_results/`.
 #'
 #' The file holds these parts, in this order:
 #' 1. A header with the version of pbn, the date, the project folder and the
 #'    version. It also gives the md5 of each file in it and the workers.
 #' 2. `setwd(home)`, so that the run script runs in its project folder, as
 #'    `Rscript <version>_run.R` does.
-#' 3. The run script as it is written, with two changes. Its call of
-#'    `pbn::initialize_project()` gets the paths of the server and the
-#'    argument `one_file`. `one_file` holds the code of each `.R` file of the
-#'    functions folder, in the order that org sources them. The call
-#'    `pbn::scenarios(CFG)` becomes `pbn::scenarios(CFG, only = "real")`.
+#' 3. The run script as it is written, with three changes. Its call of
+#'    `pbn::initialize_project()` gets the paths of the server as `home` and
+#'    `folders`, and the argument `generated`. `generated` holds the code of
+#'    each `.R` file of the functions folder, in the order that org sources
+#'    them. The call has no `one_file_home`, `one_file_folders` or
+#'    `fake_real_data`. The call `pbn::scenarios(CFG)` becomes
+#'    `pbn::scenarios(CFG, only = "real")`. A line with only a comment such
+#'    as `# pbn::to_one_file()` is not in the file. The section The md5 of
+#'    the run script of [initialize_project()] gives the rule.
 #' 4. A comment that says what to type next, for example
 #'    `pbn::show_blocks()`.
 #'
 #' The section One file of [initialize_project()] gives the rules of
-#' `one_file`. On the server, the run needs no `pbn.yml` and no functions
-#' folder. pbn writes the results and the run log under `home`, and, for a
+#' `generated`. On the server, the run needs no `pbn.yml` and no functions
+#' folder. pbn writes the results and the run log under `one_file_home`, and, for a
 #' data function with `cache = TRUE`, the cache there too. The manifest holds
 #' the md5 of the files of this computer. On this computer,
 #' [check_one_file()] checks that the file gives the real results of the
@@ -45,9 +48,8 @@
 #' a blank line or a line with code. `expect_real()` stays. The fake data
 #' code stays, because it is inside the data functions.
 #'
-#' The call of `pbn::initialize_project()` in the file never has
-#' `fake_real_data`, because the server holds the real data. The run script
-#' MAY have it for this computer.
+#' The run script MAY give `fake_real_data = TRUE` for this computer. The
+#' file never does, because the server holds the real data.
 #'
 #' The file is ASCII, because it goes through a clipboard, which can change
 #' a byte that is not ASCII. pbn reads each file of the project as UTF-8 and
@@ -76,10 +78,7 @@
 #' - a file in the file holds a name that is not ASCII, a NUL, or a line
 #'   that is not UTF-8. It also stops on a string that is not valid UTF-8
 #'   after its escapes. The error names the file and the line.
-#' - `home`, a path of `folders` or the name of the project folder is not
-#'   ASCII.
-#' - `folders` misses a folder of the project, or names one that the project
-#'   does not have. The error names it.
+#' - a path of the server or the name of the project folder is not ASCII.
 #' - code that stays in the file uses a name of an `expect_<scenario>()` that
 #'   the file leaves out. The file would stop on the server. The error names
 #'   the file and the line.
@@ -114,10 +113,11 @@
 #' @family one file
 #' @seealso `vignette("pbn")`, section "Running on an air-gapped server".
 #' @export
-to_one_file <- function(version, home, folders) {
-  check_one_file_call(version, "to_one_file")
+to_one_file <- function(...) {
+  check_one_file_call("to_one_file", ...length())
+  version <- state$version
   file <- file.path(state$home, paste0(version, "_one_file.R"))
-  lines <- one_file_lines(version, home, folders)
+  lines <- one_file_lines(version, state$one_file_home, state$one_file_folders)
   write_lf_lines(lines, file)
   cat(
     "pbn: wrote ",
@@ -138,7 +138,8 @@ to_one_file <- function(version, home, folders) {
 
 # The lines of the file of to_one_file() for `version` with the paths of
 # the server `home` and `folders`. Stops when the file would use a function
-# that it leaves out, and when the file does not parse.
+# that it leaves out, and when the file does not parse. The file has no line
+# that holds only a comment of one_file_comment_pattern.
 one_file_lines <- function(version, home, folders) {
   folders <- check_server_paths(home, folders)
   local <- state$home
@@ -173,7 +174,7 @@ one_file_lines <- function(version, home, folders) {
     one_file_footer(home, version)
   )
   parsed <- tryCatch(
-    parse(text = lines, keep.source = FALSE),
+    parse(text = lines, keep.source = TRUE),
     error = function(e) return(e)
   )
   if (inherits(parsed, "error")) {
@@ -184,28 +185,33 @@ one_file_lines <- function(version, home, folders) {
       call. = FALSE
     )
   }
+  # The commented calls of to_one_file() and check_one_file() of the run
+  # script are for this computer only.
+  drop <- one_file_comment_lines(utils::getParseData(parsed))
+  if (length(drop) > 0) {
+    lines <- lines[-drop]
+  }
   return(lines)
 }
 
-# Stops when `version` is not a version, when initialize_project() did not
-# start `version` in this R session, or when this R session runs a file of
-# to_one_file(). `caller` names the function for the error.
-check_one_file_call <- function(version, caller) {
-  check_version(version)
-  check_state(caller)
-  if (!identical(state$version, version)) {
+# Stops when `n_args`, the number of arguments of the call, is not 0, when
+# initialize_project() did not start a project in this R session, when this
+# R session runs a file of to_one_file(), or when that initialize_project()
+# had no paths of the server. `caller` names the function for the error.
+check_one_file_call <- function(caller, n_args) {
+  if (n_args > 0) {
     stop(
-      "pbn::initialize_project() in this R session started the version ",
-      state$version,
-      ", not ",
-      version,
-      ". Call it for ",
-      version,
-      " first.",
+      "pbn::",
+      caller,
+      "() takes no argument. It takes the version and the paths of the ",
+      "server from the last pbn::initialize_project() of this R session. ",
+      "Give the paths of the server there, as one_file_home and ",
+      "one_file_folders.",
       call. = FALSE
     )
   }
-  if (isTRUE(state$one_file)) {
+  check_state(caller)
+  if (isTRUE(state$generated)) {
     stop(
       "This R session runs a file of pbn::to_one_file(). Call pbn::",
       caller,
@@ -213,37 +219,31 @@ check_one_file_call <- function(version, caller) {
       call. = FALSE
     )
   }
+  if (is.null(state$one_file_home)) {
+    nm <- names(state$folders)
+    stop(
+      "pbn::",
+      caller,
+      "() needs the paths of the server, and the last ",
+      "pbn::initialize_project() of this R session has none. Add these two ",
+      "arguments to the call pbn::initialize_project() of ",
+      state$version,
+      "_run.R, with the paths on the server, and run the call again:\n",
+      "  one_file_home = \"<the project folder on the server>\",\n",
+      "  one_file_folders = c(",
+      paste0(nm, " = \"<the folder ", nm, " on the server>\"", collapse = ", "),
+      ")",
+      call. = FALSE
+    )
+  }
   return(invisible(NULL))
 }
 
-# The folders of the server after their checks: one string `home`, and
-# named paths with exactly the names of the folders of the project, in the
-# order of the project. Each path MUST be ASCII.
+# The folders of the server `folders` in the order of the folders of the
+# project, after the check that `home`, each path of `folders` and the name
+# of the project are ASCII. initialize_project() checked the names.
 check_server_paths <- function(home, folders) {
-  if (!is_one_string(home) || !nzchar(home)) {
-    stop(
-      "`home` must be one path, the project folder on the server.",
-      call. = FALSE
-    )
-  }
-  folders <- check_folders(folders)
-  want <- names(state$folders)
-  missing <- setdiff(want, names(folders))
-  extra <- setdiff(names(folders), want)
-  if (length(missing) > 0 || length(extra) > 0) {
-    stop(
-      "`folders` must name exactly the folders of the project: ",
-      paste(want, collapse = ", "),
-      ".",
-      if (length(missing) > 0) {
-        paste0(" Missing: ", paste(missing, collapse = ", "), ".")
-      },
-      if (length(extra) > 0) {
-        paste0(" Not of the project: ", paste(extra, collapse = ", "), ".")
-      },
-      call. = FALSE
-    )
-  }
+  folders <- folders[names(state$folders)]
   for (x in c(home, folders, state$project)) {
     if (!is_ascii(x)) {
       stop(
@@ -255,7 +255,7 @@ check_server_paths <- function(home, folders) {
       )
     }
   }
-  return(folders[want])
+  return(folders)
 }
 
 # TRUE when each character of the string `x` is ASCII and not NUL.
@@ -265,13 +265,16 @@ is_ascii <- function(x) {
 }
 
 # Stops when the run script or a file of the functions folder is not the
-# file that initialize_project() hashed: changed, added or removed.
+# file that initialize_project() hashed: changed, added or removed. It
+# compares the md5 of the bytes, so a change of the paths of the server in
+# the run script counts.
 check_sources_unchanged <- function() {
-  now <- source_md5(state$home, state$version)
-  both <- intersect(names(now), names(state$source_md5))
+  now <- source_md5(state$home, state$version, raw = TRUE)
+  then <- state$source_raw_md5
+  both <- intersect(names(now), names(then))
   changed <- c(
-    setdiff(union(names(now), names(state$source_md5)), both),
-    both[now[both] != state$source_md5[both]]
+    setdiff(union(names(now), names(then)), both),
+    both[now[both] != then[both]]
   )
   if (length(changed) > 0) {
     stop(

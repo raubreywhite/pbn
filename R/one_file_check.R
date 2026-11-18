@@ -5,23 +5,28 @@
 #' when the real results are those of the project, or else the first
 #' difference.
 #'
-#' @param version The version, for example `"v01"`. It MUST be the version of
-#'   the last [initialize_project()] in this R session.
+#' @param ... Nothing. A call with an argument stops. `check_one_file()`
+#'   takes the version and the paths of the server from the last
+#'   [initialize_project()] of this R session.
 #' @details
 #' Run the project as normal first, so that `<version>_results/real/` holds
 #' its real results. Write the file with [to_one_file()], and call
-#' [initialize_project()] again in this R session.
+#' [initialize_project()] again in this R session, with `one_file_home` and
+#' `one_file_folders`.
 #'
 #' `check_one_file()` then does these steps:
-#' 1. It reads `home` and `folders` from the call `pbn::initialize_project()`
-#'    of `<version>_one_file.R` in the project. It makes the lines of
-#'    [to_one_file()] with these paths in memory, and compares them with the
-#'    file, line by line. Only the line of the header with the version of pbn
-#'    and the date does not count. When a line differs, the file is older
-#'    than the code of the project. It prints FAIL with the number of the
-#'    first line that differs and the line in both files, each cut to 80
-#'    characters. It says to run [to_one_file()] again. It prints FAIL also
-#'    when the project has no such file.
+#' 1. It makes the lines of [to_one_file()] in memory, with the code of the
+#'    project and the paths of the server of the last
+#'    [initialize_project()]. It compares them with `<version>_one_file.R` in
+#'    the project, line by line. This R session is the one source of the
+#'    paths, so a change of `one_file_home` in the run script also makes the
+#'    file older. Only the line of the header with the version of pbn and the
+#'    date does not count. When a line differs, the file is older than the
+#'    code of the project. It prints FAIL with the number of the first line
+#'    that differs and the line in both files, each cut to 80 characters. It
+#'    says to run [to_one_file()] again. A file of an older pbn, with the
+#'    argument `one_file`, also gets this FAIL, and the text says so. It
+#'    prints FAIL also when the project has no such file.
 #' 2. Without real results, it stops here. So the file of a project MAY be
 #'    checked for ASCII, for a parse and for a left-out function before the
 #'    first full run.
@@ -88,8 +93,9 @@
 #' @family one file
 #' @seealso `vignette("pbn")`, section "Running on an air-gapped server".
 #' @export
-check_one_file <- function(version) {
-  check_one_file_call(version, "check_one_file")
+check_one_file <- function(...) {
+  check_one_file_call("check_one_file", ...length())
+  version <- state$version
   disk <- disk_one_file(version)
   if (!is.null(disk$found)) {
     cat("FAIL: ", disk$found, "\n", sep = "")
@@ -139,11 +145,13 @@ check_one_file <- function(version) {
 }
 
 # The file <version>_one_file.R of the project, against the lines that
-# to_one_file() writes now with the paths of the server of that file. The
-# line of the header with the version of pbn and the date does not count.
-# Returns a list. `found` is the text of the FAIL, or NULL. On NULL, the
-# list also holds `lines`, the lines of the file, and `home` and `folders`,
-# its paths. It also holds `now`, the lines that to_one_file() writes now.
+# to_one_file() writes now, with the paths of the server of the last
+# initialize_project(). The R session is the one source of the paths, so a
+# file with other paths is older than the run script. The line of the header
+# with the version of pbn and the date does not count. Returns a list.
+# `found` is the text of the FAIL, or NULL. On NULL, the list also holds
+# `lines`, the lines of the file, and `now`, the lines that to_one_file()
+# writes now.
 disk_one_file <- function(version) {
   name <- paste0(version, "_one_file.R")
   path <- file.path(state$home, name)
@@ -164,85 +172,19 @@ disk_one_file <- function(version) {
     " in the project is older than the code of the project: run ",
     "pbn::to_one_file() again, then check."
   )
-  paths <- server_paths(lines)
-  if (is.null(paths)) {
-    return(list(
-      found = paste0(
-        stale,
-        " pbn cannot read the paths of the server from its call ",
-        "pbn::initialize_project()."
-      )
-    ))
-  }
-  if (!setequal(names(paths$folders), names(state$folders))) {
-    return(list(
-      found = paste0(
-        stale,
-        " It names the folders ",
-        paste(names(paths$folders), collapse = ", "),
-        ", and the project has the folders ",
-        paste(names(state$folders), collapse = ", "),
-        "."
-      )
-    ))
-  }
-  now <- one_file_lines(version, paths$home, paths$folders)
+  now <- one_file_lines(version, state$one_file_home, state$one_file_folders)
   differs <- first_line_difference(lines, now)
   if (!is.null(differs)) {
+    if (any(grepl("^[[:space:]]*one_file = list\\($", lines))) {
+      stale <- paste0(
+        stale,
+        " An older pbn wrote it, with the argument one_file that this pbn ",
+        "does not read."
+      )
+    }
     return(list(found = paste(stale, differs)))
   }
-  return(list(
-    found = NULL,
-    lines = lines,
-    home = paths$home,
-    folders = paths$folders,
-    now = now
-  ))
-}
-
-# The paths of the server in the lines `lines` of a file of to_one_file():
-# `home` and `folders` of its one top-level call pbn::initialize_project(),
-# each written as strings. NULL when the lines do not parse or hold no such
-# call.
-server_paths <- function(lines) {
-  exprs <- tryCatch(
-    parse(text = lines, keep.source = FALSE),
-    error = function(e) return(NULL)
-  )
-  init <- Filter(
-    function(e) {
-      return(is.call(e) && identical(e[[1]], quote(pbn::initialize_project)))
-    },
-    as.list(exprs)
-  )
-  if (length(init) != 1) {
-    return(NULL)
-  }
-  matched <- tryCatch(
-    match.call(initialize_project, init[[1]]),
-    error = function(e) return(NULL)
-  )
-  folders <- named_strings(matched$folders)
-  if (!is_one_string(matched$home) || is.null(folders)) {
-    return(NULL)
-  }
-  return(list(home = matched$home, folders = folders))
-}
-
-# The named strings of the call `f`, for example c(main = "N:/d"). NULL
-# when `f` is not a call of c() with only named strings as its arguments.
-named_strings <- function(f) {
-  if (!is.call(f) || !identical(f[[1]], quote(c))) {
-    return(NULL)
-  }
-  args <- as.list(f)[-1]
-  named <- length(args) > 0 &&
-    !is.null(names(args)) &&
-    all(nzchar(names(args)))
-  if (!named || !all(vapply(args, is_one_string, logical(1)))) {
-    return(NULL)
-  }
-  return(vapply(args, function(x) return(x), character(1)))
+  return(list(found = NULL, lines = lines, now = now))
 }
 
 # The first line where the lines `disk`, of the file in the project, and
@@ -296,7 +238,7 @@ quoted_line <- function(x) {
 # takes the line with the temporary paths. Every other line is the line of
 # the file in the project.
 local_paths <- function(disk, version, home, copies) {
-  here <- one_file_lines(version, home, copies[names(disk$folders)])
+  here <- one_file_lines(version, home, copies[names(state$one_file_folders)])
   if (length(here) != length(disk$now)) {
     stop(
       "pbn cannot put the temporary paths into the file: it gets ",

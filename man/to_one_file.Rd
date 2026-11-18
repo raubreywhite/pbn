@@ -4,17 +4,11 @@
 \alias{to_one_file}
 \title{Write the run of the real data as one file for a server}
 \usage{
-to_one_file(version, home, folders)
+to_one_file(...)
 }
 \arguments{
-\item{version}{The version, for example \code{"v01"}. It MUST be the version of
-the last \code{\link[=initialize_project]{initialize_project()}} in this R session.}
-
-\item{home}{The project folder on the server, one string, for example
-\code{"N:/durable/project"}. The results go to \verb{<home>/<version>_results/}.}
-
-\item{folders}{The folders of the project on the server, as a named
-character vector. It MUST name exactly the folders of \code{folders} of
+\item{...}{Nothing. A call with an argument stops, and the error names
+the arguments \code{one_file_home} and \code{one_file_folders} of
 \code{\link[=initialize_project]{initialize_project()}}.}
 }
 \value{
@@ -27,11 +21,14 @@ project on a server without a network. A person pastes the file into R
 there and runs it from the top to the end.
 }
 \details{
-Call \code{\link[=initialize_project]{initialize_project()}} for \code{version} first, in the project on this
-computer. \code{to_one_file()} takes the project from that call. It stops when
-the run script or a file of the functions folder changed after it. It
-needs no results. So you MAY generate and read the file before the first
-full run.
+Call \code{\link[=initialize_project]{initialize_project()}} first, in the project on this computer, with
+the paths of the server as \code{one_file_home} and \code{one_file_folders}.
+\code{to_one_file()} takes the version, the project and the paths from that
+call. Without the paths, it stops and prints the two arguments to add. It
+stops when the run script or a file of the functions folder changed after
+that call. It needs no results. So you MAY generate and read the file
+before the first full run. The results on the server go to
+\verb{<one_file_home>/<version>_results/}.
 
 The file holds these parts, in this order:
 \enumerate{
@@ -39,18 +36,22 @@ The file holds these parts, in this order:
 version. It also gives the md5 of each file in it and the workers.
 \item \code{setwd(home)}, so that the run script runs in its project folder, as
 \verb{Rscript <version>_run.R} does.
-\item The run script as it is written, with two changes. Its call of
-\code{pbn::initialize_project()} gets the paths of the server and the
-argument \code{one_file}. \code{one_file} holds the code of each \code{.R} file of the
-functions folder, in the order that org sources them. The call
-\code{pbn::scenarios(CFG)} becomes \code{pbn::scenarios(CFG, only = "real")}.
+\item The run script as it is written, with three changes. Its call of
+\code{pbn::initialize_project()} gets the paths of the server as \code{home} and
+\code{folders}, and the argument \code{generated}. \code{generated} holds the code of
+each \code{.R} file of the functions folder, in the order that org sources
+them. The call has no \code{one_file_home}, \code{one_file_folders} or
+\code{fake_real_data}. The call \code{pbn::scenarios(CFG)} becomes
+\code{pbn::scenarios(CFG, only = "real")}. A line with only a comment such
+as \verb{# pbn::to_one_file()} is not in the file. The section The md5 of
+the run script of \code{\link[=initialize_project]{initialize_project()}} gives the rule.
 \item A comment that says what to type next, for example
 \code{pbn::show_blocks()}.
 }
 
 The section One file of \code{\link[=initialize_project]{initialize_project()}} gives the rules of
-\code{one_file}. On the server, the run needs no \code{pbn.yml} and no functions
-folder. pbn writes the results and the run log under \code{home}, and, for a
+\code{generated}. On the server, the run needs no \code{pbn.yml} and no functions
+folder. pbn writes the results and the run log under \code{one_file_home}, and, for a
 data function with \code{cache = TRUE}, the cache there too. The manifest holds
 the md5 of the files of this computer. On this computer,
 \code{\link[=check_one_file]{check_one_file()}} checks that the file gives the real results of the
@@ -62,9 +63,8 @@ only. The comment lines directly above such a function go with it, up to
 a blank line or a line with code. \code{expect_real()} stays. The fake data
 code stays, because it is inside the data functions.
 
-The call of \code{pbn::initialize_project()} in the file never has
-\code{fake_real_data}, because the server holds the real data. The run script
-MAY have it for this computer.
+The run script MAY give \code{fake_real_data = TRUE} for this computer. The
+file never does, because the server holds the real data.
 
 The file is ASCII, because it goes through a clipboard, which can change
 a byte that is not ASCII. pbn reads each file of the project as UTF-8 and
@@ -96,10 +96,7 @@ because R reads a name only as it is written.
 \item a file in the file holds a name that is not ASCII, a NUL, or a line
 that is not UTF-8. It also stops on a string that is not valid UTF-8
 after its escapes. The error names the file and the line.
-\item \code{home}, a path of \code{folders} or the name of the project folder is not
-ASCII.
-\item \code{folders} misses a folder of the project, or names one that the project
-does not have. The error names it.
+\item a path of the server or the name of the project folder is not ASCII.
 \item code that stays in the file uses a name of an \verb{expect_<scenario>()} that
 the file leaves out. The file would stop on the server. The error names
 the file and the line.

@@ -16,9 +16,9 @@ code_files <- function(path) {
   return(entries[keep])
 }
 
-# The functions whose arguments MAY hold an absolute path: the places where a
-# project declares its paths.
-path_calls <- c("initialize_project", "to_one_file")
+# The functions whose arguments MAY hold an absolute path: the place where a
+# project declares its paths, also those of the server.
+path_calls <- "initialize_project"
 
 # TRUE for each string of `x` that is an absolute path:
 # - "/" and a name of letters, digits, ".", "_" or "-" that starts with a
@@ -42,7 +42,7 @@ is_absolute_path <- function(x) {
 # The rule no_absolute_paths: no string constant of an .R file of
 # code_files() is an absolute path, see is_absolute_path(), and no call of
 # file.path() or fs::path() starts from a string constant. The arguments of
-# a call of pbn::initialize_project() or pbn::to_one_file() are exempt. A
+# a call of pbn::initialize_project() are exempt. A
 # file that R cannot parse fails loc_per_file, so this rule skips it.
 rule_no_absolute_paths <- function(path) {
   rule <- "no_absolute_paths"

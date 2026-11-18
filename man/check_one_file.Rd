@@ -4,11 +4,12 @@
 \alias{check_one_file}
 \title{Check the file of to_one_file() on this computer}
 \usage{
-check_one_file(version)
+check_one_file(...)
 }
 \arguments{
-\item{version}{The version, for example \code{"v01"}. It MUST be the version of
-the last \code{\link[=initialize_project]{initialize_project()}} in this R session.}
+\item{...}{Nothing. A call with an argument stops. \code{check_one_file()}
+takes the version and the paths of the server from the last
+\code{\link[=initialize_project]{initialize_project()}} of this R session.}
 }
 \value{
 Invisibly, \code{TRUE} on PASS and \code{FALSE} on FAIL.
@@ -22,19 +23,23 @@ difference.
 \details{
 Run the project as normal first, so that \verb{<version>_results/real/} holds
 its real results. Write the file with \code{\link[=to_one_file]{to_one_file()}}, and call
-\code{\link[=initialize_project]{initialize_project()}} again in this R session.
+\code{\link[=initialize_project]{initialize_project()}} again in this R session, with \code{one_file_home} and
+\code{one_file_folders}.
 
 \code{check_one_file()} then does these steps:
 \enumerate{
-\item It reads \code{home} and \code{folders} from the call \code{pbn::initialize_project()}
-of \verb{<version>_one_file.R} in the project. It makes the lines of
-\code{\link[=to_one_file]{to_one_file()}} with these paths in memory, and compares them with the
-file, line by line. Only the line of the header with the version of pbn
-and the date does not count. When a line differs, the file is older
-than the code of the project. It prints FAIL with the number of the
-first line that differs and the line in both files, each cut to 80
-characters. It says to run \code{\link[=to_one_file]{to_one_file()}} again. It prints FAIL also
-when the project has no such file.
+\item It makes the lines of \code{\link[=to_one_file]{to_one_file()}} in memory, with the code of the
+project and the paths of the server of the last
+\code{\link[=initialize_project]{initialize_project()}}. It compares them with \verb{<version>_one_file.R} in
+the project, line by line. This R session is the one source of the
+paths, so a change of \code{one_file_home} in the run script also makes the
+file older. Only the line of the header with the version of pbn and the
+date does not count. When a line differs, the file is older than the
+code of the project. It prints FAIL with the number of the first line
+that differs and the line in both files, each cut to 80 characters. It
+says to run \code{\link[=to_one_file]{to_one_file()}} again. A file of an older pbn, with the
+argument \code{one_file}, also gets this FAIL, and the text says so. It
+prints FAIL also when the project has no such file.
 \item Without real results, it stops here. So the file of a project MAY be
 checked for ASCII, for a parse and for a left-out function before the
 first full run.

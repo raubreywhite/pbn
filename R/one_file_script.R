@@ -146,7 +146,7 @@ run_plan_workers <- function(tokens) {
 
 # The lines of the call of pbn::initialize_project() of the file of
 # to_one_file(): the version, the paths of the server, the argument `env` of
-# the run script as `env_text` or NULL, and `one_file` with the project,
+# the run script as `env_text` or NULL, and `generated` with the project,
 # the md5 of the files of the project and the code `code`.
 init_call_lines <- function(version, home, folders, env_text, code) {
   # The md5 of the manifest of the project, so that the server writes the
@@ -167,7 +167,7 @@ init_call_lines <- function(version, home, folders, env_text, code) {
     ),
     "  ),",
     if (!is.null(env_text)) paste0("  env = ", env_text, ","),
-    "  one_file = list(",
+    "  generated = list(",
     paste0("    project = ", quoted(state$project), ","),
     "    source_md5 = c(",
     paste0(
@@ -218,7 +218,7 @@ one_file_header <- function(version, home, included, workers) {
     ),
     "# Do not edit: change the project and generate again with pbn::to_one_file().",
     "#",
-    "# The md5 of each file in this file:",
+    "# The md5 of each file in this file, as pbn computes it for the manifest:",
     paste0(
       "#   ",
       formatC(included, width = -width),

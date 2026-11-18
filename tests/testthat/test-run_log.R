@@ -659,10 +659,19 @@ test_that("the Timings section gives clock seconds only: the main session, each 
   rows <- c(kinds[startsWith(kinds, "| ")][-1], steps[startsWith(steps, "| ")][-1])
   rows <- rows[!grepl("^\\|-", rows)]
   shares <- vapply(rows, function(x) return(utils::tail(md_cells(x), 1)), "")
-  expect_true(all(grepl("^[0-9]+(\\.[0-9])?%$", shares)))
-  # The shares are parts of one sum, so they add up to 100%, give or take
-  # the rounding of each.
-  expect_lt(abs(sum(as.numeric(sub("%", "", shares))) - 100), 0.5 * length(shares) + 0.1)
+  # On a computer whose clock ticks more slowly than this small run takes,
+  # every time is 0 and every share is "n/a". Windows is such a computer.
+  if (all(shares == "n/a")) {
+    succeed()
+  } else {
+    expect_true(all(grepl("^[0-9]+(\\.[0-9])?%$", shares)))
+    # The shares are parts of one sum, so they add up to 100%, give or take
+    # the rounding of each.
+    expect_lt(
+      abs(sum(as.numeric(sub("%", "", shares))) - 100),
+      0.5 * length(shares) + 0.1
+    )
+  }
 })
 
 test_that("share gives one decimal below 10% and whole numbers from 10%, and the wall seconds of a scenario run from the start of its first record to the end of its last", {

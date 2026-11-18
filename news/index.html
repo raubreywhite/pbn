@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -41,6 +41,11 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.24" id="pbn-20261124">pbn 2026.11.24<a class="anchor" aria-label="anchor" href="#pbn-20261124"></a></h2>
+<ul><li>
+<code><a href="../reference/initialize_project.html">initialize_project()</a></code> now applies the rule <code>loc_per_file</code> as <code><a href="../reference/check_project.html">check_project()</a></code> does, also the section <code>allow</code> of <code>pbn.yml</code>. Before, a file under <code>allow: loc_per_file:</code> stopped the start of the project.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.23" id="pbn-20261123">pbn 2026.11.23<a class="anchor" aria-label="anchor" href="#pbn-20261123"></a></h2>
 <p>The run script is now one <code>plnr</code> plan over every scenario and simulation. pbn no longer starts the run script in a new R session for each scenario. To move a project, change these items:</p>

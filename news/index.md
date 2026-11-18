@@ -1,5 +1,13 @@
 # Changelog
 
+## pbn 2026.11.24
+
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  now applies the rule `loc_per_file` as
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  does, also the section `allow` of `pbn.yml`. Before, a file under
+  `allow: loc_per_file:` stopped the start of the project.
+
 ## pbn 2026.11.23
 
 The run script is now one `plnr` plan over every scenario and

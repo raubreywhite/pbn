@@ -91,7 +91,12 @@ folders.
     [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
     from `home/pbn.yml`. It stops on each error of `pbn.yml` that stops
     [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md),
-    also when the file is missing.
+    also when the file is missing. It stops when an `.R` file at the top
+    of `<version>_functions/` is a FAIL of the rule `loc_per_file`. The
+    limit, the level and the section `allow` of `pbn.yml` act as in
+    [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md).
+    The error names each file with its count of code lines and the
+    limit.
 
 2.  It computes the md5 of `<version>_run.R` and of each file in
     `<version>_functions/`, before it sources them.
@@ -111,11 +116,9 @@ folders.
 
 4.  It calls
     [`org::initialize_project()`](https://www.rwhite.no/org/reference/initialize_project.html)
-    with `folders_to_be_sourced` set to `<version>_functions`.
-    `max_loc_per_file` is the `limit` of the rule `loc_per_file`, 1000
-    in the house set. When the rule is `warn` or `off`, it is `Inf`,
-    because the check of org stops the run on a file with more lines.
-    pbn gives org no folder of `folders`, so
+    with `folders_to_be_sourced` set to `<version>_functions` and
+    `max_loc_per_file = Inf`, because step 1 checks the code lines. pbn
+    gives org no folder of `folders`, so
     [`org::project`](https://www.rwhite.no/org/reference/project.html)
     holds `home`, `computer_id` and `env` only.
 
@@ -326,11 +329,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmp7XF2mV/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpzWL4YV/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/v01_results"
+#> [1] "/tmp/RtmpzWL4YV/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/data"
+#> [1] "/tmp/RtmpzWL4YV/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

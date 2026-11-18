@@ -9,7 +9,7 @@ functions folder. It MUST be the first call in every vNN_run.R."><meta property=
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.23</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -132,7 +132,11 @@ paths of the folders.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>initialize_project()</code> does these steps in this order:</p><ol><li><p>It reads the rules of <code><a href="check_project.html">check_project()</a></code> from <code>home/pbn.yml</code>. It stops
 on each error of <code>pbn.yml</code> that stops <code><a href="check_project.html">check_project()</a></code>, also when the
-file is missing.</p></li>
+file is missing. It stops when an <code>.R</code> file at the top of
+<code>&lt;version&gt;_functions/</code> is a FAIL of the rule <code>loc_per_file</code>. The limit,
+the level and the section <code>allow</code> of <code>pbn.yml</code> act as in
+<code><a href="check_project.html">check_project()</a></code>. The error names each file with its count of code
+lines and the limit.</p></li>
 <li><p>It computes the md5 of <code>&lt;version&gt;_run.R</code> and of each file in
 <code>&lt;version&gt;_functions/</code>, before it sources them. <code><a href="save_results.html">save_results()</a></code> stores
 them in <code>manifest$source_md5</code>, without <code>&lt;version&gt;_functions/blocks.R</code>.
@@ -146,10 +150,8 @@ the fingerprint in <code>manifest$data_files</code> of the scenario <code>"real"
 file that the run writes later is not in the list. The section The
 fingerprint of the data gives the rules.</p></li>
 <li><p>It calls <code><a href="https://www.rwhite.no/org/reference/initialize_project.html" class="external-link">org::initialize_project()</a></code> with <code>folders_to_be_sourced</code> set to
-<code>&lt;version&gt;_functions</code>. <code>max_loc_per_file</code> is the <code>limit</code> of the rule
-<code>loc_per_file</code>, 1000 in the house set. When the rule is <code>warn</code> or
-<code>off</code>, it is <code>Inf</code>, because the check of org stops the run on a file
-with more lines. pbn gives org no folder of <code>folders</code>, so
+<code>&lt;version&gt;_functions</code> and <code>max_loc_per_file = Inf</code>, because step 1
+checks the code lines. pbn gives org no folder of <code>folders</code>, so
 <code><a href="https://www.rwhite.no/org/reference/project.html" class="external-link">org::project</a></code> holds <code>home</code>, <code>computer_id</code> and <code>env</code> only.</p></li>
 </ol><p>Project code finds a folder with <code><a href="folder.html">folder()</a></code>, for example
 <code>file.path(pbn::folder("main"), "d.csv")</code>. Call <code><a href="folder.html">folder()</a></code> inside a
@@ -308,11 +310,11 @@ file.</p>
 <span class="r-in"><span>  env <span class="op">=</span> <span class="va">env</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmp7XF2mV/pbn_initialize_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpzWL4YV/pbn_initialize_example/v01_functions into </span>
 <span class="r-in"><span><span class="va">p</span><span class="op">$</span><span class="va">results</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/v01_results"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpzWL4YV/pbn_initialize_example/v01_results"</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="folder.html">folder</a></span><span class="op">(</span><span class="st">"main"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/Rtmp7XF2mV/pbn_initialize_example/data"</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> [1] "/tmp/RtmpzWL4YV/pbn_initialize_example/data"</span>
 <span class="r-in"><span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">$</span><span class="va">scenarios</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   scenario sims</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1     real    1</span>

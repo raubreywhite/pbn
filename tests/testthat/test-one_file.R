@@ -680,6 +680,36 @@ test_that("check_one_file fails when the file of the project is older than the c
   )
 })
 
+test_that("the FAIL of a file that is older than the code cuts each quoted line to 80 characters and keeps the line number", {
+  long_disk <- paste0("x <- c(", strrep("1, ", 1200), "1)")
+  long_now <- paste0("x <- c(", strrep("2, ", 1200), "2)")
+  said <- first_line_difference(
+    c("a <- 1", long_disk, "b <- 2"),
+    c("a <- 1", long_now, "b <- 2")
+  )
+  expect_identical(
+    said,
+    paste0(
+      "The first line that differs is line 2. The file has \"",
+      substr(long_disk, 1, 80),
+      "\" [...], and pbn::to_one_file() writes \"",
+      substr(long_now, 1, 80),
+      "\" [...] now."
+    )
+  )
+  expect_lt(nchar(said), 300)
+  # A line of 80 characters stays whole.
+  line80 <- strrep("y", 80)
+  expect_identical(
+    first_line_difference(line80, "z"),
+    paste0(
+      "The first line that differs is line 1. The file has \"",
+      line80,
+      "\", and pbn::to_one_file() writes \"z\" now."
+    )
+  )
+})
+
 test_that("check_one_file runs the file of the project with the temporary paths, and the line of the pbn version and the date does not count", {
   p <- local_project()
   save_run(p, only = c("real", "known"))

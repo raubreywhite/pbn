@@ -349,50 +349,6 @@ test_that("make_outputs stops with the scenario named when the output function f
   )
 })
 
-test_that("stamp_fake adds the label for a fake scenario only, and stops without ggplot2 only when it must stamp", {
-  skip_if_not_installed("ggplot2")
-  q <- ggplot2::ggplot(data.frame(x = 1:3, y = 1:3), ggplot2::aes(x, y))
-  expect_identical(stamp_fake(q), q)
-  expect_identical(stamp_fake("not a figure"), "not a figure")
-
-  p <- local_project()
-  write_lines(p$home, "v01_functions/_cfg.R", cfg_with_output())
-  sc <- run_and_save(p)
-  seen <- new.env()
-  fn <- function(results, dir) {
-    seen[[results$manifest$scenario]] <- stamp_fake(q)
-    return(invisible(NULL))
-  }
-  utils::capture.output(make_outputs(fn, sc))
-  expect_identical(seen$real, q)
-  for (s in c("known", "null")) {
-    layers <- seen[[s]]$layers
-    expect_length(layers, length(q$layers) + 1)
-    grob <- layers[[length(layers)]]$geom_params$grob
-    expect_identical(grob$label, "FAKE DATA")
-    expect_identical(grob$rot, 30)
-  }
-  expect_identical(stamp_fake(q), q)
-
-  bad <- function(results, dir) {
-    stamp_fake("not a figure")
-    return(invisible(NULL))
-  }
-  expect_error(
-    utils::capture.output(make_outputs(bad, sc[sc$scenario == "known", ])),
-    "`q` must be a ggplot",
-    fixed = TRUE
-  )
-  local_mocked_bindings(has_ggplot2 = function() return(FALSE))
-  utils::capture.output(make_outputs(fn, sc[sc$scenario == "real", ]))
-  expect_identical(seen$real, q)
-  expect_error(
-    utils::capture.output(make_outputs(fn, sc[sc$scenario == "known", ])),
-    "pbn::stamp_fake() needs the package ggplot2",
-    fixed = TRUE
-  )
-})
-
 # The panels of the gtable `g`, its labels "FAKE DATA", and the insets of
 # the label: the rows and columns each covers, and the fills of its
 # rectangles. Panels of a nested gtable count too.
@@ -402,7 +358,7 @@ figure_parts <- function(g) {
   walk <- function(x) {
     if (inherits(x, "gtable")) {
       drawn <- !vapply(x$grobs, inherits, logical(1), what = "zeroGrob")
-      panels <<- panels + sum(grepl("^panel-", x$layout$name) & drawn)
+      panels <<- panels + sum(grepl("^panel(-[0-9-]+)?$", x$layout$name) & drawn)
     }
     if (inherits(x, "text") && identical(x$label, "FAKE DATA")) {
       labels <<- labels + 1L
@@ -447,9 +403,44 @@ figure_parts <- function(g) {
   ))
 }
 
+test_that("stamp_fake adds the label for a fake scenario only, and returns the figure itself otherwise", {
+  q <- ggplot2::ggplot(data.frame(x = 1:3, y = 1:3), ggplot2::aes(x, y))
+  expect_identical(stamp_fake(q), q)
+  expect_identical(stamp_fake("not a figure"), "not a figure")
+
+  p <- local_project()
+  write_lines(p$home, "v01_functions/_cfg.R", cfg_with_output())
+  sc <- run_and_save(p)
+  seen <- new.env()
+  fn <- function(results, dir) {
+    seen[[results$manifest$scenario]] <- stamp_fake(q)
+    return(invisible(NULL))
+  }
+  utils::capture.output(make_outputs(fn, sc))
+  expect_identical(seen$real, q)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  for (s in c("known", "null")) {
+    expect_s3_class(seen[[s]], "patchwork")
+    expect_identical(
+      figure_parts(patchwork::patchworkGrob(seen[[s]]))$labels,
+      1L
+    )
+  }
+  expect_identical(stamp_fake(q), q)
+
+  bad <- function(results, dir) {
+    stamp_fake("not a figure")
+    return(invisible(NULL))
+  }
+  expect_error(
+    utils::capture.output(make_outputs(bad, sc[sc$scenario == "known", ])),
+    "`q` must be a ggplot",
+    fixed = TRUE
+  )
+})
+
 test_that("stamp_fake puts one label over the whole figure of a patchwork, and leaves each panel visible", {
-  skip_if_not_installed("ggplot2")
-  skip_if_not_installed("patchwork")
   plot_xy <- function(y, colour = NULL) {
     d <- data.frame(x = 1:3, y = y, g = c("a", "b", "a"))
     q <- ggplot2::ggplot(d, ggplot2::aes(x, y))
@@ -505,12 +496,91 @@ test_that("stamp_fake puts one label over the whole figure of a patchwork, and l
     "`q` must be a ggplot or a patchwork. Stamp each ggplot before you combine it with another package.",
     fixed = TRUE
   )
-  local_mocked_bindings(has_patchwork = function() return(FALSE))
-  expect_error(
-    stamp_fake(shapes[[1]]),
-    "needs the package patchwork",
-    fixed = TRUE
+})
+
+test_that("stamp_fake puts one label over the whole figure of a ggplot with or without facets, and keeps each panel, the legend, the title and the caption", {
+  d <- data.frame(
+    x = rep(1:3, 8),
+    y = seq_len(24),
+    f = rep(letters[1:8], each = 3),
+    r = rep(letters[1:4], each = 6),
+    g = rep(c("u", "v"), 12)
   )
+  base <- ggplot2::ggplot(d, ggplot2::aes(x, y)) + ggplot2::geom_point()
+  shapes <- list(
+    "no facets" = base,
+    "facet_wrap, 2 panels, ncol 1" = ggplot2::ggplot(
+      d[d$f %in% c("a", "b"), ],
+      ggplot2::aes(x, y)
+    ) +
+      ggplot2::geom_point() +
+      ggplot2::facet_wrap(~f, ncol = 1, scales = "free_y"),
+    "facet_wrap, 8 panels, ncol 1" = base +
+      ggplot2::facet_wrap(~f, ncol = 1, scales = "free_y"),
+    "facet_grid, 4 x 2" = base + ggplot2::facet_grid(r ~ g),
+    "legend, title, caption, facet_wrap free" = ggplot2::ggplot(
+      d,
+      ggplot2::aes(x, y, colour = g)
+    ) +
+      ggplot2::geom_point() +
+      ggplot2::facet_wrap(~r, scales = "free") +
+      ggplot2::labs(title = "A title", caption = "A caption")
+  )
+  panels <- c(1L, 2L, 8L, 8L, 4L)
+  output_state$fake <- TRUE
+  on.exit(rm(list = ls(output_state), envir = output_state), add = TRUE)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  texts <- function(g) {
+    out <- character(0)
+    walk <- function(x) {
+      if (inherits(x, "text") || inherits(x, "titleGrob")) {
+        out <<- c(out, as.character(x$label))
+      }
+      for (k in c("children", "grobs")) {
+        for (child in x[[k]]) {
+          walk(child)
+        }
+      }
+      return(invisible(NULL))
+    }
+    walk(g)
+    return(out)
+  }
+  for (i in seq_along(shapes)) {
+    shape <- names(shapes)[i]
+    q <- shapes[[i]]
+    stamped <- stamp_fake(q)
+    expect_s3_class(stamped, "patchwork")
+    before <- figure_parts(ggplot2::ggplotGrob(q))
+    g <- patchwork::patchworkGrob(stamped)
+    after <- figure_parts(g)
+    expect_identical(before$panels, panels[i], label = shape)
+    expect_identical(after$panels, panels[i], label = shape)
+    expect_identical(after$labels, 1L, label = shape)
+    expect_true(after$covers, label = shape)
+    expect_identical(after$opaque, 0L, label = shape)
+  }
+  # The legend, the title and the caption stay.
+  found <- texts(patchwork::patchworkGrob(stamp_fake(shapes[[5]])))
+  expect_true(all(c("A title", "A caption", "g", "u", "v") %in% found))
+  # ggsave() saves the stamped figure at the size it is given. The width and
+  # the height of a PNG are the 4-byte numbers at bytes 17 to 24.
+  file <- withr::local_tempfile(fileext = ".png")
+  ggplot2::ggsave(
+    file,
+    stamp_fake(shapes[[3]]),
+    width = 4,
+    height = 6,
+    units = "in",
+    dpi = 50
+  )
+  bytes <- readBin(file, "raw", 24)
+  size <- c(
+    sum(as.integer(bytes[17:20]) * 256^(3:0)),
+    sum(as.integer(bytes[21:24]) * 256^(3:0))
+  )
+  expect_identical(size, c(200, 300))
 })
 
 test_that("output is not a setting: it is not in the argsets, the manifest settings or the cache key", {

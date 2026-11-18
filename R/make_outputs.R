@@ -420,19 +420,18 @@ prefix_fake <- function(dir, files, scenario) {
 #' a call of [make_outputs()], it returns `q` unchanged. For `"real"` whose
 #' manifest has `fake_real_data` `TRUE`, it adds the label.
 #'
-#' On a ggplot, the label is on each panel. On a patchwork, it is one label
-#' over the whole figure. `stamp_fake()` wraps the patchwork in one element
-#' with [patchwork::wrap_elements()], and puts the label on it with
+#' The label is one label over the whole figure, also for a ggplot with
+#' facets. `stamp_fake()` wraps the figure in one element with
+#' [patchwork::wrap_elements()], and puts the label on it with
 #' [patchwork::inset_element()]. The label has no background, so each panel
-#' stays visible. Call `stamp_fake()` last, just before the figure is saved.
-#' A `+` after it applies to the label, and a theme with a background then
+#' stays visible. The value is a patchwork, which [ggplot2::ggsave()] saves
+#' as before. Call `stamp_fake()` last, just before the figure is saved. A
+#' `+` after it applies to the label, and a theme with a background then
 #' hides the figure.
 #'
-#' For a fake scenario, `stamp_fake()` needs the package ggplot2, and
-#' patchwork for a patchwork. It stops when the package is not installed.
-#' It also stops when `q` is not a ggplot or a patchwork, for example a
-#' grob or a gtable of `gridExtra::arrangeGrob()`. Stamp each ggplot before
-#' you combine it in such an object.
+#' It stops when `q` is not a ggplot or a patchwork, for example a grob or a
+#' gtable of `gridExtra::arrangeGrob()`. Stamp each ggplot before you combine
+#' it in such an object.
 #' @return `q`, with the label for a fake scenario.
 #' @examples
 #' # Outside make_outputs(), stamp_fake() returns the figure as it is.
@@ -446,13 +445,6 @@ stamp_fake <- function(q) {
   if (!isTRUE(output_state$fake)) {
     return(q)
   }
-  if (!has_ggplot2()) {
-    stop(
-      "pbn::stamp_fake() needs the package ggplot2 to mark a figure of fake ",
-      "data. Install ggplot2.",
-      call. = FALSE
-    )
-  }
   if (!inherits(q, "ggplot")) {
     stop(
       "`q` must be a ggplot or a patchwork. Stamp each ggplot before you ",
@@ -465,43 +457,23 @@ stamp_fake <- function(q) {
     rot = 30,
     gp = grid::gpar(col = "red", alpha = 0.45, fontsize = 40, fontface = "bold")
   )
-  if (inherits(q, "patchwork")) {
-    if (!has_patchwork()) {
-      stop(
-        "pbn::stamp_fake() needs the package patchwork to mark a patchwork ",
-        "figure. Install patchwork.",
-        call. = FALSE
+  # One label over the whole figure. A label added with + to a ggplot is on
+  # each panel, and each panel clips it. An inset on a patchwork covers its
+  # last plot only, and its opaque background hides that plot. So wrap the
+  # whole figure as one element, and give the inset of the label no
+  # background.
+  inset <- patchwork::wrap_elements(full = label) +
+    ggplot2::theme(plot.background = ggplot2::element_blank())
+  return(
+    patchwork::wrap_elements(full = q) +
+      patchwork::inset_element(
+        inset,
+        left = 0,
+        bottom = 0,
+        right = 1,
+        top = 1,
+        align_to = "full",
+        ignore_tag = TRUE
       )
-    }
-    # One label over the whole figure. A label added with + goes on the
-    # last panel only. An inset on q itself covers the last plot only, and
-    # its opaque background hides that plot. So wrap the whole patchwork as
-    # one element, and give the inset of the label no background.
-    inset <- patchwork::wrap_elements(full = label) +
-      ggplot2::theme(plot.background = ggplot2::element_blank())
-    return(
-      patchwork::wrap_elements(full = q) +
-        patchwork::inset_element(
-          inset,
-          left = 0,
-          bottom = 0,
-          right = 1,
-          top = 1,
-          align_to = "full",
-          ignore_tag = TRUE
-        )
-    )
-  }
-  return(q + ggplot2::annotation_custom(label))
-}
-
-# requireNamespace("patchwork"), in one place, so that the tests can mock
-# it.
-has_patchwork <- function() {
-  return(requireNamespace("patchwork", quietly = TRUE))
-}
-
-# requireNamespace("ggplot2"), in one place, so that the tests can mock it.
-has_ggplot2 <- function() {
-  return(requireNamespace("ggplot2", quietly = TRUE))
+  )
 }

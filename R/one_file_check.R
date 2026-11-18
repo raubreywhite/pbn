@@ -18,8 +18,9 @@
 #'    [to_one_file()] with these paths in memory, and compares them with the
 #'    file, line by line. Only the line of the header with the version of pbn
 #'    and the date does not count. When a line differs, the file is older
-#'    than the code of the project. It prints FAIL with the first line that
-#'    differs, and says to run [to_one_file()] again. It prints FAIL also
+#'    than the code of the project. It prints FAIL with the number of the
+#'    first line that differs and the line in both files, each cut to 80
+#'    characters. It says to run [to_one_file()] again. It prints FAIL also
 #'    when the project has no such file.
 #' 2. Without real results, it stops here. So the file of a project MAY be
 #'    checked for ASCII, for a parse and for a left-out function before the
@@ -272,11 +273,20 @@ first_line_difference <- function(disk, now) {
     "The first line that differs is line ",
     i,
     ". The file has ",
-    encodeString(disk[i], quote = "\""),
+    quoted_line(disk[i]),
     ", and pbn::to_one_file() writes ",
-    encodeString(now[i], quote = "\""),
+    quoted_line(now[i]),
     " now."
   ))
+}
+
+# The line `x` in double quotes. A line of more than 80 characters is cut
+# to its first 80, and " [...]" follows the quotes.
+quoted_line <- function(x) {
+  if (nchar(x) <= 80) {
+    return(encodeString(x, quote = "\""))
+  }
+  return(paste0(encodeString(substr(x, 1, 80), quote = "\""), " [...]"))
 }
 
 # The lines of the file of the project in `disk`, a value of

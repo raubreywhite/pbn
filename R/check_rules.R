@@ -529,8 +529,16 @@ is_function_assignment <- function(e) {
 # The rule loc_per_file: no .R file has more than `limit` code lines. The
 # limit comes from the rules of the project, see read_rules().
 rule_loc_per_file <- function(path, limit) {
+  return(loc_findings(path, code_files(path), limit))
+}
+
+# The findings of loc_per_file for the .R files `files`, relative to `path`:
+# a FAIL for each file with more than `limit` code lines, as
+# org::loc_per_file() counts them, and for each file that R cannot parse.
+# check_project() gives it code_files(), and initialize_project() the files
+# that org sources, see stop_on_long_files().
+loc_findings <- function(path, files, limit) {
   rule <- "loc_per_file"
-  files <- code_files(path)
   out <- list()
   for (f in files) {
     n <- tryCatch(

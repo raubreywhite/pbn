@@ -67,7 +67,11 @@ functions folder. It MUST be the first call in every \code{vNN_run.R}.
 \enumerate{
 \item It reads the rules of \code{\link[=check_project]{check_project()}} from \code{home/pbn.yml}. It stops
 on each error of \code{pbn.yml} that stops \code{\link[=check_project]{check_project()}}, also when the
-file is missing.
+file is missing. It stops when an \code{.R} file at the top of
+\verb{<version>_functions/} is a FAIL of the rule \code{loc_per_file}. The limit,
+the level and the section \code{allow} of \code{pbn.yml} act as in
+\code{\link[=check_project]{check_project()}}. The error names each file with its count of code
+lines and the limit.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
 them in \code{manifest$source_md5}, without \verb{<version>_functions/blocks.R}.
@@ -81,10 +85,8 @@ the fingerprint in \code{manifest$data_files} of the scenario \code{"real"}. A
 file that the run writes later is not in the list. The section The
 fingerprint of the data gives the rules.
 \item It calls \code{\link[org:initialize_project]{org::initialize_project()}} with \code{folders_to_be_sourced} set to
-\verb{<version>_functions}. \code{max_loc_per_file} is the \code{limit} of the rule
-\code{loc_per_file}, 1000 in the house set. When the rule is \code{warn} or
-\code{off}, it is \code{Inf}, because the check of org stops the run on a file
-with more lines. pbn gives org no folder of \code{folders}, so
+\verb{<version>_functions} and \code{max_loc_per_file = Inf}, because step 1
+checks the code lines. pbn gives org no folder of \code{folders}, so
 \code{org::project} holds \code{home}, \code{computer_id} and \code{env} only.
 }
 

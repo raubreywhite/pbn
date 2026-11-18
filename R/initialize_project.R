@@ -38,7 +38,11 @@ state <- new.env(parent = emptyenv())
 #' `initialize_project()` does these steps in this order:
 #' 1. It reads the rules of [check_project()] from `home/pbn.yml`. It stops
 #'    on each error of `pbn.yml` that stops [check_project()], also when the
-#'    file is missing.
+#'    file is missing. It stops when an `.R` file at the top of
+#'    `<version>_functions/` is a FAIL of the rule `loc_per_file`. The limit,
+#'    the level and the section `allow` of `pbn.yml` act as in
+#'    [check_project()]. The error names each file with its count of code
+#'    lines and the limit.
 #' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
 #'    them in `manifest$source_md5`, without `<version>_functions/blocks.R`.
@@ -52,10 +56,8 @@ state <- new.env(parent = emptyenv())
 #'    file that the run writes later is not in the list. The section The
 #'    fingerprint of the data gives the rules.
 #' 4. It calls [org::initialize_project()] with `folders_to_be_sourced` set to
-#'    `<version>_functions`. `max_loc_per_file` is the `limit` of the rule
-#'    `loc_per_file`, 1000 in the house set. When the rule is `warn` or
-#'    `off`, it is `Inf`, because the check of org stops the run on a file
-#'    with more lines. pbn gives org no folder of `folders`, so
+#'    `<version>_functions` and `max_loc_per_file = Inf`, because step 1
+#'    checks the code lines. pbn gives org no folder of `folders`, so
 #'    `org::project` holds `home`, `computer_id` and `env` only.
 #'
 #' Project code finds a folder with [folder()], for example
@@ -258,7 +260,7 @@ initialize_project <- function(
       env = env,
       home = home,
       folders_to_be_sourced = paste0(version, "_functions"),
-      max_loc_per_file = code$max_loc
+      max_loc_per_file = Inf
     )
   } else {
     org::initialize_project(
@@ -300,8 +302,8 @@ initialize_project <- function(
 }
 
 # The md5 and the size and mtime of the run script and of each file of the
-# functions folder of `version` in `home`, and the limit of code lines of
-# pbn.yml for org. Stops on a missing functions folder or a bad pbn.yml.
+# functions folder of `version` in `home`. Stops on a missing functions
+# folder, a bad pbn.yml or a FAIL of loc_per_file, see stop_on_long_files().
 functions_folder_code <- function(version, home) {
   # org creates a missing folder with a warning. pbn stops instead, so that a
   # wrong `home` or `version` leaves no folder.
@@ -309,9 +311,9 @@ functions_folder_code <- function(version, home) {
   if (!dir.exists(folder)) {
     stop("There is no functions folder ", folder, call. = FALSE)
   }
-  # The limit of code lines that org checks comes from pbn.yml, so that
-  # check_project() and the run use one limit.
-  max_loc <- org_max_loc(read_rules(home))
+  # pbn checks the code lines, and not org, so that check_project() and the
+  # start judge a file with one limit and one section allow of pbn.yml.
+  stop_on_long_files(home, version, read_rules(home))
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
   raw_md5 <- source_md5(home, version, raw = TRUE)
@@ -320,8 +322,7 @@ functions_folder_code <- function(version, home) {
     md5 = md5,
     raw_md5 = raw_md5,
     manifest_md5 = manifest_md5_of(home, version, md5),
-    stat = file_stat(file.path(home, names(md5)), names(md5)),
-    max_loc = max_loc
+    stat = file_stat(file.path(home, names(md5)), names(md5))
   ))
 }
 

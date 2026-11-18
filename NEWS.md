@@ -1,3 +1,7 @@
+# pbn 2026.11.24
+
+- `initialize_project()` now applies the rule `loc_per_file` as `check_project()` does, also the section `allow` of `pbn.yml`. Before, a file under `allow: loc_per_file:` stopped the start of the project.
+
 # pbn 2026.11.23
 
 The run script is now one `plnr` plan over every scenario and simulation. pbn no longer starts the run script in a new R session for each scenario. To move a project, change these items:

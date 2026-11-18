@@ -486,15 +486,44 @@ check_allow_paths <- function(rule, paths) {
   return(invisible(NULL))
 }
 
-# The limit of code lines that initialize_project() gives org: the limit of
-# loc_per_file when the rule fails, and Inf when it warns or is off, because
-# the check of org stops the run.
-org_max_loc <- function(rules) {
-  entry <- rules$rules$loc_per_file
-  if (identical(entry$level, "fail")) {
-    return(entry$limit)
+# Stops when a file that org sources from `<version>_functions/` in `home`
+# is a FAIL of loc_per_file under the rules `rules`. The level, the limit and
+# the section allow of pbn.yml act as in check_project(), because the check
+# uses loc_findings(), rule_findings() and apply_allow() of check_project().
+# The files are the .R files at the top of the folder, hidden files too:
+# org sources no subfolder. initialize_project() then gives org
+# max_loc_per_file = Inf.
+stop_on_long_files <- function(home, version, rules) {
+  folder <- paste0(version, "_functions")
+  files <- file.path(
+    folder,
+    list.files(file.path(home, folder), pattern = "\\.[rR]$", all.files = TRUE)
+  )
+  files <- files[!dir.exists(file.path(home, files))]
+  def <- list(
+    function(path, limit) return(loc_findings(path, files, limit)),
+    ""
+  )
+  found <- apply_allow(
+    rule_findings(home, "loc_per_file", def, rules$rules$loc_per_file),
+    rules
+  )
+  fail <- found$detail[found$rule == "loc_per_file" & found$status == "FAIL"]
+  if (length(fail) == 0) {
+    return(invisible(NULL))
   }
-  return(Inf)
+  stop(
+    "These files of ",
+    folder,
+    "/ fail the rule loc_per_file of pbn.yml, so the project does not ",
+    "start:\n",
+    paste0("  ", fail, collapse = "\n"),
+    "\nSplit each file. A file that MUST stay long needs its path under ",
+    "allow: loc_per_file: in pbn.yml, for example allow: {loc_per_file: [",
+    sub(":[^:]*$", "", fail[1]),
+    "]}.",
+    call. = FALSE
+  )
 }
 
 # The first line of check_project(): the set, and the counts of the

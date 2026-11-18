@@ -769,7 +769,7 @@ writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
 pbn::check_project(home)
 ```
 
-The allowed file is now a WARN, and `unknown_path` is OFF. An entry covers its path and each path under it, with or without a final `/`. So `lower_case_names: [archive]` allows each finding in `archive/` at any depth, and no finding in `archive2/`. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
+The allowed file is now a WARN, and `unknown_path` is OFF. An entry covers its path and each path under it, with or without a final `/`. So `lower_case_names: [archive]` allows each finding in `archive/` at any depth, and no finding in `archive2/`. `initialize_project()` applies `loc_per_file` in the same way to each `.R` file at the top of `v01_functions/`. It stops on a FAIL, so an allowed long file does not stop it. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
 
 ```{r, include = FALSE}
 found <- pbn::check_project(home)

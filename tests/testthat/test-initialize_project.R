@@ -382,3 +382,165 @@ test_that("read_results reads the direct file, the stacked file or one simulatio
   expect_error(read_results("v01", "Null", home = p$home), "`scenario` must")
   expect_error(read_results("v01", "null", sim = 0, home = p$home), "`sim`")
 })
+
+# The start of the project in `p`, as the first line of the run script does,
+# into a new environment. Returns that environment.
+start_project <- function(p, env = parent.frame()) {
+  local_clean_state(env)
+  env <- new.env(parent = globalenv())
+  suppressMessages(initialize_project(
+    "v01",
+    p$home,
+    p$data_default,
+    env = env
+  ))
+  return(env)
+}
+
+# A project with a functions file that writes the file marker.txt beside the
+# project when org sources it (a_marker.R, sourced before long.R), and long.R with
+# `lines`. Returns the project with the path of the marker.
+long_file_project <- function(lines, env = parent.frame()) {
+  p <- local_project(env = env)
+  p$marker <- file.path(p$root, "marker.txt")
+  write_lines(
+    p$home,
+    "v01_functions/a_marker.R",
+    paste0("writeLines(\"sourced\", \"", p$marker, "\")")
+  )
+  write_lines(p$home, "v01_functions/long.R", lines)
+  return(p)
+}
+
+# The status of each finding of loc_per_file in check_project().
+loc_status <- function(p) {
+  found <- project_findings(p$home)
+  found <- found[found$rule == "loc_per_file", ]
+  return(stats::setNames(found$status, found$path))
+}
+
+lines_1001 <- paste0("x", seq_len(1001), " <- 1")
+
+test_that("a functions file over the limit stops the start before org sources a file, as check_project() fails it", {
+  p <- long_file_project(lines_1001)
+  expect_identical(loc_status(p), c("v01_functions/long.R" = "FAIL"))
+  err <- tryCatch(start_project(p), error = function(e) return(e))
+  expect_s3_class(err, "error")
+  expect_identical(
+    conditionMessage(err),
+    paste0(
+      "These files of v01_functions/ fail the rule loc_per_file of pbn.yml, ",
+      "so the project does not start:\n",
+      "  v01_functions/long.R: 1001 code lines, more than 1000\n",
+      "Split each file. A file that MUST stay long needs its path under ",
+      "allow: loc_per_file: in pbn.yml, for example allow: {loc_per_file: ",
+      "[v01_functions/long.R]}."
+    )
+  )
+  expect_false(file.exists(p$marker))
+  expect_null(state$results)
+})
+
+# The start of a project with the long file and the allow entry `entry`:
+# the start sources the functions folder, and check_project() does not fail
+# the file.
+expect_allowed_start <- function(entry) {
+  p <- long_file_project(lines_1001)
+  write_pbn_yml(p$home, "allow:", paste0("  loc_per_file: [", entry, "]"))
+  expect_identical(
+    loc_status(p),
+    c("v01_functions/long.R" = "WARN"),
+    info = entry
+  )
+  env <- start_project(p)
+  expect_true(file.exists(p$marker), info = entry)
+  expect_identical(env$x1001, 1, info = entry)
+  expect_identical(state$version, "v01", info = entry)
+  return(invisible(NULL))
+}
+
+test_that("an allow entry on the long file lets the project start, and check_project() does not fail it", {
+  expect_allowed_start("v01_functions/long.R")
+})
+
+test_that("an allow entry on the folder of the long file lets the project start, with or without a final /", {
+  expect_allowed_start("v01_functions")
+  expect_allowed_start("v01_functions/")
+})
+
+test_that("a second long file that is not allowed stops the start, and the error names only that file", {
+  p <- long_file_project(lines_1001)
+  write_lines(p$home, "v01_functions/long2.R", paste0("y", seq_len(1002), " <- 1"))
+  write_pbn_yml(p$home, "allow:", "  loc_per_file: [v01_functions/long.R]")
+  expect_identical(
+    loc_status(p),
+    c("v01_functions/long.R" = "WARN", "v01_functions/long2.R" = "FAIL")
+  )
+  err <- tryCatch(start_project(p), error = function(e) return(e))
+  expect_s3_class(err, "error")
+  expect_match(
+    conditionMessage(err),
+    "\n  v01_functions/long2.R: 1002 code lines, more than 1000\nSplit",
+    fixed = TRUE
+  )
+  expect_no_match(conditionMessage(err), "long.R:", fixed = TRUE)
+  expect_false(file.exists(p$marker))
+})
+
+test_that("the level warn or off lets the project start, and the start uses the limit of pbn.yml", {
+  p <- long_file_project(paste0("x", seq_len(60), " <- 1"))
+  expect_no_error(start_project(p))
+  write_pbn_yml(p$home, "rules:", "  loc_per_file: {limit: 60}")
+  expect_no_error(start_project(p))
+  write_pbn_yml(p$home, "rules:", "  loc_per_file: {limit: 59}")
+  expect_identical(loc_status(p), c("v01_functions/long.R" = "FAIL"))
+  expect_error(
+    start_project(p),
+    "v01_functions/long.R: 60 code lines, more than 59\n",
+    fixed = TRUE
+  )
+  for (level in c("warn", "off")) {
+    write_pbn_yml(
+      p$home,
+      "rules:",
+      paste0("  loc_per_file: {limit: 59, level: ", level, "}")
+    )
+    expect_false(
+      "FAIL" %in% loc_status(p),
+      info = level
+    )
+    expect_no_error(start_project(p))
+  }
+})
+
+# A project whose file v01_functions/long.R is one string of 1202 lines.
+string_file_project <- function(env = parent.frame()) {
+  return(long_file_project(
+    c(
+      "lookup <- \"",
+      paste0("code", seq_len(1200), ",group", seq_len(1200) %% 7),
+      "\""
+    ),
+    env = env
+  ))
+}
+
+test_that("a long file that is one string of 1202 lines stops the start before org sources a file", {
+  p <- string_file_project()
+  expect_identical(loc_status(p), c("v01_functions/long.R" = "FAIL"))
+  expect_error(
+    start_project(p),
+    "v01_functions/long.R: 1202 code lines, more than 1000\n",
+    fixed = TRUE
+  )
+  expect_false(file.exists(p$marker))
+})
+
+test_that("a long file that is one string of 1202 lines starts when an allow entry covers it", {
+  p <- string_file_project()
+  write_pbn_yml(p$home, "allow:", "  loc_per_file: [v01_functions/long.R]")
+  expect_identical(loc_status(p), c("v01_functions/long.R" = "WARN"))
+  env <- start_project(p)
+  expect_true(file.exists(p$marker))
+  expect_length(strsplit(env$lookup, "\n", fixed = TRUE)[[1]], 1201L)
+})

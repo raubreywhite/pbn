@@ -834,34 +834,6 @@ test_that("check_project.R ends with status 0 when pbn.yml turns each FAIL into 
   expect_match(res$stdout, "17 PASS, 1 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
 })
 
-test_that("initialize_project gives org the limit of loc_per_file, and Inf when the rule warns or is off", {
-  p <- local_project()
-  write_lines(p$home, "v01_functions/long.R", paste0("x", seq_len(6), " <- 1"))
-  expect_identical(org_max_loc(read_rules(p$home)), 1000L)
-  start <- function() {
-    local_clean_state()
-    return(suppressMessages(initialize_project(
-      "v01",
-      p$home,
-      p$data_default,
-      env = new.env(parent = globalenv())
-    )))
-  }
-  expect_no_error(start())
-  write_pbn_yml(p$home, "rules:", "  loc_per_file: {limit: 5}")
-  expect_error(start(), "These files hold more than 5 code lines", fixed = TRUE)
-  expect_null(state$results)
-  for (level in c("warn", "off")) {
-    write_pbn_yml(
-      p$home,
-      "rules:",
-      paste0("  loc_per_file: {limit: 5, level: ", level, "}")
-    )
-    expect_identical(org_max_loc(read_rules(p$home)), Inf, info = level)
-    expect_no_error(start())
-  }
-})
-
 test_that("an allow entry that is not a path inside the project stops: empty, /, ., a path from / and a path with . or ..", {
   p <- local_project()
   for (entry in c(

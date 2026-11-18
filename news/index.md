@@ -567,6 +567,26 @@ each scenario. To move a project, change these items:
   rule `real_results_are_fake`, a warning while the real results on the
   disk come from fake real data. The set `house_2026_11_17` gets it and
   the new `blocks_list`, and its md5 changes before the first release.
+- [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md)
+  keeps every panel of a patchwork. Before, the label covered the last
+  plot with an opaque background, so a figure `a / b` lost `b`. It now
+  wraps the whole patchwork with
+  [`patchwork::wrap_elements()`](https://patchwork.data-imaginist.com/reference/wrap_elements.html)
+  and puts the label on it without a background.
+- [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  first compares `<version>_one_file.R` in the project with the file of
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  now, with the paths of the server from that file. It prints FAIL with
+  the first line that differs, or when there is no such file. Then it
+  runs the file of the project, with temporary paths in place of the
+  paths of the server. Before, it ran a new file and passed while the
+  file in git was older.
+- [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  changes only the characters that are not ASCII in a string, and keeps
+  its quotes, escapes and line breaks. Before, it wrote each such string
+  again from its value, so a multi-line string became one long line. A
+  raw string, and a string with an escape `\x` or an octal escape, still
+  come from the value.
 
 ## pbn 2026.11.22
 

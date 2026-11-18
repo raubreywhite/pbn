@@ -31,9 +31,15 @@ it returns `q` unchanged. For `"real"` whose manifest has
 `fake_real_data` `TRUE`, it adds the label.
 
 On a ggplot, the label is on each panel. On a patchwork, it is one label
-over the whole figure, with
+over the whole figure. `stamp_fake()` wraps the patchwork in one element
+with
+[`patchwork::wrap_elements()`](https://patchwork.data-imaginist.com/reference/wrap_elements.html),
+and puts the label on it with
 [`patchwork::inset_element()`](https://patchwork.data-imaginist.com/reference/inset_element.html).
-Without it, `+` would put the label on the last panel only.
+The label has no background, so each panel stays visible. Call
+`stamp_fake()` last, just before the figure is saved. A `+` after it
+applies to the label, and a theme with a background then hides the
+figure.
 
 For a fake scenario, `stamp_fake()` needs the package ggplot2, and
 patchwork for a patchwork. It stops when the package is not installed.

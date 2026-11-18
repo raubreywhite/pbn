@@ -1,9 +1,8 @@
 # Check the file of to_one_file() on this computer
 
-`check_one_file()` runs the file of
-[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md) in
-a new R session, on copies of the folders of the project. It prints PASS
-when the real results are those of the project, or else the first
+`check_one_file()` runs the file `<version>_one_file.R` of the project
+in a new R session, on copies of the folders of the project. It prints
+PASS when the real results are those of the project, or else the first
 difference.
 
 ## Usage
@@ -27,36 +26,53 @@ Invisibly, `TRUE` on PASS and `FALSE` on FAIL.
 ## Details
 
 Run the project as normal first, so that `<version>_results/real/` holds
-its real results, and call
+its real results. Write the file with
+[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md),
+and call
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-again in this R session. Without real results, `check_one_file()` runs
-the checks of
-[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-that need no results, and stops. So the file of a project MAY be checked
-for ASCII, for a parse and for a left-out function before the first full
-run.
+again in this R session.
 
 `check_one_file()` then does these steps:
 
-1.  It compares `manifest$source_md5` of the real results with the md5
+1.  It reads `home` and `folders` from the call
+    [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+    of `<version>_one_file.R` in the project. It makes the lines of
+    [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+    with these paths in memory, and compares them with the file, line by
+    line. Only the line of the header with the version of pbn and the
+    date does not count. When a line differs, the file is older than the
+    code of the project. It prints FAIL with the first line that
+    differs, and says to run
+    [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+    again. It prints FAIL also when the project has no such file.
+
+2.  Without real results, it stops here. So the file of a project MAY be
+    checked for ASCII, for a parse and for a left-out function before
+    the first full run.
+
+3.  It compares `manifest$source_md5` of the real results with the md5
     of the files of the project now, without
     `<version>_functions/blocks.R`. When they differ, the results of the
     project are older than its code. It prints FAIL with the changed
     files and says to run `<version>_run.R` again. It runs nothing.
 
-2.  It makes a temporary folder with an empty project folder, and a copy
+4.  It makes a temporary folder with an empty project folder, and a copy
     of each folder of the project with all its files. The empty project
     folder stands for the server, where there is no functions folder and
     no `pbn.yml`.
 
-3.  It writes the file of
+5.  It writes a copy of the file of the project to the temporary folder.
+    In the copy, each line with a path of the server gets the temporary
+    path. These are the lines where
     [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-    with these paths, and runs it with `Rscript` in a new R session.
+    with the temporary paths writes another line. It runs the copy with
+    `Rscript` in a new R session. So the check runs the file that goes
+    into git.
 
-4.  It compares `results.qs2` and `results_gitexclude.qs2` of the real
+6.  It compares `results.qs2` and `results_gitexclude.qs2` of the real
     results of the run with those of the project, element by element.
 
-5.  It calls each block of
+7.  It calls each block of
     [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
     on the real results of the project and on those of the run, in one
     more new R session. That session attaches no package of the run

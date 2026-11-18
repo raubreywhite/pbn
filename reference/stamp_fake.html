@@ -76,8 +76,12 @@ saved: <code>q &lt;- pbn::stamp_fake(q)</code>. For <code>"real"</code> on real 
 a call of <code><a href="make_outputs.html">make_outputs()</a></code>, it returns <code>q</code> unchanged. For <code>"real"</code> whose
 manifest has <code>fake_real_data</code> <code>TRUE</code>, it adds the label.</p>
 <p>On a ggplot, the label is on each panel. On a patchwork, it is one label
-over the whole figure, with <code><a href="https://patchwork.data-imaginist.com/reference/inset_element.html" class="external-link">patchwork::inset_element()</a></code>. Without it,
-<code>+</code> would put the label on the last panel only.</p>
+over the whole figure. <code>stamp_fake()</code> wraps the patchwork in one element
+with <code><a href="https://patchwork.data-imaginist.com/reference/wrap_elements.html" class="external-link">patchwork::wrap_elements()</a></code>, and puts the label on it with
+<code><a href="https://patchwork.data-imaginist.com/reference/inset_element.html" class="external-link">patchwork::inset_element()</a></code>. The label has no background, so each panel
+stays visible. Call <code>stamp_fake()</code> last, just before the figure is saved.
+A <code>+</code> after it applies to the label, and a theme with a background then
+hides the figure.</p>
 <p>For a fake scenario, <code>stamp_fake()</code> needs the package ggplot2, and
 patchwork for a patchwork. It stops when the package is not installed.
 It also stops when <code>q</code> is not a ggplot or a patchwork, for example a

@@ -421,8 +421,12 @@ prefix_fake <- function(dir, files, scenario) {
 #' manifest has `fake_real_data` `TRUE`, it adds the label.
 #'
 #' On a ggplot, the label is on each panel. On a patchwork, it is one label
-#' over the whole figure, with [patchwork::inset_element()]. Without it,
-#' `+` would put the label on the last panel only.
+#' over the whole figure. `stamp_fake()` wraps the patchwork in one element
+#' with [patchwork::wrap_elements()], and puts the label on it with
+#' [patchwork::inset_element()]. The label has no background, so each panel
+#' stays visible. Call `stamp_fake()` last, just before the figure is saved.
+#' A `+` after it applies to the label, and a theme with a background then
+#' hides the figure.
 #'
 #' For a fake scenario, `stamp_fake()` needs the package ggplot2, and
 #' patchwork for a patchwork. It stops when the package is not installed.
@@ -470,16 +474,21 @@ stamp_fake <- function(q) {
       )
     }
     # One label over the whole figure. A label added with + goes on the
-    # last panel only.
+    # last panel only. An inset on q itself covers the last plot only, and
+    # its opaque background hides that plot. So wrap the whole patchwork as
+    # one element, and give the inset of the label no background.
+    inset <- patchwork::wrap_elements(full = label) +
+      ggplot2::theme(plot.background = ggplot2::element_blank())
     return(
-      q +
+      patchwork::wrap_elements(full = q) +
         patchwork::inset_element(
-          label,
+          inset,
           left = 0,
           bottom = 0,
           right = 1,
           top = 1,
-          align_to = "full"
+          align_to = "full",
+          ignore_tag = TRUE
         )
     )
   }

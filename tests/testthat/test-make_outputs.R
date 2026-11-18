@@ -393,42 +393,19 @@ test_that("stamp_fake adds the label for a fake scenario only, and stops without
   )
 })
 
-test_that("stamp_fake puts one label over the whole figure of a patchwork, and leaves its panels as they are", {
-  skip_if_not_installed("ggplot2")
-  skip_if_not_installed("patchwork")
-  a <- ggplot2::ggplot(data.frame(x = 1:3, y = 1:3), ggplot2::aes(x, y))
-  b <- ggplot2::ggplot(data.frame(x = 1:3, y = 3:1), ggplot2::aes(x, y))
-  q <- patchwork::wrap_plots(a, b)
-  output_state$fake <- TRUE
-  on.exit(rm(list = ls(output_state), envir = output_state), add = TRUE)
-  stamped <- stamp_fake(q)
-  expect_s3_class(stamped, "patchwork")
-  # The panels keep their layers: no label on the last panel b, which is now
-  # a patch under the label.
-  expect_length(stamped$patches$plots, 2)
-  expect_identical(stamped$patches$plots[[1]]$layers, a$layers)
-  expect_identical(stamped$patches$plots[[2]]$layers, b$layers)
-  # The label is an inset over the full figure.
-  settings <- attr(stamped, "inset_settings")
-  expect_identical(settings$align_to, "full")
-  expect_identical(
-    vapply(
-      settings[c("left", "bottom", "right", "top")],
-      as.numeric,
-      numeric(1),
-      USE.NAMES = FALSE
-    ),
-    c(0, 0, 1, 1)
-  )
-  # The figure draws, and its grob tree holds the label once. A device of
-  # no file keeps Rplots.pdf out of the folder of the tests.
-  grDevices::pdf(NULL)
-  on.exit(grDevices::dev.off(), add = TRUE)
-  g <- patchwork::patchworkGrob(stamped)
-  labels <- character(0)
+# The panels of the gtable `g`, its labels "FAKE DATA", and the insets of
+# the label: the rows and columns each covers, and the fills of its
+# rectangles. Panels of a nested gtable count too.
+figure_parts <- function(g) {
+  panels <- 0L
+  labels <- 0L
   walk <- function(x) {
-    if (inherits(x, "text")) {
-      labels <<- c(labels, x$label)
+    if (inherits(x, "gtable")) {
+      drawn <- !vapply(x$grobs, inherits, logical(1), what = "zeroGrob")
+      panels <<- panels + sum(grepl("^panel-", x$layout$name) & drawn)
+    }
+    if (inherits(x, "text") && identical(x$label, "FAKE DATA")) {
+      labels <<- labels + 1L
     }
     for (k in c("children", "grobs")) {
       for (child in x[[k]]) {
@@ -438,7 +415,90 @@ test_that("stamp_fake puts one label over the whole figure of a patchwork, and l
     return(invisible(NULL))
   }
   walk(g)
-  expect_identical(sum(labels == "FAKE DATA"), 1L)
+  fills <- character(0)
+  walk_fill <- function(x) {
+    if (inherits(x, "rect") || inherits(x, "roundrect")) {
+      fills <<- c(fills, as.character(x$gp$fill))
+    }
+    for (k in c("children", "grobs")) {
+      for (child in x[[k]]) {
+        walk_fill(child)
+      }
+    }
+    return(invisible(NULL))
+  }
+  inset <- grepl("^inset", g$layout$name)
+  for (i in which(inset)) {
+    walk_fill(g$grobs[[i]])
+  }
+  # The rows and columns of each plot of the top gtable, from its
+  # background, against those of the inset.
+  plots <- g$layout[grepl("^background-", g$layout$name), ]
+  covers <- any(inset) &&
+    all(g$layout$t[inset] <= min(plots$t)) &&
+    all(g$layout$l[inset] <= min(plots$l)) &&
+    all(g$layout$b[inset] >= max(plots$b)) &&
+    all(g$layout$r[inset] >= max(plots$r))
+  return(list(
+    panels = panels,
+    labels = labels,
+    covers = covers,
+    opaque = sum(!is.na(fills) & fills != "transparent")
+  ))
+}
+
+test_that("stamp_fake puts one label over the whole figure of a patchwork, and leaves each panel visible", {
+  skip_if_not_installed("ggplot2")
+  skip_if_not_installed("patchwork")
+  plot_xy <- function(y, colour = NULL) {
+    d <- data.frame(x = 1:3, y = y, g = c("a", "b", "a"))
+    q <- ggplot2::ggplot(d, ggplot2::aes(x, y))
+    if (is.null(colour)) {
+      return(q + ggplot2::geom_point())
+    }
+    return(q + ggplot2::geom_point(ggplot2::aes(colour = g)))
+  }
+  a <- plot_xy(1:3)
+  b <- plot_xy(3:1)
+  c3 <- plot_xy(c(2, 1, 3), colour = TRUE)
+  # With the namespace of patchwork loaded, / and | combine ggplots.
+  shapes <- list(
+    "a / b, heights, title" = a /
+      b +
+      patchwork::plot_layout(heights = c(1, 1.5)) +
+      patchwork::plot_annotation(title = "A title"),
+    "a | b, tags" = (a | b) + patchwork::plot_annotation(tag_levels = "A"),
+    "(a | b) / c, guides and axis titles collected, caption" = (a | c3) /
+      c3 +
+      patchwork::plot_layout(guides = "collect", axis_titles = "collect") +
+      patchwork::plot_annotation(caption = "A caption", tag_levels = "A"),
+    "wrap_plots(list, ncol = 2)" = patchwork::wrap_plots(
+      list(a, b, c3, a),
+      ncol = 2
+    )
+  )
+  output_state$fake <- TRUE
+  on.exit(rm(list = ls(output_state), envir = output_state), add = TRUE)
+  # A device of no file keeps Rplots.pdf out of the folder of the tests.
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  for (shape in names(shapes)) {
+    q <- shapes[[shape]]
+    stamped <- stamp_fake(q)
+    expect_s3_class(stamped, "patchwork")
+    before <- figure_parts(patchwork::patchworkGrob(q))
+    after <- figure_parts(patchwork::patchworkGrob(stamped))
+    # Each panel is drawn, one label lies over every plot, and nothing of
+    # the label hides a panel.
+    expect_identical(after$panels, before$panels, label = shape)
+    expect_identical(after$labels, 1L, label = shape)
+    expect_true(after$covers, label = shape)
+    expect_identical(after$opaque, 0L, label = shape)
+  }
+  expect_identical(
+    figure_parts(patchwork::patchworkGrob(shapes[[1]]))$panels,
+    2L
+  )
   # A grob of another package stops, with the way to stamp.
   expect_error(
     stamp_fake(grid::rectGrob()),
@@ -446,7 +506,11 @@ test_that("stamp_fake puts one label over the whole figure of a patchwork, and l
     fixed = TRUE
   )
   local_mocked_bindings(has_patchwork = function() return(FALSE))
-  expect_error(stamp_fake(q), "needs the package patchwork", fixed = TRUE)
+  expect_error(
+    stamp_fake(shapes[[1]]),
+    "needs the package patchwork",
+    fixed = TRUE
+  )
 })
 
 test_that("output is not a setting: it is not in the argsets, the manifest settings or the cache key", {

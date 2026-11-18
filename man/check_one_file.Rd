@@ -14,20 +14,29 @@ the last \code{\link[=initialize_project]{initialize_project()}} in this R sessi
 Invisibly, \code{TRUE} on PASS and \code{FALSE} on FAIL.
 }
 \description{
-\code{check_one_file()} runs the file of \code{\link[=to_one_file]{to_one_file()}} in a new R session, on
-copies of the folders of the project. It prints PASS when the real results
-are those of the project, or else the first difference.
+\code{check_one_file()} runs the file \verb{<version>_one_file.R} of the project in a
+new R session, on copies of the folders of the project. It prints PASS
+when the real results are those of the project, or else the first
+difference.
 }
 \details{
 Run the project as normal first, so that \verb{<version>_results/real/} holds
-its real results, and call \code{\link[=initialize_project]{initialize_project()}} again in this R session.
-Without real results, \code{check_one_file()} runs the checks of
-\code{\link[=to_one_file]{to_one_file()}} that need no results, and stops. So the file of a project
-MAY be checked for ASCII, for a parse and for a left-out function before
-the first full run.
+its real results. Write the file with \code{\link[=to_one_file]{to_one_file()}}, and call
+\code{\link[=initialize_project]{initialize_project()}} again in this R session.
 
 \code{check_one_file()} then does these steps:
 \enumerate{
+\item It reads \code{home} and \code{folders} from the call \code{pbn::initialize_project()}
+of \verb{<version>_one_file.R} in the project. It makes the lines of
+\code{\link[=to_one_file]{to_one_file()}} with these paths in memory, and compares them with the
+file, line by line. Only the line of the header with the version of pbn
+and the date does not count. When a line differs, the file is older
+than the code of the project. It prints FAIL with the first line that
+differs, and says to run \code{\link[=to_one_file]{to_one_file()}} again. It prints FAIL also
+when the project has no such file.
+\item Without real results, it stops here. So the file of a project MAY be
+checked for ASCII, for a parse and for a left-out function before the
+first full run.
 \item It compares \code{manifest$source_md5} of the real results with the md5 of
 the files of the project now, without \verb{<version>_functions/blocks.R}.
 When they differ, the results of the project are older than its code.
@@ -37,8 +46,11 @@ It prints FAIL with the changed files and says to run
 each folder of the project with all its files. The empty project folder
 stands for the server, where there is no functions folder and no
 \code{pbn.yml}.
-\item It writes the file of \code{\link[=to_one_file]{to_one_file()}} with these paths, and runs it with
-\code{Rscript} in a new R session.
+\item It writes a copy of the file of the project to the temporary folder. In
+the copy, each line with a path of the server gets the temporary path.
+These are the lines where \code{\link[=to_one_file]{to_one_file()}} with the temporary paths
+writes another line. It runs the copy with \code{Rscript} in a new R session.
+So the check runs the file that goes into git.
 \item It compares \code{results.qs2} and \code{results_gitexclude.qs2} of the real
 results of the run with those of the project, element by element.
 \item It calls each block of \code{\link[=show_block]{show_block()}} on the real results of the

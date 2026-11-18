@@ -211,6 +211,7 @@ test_that("check_one_file passes a project whose labels are not ASCII, and compa
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_identical(
     out,
@@ -241,4 +242,123 @@ test_that("to_one_file stops with the file and the line on a string that is not 
     fixed = TRUE
   )
   expect_false(file.exists(file.path(p$home, "v01_one_file.R")))
+})
+
+test_that("ascii_code keeps a string as it is written and escapes only its characters that are not ASCII, and writes a raw string again from its value", {
+  # In the source, @ stands for the sign greater than or equal and ~ for e
+  # with an acute accent.
+  code <- c(
+    r"(a <- "age @ 18")",
+    r"(b <- 'it\'s @ "q"')",
+    r"(c <- "first @)",
+    r"(second line)",
+    r"(  third ~")",
+    r"(d <- "\n\t\\\"\u00e9 @")",
+    r"(dx <- "\x41\102 @")",
+    r"(e <- "\\@")",
+    r"[f <- r"(C:\path @ "q")"]",
+    r"{g <- R"[a @ ]"}",
+    r"---(h <- r"--(x @ )" )--")---",
+    r"[k <- r"(one @]",
+    r"[two)"]",
+    r"(# a comment @)"
+  )
+  to_utf8 <- function(x) {
+    x <- gsub("@", "\u2265", x, fixed = TRUE)
+    return(enc2utf8(gsub("~", "\u00e9", x, fixed = TRUE)))
+  }
+  out <- ascii_code(to_utf8(code), "v01_functions/labels.R")
+  escaped <- gsub(
+    "~",
+    "\\u00e9",
+    gsub("@", "\\u2265", code, fixed = TRUE),
+    fixed = TRUE
+  )
+  expect_identical(
+    out,
+    c(
+      escaped[1:6],
+      r"(dx <- "AB \u2265")",
+      escaped[8],
+      r"(f <- "C:\\path \u2265 \"q\"")",
+      r"(g <- "a \u2265 ")",
+      r"[h <- "x \u2265 )\" "]",
+      r"(k <- "one \u2265\ntwo")",
+      "# a comment <U+2265>"
+    )
+  )
+  # Each string keeps its value.
+  before <- new.env()
+  after <- new.env()
+  eval(parse(text = to_utf8(code), encoding = "UTF-8"), envir = before)
+  eval(parse(text = out, keep.source = FALSE), envir = after)
+  expect_identical(sort(ls(after)), sort(c(letters[c(1:8, 11)], "dx")))
+  for (nm in ls(before)) {
+    expect_identical(after[[nm]], before[[nm]], label = nm)
+  }
+  expect_identical(before$c, "first \u2265\nsecond line\n  third \u00e9")
+  expect_identical(before$e, "\\\u2265")
+  expect_identical(before$dx, "AB \u2265")
+  # A backslash directly before such a character is an escape that R does
+  # not know, so the file does not parse.
+  # The message of R holds the byte after the backslash, which is not
+  # valid in every locale, so the test compares bytes.
+  said <- tryCatch(
+    ascii_code(enc2utf8("x <- \"\\\u00e9\""), "v01_functions/odd.R"),
+    error = function(e) return(conditionMessage(e))
+  )
+  expect_true(grepl(
+    "v01_functions/odd.R does not parse, so pbn::to_one_file() cannot write it. R says: ",
+    said,
+    fixed = TRUE,
+    useBytes = TRUE
+  ))
+  expect_true(grepl(
+    "is an unrecognized escape",
+    said,
+    fixed = TRUE,
+    useBytes = TRUE
+  ))
+})
+
+test_that("to_one_file keeps a multi-line label table on its own lines", {
+  p <- local_project()
+  rows <- sprintf(
+    "k%02d,Pr\u00e9valence of the group %02d \u2265 %d years",
+    1:40,
+    1:40,
+    18 + 1:40
+  )
+  write_utf8(
+    p$home,
+    "v01_functions/label_table.R",
+    c("LABEL_TEXT <- \"key,label", rows, "\"")
+  )
+  init(p)
+  utils::capture.output(file <- to_one_file("v01", "N:/x", c(main = "N:/d")))
+  lines <- readLines(file)
+  at <- which(lines == "LABEL_TEXT <- \"key,label")
+  expect_length(at, 1)
+  want <- gsub(
+    "\u00e9",
+    "\\u00e9",
+    gsub("\u2265", "\\u2265", rows, fixed = TRUE),
+    fixed = TRUE
+  )
+  expect_identical(lines[at + seq_along(rows)], want)
+  expect_identical(lines[at + length(rows) + 1], "\"")
+  # The longest line of the file is the longest line of the code of the
+  # project, with the escapes, and not a table on one line.
+  others <- setdiff(
+    c(
+      "v01_run.R",
+      file.path("v01_functions", list.files(file.path(p$home, "v01_functions")))
+    ),
+    "v01_functions/label_table.R"
+  )
+  code <- unlist(lapply(file.path(p$home, others), readLines))
+  # The call of pbn::initialize_project() of the run script holds the path
+  # of the data on this computer, and the file holds the server path there.
+  code <- code[!startsWith(code, "pbn::initialize_project(")]
+  expect_identical(max(nchar(lines)), max(nchar(c(code, want))))
 })

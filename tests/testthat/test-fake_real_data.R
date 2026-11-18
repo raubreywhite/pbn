@@ -228,6 +228,7 @@ test_that("check_one_file passes a project on fake real data: the fresh run has 
   real <- qs2::qs_read(file.path(p$home, "v01_results", "real", "results.qs2"))
   expect_true(real$manifest$fake_real_data)
   init(p, fake_real_data = TRUE)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_match(
     out,

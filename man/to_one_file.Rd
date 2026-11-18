@@ -73,9 +73,13 @@ token. The files of the project stay as they are:
 \itemize{
 \item In a string, the character becomes its escape, \verb{\\uXXXX}, or
 \verb{\\UXXXXXXXX} beyond the BMP, for example \code{"\\u2265"} for the sign
-greater than or equal. pbn writes such a string again from its value,
-in double quotes. So a raw string \code{r"(...)"} becomes a normal string,
-and an escape that the string held keeps its meaning. The code of the
+greater than or equal. Every other character of the string stays as it
+is written, also its quotes, its escapes and its line breaks. In a raw
+string \code{r"(...)"}, \verb{\\u} is text and not an escape. So pbn writes such a
+raw string again from its value. It becomes a normal string in double
+quotes on one line, with \verb{\\n} for each line break. R does not allow
+\verb{\\u} in a string with an escape \verb{\\x} or an octal escape. So pbn writes
+such a string from its value too. The code of the
 file is \code{identical()} to the code of the project. Such a string gets
 the encoding mark \code{"UTF-8"} where the string of the project MAY have
 \code{"unknown"}, and \code{identical()} treats the two as equal.

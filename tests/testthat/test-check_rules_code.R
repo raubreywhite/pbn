@@ -445,6 +445,7 @@ test_that("initialize_project leaves blocks.R out of source_md5 only when it can
     c(conform, "options(digits = 4)")
   )
   init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_false(ok)
   expect_identical(

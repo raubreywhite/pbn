@@ -5,9 +5,9 @@
 
 # The lines of the R file `rel` as ASCII. `lines` are its lines as UTF-8,
 # without CR. Each character that is not ASCII:
-# - in a string becomes its escape \uXXXX, or \UXXXXXXXX beyond the BMP. pbn
-#   writes the whole string again from its value, so a raw string becomes a
-#   string in double quotes with the same value.
+# - in a string becomes its escape \uXXXX, or \UXXXXXXXX beyond the BMP.
+#   Every other character of the string stays as it is written. A raw string
+#   becomes a string in double quotes with the same value.
 # - in a comment becomes the text <U+XXXX>.
 # - in a name stops, and the error names the file and the line.
 # Stops when the file does not parse.
@@ -98,10 +98,17 @@ span_text <- function(lines, place) {
   ))
 }
 
-# The string constant `text` of R code, written again as a string in double
-# quotes with only ASCII characters and the same value. Stops when the value
-# is not valid UTF-8, for example after an escape \xE9, and names the file
-# `rel` and the line `line`.
+# The string constant `text` of R code, with only ASCII characters and the
+# same value. Stops when the value is not valid UTF-8, for example after an
+# escape \xE9, and names the file `rel` and the line `line`.
+#
+# A normal string stays as it is written: its quotes, its escapes and its
+# line breaks. Only each character that is not ASCII becomes its escape. The
+# string parses, so a backslash before such a character is the second of a
+# pair, and the new escape starts after it. In a raw string r"(...)" an
+# escape is text. So pbn writes a raw string again from its value, as a
+# string in double quotes, with \n for each line break. So does a string
+# with an escape \x or an octal escape, because R does not allow \u in it.
 escaped_string <- function(text, rel, line) {
   value <- parse(text = text, keep.source = FALSE, encoding = "UTF-8")[[1]]
   codes <- if (validUTF8(value)) utf8ToInt(enc2utf8(value)) else NA
@@ -116,8 +123,30 @@ escaped_string <- function(text, rel, line) {
       call. = FALSE
     )
   }
-  out <- vapply(codes, escaped_code, character(1))
-  return(paste0("\"", paste(out, collapse = ""), "\""))
+  from_value <- paste0(
+    "\"",
+    paste(vapply(codes, escaped_code, character(1)), collapse = ""),
+    "\""
+  )
+  if (grepl("^[rR]", text)) {
+    return(from_value)
+  }
+  out <- vapply(
+    utf8ToInt(enc2utf8(text)),
+    function(x) return(if (x < 128) intToUtf8(x) else escaped_code(x)),
+    character(1)
+  )
+  out <- paste(out, collapse = "")
+  # R does not allow \u with an escape \x or \0 in one string. Such a
+  # string, and any other that does not keep its value, comes from the value.
+  again <- tryCatch(
+    parse(text = out, keep.source = FALSE)[[1]],
+    error = function(e) return(NULL)
+  )
+  if (!identical(again, value)) {
+    return(from_value)
+  }
+  return(out)
 }
 
 # One code point `x` of a string as ASCII text inside double quotes.

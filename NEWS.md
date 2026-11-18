@@ -140,6 +140,9 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - The manifest gains `n_rows_lists`, the rows of each data.frame of a list of data.frames with 2 or more numbers of rows. `no_row_per_person` checks each of them.
 - New argument `fake_real_data` of `initialize_project()`, for folders that hold fake files in the formats of the real data. The real manifest gains `fake_real_data`, and `manifest_data` fails a real manifest without it. The run log, `make_outputs()`, `stamp_fake()` and the blocks label such results. All but the run log read the flag from the manifest of the real results, never from the R session. The file of `to_one_file()` never has the argument.
 - New `check_project()` rule `real_results_are_fake`, a warning while the real results on the disk come from fake real data. The set `house_2026_11_17` gets it and the new `blocks_list`, and its md5 changes before the first release.
+- `stamp_fake()` keeps every panel of a patchwork. Before, the label covered the last plot with an opaque background, so a figure `a / b` lost `b`. It now wraps the whole patchwork with `patchwork::wrap_elements()` and puts the label on it without a background.
+- `check_one_file()` first compares `<version>_one_file.R` in the project with the file of `to_one_file()` now, with the paths of the server from that file. It prints FAIL with the first line that differs, or when there is no such file. Then it runs the file of the project, with temporary paths in place of the paths of the server. Before, it ran a new file and passed while the file in git was older.
+- `to_one_file()` changes only the characters that are not ASCII in a string, and keeps its quotes, escapes and line breaks. Before, it wrote each such string again from its value, so a multi-line string became one long line. A raw string, and a string with an escape `\x` or an octal escape, still come from the value.
 
 # pbn 2026.11.22
 

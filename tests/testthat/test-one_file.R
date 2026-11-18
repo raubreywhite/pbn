@@ -269,6 +269,7 @@ test_that("check_one_file prints PASS for the file of the project, and the first
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   # The new R session gets its library paths from check_one_file(), not
   # from R_LIBS of this R session, as in R CMD build.
   withr::local_envvar(R_LIBS = NA)
@@ -462,6 +463,7 @@ test_that("check_one_file prints the exit status and the last lines of the outpu
   local_mocked_bindings(one_file_lines = function(...) {
     return(c(made(...), "stop(\"boom in the new session\")"))
   })
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_false(ok)
   expect_match(
@@ -496,6 +498,10 @@ test_that("a Windows path with \\ and a short name goes into the file as text th
   expect_identical(init_call$home, home)
   expect_identical(eval(init_call$folders), c(main = main))
   expect_identical(exprs[[1]], call("setwd", home))
+  expect_identical(
+    server_paths(readLines(file)),
+    list(home = home, folders = c(main = main))
+  )
 })
 
 test_that("the manifest leaves blocks.R out of source_md5, so a change of the blocks after the run keeps check_one_file at PASS", {
@@ -509,6 +515,8 @@ test_that("the manifest leaves blocks.R out of source_md5, so a change of the bl
   expect_true(
     "v01_functions/expect_real.R" %in% names(real$manifest$source_md5)
   )
+  init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   write_lines(
     p$home,
     "v01_functions/blocks.R",
@@ -520,6 +528,22 @@ test_that("the manifest leaves blocks.R out of source_md5, so a change of the bl
     )
   )
   init(p)
+  # The file in the project still holds the old blocks, so it fails.
+  local({
+    local_mocked_bindings(run_rscript = function(...) stop("no run expected"))
+    out <- utils::capture.output(ok <- check_one_file("v01"))
+    expect_false(ok)
+    expect_match(
+      out,
+      paste0(
+        "^FAIL: the file v01_one_file\\.R in the project is older than the ",
+        "code of the project: run pbn::to_one_file\\(\\) again, then check\\. ",
+        "The first line that differs is line [0-9]+\\. The file has ",
+        "\"#   v01_functions/blocks\\.R "
+      )
+    )
+  })
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   # The md5 of the header still names the file of the blocks.
   expect_true("v01_functions/blocks.R" %in% names(state$source_md5))
   out <- utils::capture.output(ok <- check_one_file("v01"))
@@ -539,6 +563,7 @@ test_that("check_one_file says that the results are older than the code, and run
     "double_it <- function(x) return(x + x)"
   )
   init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   local_mocked_bindings(run_rscript = function(...) stop("no run expected"))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_false(ok)
@@ -553,17 +578,30 @@ test_that("check_one_file says that the results are older than the code, and run
   )
 })
 
-test_that("check_one_file without real results runs the checks of to_one_file first, and then says to run the project", {
+test_that("check_one_file without real results compares the file of the project first, and then says to run the project", {
   p <- local_project()
   init(p)
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_identical(
+    out,
+    paste0(
+      "FAIL: there is no file v01_one_file.R in the project. Run ",
+      "pbn::to_one_file() first, then pbn::check_one_file()."
+    )
+  )
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   expect_error(
     check_one_file("v01"),
     paste0(
       "There are no real results in v01_results/real/. The file of ",
-      "pbn::to_one_file() passes the checks that need no results"
+      "pbn::to_one_file() passes the checks that need no results: it is the ",
+      "file that pbn::to_one_file() writes now"
     ),
     fixed = TRUE
   )
+  file <- file.path(p$home, "v01_one_file.R")
+  md5 <- tools::md5sum(file)
   writeLines(
     c("x <- 1", "`caf\u00e9` <- 2"),
     file.path(p$home, "v01_functions", "odd.R"),
@@ -575,7 +613,108 @@ test_that("check_one_file without real results runs the checks of to_one_file fi
     "v01_functions/odd.R:2 has the name `caf\u00e9`, which is not ASCII.",
     fixed = TRUE
   )
-  expect_false(file.exists(file.path(p$home, "v01_one_file.R")))
+  expect_identical(tools::md5sum(file), md5)
+})
+
+test_that("check_one_file fails when the file of the project is older than the code, names the first line that differs, and runs nothing", {
+  p <- local_project()
+  save_run(p, only = c("real", "known"))
+  init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
+  local_mocked_bindings(run_rscript = function(...) stop("no run expected"))
+  write_lines(
+    p$home,
+    "v01_functions/double_it.R",
+    "double_it <- function(x) return(x + x)"
+  )
+  init(p)
+  lines <- readLines(file.path(p$home, "v01_one_file.R"))
+  # The first line that differs is the md5 of the file in the header.
+  i <- grep("^#   v01_functions/double_it.R ", lines)
+  expect_length(i, 1)
+  md5 <- c(
+    unname(tools::md5sum(file.path(p$home, "v01_functions/double_it.R")))
+  )
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_identical(
+    out,
+    paste0(
+      "FAIL: the file v01_one_file.R in the project is older than the code ",
+      "of the project: run pbn::to_one_file() again, then check. The first ",
+      "line that differs is line ",
+      i,
+      ". The file has \"",
+      lines[i],
+      "\", and pbn::to_one_file() writes \"",
+      sub("[0-9a-f]{32}$", md5, lines[i]),
+      "\" now."
+    )
+  )
+  # Without the lines of the md5, the first line that differs is the code.
+  now <- one_file_lines("v01", "N:/x", c(main = "N:/d"))
+  keep <- !grepl("[0-9a-f]{32}", lines)
+  expect_match(
+    first_line_difference(lines[keep], now[keep]),
+    "The file has \"double_it <- function(x) return(2 * x)\", and pbn::to_one_file() writes \"double_it <- function(x) return(x + x)\" now.",
+    fixed = TRUE
+  )
+  # A file that is longer than the file of to_one_file() now.
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
+  file <- file.path(p$home, "v01_one_file.R")
+  writeLines(c(readLines(file), "# a line by hand"), file)
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_match(
+    out,
+    "then check\\. The file has [0-9]+ lines, and pbn::to_one_file\\(\\) writes [0-9]+ lines now\\.$"
+  )
+  # A file without a call of pbn::initialize_project().
+  writeLines("x <- 1", file)
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_match(
+    out,
+    "then check. pbn cannot read the paths of the server from its call pbn::initialize_project().",
+    fixed = TRUE
+  )
+})
+
+test_that("check_one_file runs the file of the project with the temporary paths, and the line of the pbn version and the date does not count", {
+  p <- local_project()
+  save_run(p, only = c("real", "known"))
+  init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
+  file <- file.path(p$home, "v01_one_file.R")
+  lines <- readLines(file)
+  at <- grep("^# pbn .* generated it on ", lines)
+  expect_length(at, 1)
+  lines[at] <- sub(
+    "pbn [^ ]+ generated it on [0-9-]+",
+    "pbn 1.0.0 generated it on 2000-01-01",
+    lines[at]
+  )
+  writeLines(lines, file)
+  ran <- NULL
+  local_mocked_bindings(run_rscript = function(file, log) {
+    ran <<- readLines(file)
+    writeLines("stopped by the test", log)
+    return(3L)
+  })
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_match(out[1], "with the exit status 3", fixed = TRUE)
+  # The run got the file of the project, with its own line of the date. Only
+  # the lines with a path differ, and each holds the temporary path.
+  expect_length(ran, length(lines))
+  expect_identical(ran[at], lines[at])
+  swapped <- which(ran != lines)
+  expect_true(all(grepl("N:/", lines[swapped], fixed = TRUE)))
+  expect_false(any(grepl("N:/", ran, fixed = TRUE)))
+  expect_true(all(grepl("pbn_one_file_", ran[swapped], fixed = TRUE)))
+  expect_true(any(ran == "  version = \"v01\","))
+  # setwd(), home and main of the call, and two comments with home.
+  expect_length(swapped, 5)
 })
 
 test_that("check_one_file fails a block that prints differently for the two results, and a block that calls a function of a package that the run script attaches, and names the block", {
@@ -602,6 +741,7 @@ test_that("check_one_file fails a block that prints differently for the two resu
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   init(p, fake_real_data = TRUE)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_false(ok)
   expect_match(
@@ -628,6 +768,7 @@ test_that("check_one_file fails a block that prints differently for the two resu
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   init(p)
+  utils::capture.output(to_one_file("v01", "N:/x", c(main = "N:/d")))
   out <- utils::capture.output(ok <- check_one_file("v01"))
   expect_false(ok)
   expect_match(

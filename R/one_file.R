@@ -55,9 +55,13 @@
 #' token. The files of the project stay as they are:
 #' - In a string, the character becomes its escape, `\uXXXX`, or
 #'   `\UXXXXXXXX` beyond the BMP, for example `"\u2265"` for the sign
-#'   greater than or equal. pbn writes such a string again from its value,
-#'   in double quotes. So a raw string `r"(...)"` becomes a normal string,
-#'   and an escape that the string held keeps its meaning. The code of the
+#'   greater than or equal. Every other character of the string stays as it
+#'   is written, also its quotes, its escapes and its line breaks. In a raw
+#'   string `r"(...)"`, `\u` is text and not an escape. So pbn writes such a
+#'   raw string again from its value. It becomes a normal string in double
+#'   quotes on one line, with `\n` for each line break. R does not allow
+#'   `\u` in a string with an escape `\x` or an octal escape. So pbn writes
+#'   such a string from its value too. The code of the
 #'   file is `identical()` to the code of the project. Such a string gets
 #'   the encoding mark `"UTF-8"` where the string of the project MAY have
 #'   `"unknown"`, and `identical()` treats the two as equal.

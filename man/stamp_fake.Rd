@@ -24,8 +24,12 @@ a call of \code{\link[=make_outputs]{make_outputs()}}, it returns \code{q} uncha
 manifest has \code{fake_real_data} \code{TRUE}, it adds the label.
 
 On a ggplot, the label is on each panel. On a patchwork, it is one label
-over the whole figure, with \code{\link[patchwork:inset_element]{patchwork::inset_element()}}. Without it,
-\code{+} would put the label on the last panel only.
+over the whole figure. \code{stamp_fake()} wraps the patchwork in one element
+with \code{\link[patchwork:wrap_elements]{patchwork::wrap_elements()}}, and puts the label on it with
+\code{\link[patchwork:inset_element]{patchwork::inset_element()}}. The label has no background, so each panel
+stays visible. Call \code{stamp_fake()} last, just before the figure is saved.
+A \code{+} after it applies to the label, and a theme with a background then
+hides the figure.
 
 For a fake scenario, \code{stamp_fake()} needs the package ggplot2, and
 patchwork for a patchwork. It stops when the package is not installed.

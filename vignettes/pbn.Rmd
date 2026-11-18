@@ -874,7 +874,7 @@ The file is ASCII with LF line ends, because it goes through a clipboard. A labe
 
 ### The local proof
 
-`pbn::check_one_file()` runs the file in a new R session on this computer. The project folder there is an empty folder, and the folder `main` is a copy that keeps the modification times. It compares the real results of that run with those of the project. Then it runs each block on both results in a new R session, which attaches no package of the run script. It compares each page as text. It prints PASS or the first difference:
+`pbn::check_one_file()` first compares `v01_one_file.R` in the project with what `to_one_file()` writes now, with the paths of the server from that file. When a line differs, it prints FAIL and says to run `to_one_file()` again. Then it runs the file of the project in a new R session on this computer. The paths of the server become temporary paths. The project folder there is an empty folder, and the folder `main` is a copy that keeps the modification times. It compares the real results of that run with those of the project. Then it runs each block on both results in a new R session, which attaches no package of the run script. It compares each page as text. It prints PASS or the first difference:
 
 ```{r, results = "hide"}
 said <- utils::capture.output(pass <- withr::with_dir(home, pbn::check_one_file("v01")))
@@ -891,7 +891,7 @@ if (!isTRUE(pass)) {
 }
 ```
 
-Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there. When the code changed after the last run, it says that the results are older than the code, and runs nothing. Without real results, it runs the checks of `to_one_file()` and stops.
+Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there. When the code changed after the last run, it says that the results are older than the code, and runs nothing. Without real results, it stops after the comparison of the file.
 
 On a computer without the real data, the folders MAY hold fake files in the formats of the real data. The code that reads the real data then runs there. Say so in the run script of that computer. pbn then labels the real results as fake real data in the run log, the output and the blocks:
 

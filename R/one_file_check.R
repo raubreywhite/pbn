@@ -9,25 +9,45 @@
 #' @details
 #' Run the project as normal first, so that `<version>_results/real/` holds
 #' its real results, and call [initialize_project()] again in this R session.
+#' Without real results, `check_one_file()` runs the checks of
+#' [to_one_file()] that need no results, and stops. So the file of a project
+#' MAY be checked for ASCII, for a parse and for a left-out function before
+#' the first full run.
+#'
 #' `check_one_file()` then does these steps:
-#' 1. It makes a temporary folder with an empty project folder, and a copy of
+#' 1. It compares `manifest$source_md5` of the real results with the md5 of
+#'    the files of the project now, without `<version>_functions/blocks.R`.
+#'    When they differ, the results of the project are older than its code.
+#'    It prints FAIL with the changed files and says to run
+#'    `<version>_run.R` again. It runs nothing.
+#' 2. It makes a temporary folder with an empty project folder, and a copy of
 #'    each folder of the project with all its files. The empty project folder
 #'    stands for the server, where there is no functions folder and no
 #'    `pbn.yml`.
-#' 2. It writes the file of [to_one_file()] with these paths, and runs it with
+#' 3. It writes the file of [to_one_file()] with these paths, and runs it with
 #'    `Rscript` in a new R session.
-#' 3. It compares `results.qs2` and `results_gitexclude.qs2` of the real
+#' 4. It compares `results.qs2` and `results_gitexclude.qs2` of the real
 #'    results of the run with those of the project, element by element.
+#' 5. It calls each block of [show_block()] on the real results of the
+#'    project and on those of the run, in one more new R session. That
+#'    session attaches no package of the run script. It compares what
+#'    [show_block()] prints for each page of each block, as text, without
+#'    the line `FAKE REAL DATA`. A block that stops on either results, or
+#'    that prints other text, is a FAIL that names the block.
 #'
-#' Three fields of the manifest MAY differ, and the comparison leaves them
+#' Four fields of the manifest MAY differ, and the comparison leaves them
 #' out:
 #' - `run_date`, the date of the run.
 #' - `packages`, the loaded packages, because the new R session loads other
 #'   packages than the R session of the normal run.
 #' - the column `from_cache` of `data_cache`, because the copy has no cache.
+#' - `fake_real_data`, because the file never runs on fake real data. See
+#'   [initialize_project()].
 #'
-#' Every other element MUST be identical, also `source_md5`, `data_files`
-#' and `cache_key`. So the results do not depend on the place of the project
+#' The comparison also leaves `<version>_functions/blocks.R` out of
+#' `source_md5`, also for results of an older pbn that hold it. Every other
+#' element MUST be identical, also `source_md5`, `data_files` and
+#' `cache_key`. So the results do not depend on the place of the project
 #' and of its folders. The copies keep the modification times of the files,
 #' with `file.copy(copy.date = TRUE)`. That is why `data_files` and the cache
 #' key agree. pbn reads no content of a data file, so a copy with new times
@@ -47,8 +67,8 @@
 #' - It runs the file with `Rscript`, and on the server a person pastes it
 #'   into an interactive R session. So it does not cover code that depends
 #'   on `interactive()`.
-#' - It compares the results files, and not what the blocks of
-#'   [show_block()] print.
+#' - It compares the blocks on the real data of this computer. A block that
+#'   stops only on other data, for example on an empty table, passes here.
 #' - pbn reads no content of a data file. A data file that changed in place
 #'   and kept its size and its modification time is not seen.
 #' @return Invisibly, `TRUE` on PASS and `FALSE` on FAIL.
@@ -59,12 +79,21 @@ check_one_file <- function(version) {
   check_one_file_call(version, "check_one_file")
   local <- file.path(state$results, "real")
   if (!file.exists(file.path(local, "results.qs2"))) {
+    # The checks of to_one_file() need no results, so they come first.
+    one_file_lines(version, "/server", placeholder_folders())
     stop(
       "There are no real results in ",
       paste0(version, "_results/real/"),
-      ". Run the project first, then pbn::check_one_file().",
+      ". The file of pbn::to_one_file() passes the checks that need no ",
+      "results: its code is ASCII, it parses, and it uses no function that ",
+      "it leaves out. Run the project, then pbn::check_one_file().",
       call. = FALSE
     )
+  }
+  stale <- stale_results(local, version)
+  if (!is.null(stale)) {
+    cat("FAIL: ", stale, "\n", sep = "")
+    return(invisible(FALSE))
   }
   tmp <- tempfile("pbn_one_file_")
   dir.create(file.path(tmp, "home"), recursive = TRUE)
@@ -84,7 +113,56 @@ check_one_file <- function(version) {
     local,
     file.path(home, paste0(version, "_results"), "real")
   )
-  return(one_file_verdict(found, tmp))
+  blocks <- NULL
+  if (is.null(found)) {
+    blocks <- check_blocks_of_file(file, home, tmp)
+    found <- blocks$found
+  }
+  return(one_file_verdict(found, tmp, blocks$n))
+}
+
+# The text of check_one_file() when the real results in the folder `local`
+# come from other code than the files of the project on the disk now, or
+# NULL. The file of the blocks does not count. The comparison would then
+# show the age of the results, and no fault of the file.
+stale_results <- function(local, version) {
+  recorded <- tryCatch(
+    qs2::qs_read(file.path(local, "results.qs2"))$manifest$source_md5,
+    error = function(e) return(NULL)
+  )
+  if (!is_data_md5(recorded)) {
+    return(NULL)
+  }
+  # blocks.R does not count when it cannot change the results, also for the
+  # results of an older pbn that hold its md5.
+  now <- source_md5(state$home, version)
+  if (blocks_file_inert(state$home, version)) {
+    recorded <- manifest_source_md5(recorded, version)
+    now <- manifest_source_md5(now, version)
+  }
+  both <- intersect(names(now), names(recorded))
+  changed <- c(
+    setdiff(union(names(now), names(recorded)), both),
+    both[now[both] != recorded[both]]
+  )
+  if (length(changed) == 0) {
+    return(NULL)
+  }
+  return(paste0(
+    "the results of the project are older than its code. These files ",
+    "changed after the run that made them: ",
+    paste(sort(changed, method = "radix"), collapse = ", "),
+    ". Run ",
+    version,
+    "_run.R again, then pbn::check_one_file()."
+  ))
+}
+
+# A path on a server for each folder of the project, for the checks of
+# to_one_file() without a server.
+placeholder_folders <- function() {
+  nm <- names(state$folders)
+  return(stats::setNames(paste0("/server/", nm), nm))
 }
 
 # The text of check_one_file() for a run of the file that stopped with the
@@ -111,12 +189,23 @@ child_failure <- function(status, log) {
 
 # Prints the line of check_one_file() for the difference `found`, or NULL
 # for PASS, and deletes `tmp` on PASS. Returns TRUE on PASS, invisibly.
-one_file_verdict <- function(found, tmp) {
+one_file_verdict <- function(found, tmp, n_blocks = NULL) {
   if (is.null(found)) {
     cat(
       "PASS: the file of pbn::to_one_file() gives the real results of the ",
-      "project, apart from manifest$run_date, manifest$packages and ",
-      "manifest$data_cache$from_cache.\n",
+      "project, apart from manifest$run_date, manifest$packages, ",
+      "manifest$data_cache$from_cache and manifest$fake_real_data. ",
+      if (is.null(n_blocks) || n_blocks == 0) {
+        "The project has no blocks."
+      } else {
+        paste0(
+          "Each page of the ",
+          n_blocks,
+          if (n_blocks == 1) " block" else " blocks",
+          " prints the same for both."
+        )
+      },
+      "\n",
       sep = ""
     )
     unlink(tmp, recursive = TRUE)
@@ -218,6 +307,15 @@ comparable_results <- function(x) {
   }
   x$manifest$run_date <- NULL
   x$manifest$packages <- NULL
+  x$manifest$fake_real_data <- NULL
+  # A manifest of an older pbn holds the md5 of the blocks. They only print
+  # results, so they never count.
+  if (!is.null(x$manifest$source_md5)) {
+    x$manifest$source_md5 <- manifest_source_md5(
+      x$manifest$source_md5,
+      x$manifest$version
+    )
+  }
   if (is.data.frame(x$manifest$data_cache)) {
     x$manifest$data_cache$from_cache <- NULL
   }

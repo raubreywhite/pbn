@@ -817,7 +817,15 @@ project_rules <- function() {
     ),
     blocks_list = list(
       rule_blocks_list,
-      "blocks, when the functions folder has it, is a list of named functions"
+      paste(
+        "blocks, when a functions folder has it, is a list of named",
+        "functions in vNN_functions/blocks.R, and no other code uses a name",
+        "of that file"
+      )
+    ),
+    real_results_are_fake = list(
+      rule_real_results_are_fake,
+      "no real results on the disk come from fake real data"
     ),
     unknown_path = list(
       rule_unknown_path,

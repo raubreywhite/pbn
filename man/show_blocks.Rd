@@ -49,6 +49,18 @@ element. The function formats the numbers for the manuscript, and
 )
 }\if{html}{\out{</div>}}
 
+Put \code{blocks} in the file \verb{<version>_functions/blocks.R}, and nowhere
+else. pbn leaves that file out of \code{manifest$source_md5}, so a change of
+a block does not make the results stale. The rule \code{blocks_list} of
+\code{\link[=check_project]{check_project()}} fails a use of a name of that file in the other code,
+because the run then depends on it.
+
+A block MAY run where the packages of the run script are missing.
+Examples are the console after \code{\link[=initialize_project]{initialize_project()}} and the new R
+session of \code{\link[=check_one_file]{check_one_file()}}. \code{show_block()} attaches no package. So a block function MUST name the package of each function that
+it calls, for example \code{data.table::data.table()}. When R does not find a
+function, the error says so.
+
 The results include the kinds of \code{gitexclude}, so a block MAY show rows
 for each person, for example to find a fault. What a person copies or
 screenshots from the screen is the responsibility of that person.
@@ -70,6 +82,11 @@ it prints the error in the place of the rows, and goes on.
 \item the page, for example \verb{page 2 of 4, rows 36 to 70 of 140},
 \item the rows of the page.
 }
+
+Real results MAY come from fake real data, see \code{fake_real_data} of
+\code{\link[=initialize_project]{initialize_project()}}. Then \code{show_block()} prints the line
+\verb{FAKE REAL DATA} between the first two lines. \code{show_blocks()} prints it
+under its first line.
 
 It stops on a block function that stops, and the error names the block.
 During the call, the option \code{width} is 270 and the row names are off. No

@@ -71,9 +71,19 @@ md_run <- function(log) {
     paste0("- Result: ", log$result),
     paste0(
       "- Scenarios of this run: ",
-      if (NROW(log$scenarios) == 0) "unknown" else and_list(log$scenarios$scenario),
+      if (NROW(log$scenarios) == 0) {
+        "unknown"
+      } else {
+        and_list(log$scenarios$scenario)
+      },
       "."
-    )
+    ),
+    if (isTRUE(log$fake_real_data)) {
+      paste0(
+        "- The scenario real ran on fake real data: the folders of this ",
+        "computer hold fake files in the formats of the real data."
+      )
+    }
   )
   if (nrow(log$earlier) > 0) {
     lines <- c(
@@ -139,7 +149,11 @@ md_failures <- function(log) {
       paste0(
         "The run had ",
         nrow(errors),
-        if (nrow(errors) == 1) " error, error 1. " else paste0(" errors, error 1 to error ", nrow(errors), ". "),
+        if (nrow(errors) == 1) {
+          " error, error 1. "
+        } else {
+          paste0(" errors, error 1 to error ", nrow(errors), ". ")
+        },
         errors_sentence(log)
       ),
       ""
@@ -233,7 +247,9 @@ md_contract <- function(contract, errors) {
   where <- regmatches(contract, regexec("^(.*?): ([A-Za-z0-9_.]+): ", contract))
   label <- vapply(
     where,
-    function(m) return(if (length(m) == 3) paste0(m[2], ": ", m[3]) else "a rule"),
+    function(m) {
+      return(if (length(m) == 3) paste0(m[2], ": ", m[3]) else "a rule")
+    },
     character(1)
   )
   return(c(
@@ -244,7 +260,13 @@ md_contract <- function(contract, errors) {
       "check_results() failed:"
     ),
     "",
-    paste0("- ", md_inline(label), ", ", error_ref(errors, paste0("contract\r", contract)), "."),
+    paste0(
+      "- ",
+      md_inline(label),
+      ", ",
+      error_ref(errors, paste0("contract\r", contract)),
+      "."
+    ),
     ""
   ))
 }
@@ -308,7 +330,7 @@ md_data <- function(log) {
       r <- rows[rows$data == d & rows$scenario == s, , drop = FALSE]
       out[[length(out) + 1]] <- data.frame(
         Data = d,
-        Scenario = s,
+        Scenario = scenario_label(s, log),
         Simulations = scen$sims[i],
         Cache = cache_cell(records[
           records$data == d & records$scenario %in% s,
@@ -351,7 +373,11 @@ md_folders <- function(folders, scenarios) {
     ifelse(
       folders$absent,
       " (absent)",
-      paste0(" (", folders$files, ifelse(folders$files == 1, " file)", " files)"))
+      paste0(
+        " (",
+        folders$files,
+        ifelse(folders$files == 1, " file)", " files)")
+      )
     )
   )
   return(c(
@@ -418,6 +444,15 @@ md_cache_lines <- function(records, scenarios, data) {
   ))
 }
 
+# The name of the scenario `s` in the tables of the log `log`: "real (fake
+# real data)" for "real" on fake real data.
+scenario_label <- function(s, log) {
+  if (identical(s, "real") && isTRUE(log$fake_real_data)) {
+    return("real (fake real data)")
+  }
+  return(s)
+}
+
 md_exclusions <- function(log) {
   tables <- log$run$exclusions
   lines <- c("## Exclusions", "")
@@ -436,7 +471,11 @@ md_exclusions <- function(log) {
   for (i in seq_len(nrow(scen))) {
     lines <- c(
       lines,
-      md_scenario_exclusions(tables[[scen$scenario[i]]], scen[i, ])
+      md_scenario_exclusions(
+        tables[[scen$scenario[i]]],
+        scen[i, ],
+        scenario_label(scen$scenario[i], log)
+      )
     )
   }
   return(lines)
@@ -445,8 +484,8 @@ md_exclusions <- function(log) {
 # The exclusions of one scenario, the row `scen` of the scenarios: one
 # sentence for each data element whose cohort has no step, and one table for
 # the others.
-md_scenario_exclusions <- function(x, scen) {
-  lines <- c(paste("###", scen$scenario), "")
+md_scenario_exclusions <- function(x, scen, label = scen$scenario) {
+  lines <- c(paste("###", label), "")
   if (scen$sims > 1) {
     lines <- c(
       lines,
@@ -604,7 +643,21 @@ md_outputs <- function(log) {
   if (is.null(o)) {
     return(c(
       lines,
-      "make_outputs() did not run after save_results() in this R session.",
+      paste(
+        "make_outputs() did not run after save_results() in this R session,",
+        "so this run made no output."
+      ),
+      if (length(log$outputs_deleted) > 0) {
+        c(
+          "",
+          paste0(
+            "save_results() deleted the output of an earlier run beside the ",
+            "new results: ",
+            and_list(md_inline(log$outputs_deleted)),
+            "."
+          )
+        )
+      },
       ""
     ))
   }

@@ -14,7 +14,9 @@
 #' @details
 #' Call [initialize_project()] for `version` first, in the project on this
 #' computer. `to_one_file()` takes the project from that call. It stops when
-#' the run script or a file of the functions folder changed after it.
+#' the run script or a file of the functions folder changed after it. It
+#' needs no results. So you MAY generate and read the file before the first
+#' full run.
 #'
 #' The file holds these parts, in this order:
 #' 1. A header with the version of pbn, the date, the project folder and the
@@ -39,16 +41,37 @@
 #'
 #' The functions `expect_<scenario>()` of the fake scenarios of
 #' `CFG$scenarios` are not in the file, because the run has the real data
-#' only. `expect_real()` stays. The fake data code stays, because it is
-#' inside the data functions.
+#' only. The comment lines directly above such a function go with it, up to
+#' a blank line or a line with code. `expect_real()` stays. The fake data
+#' code stays, because it is inside the data functions.
+#'
+#' The call of `pbn::initialize_project()` in the file never has
+#' `fake_real_data`, because the server holds the real data. The run script
+#' MAY have it for this computer.
+#'
+#' The file is ASCII, because it goes through a clipboard, which can change
+#' a byte that is not ASCII. pbn reads each file of the project as UTF-8 and
+#' changes each character that is not ASCII on the parse data, token by
+#' token. The files of the project stay as they are:
+#' - In a string, the character becomes its escape, `\uXXXX`, or
+#'   `\UXXXXXXXX` beyond the BMP, for example `"\u2265"` for the sign
+#'   greater than or equal. pbn writes such a string again from its value,
+#'   in double quotes. So a raw string `r"(...)"` becomes a normal string,
+#'   and an escape that the string held keeps its meaning. The code of the
+#'   file is `identical()` to the code of the project. Such a string gets
+#'   the encoding mark `"UTF-8"` where the string of the project MAY have
+#'   `"unknown"`, and `identical()` treats the two as equal.
+#' - In a comment, the character becomes the text `<U+XXXX>`.
+#' - In a name, for example a name in backticks, `to_one_file()` stops,
+#'   because R reads a name only as it is written.
 #'
 #' `to_one_file()` stops when, and writes no file:
 #' - the run script has not exactly one top-level call
 #'   `pbn::initialize_project()`, or not exactly one call
 #'   `pbn::scenarios(CFG)` with no other argument. It names what it found.
-#' - a file in the file holds a byte that is not ASCII, or a NUL. The error
-#'   names the file and the line. The file goes through a clipboard, which
-#'   can change such a byte.
+#' - a file in the file holds a name that is not ASCII, a NUL, or a line
+#'   that is not UTF-8. It also stops on a string that is not valid UTF-8
+#'   after its escapes. The error names the file and the line.
 #' - `home`, a path of `folders` or the name of the project folder is not
 #'   ASCII.
 #' - `folders` misses a folder of the project, or names one that the project
@@ -72,8 +95,9 @@
 #' that folder.
 #'
 #' These are limits of the file:
-#' - The comments of the code go into the file as they are written. So a
-#'   comment with a path of this computer reaches the server.
+#' - The comments of the code go into the file as they are written, with
+#'   `<U+XXXX>` for a character that is not ASCII. So a comment with a path
+#'   of this computer reaches the server.
 #' - The rule `no_absolute_paths` of [check_project()] does not see a path
 #'   with one name such as `"/data"`, or a path that `paste0()` or
 #'   `sprintf()` builds. Such a path in the code reaches the server too.
@@ -122,12 +146,15 @@ one_file_lines <- function(version, home, folders) {
     return(ascii_lines(local, f))
   })
   names(sources) <- c(files, script_name)
-  dropped <- lapply(files, function(f) return(expect_spans(sources[[f]], f, fake)))
+  dropped <- lapply(files, function(f) {
+    return(expect_spans(sources[[f]], f, fake))
+  })
   names(dropped) <- files
   check_dropped_names(sources, dropped)
   code <- unlist(lapply(files, function(f) {
     lines <- sources[[f]]
     for (ref in rev(dropped[[f]]$refs)) {
+      ref <- with_comment_above(lines, ref, dropped[[f]]$tokens)
       lines <- replace_span(lines, ref, character(0))
     }
     return(c(paste0("# ---- ", f, " ----"), lines))
@@ -275,26 +302,63 @@ sourcing_order <- function(home, version) {
   return(paste0(folder, "/", basename(sorted), recycle0 = TRUE))
 }
 
-# The lines of the file `rel` of `home`, without CR. Stops on a byte that is
-# not ASCII, or a NUL, and names the file and its line.
+# The lines of the file `rel` of `home`, without CR, as ASCII: see
+# ascii_code(). Stops on a NUL and on a file that is not UTF-8, and names
+# the file and its line.
 ascii_lines <- function(home, rel) {
   path <- file.path(home, rel)
   bytes <- readBin(path, "raw", file.size(path))
   bytes <- bytes[bytes != as.raw(13)]
-  bad <- which(bytes == as.raw(0) | bytes > as.raw(127))
-  if (length(bad) > 0) {
-    line <- sum(bytes[seq_len(bad[1])] == as.raw(10)) + 1
+  nul <- which(bytes == as.raw(0))
+  if (length(nul) > 0) {
     stop(
       rel,
       ":",
-      line,
-      " holds a byte that is not ASCII. The file of pbn::to_one_file() goes ",
-      "through a clipboard, which can change such a byte. Write the ",
-      "character with an escape such as \\u00e9.",
+      sum(bytes[seq_len(nul[1])] == as.raw(10)) + 1,
+      " holds a NUL byte. Remove it.",
       call. = FALSE
     )
   }
-  return(strsplit(rawToChar(bytes), "\n", fixed = TRUE)[[1]])
+  lines <- split_lines(bytes)
+  Encoding(lines) <- "UTF-8"
+  bad <- which(!validUTF8(lines))
+  if (length(bad) > 0) {
+    stop(
+      rel,
+      ":",
+      bad[1],
+      " is not UTF-8. pbn::to_one_file() reads the code as UTF-8. Save the ",
+      "file as UTF-8.",
+      call. = FALSE
+    )
+  }
+  return(ascii_code(lines, rel))
+}
+
+# The lines of the bytes `bytes`, split at each LF, without a last empty
+# line after a final LF. pbn splits the bytes, so a line that is not valid
+# in the locale stays as it is.
+split_lines <- function(bytes) {
+  if (length(bytes) == 0) {
+    return(character(0))
+  }
+  nl <- which(bytes == as.raw(10))
+  starts <- c(1L, nl + 1L)
+  ends <- c(nl - 1L, length(bytes))
+  if (bytes[length(bytes)] == as.raw(10)) {
+    starts <- starts[-length(starts)]
+    ends <- ends[-length(ends)]
+  }
+  return(vapply(
+    seq_along(starts),
+    function(i) {
+      if (ends[i] < starts[i]) {
+        return("")
+      }
+      return(rawToChar(bytes[starts[i]:ends[i]]))
+    },
+    character(1)
+  ))
 }
 
 # The top-level assignments of expect_<scenario> for the fake scenarios
@@ -315,19 +379,27 @@ expect_spans <- function(lines, rel, fake) {
     },
     logical(1)
   )
-  out <- list(refs = list(), names = character(0), ids = integer(0), tokens = tokens)
+  out <- list(
+    refs = list(),
+    names = character(0),
+    ids = integer(0),
+    tokens = tokens
+  )
   for (i in which(hit)) {
     full <- as.integer(refs[[i]])
     ref <- full[1:4]
     # The node of the expression in the parse data: at the top level, with
     # its first and last line and column.
-    out$ids <- c(out$ids, tokens$id[
-      tokens$parent == 0 &
-        tokens$line1 == full[1] &
-        tokens$col1 == full[5] &
-        tokens$line2 == full[3] &
-        tokens$col2 == full[6]
-    ])
+    out$ids <- c(
+      out$ids,
+      tokens$id[
+        tokens$parent == 0 &
+          tokens$line1 == full[1] &
+          tokens$col1 == full[5] &
+          tokens$line2 == full[3] &
+          tokens$col2 == full[6]
+      ]
+    )
     before <- trimws(substr(lines[ref[1]], 1, ref[2] - 1))
     after <- trimws(substr(lines[ref[3]], ref[4] + 1, nchar(lines[ref[3]])))
     name <- as.character(exprs[[i]][[2]])
@@ -371,8 +443,10 @@ check_dropped_names <- function(sources, dropped) {
     ids <- if (is.null(dropped[[rel]])) integer(0) else dropped[[rel]]$ids
     parents <- stats::setNames(tokens$parent, tokens$id)
     uses <- tokens[
-      tokens$token %in% c("SYMBOL", "SYMBOL_FUNCTION_CALL") &
-        tokens$text %in% gone, ,
+      tokens$token %in%
+        c("SYMBOL", "SYMBOL_FUNCTION_CALL") &
+        tokens$text %in% gone,
+      ,
       drop = FALSE
     ]
     keep <- !vapply(
@@ -397,6 +471,29 @@ check_dropped_names <- function(sources, dropped) {
     }
   }
   return(invisible(NULL))
+}
+
+# The source reference `ref` of a dropped function, moved up to the first
+# line of the comment block directly above it: the lines that hold only a
+# comment, up to a blank line or a line with code. The comment belongs to
+# the function, so it goes with it.
+with_comment_above <- function(lines, ref, tokens) {
+  terminal <- tokens[tokens$terminal, , drop = FALSE]
+  # A line holds only a comment when the one token that covers it is a
+  # COMMENT. The parse data decides, so a line of a string is not a comment.
+  only_comment <- function(n) {
+    on <- terminal[terminal$line1 <= n & terminal$line2 >= n, , drop = FALSE]
+    return(nrow(on) == 1 && on$token == "COMMENT")
+  }
+  first <- ref[[1]]
+  while (first > 1 && only_comment(first - 1)) {
+    first <- first - 1
+  }
+  if (first < ref[[1]]) {
+    ref[[1]] <- first
+    ref[[2]] <- 1L
+  }
+  return(ref)
 }
 
 # The lines `lines` with the text of the source reference `ref`, from its

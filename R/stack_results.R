@@ -87,6 +87,9 @@ stack_results <- function(runs, scenario) {
   manifest$sims <- length(runs)
   manifest$n_rows_by_sim <- rows_by_sim(runs)
   manifest$n_rows_data <- NA_integer_
+  if (!is.null(manifest$n_rows_lists)) {
+    manifest$n_rows_lists <- stats::setNames(list(), character(0))
+  }
   for (n in c("n_rows_before_exclusions", "n_rows_after_exclusions")) {
     if (!is.null(manifest[[n]])) {
       manifest[[n]] <- NA_integer_
@@ -124,7 +127,7 @@ rows_by_sim <- function(runs) {
         NA_integer_
       }
     }
-    return(out)
+    return(rbind(out, list_rows_by_sim(m[["n_rows_lists"]], k)))
   })
   parts <- Filter(Negate(is.null), parts)
   if (length(parts) == 0) {
@@ -132,6 +135,27 @@ rows_by_sim <- function(runs) {
   }
   out <- do.call(rbind, parts)
   rownames(out) <- NULL
+  return(out)
+}
+
+# The rows of the data.frames of manifest$n_rows_lists `x` of the
+# simulation `k`, as rows of manifest$n_rows_by_sim: one row for each
+# data.frame, with `data` as <data element>[[i]] and its rows in
+# n_rows_data. NULL when `x` is empty.
+list_rows_by_sim <- function(x, k) {
+  if (!is.list(x) || length(x) == 0 || is.null(names(x))) {
+    return(NULL)
+  }
+  n <- lapply(x, function(v) return(as.integer(v)))
+  out <- data.frame(
+    sim = rep(k, sum(lengths(n))),
+    data = unlist(lapply(names(n), function(d) {
+      return(paste0(d, "[[", seq_along(n[[d]]), "]]"))
+    })),
+    n_rows_data = unlist(n, use.names = FALSE)
+  )
+  out$n_rows_before_exclusions <- rep(NA_integer_, nrow(out))
+  out$n_rows_after_exclusions <- rep(NA_integer_, nrow(out))
   return(out)
 }
 

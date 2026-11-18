@@ -328,7 +328,10 @@ test_that("the seed of an analysis is the documented hash of kind, counter and s
   for (code in utf8ToInt("draws__1__7")) {
     h <- (h * 257 + code) %% 2147483629
   }
-  expect_identical(analysis_seed("draws", 1, 7), as.integer(10000 + h %% (2147483629 - 10000)))
+  expect_identical(
+    analysis_seed("draws", 1, 7),
+    as.integer(10000 + h %% (2147483629 - 10000))
+  )
   for (kind in c("a", "models", "table1", "pbn_n_rows")) {
     seeds <- vapply(1:9999, function(s) return(analysis_seed(kind, 1, s)), 1L)
     expect_true(all(seeds != 1:9999), info = kind)
@@ -350,11 +353,20 @@ test_that("an analysis draws other numbers than its data, two kinds of one simul
   r <- run_plan(p)
   first_data <- p$get_data("null__sim_0001__a__1")$d$x
   expect_false(identical(r[["null__sim_0001__a__1"]], first_data))
-  expect_false(identical(r[["null__sim_0001__a__1"]], r[["null__sim_0001__b__1"]]))
-  expect_false(identical(r[["null__sim_0001__c__1"]], r[["null__sim_0001__c__2"]]))
+  expect_false(identical(
+    r[["null__sim_0001__a__1"]],
+    r[["null__sim_0001__b__1"]]
+  ))
+  expect_false(identical(
+    r[["null__sim_0001__c__1"]],
+    r[["null__sim_0001__c__2"]]
+  ))
   expect_identical(r[["real__sim_0001__a__1"]], r[["null__sim_0001__a__1"]])
   expect_identical(r[["real__sim_0001__c__2"]], r[["null__sim_0001__c__2"]])
-  expect_false(identical(r[["null__sim_0001__a__1"]], r[["null__sim_0002__a__1"]]))
+  expect_false(identical(
+    r[["null__sim_0001__a__1"]],
+    r[["null__sim_0002__a__1"]]
+  ))
 })
 
 test_that("two analyses of one simulation with one seed stop add_analyses before it adds anything", {
@@ -378,7 +390,13 @@ test_that("two analyses of one simulation with one seed stop add_analyses before
   q <- plnr::Plan$new()
   add_data(q, "d", fn = data_fn)
   expect_error(
-    add_analyses(q, small_scenarios(), "a", fn = function(data, argset) 1, k = 1:2),
+    add_analyses(
+      q,
+      small_scenarios(),
+      "a",
+      fn = function(data, argset) 1,
+      k = 1:2
+    ),
     paste0("get the seed ", seed_a, ": the kinds pbn_n_rows and a."),
     fixed = TRUE
   )
@@ -387,7 +405,13 @@ test_that("two analyses of one simulation with one seed stop add_analyses before
     return(if (name == "pbn_n_rows") 99999L else seed_a)
   })
   expect_error(
-    add_analyses(q, small_scenarios(), "a", fn = function(data, argset) 1, k = 1:2),
+    add_analyses(
+      q,
+      small_scenarios(),
+      "a",
+      fn = function(data, argset) 1,
+      k = 1:2
+    ),
     paste0("get the seed ", seed_a, ": the kinds a and a."),
     fixed = TRUE
   )
@@ -415,8 +439,14 @@ test_that("add_data stops on a scenario or sim with a default and on sim without
   expect_null(plan_info(p))
   # A lookup table, without scenario and sim, and a function of the
   # scenario only.
-  expect_identical(add_data(p, "lookup", fn = function() data.frame(k = 1)), "lookup")
-  expect_identical(add_data(p, "by_scenario", fn = function(scenario) 1), "by_scenario")
+  expect_identical(
+    add_data(p, "lookup", fn = function() data.frame(k = 1)),
+    "lookup"
+  )
+  expect_identical(
+    add_data(p, "by_scenario", fn = function(scenario) 1),
+    "by_scenario"
+  )
   expect_identical(add_data(p, "d", fn = function(scenario, sim, n = 2) 1), "d")
 })
 
@@ -441,10 +471,18 @@ test_that("an analysis that changes the shared data in place fails, and one that
   for (nm in names(changes)) {
     p <- plnr::Plan$new()
     add_data(p, "d", fn = shared)
-    add_analyses(p, sc, "a", fn = in_global(function(data, argset) {
-      change(data$d)
-      return(1)
-    }, change = in_global(changes[[nm]])))
+    add_analyses(
+      p,
+      sc,
+      "a",
+      fn = in_global(
+        function(data, argset) {
+          change(data$d)
+          return(1)
+        },
+        change = in_global(changes[[nm]])
+      )
+    )
     out <- utils::capture.output(
       err <- tryCatch(run_plan(p), error = function(e) e)
     )
@@ -454,23 +492,36 @@ test_that("an analysis that changes the shared data in place fails, and one that
       "^1 of 6 analyses failed, and the run stopped early: 2 analyses did not run\\. ",
       info = nm
     )
-    expect_true(any(grepl(
-      "The analysis changed the data 'd' in place",
-      out,
-      fixed = TRUE
-    )), info = nm)
+    expect_true(
+      any(grepl(
+        "The analysis changed the data 'd' in place",
+        out,
+        fixed = TRUE
+      )),
+      info = nm
+    )
     expect_true(any(grepl("data.table::copy(data$d)", out, fixed = TRUE)))
   }
   p <- plnr::Plan$new()
   add_data(p, "d", fn = shared)
-  add_analyses(p, sc, "a", fn = in_global(function(data, argset) {
-    d <- data.table::copy(data$d)
-    d[, z := 1]
-    return(ncol(d))
-  }))
-  add_analyses(p, sc, "b", fn = in_global(function(data, argset) {
-    return(ncol(data$d))
-  }))
+  add_analyses(
+    p,
+    sc,
+    "a",
+    fn = in_global(function(data, argset) {
+      d <- data.table::copy(data$d)
+      d[, z := 1]
+      return(ncol(d))
+    })
+  )
+  add_analyses(
+    p,
+    sc,
+    "b",
+    fn = in_global(function(data, argset) {
+      return(ncol(data$d))
+    })
+  )
   r <- run_plan(p)
   expect_identical(r[["null__sim_0002__a__1"]], 3L)
   expect_identical(r[["null__sim_0002__b__1"]], 2L)
@@ -479,13 +530,23 @@ test_that("an analysis that changes the shared data in place fails, and one that
   # next analysis gets the changed data.
   p <- plnr::Plan$new()
   add_data(p, "d", fn = shared)
-  add_analyses(p, sc, "a", fn = in_global(function(data, argset) {
-    data$d[1, x := 0L]
-    return(1)
-  }))
-  add_analyses(p, sc, "b", fn = in_global(function(data, argset) {
-    return(data$d$x[1])
-  }))
+  add_analyses(
+    p,
+    sc,
+    "a",
+    fn = in_global(function(data, argset) {
+      data$d[1, x := 0L]
+      return(1)
+    })
+  )
+  add_analyses(
+    p,
+    sc,
+    "b",
+    fn = in_global(function(data, argset) {
+      return(data$d$x[1])
+    })
+  )
   r <- run_plan(p)
   expect_identical(r[["null__sim_0002__b__1"]], 0L)
 })
@@ -517,4 +578,49 @@ test_that("an analysis on a worker that changes the shared data in place fails t
     sum(grepl("The analysis changed the data 'd' in place", out, fixed = TRUE)),
     n
   )
+})
+
+test_that("the seed of the data does not depend on the scenario: two scenarios with the same data code and another setting draw the same numbers in one simulation, with 1 and 2 workers, and an analysis gets the same seed in both", {
+  skip_if_pbn_not_installed()
+  local_clean_state()
+  data_fn <- function(scenario, sim, b) {
+    return(data.frame(x = stats::rnorm(5), b = b))
+  }
+  environment(data_fn) <- globalenv()
+  fn <- function(data, argset) {
+    return(data.frame(
+      x = data$d$x,
+      b = data$d$b,
+      draw = stats::runif(1),
+      seed = argset$seed
+    ))
+  }
+  environment(fn) <- globalenv()
+  sc <- scenarios(list(
+    scenarios = data.frame(
+      scenario = c("real", "aa", "bbbbbb"),
+      sims = c(1, 4, 4),
+      b = c(0, 1, 2)
+    )
+  ))
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = data_fn)
+  add_analyses(p, sc, "a", fn = fn)
+  for (workers in 1:2) {
+    r <- run_plan(p, workers = workers)
+    aa <- r[["aa__sim_0003__a__1"]]
+    bb <- r[["bbbbbb__sim_0003__a__1"]]
+    expect_identical(aa$b, rep(1, 5), info = paste("workers", workers))
+    expect_identical(bb$b, rep(2, 5), info = paste("workers", workers))
+    expect_identical(aa$x, bb$x, info = paste("workers", workers))
+    expect_identical(aa$draw, bb$draw, info = paste("workers", workers))
+    expect_identical(aa$seed, bb$seed, info = paste("workers", workers))
+    expect_identical(aa$seed[1], analysis_seed("a", 1, 3), info = paste("workers", workers))
+    four <- r[["aa__sim_0004__a__1"]]
+    expect_false(identical(aa$x, four$x), info = paste("workers", workers))
+    expect_false(identical(aa$seed, four$seed), info = paste("workers", workers))
+    # The data of simulation 3 is set.seed(3) and then the draws.
+    set.seed(3)
+    expect_identical(aa$x, stats::rnorm(5), info = paste("workers", workers))
+  }
 })

@@ -48,6 +48,7 @@ Suggests:
     future,
     ggplot2,
     janitor,
+    patchwork,
     R6,
     rmarkdown,
     testthat (>= 3.0.0),

@@ -68,8 +68,10 @@ value for each row of the data. \code{manifest$n_rows_data} holds one row
 count, or one for each data element. For a cohort,
 \code{manifest$n_rows_before_exclusions} and
 \code{manifest$n_rows_after_exclusions} hold the rows before and after the
-exclusions too. For each count \code{n} of 2 or more in any of the three, the
-rule fails each of these:
+exclusions too. \code{manifest$n_rows_lists} holds the rows of each
+data.frame of a data element that is a list of data.frames with 2 or
+more numbers of rows. For each count \code{n} of 2 or more in any of the
+four, the rule fails each of these:
 \itemize{
 \item a data.frame with \code{n} rows.
 \item an atomic vector of length \code{n}, also a factor, a \code{Date} or a
@@ -103,7 +105,9 @@ with the columns \code{file}, \code{size} and \code{mtime}. Each \code{file} is 
 comes once, each \code{size} a number of 0 or more, and each \code{mtime} a
 number. It has 0 rows when the data folders have no file. A manifest
 with \code{data_md5}, the md5 of the data files of an older pbn, fails this
-rule: run the scenario again.
+rule: run the scenario again. For \code{"real"}, \code{manifest$fake_real_data}
+MUST be \code{TRUE} or \code{FALSE}. A real manifest of an older pbn has no
+\code{fake_real_data}, so it fails this rule: run the scenario again.
 \item \code{manifest_source}: \code{manifest$source_md5} is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script \verb{<version>_run.R} of \code{manifest$version}, or a \code{vNN_run.R} when
@@ -123,6 +127,7 @@ x <- list(
     sim = 1L,
     sims = 1L,
     data_files = data.frame(file = "main/d.csv", size = 120, mtime = 1.8e9),
+    fake_real_data = FALSE,
     source_md5 = c(v01_run.R = "fedcba9876543210fedcba9876543210"),
     n_rows_data = 100L
   ),

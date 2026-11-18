@@ -27,8 +27,19 @@
 #' environment variable `R_LIBS` to these paths, and then it sets
 #' `R_LIBS` back. So a worker also finds a library that this R session added
 #' with `.libPaths()`, for example the temporary library of `R CMD build`.
+#' Each worker runs with 1 thread. While `run_plan()` starts the cluster, it
+#' sets the environment variables `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS`
+#' and `MKL_NUM_THREADS` to 1, as it sets `R_LIBS`. Then it sets them back
+#' in this R session. OpenMP and the BLAS libraries OpenBLAS and MKL
+#' read them when they start their threads, so the variables MUST be there
+#' when the worker starts. The section One thread for each worker gives the
+#' rules.
+#'
 #' Before the run, `run_plan()` gives each worker these:
 #' - the library paths of this R session again, with [.libPaths()].
+#' - 1 thread: the three variables again, for a library that the worker
+#'   loads later, and `data.table::setDTthreads(1)` when data.table is
+#'   installed.
 #' - the packages attached in this R session, in the order of [search()],
 #'   for example data.table after `library(data.table)` in the run script.
 #' - the kind of random number generator of this R session, from
@@ -129,6 +140,25 @@
 #' function that returns a `cohort::CohortPipeline` runs on the worker, and
 #' only its data.table and its exclusion table come back. The section A
 #' cohort as the data of [add_data()] gives the rules.
+#' @section One thread for each worker:
+#' Some packages start threads of their own, for example data.table,
+#' fixest, a threaded BLAS and OpenMP code. By default, such a package uses
+#' many cores. data.table, for example, uses half of the cores of the
+#' computer. With `workers` 2 or more, each worker would do that, and the
+#' computer would run far more threads than cores. So `run_plan()` makes each worker
+#' use 1 thread. There is no argument to change it. An analysis that needs
+#' more threads in its worker sets them in its own code, for example
+#' `data.table::setDTthreads(4)` at the top of its action function.
+#'
+#' With `workers = 1`, `run_plan()` changes no thread setting, and the
+#' analyses run with the settings of this R session.
+#'
+#' The results of the test projects of pbn are `identical()` with 1 and 2
+#' workers. pbn does not check this for other code. A threaded BLAS MAY sum
+#' in another order with another number of threads. So a matrix product of
+#' such a BLAS MAY differ in its last digits between `workers = 1` and more
+#' workers. With 1 worker it has the threads of this R session, and with
+#' more it has 1 thread.
 #' @section Stop at the first failure:
 #' A failed data function makes each analysis of its scenario and
 #' simulation fail, and [save_results()] needs a run without a failed
@@ -457,16 +487,58 @@ environment(namespace_versions) <- baseenv()
 # unserialises any object, so it finds a library that this R session added
 # with .libPaths() after its start, for example the temporary library of
 # R CMD build.
+#
+# Each worker also starts with 1 thread for OpenMP and the BLAS library,
+# from the variables of thread_variables, because a library reads them
+# when it starts its pool of threads. These variables, like R_LIBS, are a
+# transport between pbn's own processes and no configuration. This R
+# session gets its own values back on exit.
 make_cluster <- function(workers) {
-  old <- Sys.getenv("R_LIBS", unset = NA)
+  vars <- c("R_LIBS", thread_variables)
+  old <- Sys.getenv(vars, unset = NA, names = TRUE)
   on.exit(
-    if (is.na(old)) Sys.unsetenv("R_LIBS") else Sys.setenv(R_LIBS = old),
+    {
+      for (v in vars) {
+        if (is.na(old[[v]])) {
+          Sys.unsetenv(v)
+        } else {
+          do.call(Sys.setenv, stats::setNames(list(old[[v]]), v))
+        }
+      }
+    },
     add = TRUE
   )
-  # R_LIBS is a transport between pbn's own processes, not a configuration.
   Sys.setenv(R_LIBS = paste(.libPaths(), collapse = .Platform$path.sep))
+  do.call(
+    Sys.setenv,
+    stats::setNames(
+      as.list(rep("1", length(thread_variables))),
+      thread_variables
+    )
+  )
   return(parallel::makePSOCKcluster(workers))
 }
+
+# The variables of the number of threads that OpenMP and the BLAS libraries
+# OpenBLAS and MKL read when they start.
+thread_variables <- c(
+  "OMP_NUM_THREADS",
+  "OPENBLAS_NUM_THREADS",
+  "MKL_NUM_THREADS"
+)
+
+# Makes the R session that runs it use 1 thread: the variables of
+# thread_variables for a library that it loads later, and
+# data.table::setDTthreads(1) when data.table is installed. Its environment
+# is the base environment, so a worker needs no pbn to run it.
+single_thread <- function(vars) {
+  do.call(Sys.setenv, stats::setNames(as.list(rep("1", length(vars))), vars))
+  if (requireNamespace("data.table", quietly = TRUE)) {
+    data.table::setDTthreads(1L)
+  }
+  return(invisible(NULL))
+}
+environment(single_thread) <- baseenv()
 
 # requireNamespace(), in one place, so that the tests can mock it.
 has_package <- function(pkg) {
@@ -510,6 +582,7 @@ check_data_keys <- function(info) {
 # the sourced environment go with each future instead, see run_enter().
 prepare_workers <- function(cl) {
   parallel::clusterCall(cl, set_lib_paths, .libPaths())
+  parallel::clusterCall(cl, single_thread, thread_variables)
   attached <- sub("^package:", "", grep("^package:", search(), value = TRUE))
   parallel::clusterCall(cl, attach_packages, attached)
   kinds <- RNGkind()

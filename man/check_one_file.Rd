@@ -21,8 +21,18 @@ are those of the project, or else the first difference.
 \details{
 Run the project as normal first, so that \verb{<version>_results/real/} holds
 its real results, and call \code{\link[=initialize_project]{initialize_project()}} again in this R session.
+Without real results, \code{check_one_file()} runs the checks of
+\code{\link[=to_one_file]{to_one_file()}} that need no results, and stops. So the file of a project
+MAY be checked for ASCII, for a parse and for a left-out function before
+the first full run.
+
 \code{check_one_file()} then does these steps:
 \enumerate{
+\item It compares \code{manifest$source_md5} of the real results with the md5 of
+the files of the project now, without \verb{<version>_functions/blocks.R}.
+When they differ, the results of the project are older than its code.
+It prints FAIL with the changed files and says to run
+\verb{<version>_run.R} again. It runs nothing.
 \item It makes a temporary folder with an empty project folder, and a copy of
 each folder of the project with all its files. The empty project folder
 stands for the server, where there is no functions folder and no
@@ -31,19 +41,29 @@ stands for the server, where there is no functions folder and no
 \code{Rscript} in a new R session.
 \item It compares \code{results.qs2} and \code{results_gitexclude.qs2} of the real
 results of the run with those of the project, element by element.
+\item It calls each block of \code{\link[=show_block]{show_block()}} on the real results of the
+project and on those of the run, in one more new R session. That
+session attaches no package of the run script. It compares what
+\code{\link[=show_block]{show_block()}} prints for each page of each block, as text, without
+the line \verb{FAKE REAL DATA}. A block that stops on either results, or
+that prints other text, is a FAIL that names the block.
 }
 
-Three fields of the manifest MAY differ, and the comparison leaves them
+Four fields of the manifest MAY differ, and the comparison leaves them
 out:
 \itemize{
 \item \code{run_date}, the date of the run.
 \item \code{packages}, the loaded packages, because the new R session loads other
 packages than the R session of the normal run.
 \item the column \code{from_cache} of \code{data_cache}, because the copy has no cache.
+\item \code{fake_real_data}, because the file never runs on fake real data. See
+\code{\link[=initialize_project]{initialize_project()}}.
 }
 
-Every other element MUST be identical, also \code{source_md5}, \code{data_files}
-and \code{cache_key}. So the results do not depend on the place of the project
+The comparison also leaves \verb{<version>_functions/blocks.R} out of
+\code{source_md5}, also for results of an older pbn that hold it. Every other
+element MUST be identical, also \code{source_md5}, \code{data_files} and
+\code{cache_key}. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,
 with \code{file.copy(copy.date = TRUE)}. That is why \code{data_files} and the cache
 key agree. pbn reads no content of a data file, so a copy with new times
@@ -64,8 +84,8 @@ R and of the packages there.
 \item It runs the file with \code{Rscript}, and on the server a person pastes it
 into an interactive R session. So it does not cover code that depends
 on \code{interactive()}.
-\item It compares the results files, and not what the blocks of
-\code{\link[=show_block]{show_block()}} print.
+\item It compares the blocks on the real data of this computer. A block that
+stops only on other data, for example on an empty table, passes here.
 \item pbn reads no content of a data file. A data file that changed in place
 and kept its size and its modification time is not seen.
 }

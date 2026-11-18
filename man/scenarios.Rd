@@ -38,8 +38,12 @@ key of the cache or in \code{manifest$settings}.
 
 Each other column is a setting of the scenario, for example \code{n_boot} for a
 number of bootstrap replicates that is smaller in the fake scenarios. A
-setting column MUST be an atomic vector with no \code{NA}, and its name MUST be
-syntactic. Its name MUST NOT be one of \code{scenario}, \code{sim}, \code{analysis},
+setting column MUST be an atomic vector, and its name MUST be syntactic.
+It MUST have a value for each fake scenario. It MAY have \code{NA} for
+\code{"real"}, when only the fake scenarios use the setting. The argsets of
+\code{"real"}, its cache key and its \code{manifest$settings} then do not hold the
+setting. A data function MUST NOT take such a setting as an argument:
+plnr finds no value of it for \code{"real"}, and \code{\link[=run_plan]{run_plan()}} stops. Its name MUST NOT be one of \code{scenario}, \code{sim}, \code{analysis},
 \code{seed}, \code{index_analysis}, \code{name}, \code{fn}, \code{fn_name}, \code{data} and \code{argset}.
 \code{\link[=add_analyses]{add_analyses()}} puts the setting of the scenario into each argset.
 

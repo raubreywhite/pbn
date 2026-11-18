@@ -21,6 +21,7 @@ saved_log <- function(run, table, done, checks, seconds) {
     log$error <- conditionMessage(checks)
   }
   log$files <- files_written(state$results, table$scenario)
+  log$outputs_deleted <- done$outputs_deleted
   log$timing$save <- c(done$seconds, total = seconds)
   log$result <- log_result(log)
   return(log)
@@ -65,6 +66,8 @@ base_log <- function(run, scenarios) {
     run = run,
     scenarios = run$scenarios,
     earlier = earlier_scenarios(state$results, scenarios),
+    fake_real_data = isTRUE(state$fake_real_data) &&
+      "real" %in% run$scenarios$scenario,
     saved = FALSE,
     contract = character(0),
     checks = NULL,
@@ -84,7 +87,12 @@ folders_table <- function() {
   counted <- sub("/.*$", "", state$data_files$file)
   return(data.frame(
     name = nm,
-    files = vapply(nm, function(n) return(sum(counted == n)), integer(1), USE.NAMES = FALSE),
+    files = vapply(
+      nm,
+      function(n) return(sum(counted == n)),
+      integer(1),
+      USE.NAMES = FALSE
+    ),
     absent = nm %in% state$folders_absent
   ))
 }
@@ -333,6 +341,8 @@ write_started_log <- function(scenarios, started, workers = NULL) {
     workers = workers,
     scenarios = scenarios,
     earlier = earlier_scenarios(root, scenarios$scenario),
+    fake_real_data = isTRUE(state$fake_real_data) &&
+      "real" %in% scenarios$scenario,
     timing = list(run = NULL, save = NULL, outputs = NULL),
     result = paste(
       "The run has not finished. run_plan() started it, and no later step",

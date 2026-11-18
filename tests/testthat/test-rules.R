@@ -24,9 +24,17 @@ test_that("each shipped set names every rule of check_project() in its order, an
   levels <- vapply(rules, function(r) return(r$level), character(1))
   expect_identical(
     unname(levels),
-    c(rep("fail", 16), "warn")
+    c(rep("fail", 16), "warn", "warn")
   )
-  expect_identical(names(levels)[15:17], c("no_absolute_paths", "blocks_list", "unknown_path"))
+  expect_identical(
+    names(levels)[15:18],
+    c(
+      "no_absolute_paths",
+      "blocks_list",
+      "real_results_are_fake",
+      "unknown_path"
+    )
+  )
   expect_identical(rules$loc_per_file$limit, 1000L)
   expect_identical(rules$cyclomatic_complexity$limit, 15L)
   expect_identical(rules$no_local_assign$forbid, local_assign_constructs())
@@ -62,9 +70,12 @@ test_that("the bytes of each shipped set are pinned", {
   # The md5 is of the bytes without CR, so that a checkout with CR LF line
   # ends, as git can make on Windows, gives the same md5.
   # house_2026_11_17 got the rules no_absolute_paths and blocks_list, and then
-  # the file.path() part of no_absolute_paths, before the first release of
-  # pbn, which had no tag and no build. Those were the changes of its md5.
-  pinned <- c(house_2026_11_17 = "0720f433848a0fb2b08d8f74372ac420")
+  # the file.path() part of no_absolute_paths, and then the rule
+  # real_results_are_fake, the file blocks.R of blocks_list and the shape of
+  # that file, before the
+  # first release of pbn, which had no tag and no build. Those were the
+  # changes of its md5.
+  pinned <- c(house_2026_11_17 = "ac42b7368bc90e2735bf4cb47e4a8e0e")
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")
   md5 <- vapply(
@@ -295,7 +306,11 @@ test_that("pbn.yml stops on an unknown key, an unknown rule with the nearest rul
 test_that("pbn.yml stops on an empty forbid, on a word that YAML reads as a boolean under allow, and on such a word as a level other than off", {
   for (empty in c("{forbid: null}", "{forbid: []}", "\n    forbid:")) {
     expect_identical(
-      rules_error(c(house_line, "rules:", paste0("  no_local_assign: ", empty))),
+      rules_error(c(
+        house_line,
+        "rules:",
+        paste0("  no_local_assign: ", empty)
+      )),
       paste0(
         "pbn.yml: rules: no_local_assign: forbid is empty. To turn the rule ",
         "off, set its level to off."
@@ -304,7 +319,11 @@ test_that("pbn.yml stops on an empty forbid, on a word that YAML reads as a bool
     )
   }
   expect_identical(
-    rules_error(c(house_line, "rules:", "  no_local_assign: {forbid: [assign(), yes]}")),
+    rules_error(c(
+      house_line,
+      "rules:",
+      "  no_local_assign: {forbid: [assign(), yes]}"
+    )),
     paste0(
       "pbn.yml: rules: no_local_assign: forbid MUST be a list of constructs. ",
       "They are: local(), assign(), delayedAssign(), assignInNamespace(), ",
@@ -317,7 +336,16 @@ test_that("pbn.yml stops on an empty forbid, on a word that YAML reads as a bool
     "yes or no needs quotes. To turn the rule off, write unknown_path: off ",
     "under rules:."
   )
-  for (value in c("off", "[off, notes.txt]", "[y]", "yes", "true", "1", "", "{a: b}")) {
+  for (value in c(
+    "off",
+    "[off, notes.txt]",
+    "[y]",
+    "yes",
+    "true",
+    "1",
+    "",
+    "{a: b}"
+  )) {
     expect_identical(
       rules_error(c(house_line, "allow:", paste0("  unknown_path: ", value))),
       hint,
@@ -347,7 +375,11 @@ test_that("pbn.yml stops on an empty forbid, on a word that YAML reads as a bool
   p <- local_project()
   for (off in c("off", "\"off\"", "{level: off}")) {
     write_pbn_yml(p$home, "rules:", paste0("  loc_per_file: ", off))
-    expect_identical(read_rules(p$home)$rules$loc_per_file$level, "off", info = off)
+    expect_identical(
+      read_rules(p$home)$rules$loc_per_file$level,
+      "off",
+      info = off
+    )
   }
   write_pbn_yml(
     p$home,
@@ -363,7 +395,10 @@ test_that("pbn.yml stops on an empty forbid, on a word that YAML reads as a bool
     rules$allow$path,
     c("notes.txt", "off", "adhoc/Notes.txt")
   )
-  expect_identical(read_house_set("house_2026_11_17")$results_contract$locked, TRUE)
+  expect_identical(
+    read_house_set("house_2026_11_17")$results_contract$locked,
+    TRUE
+  )
 })
 
 test_that("pbn.yml stops on an unknown parameter, a bad level, a bad limit and an unknown construct", {
@@ -507,7 +542,11 @@ test_that("pbn.yml cannot weaken or allow a locked rule, or a rule of check_resu
 
 # The rules of the house set that came after the output of the fixture
 # check_project_before_rules.txt.
-rules_after_fixture <- c("no_absolute_paths", "blocks_list")
+rules_after_fixture <- c(
+  "no_absolute_paths",
+  "blocks_list",
+  "real_results_are_fake"
+)
 
 test_that("a project with only extends gives the output of pbn before pbn.yml, with the line of the rules and the count of OFF", {
   fixture <- test_path("fixtures", "check_project_before_rules.txt")
@@ -539,16 +578,22 @@ test_that("a project with only extends gives the output of pbn before pbn.yml, w
     # The rules that came after the fixture pass on each variant, and the
     # other lines are those of the fixture.
     body <- as.character(out[-c(1, length(out))])
-    later <- sub("^[A-Z]+  ([a-z_]+)  .*$", "\\1", body) %in% rules_after_fixture
+    later <- sub("^[A-Z]+  ([a-z_]+)  .*$", "\\1", body) %in%
+      rules_after_fixture
     expect_identical(body[!later], before[2:(n - 1)], info = name)
     expect_identical(
       body[later],
-      paste0("PASS  ", rules_after_fixture, "  ", vapply(
-        project_rules()[rules_after_fixture],
-        function(d) return(d[[2]]),
-        character(1),
-        USE.NAMES = FALSE
-      )),
+      paste0(
+        "PASS  ",
+        rules_after_fixture,
+        "  ",
+        vapply(
+          project_rules()[rules_after_fixture],
+          function(d) return(d[[2]]),
+          character(1),
+          USE.NAMES = FALSE
+        )
+      ),
       info = name
     )
     passed <- as.integer(sub(" PASS.*$", "", before[n]))
@@ -594,7 +639,7 @@ test_that("off runs no rule and prints OFF, and warn turns each FAIL of a rule i
     "Rules: house_2026_11_17, 2 overrides, 0 allowed paths (pbn.yml)"
   )
   expect_identical(out[12], "OFF  loc_per_file  off in pbn.yml")
-  expect_identical(out[length(out)], "15 PASS, 1 WARN, 0 FAIL, 1 OFF")
+  expect_identical(out[length(out)], "16 PASS, 1 WARN, 0 FAIL, 1 OFF")
 
   # A rule that is off does not run: its function is never called.
   calls <- 0
@@ -676,7 +721,54 @@ test_that("an override merges into the house entry, and each parameter changes i
   )
 })
 
-test_that("allow matches a path exactly, a folder with or without its final /, and a stale entry warns", {
+test_that("an allow entry of a folder covers each finding at any depth under it, written with or without a final /, and not a folder whose name starts with it", {
+  p <- local_project()
+  write_lines(p$home, "archive/Old.R", "x <- 1")
+  write_lines(p$home, "archive/deep/Er/Data.txt", "x")
+  write_lines(p$home, "archive2/X.txt", "x")
+  for (entry in c("archive", "archive/")) {
+    write_pbn_yml(p$home, "allow:", paste0("  lower_case_names: [", entry, "]"))
+    found <- project_findings(p$home)
+    rows <- found[found$rule == "lower_case_names", ]
+    expect_identical(
+      rows$path,
+      c(
+        "archive/Old.R",
+        "archive/deep/Er",
+        "archive/deep/Er/Data.txt",
+        "archive2/X.txt"
+      ),
+      info = entry
+    )
+    expect_identical(
+      rows$status,
+      c("WARN", "WARN", "WARN", "FAIL"),
+      info = entry
+    )
+    expect_false(any(found$rule == "allow"), info = entry)
+  }
+  # A file entry covers that file only.
+  write_pbn_yml(p$home, "allow:", "  lower_case_names: [archive/Old.R]")
+  found <- project_findings(p$home)
+  rows <- found[found$rule == "lower_case_names", ]
+  expect_identical(rows$status, c("WARN", "FAIL", "FAIL", "FAIL"))
+  # An entry under which there is no finding is stale.
+  write_pbn_yml(
+    p$home,
+    "allow:",
+    "  lower_case_names: [archive/deep/Er/Data.txt/x]"
+  )
+  found <- project_findings(p$home)
+  expect_identical(
+    found$detail[found$rule == "allow"],
+    paste0(
+      "pbn.yml: the entry allow: lower_case_names: ",
+      "archive/deep/Er/Data.txt/x matches no finding"
+    )
+  )
+})
+
+test_that("allow covers a path and each path under it, with or without a final /, and a stale entry warns", {
   p <- local_project()
   dir.create(file.path(p$home, "adhoc", "Old"))
   write_lines(p$home, "adhoc/Notes.txt", "x")
@@ -697,13 +789,11 @@ test_that("allow matches a path exactly, a folder with or without its final /, a
     rows$path,
     c("adhoc/Notes.txt", "adhoc/Old", "adhoc/Other.txt")
   )
-  expect_identical(rows$status, c("WARN", "WARN", "FAIL"))
+  # The entry adhoc covers adhoc/Other.txt, which no other entry covers.
+  expect_identical(rows$status, c("WARN", "WARN", "WARN"))
   expect_identical(
     found$detail[found$rule == "allow"],
-    c(
-      "pbn.yml: the entry allow: lower_case_names: adhoc matches no finding",
-      "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
-    )
+    "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
   )
   expect_identical(
     out[1],
@@ -741,7 +831,7 @@ test_that("check_project.R ends with status 0 when pbn.yml turns each FAIL into 
     "WARN  lower_case_names  adhoc/Notes.txt",
     fixed = TRUE
   )
-  expect_match(res$stdout, "16 PASS, 1 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
+  expect_match(res$stdout, "17 PASS, 1 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
 })
 
 test_that("initialize_project gives org the limit of loc_per_file, and Inf when the rule warns or is off", {
@@ -770,4 +860,38 @@ test_that("initialize_project gives org the limit of loc_per_file, and Inf when 
     expect_identical(org_max_loc(read_rules(p$home)), Inf, info = level)
     expect_no_error(start())
   }
+})
+
+test_that("an allow entry that is not a path inside the project stops: empty, /, ., a path from / and a path with . or ..", {
+  p <- local_project()
+  for (entry in c(
+    "\"\"",
+    "\"/\"",
+    "\".\"",
+    "\"./\"",
+    "/adhoc",
+    "../adhoc",
+    "adhoc/./x",
+    "adhoc//x"
+  )) {
+    write_pbn_yml(p$home, "allow:", paste0("  lower_case_names: [", entry, "]"))
+    expect_error(read_rules(p$home), "lower_case_names", info = entry)
+  }
+  write_pbn_yml(p$home, "allow:", "  lower_case_names: [\"/\"]")
+  expect_error(
+    read_rules(p$home),
+    paste0(
+      "pbn.yml: allow: lower_case_names: \"/\" is not a path inside the ",
+      "project. Write a path relative to the project folder, for example ",
+      "adhoc or adhoc/notes.R. An entry covers its path and each path under it."
+    ),
+    fixed = TRUE
+  )
+  # A folder entry of a locked rule stops, as any entry of it.
+  write_pbn_yml(p$home, "allow:", "  results_contract: [v01_results]")
+  expect_error(
+    read_rules(p$home),
+    "is locked, so pbn.yml cannot allow a path for it.",
+    fixed = TRUE
+  )
 })

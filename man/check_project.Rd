@@ -156,17 +156,40 @@ builds stays outside the rule.
 The detail is \verb{<file>:<line>: "<the string, cut at 40 characters>"}, or
 \verb{<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)}. A path under \code{allow} allows each finding of one
 file.
-\item \code{blocks_list} (FAIL): the functions folder defines the object \code{blocks}
-of \code{\link[=show_block]{show_block()}}, and one of these is true:
+\item \code{blocks_list} (FAIL): for each functions folder, one of these is true:
 \itemize{
-\item more than one top-level assignment assigns it.
+\item a file other than \code{vNN_functions/blocks.R} assigns \code{blocks} at its
+top level. pbn leaves \code{blocks.R} out of \code{manifest$source_md5}, so the
+blocks MUST be in that file.
+\item more than one top-level assignment of \code{blocks.R} assigns it.
 \item its value is not a call of \code{list()}, or the list is empty.
 \item an element has no name, or a name comes twice.
 \item an element is not a \code{function}, or the name of a function that a
 top-level assignment of the functions folder defines.
+\item a top-level expression of \code{blocks.R} is not an assignment with \verb{<-}
+or \code{=} of a name to \verb{function(...)}, or of \code{blocks} to \code{list(...)}.
+Examples are \code{library(x)}, \code{options(...)}, \code{set.seed(1)}, an \code{if} and
+\code{fmt <- sprintf}. Such code runs when pbn sources the folder, so it
+can change the results.
+\item a name that \code{blocks.R} assigns at its top level, and another file of
+the folder assigns too. The detail names both places.
+\item another file of the folder, or \code{vNN_run.R}, uses a name that
+\code{blocks.R} assigns at its top level. Examples are a helper \code{fmt()},
+and \code{CFG} after \code{CFG$labels <- ...} in \code{blocks.R}. The run would then
+depend on a file outside \code{source_md5}. A name after \code{$} or \code{@} and
+the name of an argument do not count.
 }
 
-A project without \code{blocks} passes.
+The detail is \verb{<file>:<line>: <what>}. A folder without \code{blocks} and
+without \code{blocks.R} passes. \code{\link[=initialize_project]{initialize_project()}} makes the same checks
+of \code{blocks.R}, and puts it back into \code{manifest$source_md5} when one
+fails, also when this rule is \code{warn} or \code{off}.
+\item \code{real_results_are_fake} (WARN): a file \code{vNN_results/real/results.qs2}
+holds \code{manifest$fake_real_data} \code{TRUE}. Its run had
+\code{fake_real_data = TRUE} of \code{\link[=initialize_project]{initialize_project()}}, so its numbers are
+not those of the real data. It passes when no such file is in the
+list of files. In a git repository, a real results file that git
+ignores is not in the list, so the rule does not see it.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},
@@ -221,8 +244,11 @@ change merges into the entry of the set. So \code{cyclomatic_complexity: {limit:
 house set.
 
 The key \code{allow} MAY list paths for each rule, relative to \code{path}. A path
-allows the findings with exactly that path. A folder MAY end in \code{/}, and it
-does not allow the files in it. An allowed finding is WARN, with
+allows the findings with that path and the findings of each path under
+it. So the folder \code{adhoc} allows \code{adhoc/Notes.txt} and
+\code{adhoc/Old/Data.csv}, but not \code{adhoc2/x.R}. A final \code{/} changes nothing:
+\code{adhoc} and \verb{adhoc/} are the same entry. pbn does not look on the disk
+for a file or a folder of that name. An allowed finding is WARN, with
 \code{(allowed)} at the end. A path that matches no finding is a WARN of the
 rule \code{allow}.
 

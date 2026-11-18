@@ -81,8 +81,9 @@ and in \code{real} of one simulation are the same.
 simulations 1 to 9999.
 }
 
-The seed is a polynomial hash with base 257, modulo the prime 2147483629,
-of the code points of \code{"<name>__<i>__<sim>"}, plus 10000. Two analyses of
+The seed is \code{10000 + h \%\% 2147473629}. \code{h} is a polynomial hash with base
+257, modulo the prime 2147483629, of the code points of
+\code{"<name>__<i>__<sim>"}. Two analyses of
 one simulation with the same seed stop \code{add_analyses()} with an error
 that names both kinds.
 

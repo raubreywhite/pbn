@@ -204,7 +204,10 @@ test_that("pbn::progress() does nothing in a forked child, and the parent loop b
 test_that("pbn::progress() checks its arguments at each call, also outside run_plan() and within 0.5 seconds of a call that it showed, and otherwise does nothing outside run_plan()", {
   expect_null(getOption("pbn.run"))
   expect_null(progress(1, 10))
-  expect_error(progress("not a number", -1, 3), "needs `done`, one number of 0 or more")
+  expect_error(
+    progress("not a number", -1, 3),
+    "needs `done`, one number of 0 or more"
+  )
   expect_error(progress(NA, 10), "needs `done`, one number of 0 or more")
   run <- new.env()
   run$cur_argset <- NULL
@@ -284,7 +287,7 @@ test_that("a log shows nothing for 60 seconds, then the header and one line for 
     show(list(pbn_done = c(null = 4)), 61),
     c(
       "pbn: 2 scenarios, 2 workers, started 14:02",
-      "pbn: [1m 01s] real 1/1 analyses, done in 50s",
+      "pbn: [50s] real 1/1 analyses, done in 50s",
       "pbn: [1m 01s] null 8/40 analyses, 1m 01s, about 5m left"
     )
   )
@@ -316,6 +319,43 @@ test_that("a log shows nothing for 60 seconds, then the header and one line for 
   )
   # A scenario gets its last line once.
   expect_identical(show(list(pbn_done = c(null = 0)), 400), character(0))
+})
+
+test_that("a line of a log carries the time of its event: a scenario that finished in the quiet seconds gets the time of its end, and the lines come in the order of these times", {
+  clock <- new.env()
+  clock$now <- 0
+  local_mocked_bindings(display_now = function() return(clock$now))
+  d <- new_display(
+    data.frame(scenario = c("null", "known", "real"), analyses = c(40, 2, 1)),
+    2,
+    as.POSIXct("2026-11-23 14:02:00"),
+    "log"
+  )
+  show <- function(p, at) {
+    clock$now <- at
+    return(utils::capture.output(display_update(d, p)))
+  }
+  expect_identical(
+    show(list(pbn_done = c(null = 4), pbn_t0 = 0), 2),
+    character(0)
+  )
+  expect_identical(
+    show(list(pbn_done = c(known = 2), pbn_t0 = 1), 9),
+    character(0)
+  )
+  expect_identical(
+    show(list(pbn_done = c(real = 1), pbn_t0 = 0), 3),
+    character(0)
+  )
+  expect_identical(
+    show(list(pbn_done = c(null = 4)), 75),
+    c(
+      "pbn: 3 scenarios, 2 workers, started 14:02",
+      "pbn: [3s] real 1/1 analyses, done in 3s",
+      "pbn: [9s] known 2/2 analyses, done in 8s",
+      "pbn: [1m 15s] null 8/40 analyses, 1m 15s, about 5m left"
+    )
+  )
 })
 
 test_that("in a terminal, the display draws its lines again in place, and hides them for other output", {
@@ -559,7 +599,10 @@ test_that("the display counts failed analyses: a line shows them, a finished sce
     return(utils::capture.output(display_update(d, p)))
   }
   # Each analysis of real fails after its data failed.
-  out <- show(list(pbn_done = c(real = 11), pbn_failed = c(real = 11), pbn_t0 = 0), 2)
+  out <- show(
+    list(pbn_done = c(real = 11), pbn_failed = c(real = 11), pbn_t0 = 0),
+    2
+  )
   expect_identical(
     out[length(out)],
     "pbn: [2s] real 11/11 analyses, 11 failed, done in 2s"
@@ -567,7 +610,10 @@ test_that("the display counts failed analyses: a line shows them, a finished sce
   # 8 of null ran in 100 seconds, and 4 of them failed. The time left comes
   # from the 4 without a failure: 100 * 32 / 4 seconds, 14 minutes. With
   # the failed ones as done, it would be 100 * 32 / 8 seconds, 7 minutes.
-  out <- show(list(pbn_done = c(null = 8), pbn_failed = c(null = 4), pbn_t0 = 0), 100)
+  out <- show(
+    list(pbn_done = c(null = 8), pbn_failed = c(null = 4), pbn_t0 = 0),
+    100
+  )
   expect_identical(
     out,
     "pbn: [1m 40s] null 8/40 analyses, 4 failed, 1m 40s, about 14m left"
@@ -650,5 +696,8 @@ test_that("after the stop of the run, the display says so at once in a log, and 
     log_line(d, 2, 4),
     "pbn: [4s] null 0/40 analyses, stopped early: 40 did not run"
   )
-  expect_match(display_lines(d, 4)[1], ", 4s, stopped early: an analysis failed$")
+  expect_match(
+    display_lines(d, 4)[1],
+    ", 4s, stopped early: an analysis failed$"
+  )
 })

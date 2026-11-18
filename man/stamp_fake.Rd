@@ -7,7 +7,7 @@
 stamp_fake(q)
 }
 \arguments{
-\item{q}{A ggplot.}
+\item{q}{A ggplot, or a patchwork of ggplots.}
 }
 \value{
 \code{q}, with the label for a fake scenario.
@@ -19,11 +19,19 @@ it returns the figure as it is.
 }
 \details{
 Call it in the figure code of the output function, before the figure is
-saved: \code{q <- pbn::stamp_fake(q)}. For \code{"real"}, and outside a call of
-\code{\link[=make_outputs]{make_outputs()}}, it returns \code{q} unchanged. The label is on each panel.
+saved: \code{q <- pbn::stamp_fake(q)}. For \code{"real"} on real data, and outside
+a call of \code{\link[=make_outputs]{make_outputs()}}, it returns \code{q} unchanged. For \code{"real"} whose
+manifest has \code{fake_real_data} \code{TRUE}, it adds the label.
 
-For a fake scenario, \code{stamp_fake()} needs the package ggplot2. It stops
-with an error when ggplot2 is not installed, and when \code{q} is not a ggplot.
+On a ggplot, the label is on each panel. On a patchwork, it is one label
+over the whole figure, with \code{\link[patchwork:inset_element]{patchwork::inset_element()}}. Without it,
+\code{+} would put the label on the last panel only.
+
+For a fake scenario, \code{stamp_fake()} needs the package ggplot2, and
+patchwork for a patchwork. It stops when the package is not installed.
+It also stops when \code{q} is not a ggplot or a patchwork, for example a
+grob or a gtable of \code{gridExtra::arrangeGrob()}. Stamp each ggplot before
+you combine it in such an object.
 }
 \examples{
 # Outside make_outputs(), stamp_fake() returns the figure as it is.

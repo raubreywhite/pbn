@@ -279,7 +279,8 @@ rule_no_row_per_person <- function(x) {
     c(
       m[["n_rows_data"]],
       m[["n_rows_before_exclusions"]],
-      m[["n_rows_after_exclusions"]]
+      m[["n_rows_after_exclusions"]],
+      list_rows(m[["n_rows_lists"]])
     )
   } else {
     NULL
@@ -321,6 +322,16 @@ rule_no_row_per_person <- function(x) {
       " values in one dimension"
     )
   ))
+}
+
+# The rows of each data.frame of the lists of data.frames in
+# manifest$n_rows_lists `x`, as one integer vector, or NULL.
+list_rows <- function(x) {
+  if (!is.list(x) || length(x) == 0) {
+    return(NULL)
+  }
+  n <- unlist(x, use.names = FALSE)
+  return(if (is.numeric(n)) n else NULL)
 }
 
 # The failure of no_row_per_person for the paths `where`, or character(0).
@@ -518,7 +529,7 @@ rule_manifest_data <- function(x) {
   return(result_row(
     rule,
     manifest_data_failure(m),
-    "the manifest has data_files for \"real\" or fake_md5 for a fake scenario"
+    "the manifest has data_files and fake_real_data for \"real\", or fake_md5 for a fake scenario"
   ))
 }
 
@@ -574,7 +585,21 @@ manifest_data_failure <- function(m) {
       "wrote. pbn now writes data_files: run the scenario again"
     ))
   }
-  return(data_element_failure(m))
+  found <- data_element_failure(m)
+  if (length(found) > 0 || !identical(m[["scenario"]], "real")) {
+    return(found)
+  }
+  flag <- m[["fake_real_data"]]
+  if (is.null(flag)) {
+    return(paste(
+      "manifest has no fake_real_data. An older pbn wrote this file:",
+      "run the scenario again"
+    ))
+  }
+  if (!isTRUE(flag) && !isFALSE(flag)) {
+    return("manifest$fake_real_data is not TRUE or FALSE")
+  }
+  return(character(0))
 }
 
 # The failure of manifest_data on the elements data_files and fake_md5 of
@@ -592,7 +617,9 @@ data_element_failure <- function(m) {
   }
   scenario <- m[["scenario"]]
   real <- is_one_string(scenario) && scenario == "real"
-  if (is_one_string(scenario) && !has[[if (real) "data_files" else "fake_md5"]]) {
+  if (
+    is_one_string(scenario) && !has[[if (real) "data_files" else "fake_md5"]]
+  ) {
     if (real) {
       return(
         "manifest has fake_md5, but the scenario \"real\" needs data_files"

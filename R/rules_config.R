@@ -412,6 +412,7 @@ parse_allow <- function(allow, rules) {
       )
     }
     paths <- allow_paths(rule, allow[[rule]])
+    check_allow_paths(rule, paths)
     out[[rule]] <- data.frame(
       rule = rep(rule, length(paths)),
       path = sub("/$", "", as.character(paths)),
@@ -454,6 +455,35 @@ allow_paths <- function(rule, value) {
     )
   }
   return(as.character(unlist(value)))
+}
+
+# Stops on an entry of `paths` under allow: `rule` that is no path inside
+# the project: empty after its final /, ".", a path that starts with / or
+# ./, or a path with a part "." or "..". Such an entry would cover each
+# finding of the rule, or none.
+check_allow_paths <- function(rule, paths) {
+  path <- sub("/+$", "", paths)
+  parts <- strsplit(path, "/", fixed = TRUE)
+  bad <- !nzchar(path) |
+    startsWith(paths, "/") |
+    vapply(
+      parts,
+      function(p) return(any(p %in% c(".", "..", ""))),
+      logical(1)
+    )
+  if (any(bad)) {
+    stop(
+      "pbn.yml: allow: ",
+      rule,
+      ": ",
+      encodeString(paths[bad][1], quote = "\""),
+      " is not a path inside the project. Write a path relative to the ",
+      "project folder, for example adhoc or adhoc/notes.R. An entry covers ",
+      "its path and each path under it.",
+      call. = FALSE
+    )
+  }
+  return(invisible(NULL))
 }
 
 # The limit of code lines that initialize_project() gives org: the limit of

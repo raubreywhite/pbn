@@ -123,6 +123,23 @@ The run script is now one `plnr` plan over every scenario and simulation. pbn no
 - New `check_one_file()` runs that script on copies of the folders and compares its real results with those of the project. When the run stops, it prints the exit status and the last 20 lines of its output.
 - `unknown_path` knows `vNN_one_file.R`, and the code rules do not read it.
 - New `show_blocks()` and `show_block()` print the blocks of the manuscript one page at a time, from the real results on the disk. They set back each option that a block function sets.
+- `to_one_file()` writes an ASCII file from code that is not ASCII. Each such character of a string becomes its escape `\uXXXX`, and of a comment the text `<U+XXXX>`. The code of the file is `identical()` to that of the project. A name that is not ASCII stops. Before, any such byte stopped.
+- `to_one_file()` drops the comment lines directly above a left-out `expect_` function. It stops with the file and the line on a string that is not valid UTF-8 after its escapes.
+- `manifest$source_md5` leaves out `vNN_functions/blocks.R`, so a change of a block keeps the results current. `check_one_file()` leaves it out too, also for older results.
+- The rule `blocks_list` needs `blocks` in `vNN_functions/blocks.R` only. It fails a top-level expression of that file other than an assignment of a name to `function(...)` or of `blocks` to `list(...)`. It also fails a name that another file assigns too, and a use of one of its names in the other code. Its detail gives the file and the line.
+- `initialize_project()` leaves `blocks.R` out of `source_md5` only when it passes these checks, also when the rule is off.
+- `save_results()` deletes `output/` and `output_fake_data/` of each scenario that it writes, with one printed line. The run log then says that the run made no output until `make_outputs()` runs.
+- `check_one_file()` runs each block on both real results, in a new R session without the packages of the run script. It fails a block that stops or prints other text. Its PASS line counts the blocks.
+- `check_one_file()` says that the results are older than the code, and runs nothing, when a file of the project changed after the run. Without results, it runs the checks of `to_one_file()` and stops.
+- A block that calls a function that R does not find stops with the hint to name its package. `show_block()` attaches no package.
+- An entry of `allow:` in `pbn.yml` covers its path and each path under it, with or without a final `/`. Before, a folder entry covered the folder only. An entry `/`, `.`, a path from `/` or a path with `..` stops.
+- `run_plan(workers > 1)` starts each worker with `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and `MKL_NUM_THREADS` at 1, and calls `data.table::setDTthreads(1)` there. With 1 worker, nothing changes.
+- In a log, each line of the display gives the time of its event, for example the end of a scenario. The lines come in that order. Before, each line had the time of the first line after 60 seconds.
+- `stamp_fake()` puts one label over the whole figure of a patchwork. Before, the label was on its last panel. patchwork is in Suggests.
+- A setting column of `CFG$scenarios` MAY have `NA` for `"real"`. `"real"` then has no such setting in its argsets, its cache key and its manifest.
+- The manifest gains `n_rows_lists`, the rows of each data.frame of a list of data.frames with 2 or more numbers of rows. `no_row_per_person` checks each of them.
+- New argument `fake_real_data` of `initialize_project()`, for folders that hold fake files in the formats of the real data. The real manifest gains `fake_real_data`, and `manifest_data` fails a real manifest without it. The run log, `make_outputs()`, `stamp_fake()` and the blocks label such results. All but the run log read the flag from the manifest of the real results, never from the R session. The file of `to_one_file()` never has the argument.
+- New `check_project()` rule `real_results_are_fake`, a warning while the real results on the disk come from fake real data. The set `house_2026_11_17` gets it and the new `blocks_list`, and its md5 changes before the first release.
 
 # pbn 2026.11.22
 

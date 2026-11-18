@@ -706,7 +706,11 @@ test_that("no_row_per_person also checks the rows before the exclusions of a coh
 
 test_that("element_names passes a manifest alone when the manifest puts kinds in results_gitexclude.qs2, and fails it otherwise", {
   x <- valid_results()["manifest"]
-  x$manifest$analyses <- data.frame(analysis = "models", control = FALSE, file = "results.qs2")
+  x$manifest$analyses <- data.frame(
+    analysis = "models",
+    control = FALSE,
+    file = "results.qs2"
+  )
   expect_identical(failing(x), "element_names")
   x$manifest$analyses$file <- "results_gitexclude.qs2"
   expect_identical(failing(x), character(0))
@@ -743,7 +747,11 @@ test_that("no_row_per_person does not walk the exclusions table of a cohort, and
   expect_identical(failing(x), character(0))
   x$person <- data.frame(i = 1:2)
   expect_identical(failing(x), "no_row_per_person")
-  expect_match(check_results(x)$detail[4], "x$person (a data.frame with 2 rows)", fixed = TRUE)
+  expect_match(
+    check_results(x)$detail[4],
+    "x$person (a data.frame with 2 rows)",
+    fixed = TRUE
+  )
 })
 
 # The simulations 1 to `sims` of the fake scenario null, each with 400 rows
@@ -819,4 +827,49 @@ test_that("no_row_per_person checks nothing on a stacked object without n_rows_b
     check_results(y)$detail[4],
     "n_rows_data is NA, 0 or 1 in each simulation, so nothing to check"
   )
+})
+
+test_that("a list of data.frames with 2 or more numbers of rows gives the rows of each in n_rows_lists, and no_row_per_person checks each of them", {
+  counted <- count_rows(
+    list(
+      imp = list(data.frame(x = 1:3), data.frame(x = 1:5)),
+      same = list(data.frame(x = 1:4), data.frame(x = 1:4)),
+      d = data.frame(x = 1:7),
+      hash = "abc"
+    ),
+    list()
+  )
+  expect_identical(
+    unclass(counted)[1:3],
+    c(imp = NA_integer_, same = 4L, d = 7L)
+  )
+  expect_identical(attr(counted, "parts"), list(imp = c(3L, 5L)))
+  expect_identical(n_rows_lists(counted), list(imp = c(3L, 5L)))
+  expect_identical(
+    n_rows_lists(count_rows(list(d = data.frame(x = 1)), list())),
+    stats::setNames(list(), character(0))
+  )
+  x <- valid_results()
+  x$manifest$n_rows_data <- c(imp = NA_integer_)
+  x$manifest$n_rows_lists <- list(imp = c(3L, 5L))
+  x$estimates <- data.frame(id = 1:5)
+  found <- rule_no_row_per_person(x)
+  expect_identical(found$status, "FAIL")
+  expect_match(found$detail, "^x\\$estimates \\(", fixed = FALSE)
+  x$estimates <- data.frame(id = 1:4)
+  expect_identical(rule_no_row_per_person(x)$status, "PASS")
+  x$estimates <- data.frame(id = 1:3)
+  expect_identical(rule_no_row_per_person(x)$status, "FAIL")
+  # Stacked results get one row of n_rows_by_sim for each data.frame.
+  runs <- lapply(1:2, function(k) {
+    return(list(
+      manifest = list(
+        n_rows_data = c(imp = NA_integer_),
+        n_rows_lists = list(imp = c(3L, 5L + k))
+      )
+    ))
+  })
+  by_sim <- rows_by_sim(runs)
+  expect_identical(by_sim$data, rep(c("imp", "imp[[1]]", "imp[[2]]"), 2))
+  expect_identical(by_sim$n_rows_data, c(NA, 3L, 6L, NA, 3L, 7L))
 })

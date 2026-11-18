@@ -29,6 +29,18 @@
 #' )
 #' ```
 #'
+#' Put `blocks` in the file `<version>_functions/blocks.R`, and nowhere
+#' else. pbn leaves that file out of `manifest$source_md5`, so a change of
+#' a block does not make the results stale. The rule `blocks_list` of
+#' [check_project()] fails a use of a name of that file in the other code,
+#' because the run then depends on it.
+#'
+#' A block MAY run where the packages of the run script are missing.
+#' Examples are the console after [initialize_project()] and the new R
+#' session of [check_one_file()]. `show_block()` attaches no package. So a block function MUST name the package of each function that
+#' it calls, for example `data.table::data.table()`. When R does not find a
+#' function, the error says so.
+#'
 #' The results include the kinds of `gitexclude`, so a block MAY show rows
 #' for each person, for example to find a fault. What a person copies or
 #' screenshots from the screen is the responsibility of that person.
@@ -48,6 +60,11 @@
 #' 1. the number and the name of the block,
 #' 2. the page, for example `page 2 of 4, rows 36 to 70 of 140`,
 #' 3. the rows of the page.
+#'
+#' Real results MAY come from fake real data, see `fake_real_data` of
+#' [initialize_project()]. Then `show_block()` prints the line
+#' `FAKE REAL DATA` between the first two lines. `show_blocks()` prints it
+#' under its first line.
 #'
 #' It stops on a block function that stops, and the error names the block.
 #' During the call, the option `width` is 270 and the row names are off. No
@@ -96,6 +113,7 @@ show_blocks <- function(version = NULL, home = NULL) {
     ", from the real results of ",
     ctx$run_date,
     ":\n",
+    if (ctx$fake_real_data) paste0(fake_real_label, "\n"),
     sep = ""
   )
   width <- max(nchar(out$name))
@@ -151,6 +169,16 @@ show_block <- function(k, page = 1, rows = 35, version = NULL, home = NULL) {
       call. = FALSE
     )
   }
+  show_page(ctx, k, value, page, rows)
+  return(invisible(value))
+}
+
+# Prints the page `page` of `rows` rows of the value `value` of the block
+# `k` of `ctx`, as show_block() does. It sets the options of show_block(),
+# and the caller sets them back.
+show_page <- function(ctx, k, value, page, rows) {
+  n <- block_rows(value)
+  pages <- max(1L, as.integer(ceiling(n / rows)))
   i <- seq_len(n)
   i <- i[ceiling(i / rows) == page]
   options(
@@ -166,7 +194,9 @@ show_block <- function(k, page = 1, rows = 35, version = NULL, home = NULL) {
     k,
     "] ",
     names(ctx$blocks)[k],
-    "\npage ",
+    "\n",
+    if (ctx$fake_real_data) paste0(fake_real_label, "\n"),
+    "page ",
     page,
     " of ",
     pages,
@@ -179,8 +209,12 @@ show_block <- function(k, page = 1, rows = 35, version = NULL, home = NULL) {
     sep = ""
   )
   print_page(value, i)
-  return(invisible(value))
+  return(invisible(NULL))
 }
+
+# The label of the blocks of real results from fake real data, see
+# initialize_project(fake_real_data = TRUE).
+fake_real_label <- "FAKE REAL DATA"
 
 # The blocks of the project, the real results and the version, for
 # show_blocks() and show_block(). `version` and `home` default to the last
@@ -220,7 +254,8 @@ blocks_context <- function(version, home) {
     blocks = blocks,
     results = results,
     version = version,
-    run_date = if (is_one_string(run_date)) run_date else "an unknown date"
+    run_date = if (is_one_string(run_date)) run_date else "an unknown date",
+    fake_real_data = isTRUE(results$manifest$fake_real_data)
   ))
 }
 
@@ -306,7 +341,7 @@ block_call <- function(ctx, k) {
     return(e)
   })
   if (inherits(value, "error")) {
-    return(list(value = NULL, error = conditionMessage(value)))
+    return(list(value = NULL, error = block_error(value)))
   }
   if (!is.data.frame(value) && !is.character(value)) {
     return(list(
@@ -319,6 +354,24 @@ block_call <- function(ctx, k) {
     ))
   }
   return(list(value = value, error = NULL))
+}
+
+# The message of the error `e` of a block function. When R found no
+# function, it adds that a block MUST name the package of each call,
+# because show_block() does not attach the packages of the run script.
+block_error <- function(e) {
+  msg <- conditionMessage(e)
+  english <- "could not find function \"%s\""
+  starts <- sub("%s.*$", "", c(english, gettext(english, domain = "R")))
+  if (any(startsWith(msg, starts[nzchar(starts)]))) {
+    msg <- paste0(
+      msg,
+      ". A block function MUST name the package of each function that it ",
+      "calls, for example data.table::data.table(), because ",
+      "pbn::show_block() does not attach the packages of the run script"
+    )
+  }
+  return(msg)
 }
 
 # Records the options of R now, and returns a function that sets them back

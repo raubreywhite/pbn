@@ -19,7 +19,14 @@ output_state <- new.env(parent = emptyenv())
 #' Call [initialize_project()] first. For each scenario of `scenarios`,
 #' `make_outputs()` does this:
 #' - `"real"`: it calls `fn(results, dir)` with
-#'   `dir = <version>_results/real/output/`.
+#'   `dir = <version>_results/real/output/`. The output is fake output when
+#'   the manifest of the real results on the disk has `fake_real_data`
+#'   `TRUE`. It then goes to `real/output_fake_data/`, as for a fake
+#'   scenario below. The
+#'   manifest decides, and never the argument `fake_real_data` of
+#'   [initialize_project()] in this R session. `make_outputs()` deletes the
+#'   other of the two folders of `"real"` with one printed line, so no
+#'   output of an earlier run on other data stays.
 #' - A fake scenario with `output = TRUE`: it calls `fn` with
 #'   `dir = <version>_results/<scenario>/output_fake_data/`. Then it renames
 #'   each file in `dir` that `fn` wrote, so that the name starts with
@@ -29,8 +36,10 @@ output_state <- new.env(parent = emptyenv())
 #'   results, with a column `sim` in each data.frame.
 #' - A fake scenario without `output = TRUE`: nothing.
 #'
-#' Before it calls `fn`, `make_outputs()` deletes the folder `dir` and
-#' creates it again. So no file of an earlier run stays. Keep no other file
+#' [save_results()] deletes `output/` and `output_fake_data/` of each
+#' scenario that it writes, so no output of an earlier run stays beside new
+#' results. Before it calls `fn`, `make_outputs()` deletes the folder `dir`
+#' and creates it again. So no file of an earlier run stays. Keep no other file
 #' in that folder. It stops when the folder is still there afterwards, for
 #' example because another program holds a file open on Windows. After each
 #' scenario, it prints one line with the folder and the number of files.
@@ -120,7 +129,10 @@ make_outputs <- function(fn, scenarios) {
   }
   out <- do.call(
     rbind,
-    c(list(data.frame(scenario = character(0), file = character(0))), done$files)
+    c(
+      list(data.frame(scenario = character(0), file = character(0))),
+      done$files
+    )
   )
   rownames(out) <- NULL
   return(invisible(out))
@@ -131,11 +143,16 @@ make_outputs <- function(fn, scenarios) {
 # to the project, `note`, the printed line when pbn skipped the scenario,
 # or NULL, and `warnings`, the number of warnings of fn.
 output_scenario <- function(fn, s) {
-  fake <- s != "real"
   folder <- file.path(state$results, s)
+  # The output of real results from fake real data is fake output. The
+  # manifest of the results on the disk decides, not this R session.
+  fake <- s != "real" || results_from_fake_real_data(folder)
   sub <- if (fake) "output_fake_data" else "output"
   dir <- file.path(folder, sub)
   rel <- file.path(paste0(state$version, "_results"), s, sub)
+  if (s == "real") {
+    drop_other_real_output(folder, fake)
+  }
   note <- skip_scenario(folder, dir, rel, s)
   if (!is.null(note)) {
     return(list(files = NULL, note = note))
@@ -181,6 +198,42 @@ output_scenario <- function(fn, s) {
     note = NULL,
     warnings = warned
   ))
+}
+
+# TRUE when the results.qs2 of the scenario in `folder` has
+# manifest$fake_real_data TRUE: the real results come from fake real data.
+# FALSE without that file.
+results_from_fake_real_data <- function(folder) {
+  file <- file.path(folder, "results.qs2")
+  if (!file.exists(file)) {
+    return(FALSE)
+  }
+  m <- tryCatch(qs2::qs_read(file)$manifest, error = function(e) return(NULL))
+  return(isTRUE(m$fake_real_data))
+}
+
+# Deletes the output folder of the scenario "real" in `folder` that does not
+# fit its results: output/ beside results from fake real data, and
+# output_fake_data/ beside results from real data. `fake` is TRUE for
+# results from fake real data. It prints one line when the folder was there.
+drop_other_real_output <- function(folder, fake) {
+  other <- if (fake) "output" else "output_fake_data"
+  dir <- file.path(folder, other)
+  if (!dir.exists(dir)) {
+    return(invisible(NULL))
+  }
+  delete_paths(dir, recursive = TRUE)
+  cat(
+    "pbn: deleted ",
+    file.path(paste0(state$version, "_results"), "real", other),
+    "/, because the real results come from ",
+    if (fake) "fake real data" else "real data",
+    ", so no output of ",
+    if (fake) "real data" else "fake real data",
+    " of an earlier run stays.\n",
+    sep = ""
+  )
+  return(invisible(NULL))
 }
 
 # The printed line, when the scenario has no results.qs2, or when its
@@ -230,7 +283,10 @@ results_listing <- function(root, skip) {
 hash_recent <- function(listing, root = state$results) {
   recent <- listing$mtime >= as.numeric(Sys.time()) - 2
   listing$md5 <- rep(NA_character_, nrow(listing))
-  listing$md5[recent] <- unname(tools::md5sum(file.path(root, listing$file[recent])))
+  listing$md5[recent] <- unname(tools::md5sum(file.path(
+    root,
+    listing$file[recent]
+  )))
   return(listing)
 }
 
@@ -240,7 +296,10 @@ check_outside <- function(root, before, skip, rel, s) {
   after <- results_listing(root, skip)
   hashed <- after$file %in% before$file[!is.na(before$md5)]
   after$md5 <- rep(NA_character_, nrow(after))
-  after$md5[hashed] <- unname(tools::md5sum(file.path(root, after$file[hashed])))
+  after$md5[hashed] <- unname(tools::md5sum(file.path(
+    root,
+    after$file[hashed]
+  )))
   added <- setdiff(after$file, before$file)
   removed <- setdiff(before$file, after$file)
   both <- merge(before, after, by = "file")
@@ -354,14 +413,22 @@ prefix_fake <- function(dir, files, scenario) {
 #' [make_outputs()] calls the output function for a fake scenario. Otherwise
 #' it returns the figure as it is.
 #'
-#' @param q A ggplot.
+#' @param q A ggplot, or a patchwork of ggplots.
 #' @details
 #' Call it in the figure code of the output function, before the figure is
-#' saved: `q <- pbn::stamp_fake(q)`. For `"real"`, and outside a call of
-#' [make_outputs()], it returns `q` unchanged. The label is on each panel.
+#' saved: `q <- pbn::stamp_fake(q)`. For `"real"` on real data, and outside
+#' a call of [make_outputs()], it returns `q` unchanged. For `"real"` whose
+#' manifest has `fake_real_data` `TRUE`, it adds the label.
 #'
-#' For a fake scenario, `stamp_fake()` needs the package ggplot2. It stops
-#' with an error when ggplot2 is not installed, and when `q` is not a ggplot.
+#' On a ggplot, the label is on each panel. On a patchwork, it is one label
+#' over the whole figure, with [patchwork::inset_element()]. Without it,
+#' `+` would put the label on the last panel only.
+#'
+#' For a fake scenario, `stamp_fake()` needs the package ggplot2, and
+#' patchwork for a patchwork. It stops when the package is not installed.
+#' It also stops when `q` is not a ggplot or a patchwork, for example a
+#' grob or a gtable of `gridExtra::arrangeGrob()`. Stamp each ggplot before
+#' you combine it in such an object.
 #' @return `q`, with the label for a fake scenario.
 #' @examples
 #' # Outside make_outputs(), stamp_fake() returns the figure as it is.
@@ -383,14 +450,46 @@ stamp_fake <- function(q) {
     )
   }
   if (!inherits(q, "ggplot")) {
-    stop("`q` must be a ggplot.", call. = FALSE)
+    stop(
+      "`q` must be a ggplot or a patchwork. Stamp each ggplot before you ",
+      "combine it with another package.",
+      call. = FALSE
+    )
   }
   label <- grid::textGrob(
     "FAKE DATA",
     rot = 30,
     gp = grid::gpar(col = "red", alpha = 0.45, fontsize = 40, fontface = "bold")
   )
+  if (inherits(q, "patchwork")) {
+    if (!has_patchwork()) {
+      stop(
+        "pbn::stamp_fake() needs the package patchwork to mark a patchwork ",
+        "figure. Install patchwork.",
+        call. = FALSE
+      )
+    }
+    # One label over the whole figure. A label added with + goes on the
+    # last panel only.
+    return(
+      q +
+        patchwork::inset_element(
+          label,
+          left = 0,
+          bottom = 0,
+          right = 1,
+          top = 1,
+          align_to = "full"
+        )
+    )
+  }
   return(q + ggplot2::annotation_custom(label))
+}
+
+# requireNamespace("patchwork"), in one place, so that the tests can mock
+# it.
+has_patchwork <- function() {
+  return(requireNamespace("patchwork", quietly = TRUE))
 }
 
 # requireNamespace("ggplot2"), in one place, so that the tests can mock it.

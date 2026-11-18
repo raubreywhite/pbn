@@ -137,15 +137,38 @@
 #'   `<file>:<line>: file.path("<the first argument, cut at 40
 #'   characters>", ...)`. A path under `allow` allows each finding of one
 #'   file.
-#' - `blocks_list` (FAIL): the functions folder defines the object `blocks`
-#'   of [show_block()], and one of these is true:
-#'   - more than one top-level assignment assigns it.
+#' - `blocks_list` (FAIL): for each functions folder, one of these is true:
+#'   - a file other than `vNN_functions/blocks.R` assigns `blocks` at its
+#'     top level. pbn leaves `blocks.R` out of `manifest$source_md5`, so the
+#'     blocks MUST be in that file.
+#'   - more than one top-level assignment of `blocks.R` assigns it.
 #'   - its value is not a call of `list()`, or the list is empty.
 #'   - an element has no name, or a name comes twice.
 #'   - an element is not a `function`, or the name of a function that a
 #'     top-level assignment of the functions folder defines.
+#'   - a top-level expression of `blocks.R` is not an assignment with `<-`
+#'     or `=` of a name to `function(...)`, or of `blocks` to `list(...)`.
+#'     Examples are `library(x)`, `options(...)`, `set.seed(1)`, an `if` and
+#'     `fmt <- sprintf`. Such code runs when pbn sources the folder, so it
+#'     can change the results.
+#'   - a name that `blocks.R` assigns at its top level, and another file of
+#'     the folder assigns too. The detail names both places.
+#'   - another file of the folder, or `vNN_run.R`, uses a name that
+#'     `blocks.R` assigns at its top level. Examples are a helper `fmt()`,
+#'     and `CFG` after `CFG$labels <- ...` in `blocks.R`. The run would then
+#'     depend on a file outside `source_md5`. A name after `$` or `@` and
+#'     the name of an argument do not count.
 #'
-#'   A project without `blocks` passes.
+#'   The detail is `<file>:<line>: <what>`. A folder without `blocks` and
+#'   without `blocks.R` passes. [initialize_project()] makes the same checks
+#'   of `blocks.R`, and puts it back into `manifest$source_md5` when one
+#'   fails, also when this rule is `warn` or `off`.
+#' - `real_results_are_fake` (WARN): a file `vNN_results/real/results.qs2`
+#'   holds `manifest$fake_real_data` `TRUE`. Its run had
+#'   `fake_real_data = TRUE` of [initialize_project()], so its numbers are
+#'   not those of the real data. It passes when no such file is in the
+#'   list of files. In a git repository, a real results file that git
+#'   ignores is not in the list, so the rule does not see it.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R`,
@@ -199,8 +222,11 @@
 #' house set.
 #'
 #' The key `allow` MAY list paths for each rule, relative to `path`. A path
-#' allows the findings with exactly that path. A folder MAY end in `/`, and it
-#' does not allow the files in it. An allowed finding is WARN, with
+#' allows the findings with that path and the findings of each path under
+#' it. So the folder `adhoc` allows `adhoc/Notes.txt` and
+#' `adhoc/Old/Data.csv`, but not `adhoc2/x.R`. A final `/` changes nothing:
+#' `adhoc` and `adhoc/` are the same entry. pbn does not look on the disk
+#' for a file or a folder of that name. An allowed finding is WARN, with
 #' `(allowed)` at the end. A path that matches no finding is a WARN of the
 #' rule `allow`.
 #'
@@ -334,13 +360,26 @@ apply_allow <- function(findings, rules) {
   if (nrow(allow) == 0) {
     return(findings)
   }
-  entries <- paste(allow$rule, allow$path, sep = "\t")
-  finding_key <- paste(findings$rule, findings$path, sep = "\t")
   open <- !findings$status %in% c("PASS", "OFF")
-  allowed <- open & finding_key %in% entries
+  # covers[i, j]: the entry j covers the finding i, because the finding has
+  # the path of the entry or a path under it.
+  covers <- vapply(
+    seq_len(nrow(allow)),
+    function(j) {
+      return(
+        open &
+          findings$rule == allow$rule[j] &
+          (findings$path == allow$path[j] |
+            startsWith(findings$path, paste0(allow$path[j], "/")))
+      )
+    },
+    logical(nrow(findings))
+  )
+  covers <- matrix(covers, nrow = nrow(findings), ncol = nrow(allow))
+  allowed <- rowSums(covers) > 0
   findings$status[allowed] <- "WARN"
   findings$detail[allowed] <- paste(findings$detail[allowed], "(allowed)")
-  stale <- allow[!entries %in% finding_key[open], , drop = FALSE]
+  stale <- allow[colSums(covers) == 0, , drop = FALSE]
   off <- vapply(
     stale$rule,
     function(r) return(identical(rules$rules[[r]]$level, "off")),

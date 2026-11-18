@@ -171,7 +171,12 @@ test_that("a cohort built on 2 workers gives results identical to 1 worker, with
 test_that("a step after the cohort keeps the exclusion table with keep_exclusions(), and a list of imputed data sets counts the rows of one", {
   skip_if_not_installed("cohort")
   p <- local_cohort_project()
-  run <- cohort_run(p, cache = FALSE, fn = impute_data_fn, analysis = "fit_mean_imp")
+  run <- cohort_run(
+    p,
+    cache = FALSE,
+    fn = impute_data_fn,
+    analysis = "fit_mean_imp"
+  )
   expect_identical(run$r[["real__sim_0001__means__1"]]$n_imp, 3L)
   expect_identical(run$r[["real__sim_0001__means__1"]]$n, 6L)
   counted <- run$r[["real__sim_0001__pbn_n_rows"]]
@@ -200,7 +205,11 @@ test_that("count_rows counts one data set of a list of data.frames with one numb
   same <- list(data.frame(x = 1:4), data.table::data.table(x = 5:8))
   expect_identical(count_rows(list(d = same), list()), c(d = 4L))
   uneven <- list(data.frame(x = 1:4), data.frame(x = 1:3))
-  expect_identical(count_rows(list(d = uneven), list()), c(d = NA_integer_))
+  # The rows of each data.frame of such a list go to manifest$n_rows_lists.
+  expect_identical(
+    count_rows(list(d = uneven), list()),
+    structure(c(d = NA_integer_), parts = list(d = c(4L, 3L)))
+  )
   mixed <- list(data.frame(x = 1:4), 1:4)
   expect_identical(count_rows(list(d = mixed), list()), c(d = NA_integer_))
   expect_identical(count_rows(list(d = list()), list()), c(d = NA_integer_))
@@ -208,10 +217,18 @@ test_that("count_rows counts one data set of a list of data.frames with one numb
 
 test_that("cohort_data and keep_exclusions stop on a value that is not a cohort, and keep_exclusions on NULL", {
   skip_if_not_installed("cohort")
-  expect_error(cohort_data(data.frame(x = 1)), "`cp` must be a cohort::CohortPipeline.", fixed = TRUE)
+  expect_error(
+    cohort_data(data.frame(x = 1)),
+    "`cp` must be a cohort::CohortPipeline.",
+    fixed = TRUE
+  )
   cp <- cohort::CohortPipeline$new(data.table::data.table(x = 1:3))
   expect_error(keep_exclusions(NULL, cp), "`x` must not be NULL.", fixed = TRUE)
-  expect_error(keep_exclusions(1, list()), "`cp` must be a cohort::CohortPipeline.", fixed = TRUE)
+  expect_error(
+    keep_exclusions(1, list()),
+    "`cp` must be a cohort::CohortPipeline.",
+    fixed = TRUE
+  )
   cp$new_cohort("b1", from = "root")
   cp$new_cohort("b2", from = "root")
   expect_error(
@@ -249,9 +266,14 @@ test_that("a table with one row for each row given to the cohort fails no_row_pe
   skip_if_not_installed("cohort")
   p <- local_cohort_project()
   run <- cohort_run(p, cache = FALSE)
-  add_analyses(run$plan, run$scenarios, "raw_rows", fn = function(data, argset) {
-    return(data.frame(i = seq_len(attr(data$d, "pbn_n_before"))))
-  })
+  add_analyses(
+    run$plan,
+    run$scenarios,
+    "raw_rows",
+    fn = function(data, argset) {
+      return(data.frame(i = seq_len(attr(data$d, "pbn_n_before"))))
+    }
+  )
   r <- run_plan(run$plan)
   out <- utils::capture.output(expect_error(
     save_results(r, run$plan, run$scenarios),
@@ -324,6 +346,10 @@ test_that("a cohort with two exclusion steps and two people left saves, and a tw
     save_results(r, plan, sc),
     "failures of check_results()"
   ))
-  expect_true(any(grepl("real: no_row_per_person: x$rows (a data.frame with 2 rows)", out, fixed = TRUE)))
+  expect_true(any(grepl(
+    "real: no_row_per_person: x$rows (a data.frame with 2 rows)",
+    out,
+    fixed = TRUE
+  )))
   expect_false(any(grepl("x$exclusions", out, fixed = TRUE)))
 })

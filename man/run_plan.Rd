@@ -42,9 +42,20 @@ Each worker starts with the library paths of this R session, from
 environment variable \code{R_LIBS} to these paths, and then it sets
 \code{R_LIBS} back. So a worker also finds a library that this R session added
 with \code{.libPaths()}, for example the temporary library of \verb{R CMD build}.
+Each worker runs with 1 thread. While \code{run_plan()} starts the cluster, it
+sets the environment variables \code{OMP_NUM_THREADS}, \code{OPENBLAS_NUM_THREADS}
+and \code{MKL_NUM_THREADS} to 1, as it sets \code{R_LIBS}. Then it sets them back
+in this R session. OpenMP and the BLAS libraries OpenBLAS and MKL
+read them when they start their threads, so the variables MUST be there
+when the worker starts. The section One thread for each worker gives the
+rules.
+
 Before the run, \code{run_plan()} gives each worker these:
 \itemize{
 \item the library paths of this R session again, with \code{\link[=.libPaths]{.libPaths()}}.
+\item 1 thread: the three variables again, for a library that the worker
+loads later, and \code{data.table::setDTthreads(1)} when data.table is
+installed.
 \item the packages attached in this R session, in the order of \code{\link[=search]{search()}},
 for example data.table after \code{library(data.table)} in the run script.
 \item the kind of random number generator of this R session, from
@@ -146,6 +157,28 @@ function that returns a \code{cohort::CohortPipeline} runs on the worker, and
 only its data.table and its exclusion table come back. The section A
 cohort as the data of \code{\link[=add_data]{add_data()}} gives the rules.
 }
+\section{One thread for each worker}{
+
+Some packages start threads of their own, for example data.table,
+fixest, a threaded BLAS and OpenMP code. By default, such a package uses
+many cores. data.table, for example, uses half of the cores of the
+computer. With \code{workers} 2 or more, each worker would do that, and the
+computer would run far more threads than cores. So \code{run_plan()} makes each worker
+use 1 thread. There is no argument to change it. An analysis that needs
+more threads in its worker sets them in its own code, for example
+\code{data.table::setDTthreads(4)} at the top of its action function.
+
+With \code{workers = 1}, \code{run_plan()} changes no thread setting, and the
+analyses run with the settings of this R session.
+
+The results of the test projects of pbn are \code{identical()} with 1 and 2
+workers. pbn does not check this for other code. A threaded BLAS MAY sum
+in another order with another number of threads. So a matrix product of
+such a BLAS MAY differ in its last digits between \code{workers = 1} and more
+workers. With 1 worker it has the threads of this R session, and with
+more it has 1 thread.
+}
+
 \section{Stop at the first failure}{
 
 A failed data function makes each analysis of its scenario and

@@ -88,7 +88,10 @@ test_that("scenarios keeps the column output after scenario and sims, and it is 
   out <- scenarios(cfg(output = c(FALSE, TRUE, FALSE)))
   expect_identical(names(out), c("scenario", "sims", "output", "n_boot"))
   expect_identical(out$output, c(FALSE, TRUE, FALSE))
-  expect_identical(scenarios(cfg(output = c(FALSE, TRUE, FALSE)), only = "known")$output, TRUE)
+  expect_identical(
+    scenarios(cfg(output = c(FALSE, TRUE, FALSE)), only = "known")$output,
+    TRUE
+  )
   expect_identical(setting_columns(out), "n_boot")
   expect_identical(settings_of(out, "known"), list(n_boot = 5))
 })
@@ -182,4 +185,58 @@ test_that("end_unless_real in an interactive R process leaves the process alive"
   expect_true("pbn_end_unless_real" %in% out$cond)
   expect_true(out$alive)
   expect_identical(session$run(function() return(1 + 1)), 2)
+})
+
+test_that("a setting column MAY have NA for real only: real then has no such setting in its argsets and its manifest, and NA for a fake scenario stops", {
+  cfg <- list(
+    scenarios = data.frame(
+      scenario = c("real", "null"),
+      sims = c(1, 2),
+      b3 = c(NA, 0.5)
+    )
+  )
+  sc <- scenarios(cfg)
+  expect_identical(sc$b3, c(NA, 0.5))
+  expect_identical(settings_of(sc, "real"), list())
+  expect_identical(settings_of(sc, "null"), list(b3 = 0.5))
+  bad <- cfg
+  bad$scenarios$b3 <- c(1, NA)
+  expect_error(
+    scenarios(bad),
+    paste0(
+      "CFG$scenarios: the setting column b3 has NA for the scenario null. ",
+      "Each fake scenario needs a value. Only \"real\" MAY have NA."
+    ),
+    fixed = TRUE
+  )
+  p <- local_project()
+  lines <- cfg_lines()
+  lines[
+    lines == "    n_boot = c(200, 5, 5)"
+  ] <- "    n_boot = c(200, 5, 5), b3 = c(NA, 1, 2)"
+  write_lines(p$home, "v01_functions/_cfg.R", lines)
+  run <- save_run(p, only = c("real", "known"))
+  expect_false(inherits(run$err, "error"))
+  real <- qs2::qs_read(file.path(p$home, "v01_results", "real", "results.qs2"))
+  known <- qs2::qs_read(file.path(
+    p$home,
+    "v01_results",
+    "known",
+    "results.qs2"
+  ))
+  expect_identical(real$manifest$settings, list(n_boot = 200))
+  expect_identical(known$manifest$settings, list(n_boot = 5, b3 = 1))
+  argsets <- lapply(run$plan$analyses, function(a) return(a$argset))
+  real_args <- argsets[startsWith(names(argsets), "real__")]
+  expect_false(any(vapply(
+    real_args,
+    function(a) return("b3" %in% names(a)),
+    logical(1)
+  )))
+  known_args <- argsets[startsWith(names(argsets), "known__")]
+  expect_true(all(vapply(
+    known_args,
+    function(a) return(identical(a$b3, 1)),
+    logical(1)
+  )))
 })

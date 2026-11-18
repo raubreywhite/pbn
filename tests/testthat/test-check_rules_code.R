@@ -205,9 +205,9 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
   for (case in names(bad)) {
     write_lines(p$home, "v01_functions/blocks.R", bad[[case]][1])
     found <- findings_of(p$home, "blocks_list")
-    expect_identical(found$status, "FAIL", info = case)
-    expect_identical(found$detail, bad[[case]][2], info = case)
-    expect_identical(found$path, "v01_functions/blocks.R", info = case)
+    expect_identical(unique(found$status), "FAIL", info = case)
+    expect_identical(found$detail[1], bad[[case]][2], info = case)
+    expect_identical(unique(found$path), "v01_functions/blocks.R", info = case)
   }
   write_lines(
     p$home,
@@ -223,8 +223,26 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
   expect_identical(
     found$detail,
     paste0(
-      "blocks is assigned 2 times, at v01_functions/blocks.R:1, ",
-      "v01_functions/more.R:2. Assign it once"
+      "v01_functions/more.R:2: blocks is assigned here. Assign it in ",
+      "v01_functions/blocks.R only, because pbn leaves that file out of ",
+      "manifest$source_md5"
+    )
+  )
+  expect_identical(found$path, "v01_functions/more.R")
+  unlink(file.path(p$home, "v01_functions", "more.R"))
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(a = function(results) 1)",
+      "blocks = list(b = function(results) 2)"
+    )
+  )
+  expect_identical(
+    findings_of(p$home, "blocks_list")$detail,
+    paste0(
+      "v01_functions/blocks.R:1: blocks is assigned 2 times, at ",
+      "v01_functions/blocks.R:1, v01_functions/blocks.R:2. Assign it once"
     )
   )
 })
@@ -232,25 +250,33 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
 test_that("no_absolute_paths fails file.path() and fs::path() that start from a string, and passes those that start from a name or a call", {
   p <- local_project()
   long <- strrep("d", 50)
-  write_lines(p$home, "v01_functions/paths.R", c(
-    "make_paths <- function(dir) {",
-    "  a <- file.path(\"/\", \"data\")",
-    "  b <- file.path(\"data\", \"x.csv\")",
-    "  c <- base::file.path(\"results\", \"a.csv\")",
-    "  d <- fs::path(\"results\", \"a.csv\")",
-    paste0("  e <- file.path(\"", long, "\")"),
-    "  f <- file.path(fsep = \"/\", \"out\", \"x\")",
-    "  g <- file.path(dir, \"fig2.png\")",
-    "  h <- file.path(pbn::folder(\"main\"), \"x\")",
-    "  i <- file.path(tempdir(), \"x\")",
-    "  j <- other::path(\"a\", \"b\")",
-    "  k <- path(\"a\", \"b\")",
-    "  return(list(a, b, c, d, e, f, g, h, i, j, k))",
-    "}"
-  ))
-  write_lines(p$home, "adhoc/server.R", c(
-    "pbn::to_one_file(\"v01\", home = file.path(\"N:\", \"x\"), folders = c(main = \"N:/d\"))"
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/paths.R",
+    c(
+      "make_paths <- function(dir) {",
+      "  a <- file.path(\"/\", \"data\")",
+      "  b <- file.path(\"data\", \"x.csv\")",
+      "  c <- base::file.path(\"results\", \"a.csv\")",
+      "  d <- fs::path(\"results\", \"a.csv\")",
+      paste0("  e <- file.path(\"", long, "\")"),
+      "  f <- file.path(fsep = \"/\", \"out\", \"x\")",
+      "  g <- file.path(dir, \"fig2.png\")",
+      "  h <- file.path(pbn::folder(\"main\"), \"x\")",
+      "  i <- file.path(tempdir(), \"x\")",
+      "  j <- other::path(\"a\", \"b\")",
+      "  k <- path(\"a\", \"b\")",
+      "  return(list(a, b, c, d, e, f, g, h, i, j, k))",
+      "}"
+    )
+  )
+  write_lines(
+    p$home,
+    "adhoc/server.R",
+    c(
+      "pbn::to_one_file(\"v01\", home = file.path(\"N:\", \"x\"), folders = c(main = \"N:/d\"))"
+    )
+  )
   found <- findings_of(p$home, "no_absolute_paths")
   expect_identical(
     found$detail,
@@ -259,10 +285,185 @@ test_that("no_absolute_paths fails file.path() and fs::path() that start from a 
       "v01_functions/paths.R:3: file.path(\"data\", ...)",
       "v01_functions/paths.R:4: base::file.path(\"results\", ...)",
       "v01_functions/paths.R:5: fs::path(\"results\", ...)",
-      paste0("v01_functions/paths.R:6: file.path(\"", strrep("d", 40), "\"..., ...)"),
+      paste0(
+        "v01_functions/paths.R:6: file.path(\"",
+        strrep("d", 40),
+        "\"..., ...)"
+      ),
       "v01_functions/paths.R:7: file.path(\"out\", ...)"
     )
   )
   unlink(file.path(p$home, "v01_functions", "paths.R"))
   expect_identical(findings_of(p$home, "no_absolute_paths")$status, "PASS")
+})
+
+test_that("blocks_list fails a name of blocks.R that another file of the folder or the run script uses, with its file and line, and passes a name after $ and an argument name", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "fmt <- function(x) return(sprintf(\"%.2f\", x))",
+      "blocks <- list(\"Table 1\" = function(results) fmt(results$table1$n))"
+    )
+  )
+  expect_identical(findings_of(p$home, "blocks_list")$status, "PASS")
+  write_lines(
+    p$home,
+    "v01_functions/report.R",
+    c(
+      "report <- function(results) {",
+      "  a <- results$fmt",
+      "  b <- list(fmt = 1)",
+      "  return(fmt(1))",
+      "}"
+    )
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(found$path, "v01_functions/report.R")
+  expect_identical(
+    found$detail,
+    paste0(
+      "v01_functions/report.R:4: uses fmt, which v01_functions/blocks.R ",
+      "assigns. pbn leaves that file out of manifest$source_md5, so the run ",
+      "MUST NOT use it. Move fmt to another file"
+    )
+  )
+  unlink(file.path(p$home, "v01_functions", "report.R"))
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(found$status, "PASS")
+  # CFG, which blocks.R changes, is a name that the other files use.
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "CFG$labels <- c(x = \"X\")",
+      "blocks <- list(\"Table 1\" = function(results) results$table1)"
+    )
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_true(all(found$status == "FAIL"))
+  expect_true("v01_run.R" %in% found$path)
+  expect_true(any(startsWith(
+    found$detail,
+    "v01_functions/analyses.R:2: uses CFG"
+  )))
+})
+
+test_that("blocks_list fails each top-level expression of blocks.R that is not an assignment of a name to function(...) or of blocks to list(...), and a name that another file assigns too, with both places", {
+  p <- local_project()
+  good <- "blocks <- list(\"Table 1\" = function(results) results$table1)"
+  bad <- list(
+    library = "library(stats4)",
+    options = "options(contrasts = c(\"contr.sum\", \"contr.poly\"))",
+    seed = "set.seed(1)",
+    branch = "if (TRUE) x <- 1",
+    bare = "1 + 1",
+    not_function = "fmt <- sprintf",
+    superassign = "fmt <<- function(x) return(x)"
+  )
+  for (case in names(bad)) {
+    write_lines(p$home, "v01_functions/blocks.R", c(good, bad[[case]]))
+    found <- findings_of(p$home, "blocks_list")
+    expect_identical(found$status, "FAIL", info = case)
+    expect_identical(found$path, "v01_functions/blocks.R", info = case)
+    expect_match(
+      found$detail,
+      "^v01_functions/blocks\\.R:2: the top level of blocks\\.R holds `",
+      info = case
+    )
+  }
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      good,
+      "",
+      "double_it <- function(x) return(3 * x)"
+    )
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(
+    found$detail,
+    paste0(
+      "v01_functions/blocks.R:3: double_it is assigned here and at ",
+      "v01_functions/double_it.R:1. A name of blocks.R MUST NOT be assigned ",
+      "in another file, because pbn leaves blocks.R out of ",
+      "manifest$source_md5"
+    )
+  )
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(good, "fmt = function(x) return(x)")
+  )
+  expect_identical(findings_of(p$home, "blocks_list")$status, "PASS")
+})
+
+test_that("initialize_project leaves blocks.R out of source_md5 only when it cannot change the results, also with the rule off, and check_one_file then finds results older than a changed blocks.R", {
+  p <- local_project()
+  conform <- "blocks <- list(\"Table 1\" = function(results) results$table1)"
+  write_lines(p$home, "v01_functions/blocks.R", conform)
+  init(p)
+  expect_true("v01_functions/blocks.R" %in% names(state$source_md5))
+  expect_false("v01_functions/blocks.R" %in% names(state$manifest_md5))
+  cases <- list(
+    side_effect = c(conform, "options(digits = 3)"),
+    redefinition = c(conform, "double_it <- function(x) return(3 * x)"),
+    use = conform
+  )
+  write_pbn_yml(p$home, "rules:", "  blocks_list: off")
+  for (case in names(cases)) {
+    write_lines(p$home, "v01_functions/blocks.R", cases[[case]])
+    if (case == "use") {
+      write_lines(
+        p$home,
+        "v01_functions/uses.R",
+        "n_blocks <- function() return(length(blocks))"
+      )
+    }
+    init(p)
+    expect_true(
+      "v01_functions/blocks.R" %in% names(state$manifest_md5),
+      info = case
+    )
+  }
+  unlink(file.path(p$home, "v01_functions", "uses.R"))
+  # A blocks.R with a side effect counts in source_md5, so a change of it
+  # makes the results older than the code.
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(conform, "options(digits = 3)")
+  )
+  save_run(p, only = c("real", "known"))
+  real <- qs2::qs_read(file.path(p$home, "v01_results", "real", "results.qs2"))
+  expect_true("v01_functions/blocks.R" %in% names(real$manifest$source_md5))
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(conform, "options(digits = 4)")
+  )
+  init(p)
+  out <- utils::capture.output(ok <- check_one_file("v01"))
+  expect_false(ok)
+  expect_identical(
+    out,
+    paste0(
+      "FAIL: the results of the project are older than its code. These ",
+      "files changed after the run that made them: ",
+      "v01_functions/blocks.R. Run v01_run.R again, then ",
+      "pbn::check_one_file()."
+    )
+  )
+  # A blocks.R of the shape stays out, so a change of it is not stale.
+  write_lines(p$home, "v01_functions/blocks.R", conform)
+  save_run(p, only = c("real", "known"))
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(conform, "fmt <- function(x) return(x)")
+  )
+  init(p)
+  expect_null(stale_results(file.path(p$home, "v01_results", "real"), "v01"))
 })

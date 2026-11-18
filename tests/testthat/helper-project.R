@@ -323,6 +323,7 @@ valid_results <- function() {
       sim = 1L,
       sims = 1L,
       data_files = data.frame(file = "main/d.csv", size = 120, mtime = 1.8e9),
+      fake_real_data = FALSE,
       source_md5 = c(
         "v01_functions/_cfg.R" = "00112233445566778899aabbccddeeff",
         v01_run.R = "ffeeddccbbaa99887766554433221100"
@@ -355,12 +356,23 @@ local_clean_state <- function(env = parent.frame()) {
 # Starts the project in this R session, as the first line of the run script
 # does, with the functions folder sourced into a new environment. Returns
 # that environment.
-init <- function(p, folders = p$data_default, env = parent.frame()) {
+init <- function(
+  p,
+  folders = p$data_default,
+  env = parent.frame(),
+  fake_real_data = FALSE
+) {
   local_clean_state(env)
   # The parent is the global environment, as for a project. An environment
   # of the test would go to each worker with the functions.
   sourced <- new.env(parent = globalenv())
-  suppressMessages(initialize_project("v01", p$home, folders, env = sourced))
+  suppressMessages(initialize_project(
+    "v01",
+    p$home,
+    folders,
+    env = sourced,
+    fake_real_data = fake_real_data
+  ))
   return(sourced)
 }
 
@@ -427,8 +439,14 @@ no_log <- function(files) {
 
 # Runs and saves the scenarios `only` of the project `p` in this R session.
 # Returns the printed lines of save_results(), or its error.
-save_run <- function(p, only = NULL, workers = 1, env = parent.frame()) {
-  sourced <- init(p, env = env)
+save_run <- function(
+  p,
+  only = NULL,
+  workers = 1,
+  env = parent.frame(),
+  fake_real_data = FALSE
+) {
+  sourced <- init(p, env = env, fake_real_data = fake_real_data)
   sc <- if (is.null(only)) {
     scenarios(sourced$CFG)
   } else {

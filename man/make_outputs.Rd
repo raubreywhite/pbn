@@ -28,7 +28,14 @@ Call \code{\link[=initialize_project]{initialize_project()}} first. For each sce
 \code{make_outputs()} does this:
 \itemize{
 \item \code{"real"}: it calls \code{fn(results, dir)} with
-\verb{dir = <version>_results/real/output/}.
+\verb{dir = <version>_results/real/output/}. The output is fake output when
+the manifest of the real results on the disk has \code{fake_real_data}
+\code{TRUE}. It then goes to \verb{real/output_fake_data/}, as for a fake
+scenario below. The
+manifest decides, and never the argument \code{fake_real_data} of
+\code{\link[=initialize_project]{initialize_project()}} in this R session. \code{make_outputs()} deletes the
+other of the two folders of \code{"real"} with one printed line, so no
+output of an earlier run on other data stays.
 \item A fake scenario with \code{output = TRUE}: it calls \code{fn} with
 \verb{dir = <version>_results/<scenario>/output_fake_data/}. Then it renames
 each file in \code{dir} that \code{fn} wrote, so that the name starts with
@@ -39,8 +46,10 @@ results, with a column \code{sim} in each data.frame.
 \item A fake scenario without \code{output = TRUE}: nothing.
 }
 
-Before it calls \code{fn}, \code{make_outputs()} deletes the folder \code{dir} and
-creates it again. So no file of an earlier run stays. Keep no other file
+\code{\link[=save_results]{save_results()}} deletes \verb{output/} and \verb{output_fake_data/} of each
+scenario that it writes, so no output of an earlier run stays beside new
+results. Before it calls \code{fn}, \code{make_outputs()} deletes the folder \code{dir}
+and creates it again. So no file of an earlier run stays. Keep no other file
 in that folder. It stops when the folder is still there afterwards, for
 example because another program holds a file open on Windows. After each
 scenario, it prints one line with the folder and the number of files.

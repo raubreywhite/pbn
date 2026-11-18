@@ -29,7 +29,9 @@ there and runs it from the top to the end.
 \details{
 Call \code{\link[=initialize_project]{initialize_project()}} for \code{version} first, in the project on this
 computer. \code{to_one_file()} takes the project from that call. It stops when
-the run script or a file of the functions folder changed after it.
+the run script or a file of the functions folder changed after it. It
+needs no results. So you MAY generate and read the file before the first
+full run.
 
 The file holds these parts, in this order:
 \enumerate{
@@ -56,17 +58,40 @@ project.
 
 The functions \verb{expect_<scenario>()} of the fake scenarios of
 \code{CFG$scenarios} are not in the file, because the run has the real data
-only. \code{expect_real()} stays. The fake data code stays, because it is
-inside the data functions.
+only. The comment lines directly above such a function go with it, up to
+a blank line or a line with code. \code{expect_real()} stays. The fake data
+code stays, because it is inside the data functions.
+
+The call of \code{pbn::initialize_project()} in the file never has
+\code{fake_real_data}, because the server holds the real data. The run script
+MAY have it for this computer.
+
+The file is ASCII, because it goes through a clipboard, which can change
+a byte that is not ASCII. pbn reads each file of the project as UTF-8 and
+changes each character that is not ASCII on the parse data, token by
+token. The files of the project stay as they are:
+\itemize{
+\item In a string, the character becomes its escape, \verb{\\uXXXX}, or
+\verb{\\UXXXXXXXX} beyond the BMP, for example \code{"\\u2265"} for the sign
+greater than or equal. pbn writes such a string again from its value,
+in double quotes. So a raw string \code{r"(...)"} becomes a normal string,
+and an escape that the string held keeps its meaning. The code of the
+file is \code{identical()} to the code of the project. Such a string gets
+the encoding mark \code{"UTF-8"} where the string of the project MAY have
+\code{"unknown"}, and \code{identical()} treats the two as equal.
+\item In a comment, the character becomes the text \verb{<U+XXXX>}.
+\item In a name, for example a name in backticks, \code{to_one_file()} stops,
+because R reads a name only as it is written.
+}
 
 \code{to_one_file()} stops when, and writes no file:
 \itemize{
 \item the run script has not exactly one top-level call
 \code{pbn::initialize_project()}, or not exactly one call
 \code{pbn::scenarios(CFG)} with no other argument. It names what it found.
-\item a file in the file holds a byte that is not ASCII, or a NUL. The error
-names the file and the line. The file goes through a clipboard, which
-can change such a byte.
+\item a file in the file holds a name that is not ASCII, a NUL, or a line
+that is not UTF-8. It also stops on a string that is not valid UTF-8
+after its escapes. The error names the file and the line.
 \item \code{home}, a path of \code{folders} or the name of the project folder is not
 ASCII.
 \item \code{folders} misses a folder of the project, or names one that the project
@@ -92,8 +117,9 @@ that folder.
 
 These are limits of the file:
 \itemize{
-\item The comments of the code go into the file as they are written. So a
-comment with a path of this computer reaches the server.
+\item The comments of the code go into the file as they are written, with
+\verb{<U+XXXX>} for a character that is not ASCII. So a comment with a path
+of this computer reaches the server.
 \item The rule \code{no_absolute_paths} of \code{\link[=check_project]{check_project()}} does not see a path
 with one name such as \code{"/data"}, or a path that \code{paste0()} or
 \code{sprintf()} builds. Such a path in the code reaches the server too.

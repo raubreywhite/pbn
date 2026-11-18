@@ -39,7 +39,7 @@ test_that("initialize_project sets no seed and reads no command-line argument", 
   expect_identical(.Random.seed, before)
   expect_identical(
     names(formals(initialize_project)),
-    c("version", "home", "folders", "env", "one_file", "...")
+    c("version", "home", "folders", "env", "one_file", "fake_real_data", "...")
   )
   expect_false(any(grepl("commandArgs", deparse(initialize_project))))
 })
@@ -134,7 +134,12 @@ test_that("initialize_project stops on a folder inside another and on a folder t
   p <- local_project()
   local_clean_state()
   quiet <- function(folders) {
-    return(suppressMessages(initialize_project("v01", p$home, folders, env = new.env())))
+    return(suppressMessages(initialize_project(
+      "v01",
+      p$home,
+      folders,
+      env = new.env()
+    )))
   }
   sub <- file.path(p$data_default, "sub")
   dir.create(sub)
@@ -175,7 +180,10 @@ test_that("a link to a file counts with its target, and a broken link stops init
   init(p)
   expect_identical(state$data_files$file, c("main/d.csv", "main/link.csv"))
   expect_identical(state$data_files$size[1], state$data_files$size[2])
-  file.symlink(file.path(p$root, "nothing"), file.path(p$data_default, "broken"))
+  file.symlink(
+    file.path(p$root, "nothing"),
+    file.path(p$data_default, "broken")
+  )
   expect_error(
     init(p),
     "pbn cannot read the size or the time of the file main/broken",
@@ -186,10 +194,26 @@ test_that("a link to a file counts with its target, and a broken link stops init
 test_that("folder() joins parts inside the folder, and stops on a part that leaves it", {
   p <- local_project()
   init(p)
-  expect_identical(folder("main", "sub", "d.csv"), paste0(p$data_default, "/sub/d.csv"))
-  expect_identical(folder("main", "sub/d.csv"), paste0(p$data_default, "/sub/d.csv"))
+  expect_identical(
+    folder("main", "sub", "d.csv"),
+    paste0(p$data_default, "/sub/d.csv")
+  )
+  expect_identical(
+    folder("main", "sub/d.csv"),
+    paste0(p$data_default, "/sub/d.csv")
+  )
   expect_identical(folder("main"), p$data_default)
-  for (part in c("/etc", "\\\\server", "C:/x", "c:x", "..", "../x", "a/../../b", "a\\..\\b", "")) {
+  for (part in c(
+    "/etc",
+    "\\\\server",
+    "C:/x",
+    "c:x",
+    "..",
+    "../x",
+    "a/../../b",
+    "a\\..\\b",
+    ""
+  )) {
     expect_error(
       folder("main", "ok", part),
       "of pbn::folder() leaves the folder main or is no path.",
@@ -202,7 +226,10 @@ test_that("folder() joins parts inside the folder, and stops on a part that leav
     "The part that is not one string of pbn::folder()",
     fixed = TRUE
   )
-  expect_identical(folder("main", "..x", "x..csv"), paste0(p$data_default, "/..x/x..csv"))
+  expect_identical(
+    folder("main", "..x", "x..csv"),
+    paste0(p$data_default, "/..x/x..csv")
+  )
 })
 
 test_that("folder() stops before initialize_project() and on a name the project does not declare, with the declared names", {
@@ -213,7 +240,13 @@ test_that("folder() stops before initialize_project() and on a name the project 
     "Call pbn::initialize_project() before pbn::folder().",
     fixed = TRUE
   )
-  init(p, folders = c(main = p$data_default, lookup = file.path(p$root, "lookup_absent")))
+  init(
+    p,
+    folders = c(
+      main = p$data_default,
+      lookup = file.path(p$root, "lookup_absent")
+    )
+  )
   expect_error(
     folder("codes"),
     paste0(
@@ -222,7 +255,11 @@ test_that("folder() stops before initialize_project() and on a name the project 
     ),
     fixed = TRUE
   )
-  expect_error(folder(1), "The project has no folder of that name.", fixed = TRUE)
+  expect_error(
+    folder(1),
+    "The project has no folder of that name.",
+    fixed = TRUE
+  )
 })
 
 test_that("a call with the removed argument data_raw stops with the way to folders", {
@@ -311,7 +348,10 @@ test_that("read_results reads the direct file, the stacked file or one simulatio
   folder <- file.path(p$home, "v01_results", "null")
   dir.create(file.path(folder, "sims_gitexclude"), recursive = TRUE)
   qs2::qs_save(list(a = 1), file.path(folder, "results.qs2"))
-  qs2::qs_save(list(a = 2), file.path(folder, "sims_gitexclude", "sim_0002.qs2"))
+  qs2::qs_save(
+    list(a = 2),
+    file.path(folder, "sims_gitexclude", "sim_0002.qs2")
+  )
   expect_identical(read_results("v01", "null", home = p$home), list(a = 1))
   expect_identical(
     read_results("v01", "null", sim = 2, home = p$home),

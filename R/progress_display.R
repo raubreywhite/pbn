@@ -213,7 +213,9 @@ display_final <- function(d, final, now) {
   d$done[i] <- final$done[keep]
   d$failed[i] <- final$failed[keep]
   d$not_run[i] <- final$not_run[keep]
-  ended <- i[is.na(d$finished[i]) & (d$done[i] >= d$total[i] | d$not_run[i] > 0)]
+  ended <- i[
+    is.na(d$finished[i]) & (d$done[i] >= d$total[i] | d$not_run[i] > 0)
+  ]
   d$finished[ended] <- now
   d$details[ended] <- list(list())
   return(display_show(d, now, force = TRUE))
@@ -442,6 +444,11 @@ latest_detail <- function(d, i) {
 # finishes, and one line for a running scenario at most every
 # `beat_seconds`, when at least `beat_share` more of it is done, counted in
 # analyses or in the latest pbn::progress() of the scenario.
+#
+# Each line carries the time of the event that it reports: for a scenario
+# that finished, the time of its end, and for a running scenario, `now`.
+# The lines come in the order of these times. So the first lines after the
+# quiet seconds give the true times of the scenarios that ended in them.
 display_log <- function(d, now) {
   rules <- display_rules()
   if (now - d$t_start < rules$quiet) {
@@ -453,13 +460,24 @@ display_log <- function(d, now) {
     lines <- d$header
     d$header_shown <- TRUE
   }
+  shown <- character(0)
+  at <- numeric(0)
   for (i in seq_along(d$scenario)) {
-    lines <- c(lines, log_scenario(d, i, now, first, rules))
+    line <- log_scenario(d, i, now, first, rules)
+    shown <- c(shown, line)
+    at <- c(at, rep(event_time(d, i, now), length(line)))
   }
+  lines <- c(lines, shown[order(at)])
   if (length(lines) > 0) {
     display_write(d, paste0(lines, "\n"))
   }
   return(invisible(NULL))
+}
+
+# The time of the event of the line of scenario `i` in a log: its end when
+# it finished, and else `now`.
+event_time <- function(d, i, now) {
+  return(if (is.na(d$finished[i])) now else min(now, d$finished[i]))
 }
 
 # The line of a log for scenario `i` at the time `now`, or none. `first` is
@@ -470,7 +488,7 @@ log_scenario <- function(d, i, now, first, rules) {
   }
   if (!is.na(d$finished[i])) {
     d$logged_done[i] <- TRUE
-    return(log_line(d, i, now))
+    return(log_line(d, i, event_time(d, i, now)))
   }
   det <- log_detail(d, i)
   key <- det$key

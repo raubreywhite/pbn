@@ -76,10 +76,27 @@ runs on one day with the same inputs and packages write the same bytes.
 \item \code{settings}, the named list of the setting columns of the scenario. It is
 an empty list when there are none.
 \item \code{source_md5}, the md5 of \verb{<version>_run.R} and of each file in
-\verb{<version>_functions/}, named by the path relative to \code{home}.
-\code{\link[=initialize_project]{initialize_project()}} computes it before it sources the files. The
-rule \code{manifest_source} needs the run script in it, so \code{save_results()}
-stops when \verb{<version>_run.R} did not exist.
+\verb{<version>_functions/} at any depth, also a file that is not an \code{.R}
+file, named by the path relative to \code{home}. The one file that it MAY
+leave out is \verb{<version>_functions/blocks.R}, the blocks of
+\code{\link[=show_block]{show_block()}}. \code{\link[=initialize_project]{initialize_project()}} leaves it out only when it
+cannot change the results, which is when each of these holds:
+\itemize{
+\item it parses.
+\item each top-level expression assigns with \verb{<-} or \code{=} a name to
+\verb{function(...)}, or \code{blocks} to \code{list(...)}.
+\item no other file of the folder assigns one of its names.
+\item no other file and no run script uses one of its names.
+}
+
+Otherwise
+\code{source_md5} holds it, also when the rule \code{blocks_list} of
+\code{\link[=check_project]{check_project()}} is \code{warn} or \code{off}. A change of a blocks file of that
+shape thus keeps the results current. \code{\link[=initialize_project]{initialize_project()}} computes the md5 before it
+sources the files. The cache key of \code{\link[=add_data]{add_data()}} holds the md5 of the
+files \code{data_*.R} only, so it never held \code{blocks.R}. The rule
+\code{manifest_source} needs the run script in \code{source_md5}, so
+\code{save_results()} stops when \verb{<version>_run.R} did not exist.
 \item For the scenario \code{"real"} only, \code{data_files}, the fingerprint of the
 files under the folders of \code{folders} of \code{\link[=initialize_project]{initialize_project()}} when
 \code{\link[=run_plan]{run_plan()}} started. It is a data.frame with the columns \code{file}, \code{size}
@@ -92,6 +109,8 @@ that the run read, also after a change of a file since
 modification times, give the same manifest.
 \code{save_results()} stops for \code{"real"} when a folder did not exist when
 \code{\link[=initialize_project]{initialize_project()}} ran.
+\item For the scenario \code{"real"} only, \code{fake_real_data}, \code{TRUE} or \code{FALSE}:
+the argument \code{fake_real_data} of \code{\link[=initialize_project]{initialize_project()}}.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
 functions of \code{\link[=add_data]{add_data()}}, without their source references: each \code{fn},
 and each step of the steps form. A change in a function that \code{fn} or a
@@ -100,7 +119,13 @@ the files of those functions.
 \item \code{n_rows_data}, a named integer vector with the number of rows of each
 data element. A list of data.frames with one number of rows, for
 example a list of imputed data sets, has the rows of one of them. Each
-other element that is not a data.frame has \code{NA}. The
+other element that is not a data.frame has \code{NA}.
+\item \code{n_rows_lists}, a named list with one entry for each data element that
+is a list of data.frames with 2 or more numbers of rows. The entry is
+an integer vector with the rows of each data.frame, in the order of the
+list. Such an element has \code{NA} in \code{n_rows_data}. The list is empty when
+no data element is such a list. The rule \code{no_row_per_person} checks
+each of these numbers. The
 analysis \verb{<scenario>__sim_<kkkk>__pbn_n_rows} of \code{\link[=add_analyses]{add_analyses()}} counts
 them where the data is, also on a worker. The rule \code{no_row_per_person}
 reads it.
@@ -138,9 +163,13 @@ a failure, it prints each failed rule with \code{cat()}, writes no results
 file and stops.
 \item For each scenario, it replaces \code{check.csv} with one failed assertion,
 \verb{not checked yet}, so that \code{\link[=read_results]{read_results()}} refuses the new results
-until step 4 checks them. Then it writes the files of the section The
-files. The files of the scenarios that are not in \code{scenarios} stay as
-they are.
+until step 4 checks them. It deletes the folders \verb{output/} and
+\verb{output_fake_data/} of each scenario that it writes, with one printed
+line. That output belongs to the results of an earlier run.
+The section Output of the run log then says that this run made no
+output, until \code{\link[=make_outputs]{make_outputs()}} runs. Then it writes the files of the
+section The files. The files of the scenarios that are not in
+\code{scenarios} stay as they are.
 \item For each scenario with a function \verb{expect_<scenario>()}, it calls that
 function on the results of the scenario. \code{expect_real()} is optional.
 The function MUST return a data.frame with at least one row and the
@@ -312,11 +341,13 @@ The \code{manifest} is that of simulation 1. In it, \code{sim} and \code{n_rows_
 are \code{NA}, \code{sims} is the number of simulations, and \code{stacked} is \code{TRUE}.
 The columns \code{from_cache} and \code{cache_key} of \code{data_cache} are \code{NA}. The
 counts \code{n_rows_before_exclusions} and \code{n_rows_after_exclusions} are \code{NA}
-too. The element \code{n_rows_by_sim} holds the counts of each simulation. It
-is a data.frame with one row for each simulation and data element. Its
-columns are \code{sim}, \code{data}, \code{n_rows_data}, \code{n_rows_before_exclusions} and
-\code{n_rows_after_exclusions}. The rule \code{no_row_per_person} of
-\code{\link[=check_results]{check_results()}} reads it.
+too, and \code{n_rows_lists} is an empty list. The element \code{n_rows_by_sim}
+holds the counts of each simulation. It is a data.frame with one row for
+each simulation and data element. Its columns are \code{sim}, \code{data},
+\code{n_rows_data}, \code{n_rows_before_exclusions} and \code{n_rows_after_exclusions}.
+Each data.frame of an entry of \code{n_rows_lists} adds a row with the \code{data}
+\verb{<element>[[i]]} and its rows in \code{n_rows_data}. The rule
+\code{no_row_per_person} of \code{\link[=check_results]{check_results()}} reads it.
 }
 
 \section{Two files}{

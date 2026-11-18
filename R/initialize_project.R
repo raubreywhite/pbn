@@ -20,6 +20,9 @@ state <- new.env(parent = emptyenv())
 #' @param env The environment that the functions folder is sourced into.
 #' @param one_file `NULL`. The file of [to_one_file()] gives a value here. Do
 #'   not write it by hand. See the section One file.
+#' @param fake_real_data `TRUE` when the folders of `folders` on this
+#'   computer hold fake files in the formats of the real data, and `FALSE`,
+#'   the default, otherwise. See the section Fake real data.
 #' @param ... Nothing. A call with the removed argument `data_raw` stops, and
 #'   the error says how to use `folders`.
 #' @details
@@ -29,7 +32,7 @@ state <- new.env(parent = emptyenv())
 #'    file is missing.
 #' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
-#'    them in `manifest$source_md5`.
+#'    them in `manifest$source_md5`, without `<version>_functions/blocks.R`.
 #' 3. It lists each file under each folder of `folders` that exists, at any
 #'    depth, with its size and its modification time. This is the
 #'    fingerprint of the data. pbn never reads the content of a data file, so
@@ -78,6 +81,34 @@ state <- new.env(parent = emptyenv())
 #' modification time, is not seen. A copy that does not keep the modification times looks
 #' like changed data, so the cache computes the data again. `file.copy(...,
 #' copy.date = TRUE)` keeps them.
+#' @section Fake real data:
+#' The real data of a project MAY be on a server only. Its folders on this
+#' computer MAY then hold fake files in the formats of the real data. Then the code
+#' that reads the real data runs here, and [check_one_file()] has results to
+#' compare. Give `fake_real_data = TRUE` in the run script of such a
+#' computer. It is about the scenario `"real"` only:
+#' - The manifest of the real results gets `fake_real_data = TRUE`. It is
+#'   `FALSE` without the flag. A fake scenario has no such field.
+#' - The run log says that the scenario real ran on fake real data, in the
+#'   sections Run and History. The sections Data and Exclusions name the
+#'   scenario `real (fake real data)`.
+#' - [make_outputs()] writes the output of `"real"` as fake output, into
+#'   `real/output_fake_data/` with the prefix `fake_data_`, and
+#'   [stamp_fake()] marks its figures. It deletes an old `real/output/`.
+#' - [show_blocks()] and [show_block()] print `FAKE REAL DATA`.
+#'
+#' The argument decides only what [save_results()] writes into the
+#' manifest. [make_outputs()], [stamp_fake()], [show_blocks()] and
+#' [show_block()] read `fake_real_data` from the manifest of the real
+#' results on the disk. So an R session without the argument still marks
+#' such results, and an R session with it never marks results from real
+#' data.
+#' - The rule `real_results_are_fake` of [check_project()] warns while such
+#'   real results are on the disk.
+#'
+#' [read_results()] reads such results as usual. The file of [to_one_file()]
+#' never gives `fake_real_data`, because the server holds the real data.
+#' `fake_real_data = TRUE` together with `one_file` stops.
 #' @section One file:
 #' The file of [to_one_file()] calls `initialize_project()` with `one_file`, a
 #' list with these elements:
@@ -126,6 +157,7 @@ initialize_project <- function(
   folders,
   env = .GlobalEnv,
   one_file = NULL,
+  fake_real_data = FALSE,
   ...
 ) {
   # The state stays empty until the last step sets it. A call that stops
@@ -133,11 +165,16 @@ initialize_project <- function(
   rm(list = ls(state, all.names = TRUE), envir = state)
   check_no_dots(...names(), ...length())
   folders <- check_init_args(version, home, folders, env, one_file)
+  check_fake_real_data(fake_real_data, one_file)
   home <- normalizePath(home, winslash = "/", mustWork = TRUE)
   if (is.null(one_file)) {
     code <- functions_folder_code(version, home)
   } else {
-    code <- list(md5 = one_file$source_md5, stat = NULL)
+    code <- list(
+      md5 = one_file$source_md5,
+      manifest_md5 = one_file$source_md5,
+      stat = NULL
+    )
   }
   found <- folders_listing(folders, home, version)
   # The objects that the folder defines are the new ones and those with a
@@ -174,8 +211,10 @@ initialize_project <- function(
         folders_absent = found$absent,
         data_files = found$files,
         source_md5 = code$md5,
+        manifest_md5 = code$manifest_md5,
         source_stat = code$stat,
         one_file = !is.null(one_file),
+        fake_real_data = fake_real_data,
         project = if (is.null(one_file)) basename(home) else one_file$project,
         env = env,
         sourced = defined_names(env, before)
@@ -204,6 +243,7 @@ functions_folder_code <- function(version, home) {
   md5 <- source_md5(home, version)
   return(list(
     md5 = md5,
+    manifest_md5 = manifest_md5_of(home, version, md5),
     stat = file_stat(file.path(home, names(md5)), names(md5)),
     max_loc = max_loc
   ))
@@ -227,7 +267,7 @@ check_no_dots <- function(names, n) {
   named <- names[!is.na(names) & nzchar(names)]
   stop(
     "pbn::initialize_project() has no argument ",
-    if (length(named) > 0) named[1] else "after one_file",
+    if (length(named) > 0) named[1] else "after fake_real_data",
     ".",
     call. = FALSE
   )
@@ -244,6 +284,23 @@ check_init_args <- function(version, home, folders, env, one_file) {
   }
   check_one_file_arg(one_file)
   return(folders)
+}
+
+# Stops when `fake_real_data` is not TRUE or FALSE, and on TRUE with
+# `one_file`: the file of to_one_file() runs on the server, where the data
+# is real.
+check_fake_real_data <- function(fake_real_data, one_file) {
+  if (!isTRUE(fake_real_data) && !isFALSE(fake_real_data)) {
+    stop("`fake_real_data` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (fake_real_data && !is.null(one_file)) {
+    stop(
+      "The file of pbn::to_one_file() runs on real data, so it takes no ",
+      "fake_real_data = TRUE.",
+      call. = FALSE
+    )
+  }
+  return(invisible(NULL))
 }
 
 # Stops when `one_file` is not NULL and not the list that the file of
@@ -350,6 +407,32 @@ source_md5 <- function(home, version) {
   md5 <- unname(tools::md5sum(file.path(home, rel)))
   names(md5) <- rel
   return(md5)
+}
+
+# The file of the blocks of show_block() in the functions folder of
+# `version`, relative to the project folder.
+blocks_file <- function(version) {
+  return(paste0(version, "_functions/blocks.R"))
+}
+
+# The md5 values `md5` of the source files of `version` in `home` for
+# manifest$source_md5: without vNN_functions/blocks.R when that file cannot
+# change the results, see blocks_file_inert(), and else all of them.
+manifest_md5_of <- function(home, version, md5) {
+  if (blocks_file_inert(home, version)) {
+    return(manifest_source_md5(md5, version))
+  }
+  return(md5)
+}
+
+# The md5 values `md5` of the source files without the file of the blocks of
+# `version`. The blocks only print results, so the manifest leaves them out,
+# and a change of the blocks does not make the results stale.
+manifest_source_md5 <- function(md5, version) {
+  if (!is_one_string(version)) {
+    return(md5)
+  }
+  return(md5[names(md5) != blocks_file(version)])
 }
 
 check_version <- function(version) {

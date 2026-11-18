@@ -68,6 +68,9 @@ history_scenarios <- function(scenarios) {
 # The result of the log `log` in a few words, for the history.
 history_result <- function(log) {
   out <- history_outcome(log)
+  if (isTRUE(log$fake_real_data)) {
+    out <- paste0(out, ", fake real data")
+  }
   if (!is.null(log$outputs$failed)) {
     out <- paste0(out, ", make_outputs() failed")
   }

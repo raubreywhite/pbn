@@ -145,18 +145,22 @@ test_that("show_blocks needs initialize_project(), the blocks of the functions f
 
 test_that("show_block and show_blocks set back each option that a block function sets or adds", {
   p <- local_project()
-  write_lines(p$home, "v01_functions/blocks.R", c(
-    "blocks <- list(",
-    "  \"Sets options\" = function(results) {",
-    "    options(digits = 3, pbn.test.block = TRUE)",
-    "    results$table1",
-    "  },",
-    "  \"Stops\" = function(results) {",
-    "    options(pbn.test.stop = 1)",
-    "    stop(\"no table\")",
-    "  }",
-    ")"
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Sets options\" = function(results) {",
+      "    options(digits = 3, pbn.test.block = TRUE)",
+      "    results$table1",
+      "  },",
+      "  \"Stops\" = function(results) {",
+      "    options(pbn.test.stop = 1)",
+      "    stop(\"no table\")",
+      "  }",
+      ")"
+    )
+  )
   save_run(p, only = c("real", "known"))
   before <- options()
   utils::capture.output(show_block(1))
@@ -167,4 +171,40 @@ test_that("show_block and show_blocks set back each option that a block function
   expect_identical(options(), before)
   expect_null(getOption("pbn.test.block"))
   expect_null(getOption("pbn.test.stop"))
+})
+
+test_that("a block that calls a function that R does not find stops with the hint to name its package", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(\"Table\" = function(results) no_such_function_pbn(results$table1))"
+    )
+  )
+  save_run(p, only = c("real", "known"))
+  expect_error(
+    utils::capture.output(show_block(1)),
+    paste0(
+      "The block 1, \"Table\", failed: could not find function ",
+      "\"no_such_function_pbn\". A block function MUST name the package of ",
+      "each function that it calls, for example data.table::data.table(), ",
+      "because pbn::show_block() does not attach the packages of the run ",
+      "script"
+    ),
+    fixed = TRUE
+  )
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(\"Table\" = function(results) stop(\"no table\"))"
+    )
+  )
+  init(p)
+  expect_error(
+    utils::capture.output(show_block(1)),
+    "The block 1, \"Table\", failed: no table",
+    fixed = TRUE
+  )
 })

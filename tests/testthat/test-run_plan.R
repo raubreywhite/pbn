@@ -140,11 +140,14 @@ test_that("a failing analysis: run_plan prints each failed analysis in full and 
   )
   printed <- grep("^pbn: the analysis", two$out, value = TRUE)
   expect_true(length(printed) >= 1)
-  expect_true(all(printed %in% c(
-    "pbn: the analysis null__sim_0002__pbn_n_rows failed:",
-    "pbn: the analysis real__sim_0001__a__1 failed:",
-    "pbn: the analysis null__sim_0002__a__1 failed:"
-  )))
+  expect_true(all(
+    printed %in%
+      c(
+        "pbn: the analysis null__sim_0002__pbn_n_rows failed:",
+        "pbn: the analysis real__sim_0001__a__1 failed:",
+        "pbn: the analysis null__sim_0002__a__1 failed:"
+      )
+  ))
   n <- as.integer(sub(" of 6 .*", "", two$err))
   expect_identical(length(printed), n)
 })
@@ -380,9 +383,12 @@ test_that("a new worker gets the library paths of this R session in R_LIBS", {
   expect_true(
     lib %in% strsplit(seen$r_libs, .Platform$path.sep, fixed = TRUE)[[1]],
     info = paste0(
-      "lib: ", lib,
-      "\nR_LIBS of the worker: ", seen$r_libs,
-      "\n.libPaths() of the worker: ", paste(seen$paths, collapse = "; ")
+      "lib: ",
+      lib,
+      "\nR_LIBS of the worker: ",
+      seen$r_libs,
+      "\n.libPaths() of the worker: ",
+      paste(seen$paths, collapse = "; ")
     )
   )
 })
@@ -514,7 +520,11 @@ test_that("a worker that stops ends run_plan with one message and a failed run l
     # doFuture warns that it cancels the other futures.
     got <- suppressWarnings(run_outside(plan, p, 2))
     expect_run_error(got, "Future")
-    expect_no_match(conditionMessage(got$err), "invalid connection", fixed = TRUE)
+    expect_no_match(
+      conditionMessage(got$err),
+      "invalid connection",
+      fixed = TRUE
+    )
     expect_s3_class(got$cluster, "SOCKcluster")
     expect_error(parallel::clusterCall(got$cluster, function() 1))
   }
@@ -527,7 +537,9 @@ test_that("an error of plnr outside the wrappers of pbn ends run_plan with one m
     sourced <- init(p)
     plan <- build_plan(sourced, scenarios(sourced$CFG))
     # A data function of plnr itself, without the wrapper of add_data().
-    plan$add_data("outside", fn = function() stop("planted outside the wrappers"))
+    plan$add_data("outside", fn = function() {
+      stop("planted outside the wrappers")
+    })
     got <- run_outside(plan, p, workers)
     expect_run_error(got, "planted outside the wrappers")
   }
@@ -620,4 +632,125 @@ test_that("run_stopping sees the folder of a stop that another R session made, b
   expect_true(run$stopped)
   expect_true(dir.exists(run$stop_path))
   expect_true(run_stopping(run))
+})
+
+# A plan whose analyses report the threads of the R session where they run:
+# the threads of data.table, the variables of thread_variables and the pid.
+threads_plan <- function() {
+  fn <- function(data, argset) {
+    vars <- c("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS")
+    return(data.frame(
+      dt = data.table::getDTthreads(),
+      var = vars,
+      value = unname(Sys.getenv(vars, unset = "unset")),
+      pid = Sys.getpid()
+    ))
+  }
+  environment(fn) <- globalenv()
+  data_fn <- function(scenario, sim) return(data.frame(x = 1:3))
+  environment(data_fn) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = data_fn)
+  sc <- scenarios(list(
+    scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 4))
+  ))
+  add_analyses(p, sc, "threads", fn = fn)
+  return(p)
+}
+
+test_that("make_cluster starts the workers with 1 thread for OpenMP and BLAS, and this R session gets its own values back", {
+  withr::local_envvar(
+    OMP_NUM_THREADS = "3",
+    OPENBLAS_NUM_THREADS = NA,
+    MKL_NUM_THREADS = NA
+  )
+  local_mocked_bindings(
+    makePSOCKcluster = function(workers) {
+      return(Sys.getenv(c(thread_variables, "R_LIBS"), unset = "unset"))
+    },
+    .package = "parallel"
+  )
+  at_start <- make_cluster(2)
+  expect_identical(
+    unname(at_start[thread_variables]),
+    c("1", "1", "1")
+  )
+  expect_identical(Sys.getenv("OMP_NUM_THREADS"), "3")
+  expect_identical(Sys.getenv("OPENBLAS_NUM_THREADS", unset = "unset"), "unset")
+  expect_identical(Sys.getenv("MKL_NUM_THREADS", unset = "unset"), "unset")
+})
+
+test_that("single_thread sets data.table to 1 thread and the thread variables to 1 in the R session that runs it", {
+  withr::local_envvar(
+    OMP_NUM_THREADS = "3",
+    OPENBLAS_NUM_THREADS = NA,
+    MKL_NUM_THREADS = NA
+  )
+  old <- data.table::setDTthreads(4L)
+  on.exit(data.table::setDTthreads(old), add = TRUE)
+  single_thread(thread_variables)
+  expect_identical(data.table::getDTthreads(), 1L)
+  expect_identical(unname(Sys.getenv(thread_variables)), c("1", "1", "1"))
+})
+
+test_that("with workers, each worker runs single_thread() and has 1 thread, the results do not depend on it, and with 1 worker nothing changes", {
+  skip_if_pbn_not_installed()
+  local_clean_state()
+  withr::local_envvar(
+    OMP_NUM_THREADS = "3",
+    OPENBLAS_NUM_THREADS = NA,
+    MKL_NUM_THREADS = NA
+  )
+  dt_here <- data.table::getDTthreads()
+  calls <- withr::local_tempdir()
+  real_single <- single_thread
+  local_mocked_bindings(single_thread = function(vars) {
+    writeLines("called", file.path(calls, Sys.getpid()))
+    return(real_single(vars))
+  })
+  r <- run_plan(threads_plan(), workers = 2)
+  got <- do.call(rbind, unname(r[grepl("__threads__", names(r))]))
+  expect_true(all(got$pid != Sys.getpid()))
+  expect_identical(unique(got$dt), 1L)
+  expect_identical(unique(got$value), "1")
+  expect_setequal(list.files(calls), as.character(unique(got$pid)))
+  expect_length(list.files(calls), 2)
+  # This R session keeps its own settings.
+  expect_identical(data.table::getDTthreads(), dt_here)
+  expect_identical(Sys.getenv("OMP_NUM_THREADS"), "3")
+  expect_identical(Sys.getenv("MKL_NUM_THREADS", unset = "unset"), "unset")
+  # With 1 worker, the analyses run here with the settings of the session.
+  r1 <- run_plan(threads_plan())
+  got1 <- do.call(rbind, unname(r1[grepl("__threads__", names(r1))]))
+  expect_identical(unique(got1$dt), dt_here)
+  expect_identical(got1$value[got1$var == "OMP_NUM_THREADS"][1], "3")
+  expect_length(list.files(calls), 2)
+  # On Linux, the environment that each worker started with holds the
+  # thread variables, so a library that starts its threads at the load
+  # of a package gets 1.
+  skip_if_not(file.exists("/proc/self/environ"), "no /proc on this system")
+  fn <- function(data, argset) {
+    env <- readBin("/proc/self/environ", "raw", 1e6)
+    lines <- strsplit(
+      rawToChar(replace(env, env == as.raw(0), as.raw(10))),
+      "\n"
+    )[[1]]
+    return(sort(grep("^(OMP|OPENBLAS|MKL)_NUM_THREADS=", lines, value = TRUE)))
+  }
+  environment(fn) <- globalenv()
+  data_fn <- function(scenario, sim) return(data.frame(x = 1))
+  environment(data_fn) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = data_fn)
+  add_analyses(
+    p,
+    scenarios(list(scenarios = data.frame(scenario = "real", sims = 2))),
+    "env",
+    fn = fn
+  )
+  r <- run_plan(p, workers = 2)
+  expect_identical(
+    r[["real__sim_0001__env__1"]],
+    c("MKL_NUM_THREADS=1", "OMP_NUM_THREADS=1", "OPENBLAS_NUM_THREADS=1")
+  )
 })

@@ -358,6 +358,8 @@ stopifnot(identical(by_hand, r[["confounded__sim_0003__models__1"]]))
 
 This holds for functions that depend only on their arguments, the functions and `CFG` of `v01_functions/`, the attached packages and the seed. pbn does not copy the R options to the workers.
 
+Each worker runs with 1 thread. Without this, packages such as data.table, fixest and a threaded BLAS start many threads in each worker. The computer then runs far more threads than it has cores. `run_plan()` starts each worker with `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and `MKL_NUM_THREADS` at 1, and calls `data.table::setDTthreads(1)` there. An analysis that needs more threads sets them in its own code, for example `data.table::setDTthreads(4)` at the top of its function. With `workers = 1`, pbn changes no thread setting. `?run_plan` gives the caveat of a threaded BLAS.
+
 An analysis MUST NOT change `CFG` or another object of `v01_functions/`. A later analysis in the same R session would see the change, so its result would depend on the analyses before it. `run_plan()` fails such an analysis, also for the index that a data.table subset such as `CFG$vars[var == "x"]` adds in place. `?add_analyses` gives the rules.
 
 ## Progress
@@ -426,7 +428,7 @@ confounded <- pbn::read_results("v01", scenario = "confounded", home = home)
 head(confounded$models, 3)
 ```
 
-The manifest records where the results come from. It holds the versions of R, pbn and the packages of this R session and of the workers, the date, the scenario and the simulation. `source_md5` holds the md5 of `v01_run.R` and of each file in `v01_functions/`. For the real data, `data_files` holds the name, the size and the modification time of each data file. The name is `<folder>/<path in the folder>`, for example `main/d.csv`. It never holds the path of a folder. So the same files in another place give the same results, when the copy keeps the modification times. A copy with new times looks like changed data, and the cache computes the data again. For a fake scenario, `fake_md5` holds the md5 of the code of the data steps. `n_rows_data` holds the number of rows of the data after the exclusions.
+The manifest records where the results come from. It holds the versions of R, pbn and the packages of this R session and of the workers, the date, the scenario and the simulation. `source_md5` holds the md5 of `v01_run.R` and of each file in `v01_functions/` but `blocks.R`. For the real data, `data_files` holds the name, the size and the modification time of each data file. The name is `<folder>/<path in the folder>`, for example `main/d.csv`. It never holds the path of a folder. So the same files in another place give the same results, when the copy keeps the modification times. A copy with new times looks like changed data, and the cache computes the data again. For a fake scenario, `fake_md5` holds the md5 of the code of the data steps. `n_rows_data` holds the number of rows of the data after the exclusions.
 
 ```{r}
 str(res$manifest[c("scenario", "sim", "sims", "data_files", "n_rows_data", "n_rows_before_exclusions", "analyses")])
@@ -759,7 +761,7 @@ writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
 pbn::check_project(home)
 ```
 
-The allowed file is now a WARN, and `unknown_path` is OFF. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
+The allowed file is now a WARN, and `unknown_path` is OFF. An entry covers its path and each path under it, with or without a final `/`. So `lower_case_names: [archive]` allows each finding in `archive/` at any depth, and no finding in `archive2/`. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
 
 ```{r, include = FALSE}
 found <- pbn::check_project(home)
@@ -818,7 +820,16 @@ blocks <- list(
 )
 ```
 
-The rule `blocks_list` of `check_project()` fails a `blocks` that is not a list of named functions. The new file changes the md5 of the functions folder, so run the project again. Then start the project in this R session, as you do at the console in the project folder:
+Write `blocks` in `v01_functions/blocks.R` only. pbn leaves that file out of `manifest$source_md5`, so a change of a block needs no new run. The rule `blocks_list` of `check_project()` fails each of these:
+
+- a `blocks` in another file,
+- a `blocks` that is not a list of named functions,
+- other code at the top level of `blocks.R`, such as `library()` or `options()`,
+- a name of `blocks.R` that another file assigns too, or that other code uses.
+
+When `blocks.R` breaks one of the last two, `initialize_project()` puts it back into `manifest$source_md5`.
+
+A block runs at the console, where the packages of the run script MAY be missing. So a block function names the package of each call, for example `data.table::data.table()`. The sections above changed other code of the project, so run it again here. Then start the project in this R session, as you do at the console in the project folder:
 
 ```{r}
 out <- callr::rscript(run_file, wd = home, show = FALSE, fail_on_status = FALSE)
@@ -832,7 +843,7 @@ stopifnot(out$status == 0)
 
 ### The one file
 
-`pbn::to_one_file()` writes `v01_one_file.R` in the project folder. `home` and `folders` are the paths on the server, and `folders` MUST name the same folders as the project:
+`pbn::to_one_file()` writes `v01_one_file.R` in the project folder. It needs no results, so you MAY write and read the file before the first full run. `home` and `folders` are the paths on the server, and `folders` MUST name the same folders as the project:
 
 ```{r}
 withr::with_dir(home, pbn::to_one_file("v01", home = "N:/durable/project", folders = c(main = "N:/durable/data")))
@@ -859,11 +870,11 @@ stopifnot(
 )
 ```
 
-The file is ASCII with LF line ends, because it goes through a clipboard. Put it in git: it is what ran on the server. `?to_one_file` gives the rules.
+The file is ASCII with LF line ends, because it goes through a clipboard. A label MAY hold a character that is not ASCII, such as the sign greater than or equal. pbn writes it in the file as its escape, here `"\u2265"`, and the code of the file is `identical()` to the code of the project. A name that is not ASCII stops `to_one_file()`. Put the file in git: it is what ran on the server. `?to_one_file` gives the rules.
 
 ### The local proof
 
-`pbn::check_one_file()` runs the file in a new R session on this computer. The project folder there is an empty folder, and the folder `main` is a copy that keeps the modification times. It compares the real results of that run with those of the project, and prints PASS or the first difference:
+`pbn::check_one_file()` runs the file in a new R session on this computer. The project folder there is an empty folder, and the folder `main` is a copy that keeps the modification times. It compares the real results of that run with those of the project. Then it runs each block on both results in a new R session, which attaches no package of the run script. It compares each page as text. It prints PASS or the first difference:
 
 ```{r, results = "hide"}
 said <- utils::capture.output(pass <- withr::with_dir(home, pbn::check_one_file("v01")))
@@ -880,7 +891,15 @@ if (!isTRUE(pass)) {
 }
 ```
 
-Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there.
+Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there. When the code changed after the last run, it says that the results are older than the code, and runs nothing. Without real results, it runs the checks of `to_one_file()` and stops.
+
+On a computer without the real data, the folders MAY hold fake files in the formats of the real data. The code that reads the real data then runs there. Say so in the run script of that computer. pbn then labels the real results as fake real data in the run log, the output and the blocks:
+
+```r
+pbn::initialize_project(version = "v01", home = ".", folders = c(main = "../data"), fake_real_data = TRUE)
+```
+
+The file of `to_one_file()` never holds `fake_real_data`, and `check_one_file()` leaves that field out of the comparison. `?initialize_project` gives the rules.
 
 ### On the server
 
@@ -908,7 +927,7 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 - When `run_plan()` stops on a failed analysis, the results files of an earlier run stay as they are. `read_results()` reads them.
 - pbn finds an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place, for example `data$d[1, x := 0]`. Copy the data first with `data.table::copy()`.
 - pbn finds an analysis that changes an object of `v01_functions/`, such as `CFG`. It does not find a change of a function inside the object, a change inside an environment of the object, or a change by a data function.
-- `workers` limits the number of R sessions. It does not limit the threads that R or the BLAS library starts in each of them.
+- With 2 or more workers, each worker has 1 thread. A threaded BLAS MAY then give a matrix product that differs in its last digits from that of `workers = 1`.
 - `workers` limits the R sessions of pbn only. An analysis that starts its own processes in a worker multiplies them, for example with `parallel::mclapply()`. Two workers that each start 4 processes run 8 processes at the same time.
 - `fake_md5` is the md5 of the code of the steps of `add_data()` only. A change in a function that a step calls does not change `fake_md5`. `source_md5` holds the md5 of its file.
 - The checks between the steps compare the number of rows, not which rows. A `data_clean()`, or a `data_cohort()` before `$new()`, that drops one row and repeats another passes. pbn does not check the rows of the step `after_cohort`.

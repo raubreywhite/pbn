@@ -69,7 +69,8 @@ test_that("make_outputs writes real into output/, and each fake scenario with ou
   # the run log, which gets the section of make_outputs().
   expect_false(file.exists(file.path(results, "real", "output", "old.txt")))
   after <- file_states(results)
-  outside <- !grepl("/output(_fake_data)?/", after$file) & after$file != "run.md"
+  outside <- !grepl("/output(_fake_data)?/", after$file) &
+    after$file != "run.md"
   kept <- after[outside, ]
   rownames(kept) <- NULL
   expect_identical(kept, before[before$file != "run.md", ])
@@ -142,6 +143,10 @@ test_that("make_outputs skips a scenario that was not run, or whose checks faile
   expect_identical(ls(seen), "real")
 
   sc <- run_and_save(p, only = c("real", "known"))
+  # save_results() deleted the output of real. An output folder made after
+  # it goes with the line of the skip.
+  expect_false(dir.exists(file.path(p$home, "v01_results", "real", "output")))
+  write_lines(p$home, "v01_results/real/output/figure.png", "x")
   write_lines(
     p$home,
     "v01_results/real/check.csv",
@@ -166,7 +171,11 @@ test_that("make_outputs skips a scenario that was not run, or whose checks faile
     c("assertion,expected,observed,pass", "a,1,2,FALSE")
   )
   printed <- utils::capture.output(make_outputs(recording_output(seen), sc))
-  expect_match(printed[2], "pbn deleted v01_results/known/output_fake_data/", fixed = TRUE)
+  expect_match(
+    printed[2],
+    "pbn deleted v01_results/known/output_fake_data/",
+    fixed = TRUE
+  )
   expect_false(dir.exists(known_dir))
   # Without an earlier output folder, the line names no deletion.
   printed <- utils::capture.output(make_outputs(recording_output(seen), sc))
@@ -189,7 +198,10 @@ test_that("make_outputs deletes the old output of a chosen scenario without resu
   write_lines(p$home, old_null, "old")
   # null is not chosen in this call, so its folder stays.
   chosen <- sc[sc$scenario != "null", ]
-  printed <- utils::capture.output(make_outputs(recording_output(new.env()), chosen))
+  printed <- utils::capture.output(make_outputs(
+    recording_output(new.env()),
+    chosen
+  ))
   expect_identical(
     printed[2],
     paste0(
@@ -270,7 +282,13 @@ test_that("a rewrite of a recent file with the same size and the same mtime is f
   )
   # An unchanged file passes.
   before <- hash_recent(results_listing(root, "known/output_fake_data"), root)
-  expect_null(check_outside(root, before, "known/output_fake_data", "x", "known"))
+  expect_null(check_outside(
+    root,
+    before,
+    "known/output_fake_data",
+    "x",
+    "known"
+  ))
 })
 
 test_that("results_listing lists each file outside the skipped folder, with its size and its mtime", {
@@ -278,7 +296,10 @@ test_that("results_listing lists each file outside the skipped folder, with its 
   for (i in 1:20) {
     dir.create(file.path(root, sprintf("sim_%04d", i)))
     for (j in 1:100) {
-      writeLines("x", file.path(root, sprintf("sim_%04d", i), paste0(j, ".qs2")))
+      writeLines(
+        "x",
+        file.path(root, sprintf("sim_%04d", i), paste0(j, ".qs2"))
+      )
     }
   }
   listing <- results_listing(root, "sim_0001")
@@ -370,6 +391,62 @@ test_that("stamp_fake adds the label for a fake scenario only, and stops without
     "pbn::stamp_fake() needs the package ggplot2",
     fixed = TRUE
   )
+})
+
+test_that("stamp_fake puts one label over the whole figure of a patchwork, and leaves its panels as they are", {
+  skip_if_not_installed("ggplot2")
+  skip_if_not_installed("patchwork")
+  a <- ggplot2::ggplot(data.frame(x = 1:3, y = 1:3), ggplot2::aes(x, y))
+  b <- ggplot2::ggplot(data.frame(x = 1:3, y = 3:1), ggplot2::aes(x, y))
+  q <- patchwork::wrap_plots(a, b)
+  output_state$fake <- TRUE
+  on.exit(rm(list = ls(output_state), envir = output_state), add = TRUE)
+  stamped <- stamp_fake(q)
+  expect_s3_class(stamped, "patchwork")
+  # The panels keep their layers: no label on the last panel b, which is now
+  # a patch under the label.
+  expect_length(stamped$patches$plots, 2)
+  expect_identical(stamped$patches$plots[[1]]$layers, a$layers)
+  expect_identical(stamped$patches$plots[[2]]$layers, b$layers)
+  # The label is an inset over the full figure.
+  settings <- attr(stamped, "inset_settings")
+  expect_identical(settings$align_to, "full")
+  expect_identical(
+    vapply(
+      settings[c("left", "bottom", "right", "top")],
+      as.numeric,
+      numeric(1),
+      USE.NAMES = FALSE
+    ),
+    c(0, 0, 1, 1)
+  )
+  # The figure draws, and its grob tree holds the label once. A device of
+  # no file keeps Rplots.pdf out of the folder of the tests.
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
+  g <- patchwork::patchworkGrob(stamped)
+  labels <- character(0)
+  walk <- function(x) {
+    if (inherits(x, "text")) {
+      labels <<- c(labels, x$label)
+    }
+    for (k in c("children", "grobs")) {
+      for (child in x[[k]]) {
+        walk(child)
+      }
+    }
+    return(invisible(NULL))
+  }
+  walk(g)
+  expect_identical(sum(labels == "FAKE DATA"), 1L)
+  # A grob of another package stops, with the way to stamp.
+  expect_error(
+    stamp_fake(grid::rectGrob()),
+    "`q` must be a ggplot or a patchwork. Stamp each ggplot before you combine it with another package.",
+    fixed = TRUE
+  )
+  local_mocked_bindings(has_patchwork = function() return(FALSE))
+  expect_error(stamp_fake(q), "needs the package patchwork", fixed = TRUE)
 })
 
 test_that("output is not a setting: it is not in the argsets, the manifest settings or the cache key", {

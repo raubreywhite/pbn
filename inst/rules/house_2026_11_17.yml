@@ -87,9 +87,16 @@ no_local_assign:
 # pbn::initialize_project() and pbn::to_one_file() are exempt.
 no_absolute_paths: fail
 
-# The object blocks of the functions folder, when it is there, is one
-# list() of named functions with names that come once.
+# The object blocks of a functions folder, when it is there, is one list()
+# of named functions with names that come once, in vNN_functions/blocks.R
+# only. blocks.R holds only assignments of a name to function(...) and of
+# blocks to list(...). No other file of the folder assigns one of its
+# names, and no other file and no vNN_run.R uses one.
 blocks_list: fail
+
+# No vNN_results/real/results.qs2 comes from a run with
+# pbn::initialize_project(fake_real_data = TRUE).
+real_results_are_fake: warn
 
 # The house layout names each top-level file and folder.
 unknown_path: warn

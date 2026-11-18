@@ -149,7 +149,9 @@ run_plan_workers <- function(tokens) {
 # the run script as `env_text` or NULL, and `one_file` with the project,
 # the md5 of the files of the project and the code `code`.
 init_call_lines <- function(version, home, folders, env_text, code) {
-  md5 <- state$source_md5
+  # The md5 of the manifest of the project, so that the server writes the
+  # same manifest$source_md5.
+  md5 <- state$manifest_md5
   comma <- function(n) return(c(rep(",", n - 1), ""))
   return(c(
     "pbn::initialize_project(",

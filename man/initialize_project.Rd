@@ -10,6 +10,7 @@ initialize_project(
   folders,
   env = .GlobalEnv,
   one_file = NULL,
+  fake_real_data = FALSE,
   ...
 )
 }
@@ -32,6 +33,10 @@ data. Only \code{\link[=save_results]{save_results()}} for the scenario \code{"r
 \item{one_file}{\code{NULL}. The file of \code{\link[=to_one_file]{to_one_file()}} gives a value here. Do
 not write it by hand. See the section One file.}
 
+\item{fake_real_data}{\code{TRUE} when the folders of \code{folders} on this
+computer hold fake files in the formats of the real data, and \code{FALSE},
+the default, otherwise. See the section Fake real data.}
+
 \item{...}{Nothing. A call with the removed argument \code{data_raw} stops, and
 the error says how to use \code{folders}.}
 }
@@ -52,7 +57,7 @@ on each error of \code{pbn.yml} that stops \code{\link[=check_project]{check_pro
 file is missing.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
-them in \code{manifest$source_md5}.
+them in \code{manifest$source_md5}, without \verb{<version>_functions/blocks.R}.
 \item It lists each file under each folder of \code{folders} that exists, at any
 depth, with its size and its modification time. This is the
 fingerprint of the data. pbn never reads the content of a data file, so
@@ -105,6 +110,41 @@ there in each run. A folder elsewhere inside \code{home} is allowed.
 A file that changed in place, and kept its size and the second of its
 modification time, is not seen. A copy that does not keep the modification times looks
 like changed data, so the cache computes the data again. \code{file.copy(..., copy.date = TRUE)} keeps them.
+}
+
+\section{Fake real data}{
+
+The real data of a project MAY be on a server only. Its folders on this
+computer MAY then hold fake files in the formats of the real data. Then the code
+that reads the real data runs here, and \code{\link[=check_one_file]{check_one_file()}} has results to
+compare. Give \code{fake_real_data = TRUE} in the run script of such a
+computer. It is about the scenario \code{"real"} only:
+\itemize{
+\item The manifest of the real results gets \code{fake_real_data = TRUE}. It is
+\code{FALSE} without the flag. A fake scenario has no such field.
+\item The run log says that the scenario real ran on fake real data, in the
+sections Run and History. The sections Data and Exclusions name the
+scenario \verb{real (fake real data)}.
+\item \code{\link[=make_outputs]{make_outputs()}} writes the output of \code{"real"} as fake output, into
+\verb{real/output_fake_data/} with the prefix \code{fake_data_}, and
+\code{\link[=stamp_fake]{stamp_fake()}} marks its figures. It deletes an old \verb{real/output/}.
+\item \code{\link[=show_blocks]{show_blocks()}} and \code{\link[=show_block]{show_block()}} print \verb{FAKE REAL DATA}.
+}
+
+The argument decides only what \code{\link[=save_results]{save_results()}} writes into the
+manifest. \code{\link[=make_outputs]{make_outputs()}}, \code{\link[=stamp_fake]{stamp_fake()}}, \code{\link[=show_blocks]{show_blocks()}} and
+\code{\link[=show_block]{show_block()}} read \code{fake_real_data} from the manifest of the real
+results on the disk. So an R session without the argument still marks
+such results, and an R session with it never marks results from real
+data.
+\itemize{
+\item The rule \code{real_results_are_fake} of \code{\link[=check_project]{check_project()}} warns while such
+real results are on the disk.
+}
+
+\code{\link[=read_results]{read_results()}} reads such results as usual. The file of \code{\link[=to_one_file]{to_one_file()}}
+never gives \code{fake_real_data}, because the server holds the real data.
+\code{fake_real_data = TRUE} together with \code{one_file} stops.
 }
 
 \section{One file}{

@@ -325,7 +325,12 @@ action_run <- function(data, argset) {
   failed <- Filter(function(x) return(inherits(x, "pbn_data_error")), data)
   if (length(failed) == 0 && .pbn_stopping(run)) {
     return(structure(
-      list(value = .pbn_not_run(), seconds = NA_real_, at = NA_real_, data = taken),
+      list(
+        value = .pbn_not_run(),
+        seconds = NA_real_,
+        at = NA_real_,
+        data = taken
+      ),
       class = "pbn_timed"
     ))
   }
@@ -450,27 +455,16 @@ environment(action_value) <- baseenv()
 # This analysis is how they come back from a worker.
 count_rows <- function(data, argset) {
   data <- data[names(data) != "hash"]
-  out <- vapply(
-    data,
-    function(x) {
-      if (is.data.frame(x)) {
-        return(nrow(x))
-      }
-      if (
-        is.list(x) &&
-          length(x) > 0 &&
-          all(vapply(x, is.data.frame, logical(1)))
-      ) {
-        n <- unique(vapply(x, nrow, integer(1)))
-        if (length(n) == 1) {
-          return(n)
-        }
-      }
-      return(NA_integer_)
-    },
-    integer(1)
-  )
+  rows <- lapply(data, element_rows)
+  out <- vapply(rows, function(r) return(r$n), integer(1))
   out <- stats::setNames(out, names(data))
+  # A list of data.frames with 2 or more numbers of rows has NA above, and
+  # the rows of each of its data.frames here.
+  parts <- lapply(rows, function(r) return(r$parts))
+  parts <- parts[!vapply(parts, is.null, logical(1))]
+  if (length(parts) > 0) {
+    attr(out, "parts") <- parts
+  }
   for (a in c("exclusions", "n_before", "cache")) {
     found <- lapply(data, attr, which = paste0("pbn_", a), exact = TRUE)
     found <- found[!vapply(found, is.null, logical(1))]
@@ -480,7 +474,33 @@ count_rows <- function(data, argset) {
   }
   return(out)
 }
-environment(count_rows) <- baseenv()
+
+# The rows of one data element `x` for count_rows(): `n`, the rows of a
+# data.frame, or of each data.frame of a list with one number of rows, or
+# NA, and `parts`, the rows of each data.frame of a list of data.frames
+# with 2 or more numbers of rows, or NULL. Its environment is the base
+# environment, so a worker needs no pbn to run it.
+element_rows <- function(x) {
+  if (is.data.frame(x)) {
+    return(list(n = nrow(x), parts = NULL))
+  }
+  frames <- is.list(x) &&
+    length(x) > 0 &&
+    all(vapply(x, is.data.frame, logical(1)))
+  if (!frames) {
+    return(list(n = NA_integer_, parts = NULL))
+  }
+  n <- vapply(x, nrow, integer(1))
+  if (length(unique(n)) == 1) {
+    return(list(n = unname(n[[1]]), parts = NULL))
+  }
+  return(list(n = NA_integer_, parts = unname(n)))
+}
+environment(element_rows) <- baseenv()
+environment(count_rows) <- list2env(
+  list(element_rows = element_rows),
+  parent = baseenv()
+)
 
 #' Add data to a plan
 #'
@@ -830,8 +850,9 @@ add_data <- function(
 #' - It is 10000 or more, so it differs from the seed `sim` of the data of
 #'   simulations 1 to 9999.
 #'
-#' The seed is a polynomial hash with base 257, modulo the prime 2147483629,
-#' of the code points of `"<name>__<i>__<sim>"`, plus 10000. Two analyses of
+#' The seed is `10000 + h %% 2147473629`. `h` is a polynomial hash with base
+#' 257, modulo the prime 2147483629, of the code points of
+#' `"<name>__<i>__<sim>"`. Two analyses of
 #' one simulation with the same seed stop `add_analyses()` with an error
 #' that names both kinds.
 #'

@@ -215,3 +215,33 @@ rule_fake_data_names <- function(path) {
     )
   ))
 }
+
+# The rule real_results_are_fake: a finding for each
+# vNN_results/real/results.qs2 whose manifest has fake_real_data TRUE. The
+# run of such results had initialize_project(fake_real_data = TRUE), so its
+# numbers are not the numbers of the real data.
+rule_real_results_are_fake <- function(path) {
+  rule <- "real_results_are_fake"
+  entries <- project_entries(path)
+  files <- entries[grepl("^v[0-9]{2}_results/real/results\\.qs2$", entries)]
+  out <- list()
+  for (f in files) {
+    m <- tryCatch(
+      qs2::qs_read(file.path(path, f))$manifest,
+      error = function(e) return(NULL)
+    )
+    if (isTRUE(m$fake_real_data)) {
+      out[[f]] <- project_row(
+        rule,
+        "FAIL",
+        f,
+        paste0(
+          f,
+          ": the real results come from fake real data, because the run had ",
+          "fake_real_data = TRUE. They are not the numbers of the real data"
+        )
+      )
+    }
+  }
+  return(bind_rows(out))
+}

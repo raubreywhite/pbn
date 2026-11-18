@@ -43,8 +43,12 @@ reserved_fields <- c(
 #'
 #' Each other column is a setting of the scenario, for example `n_boot` for a
 #' number of bootstrap replicates that is smaller in the fake scenarios. A
-#' setting column MUST be an atomic vector with no `NA`, and its name MUST be
-#' syntactic. Its name MUST NOT be one of `scenario`, `sim`, `analysis`,
+#' setting column MUST be an atomic vector, and its name MUST be syntactic.
+#' It MUST have a value for each fake scenario. It MAY have `NA` for
+#' `"real"`, when only the fake scenarios use the setting. The argsets of
+#' `"real"`, its cache key and its `manifest$settings` then do not hold the
+#' setting. A data function MUST NOT take such a setting as an argument:
+#' plnr finds no value of it for `"real"`, and [run_plan()] stops. Its name MUST NOT be one of `scenario`, `sim`, `analysis`,
 #' `seed`, `index_analysis`, `name`, `fn`, `fn_name`, `data` and `argset`.
 #' [add_analyses()] puts the setting of the scenario into each argset.
 #'
@@ -142,7 +146,7 @@ check_scenario_table <- function(table, where) {
     out$output <- check_output_column(table$output, table$scenario, where)
   }
   for (col in setting_columns(table)) {
-    out[[col]] <- check_setting(table[[col]], col, where)
+    out[[col]] <- check_setting(table[[col]], col, where, table$scenario)
   }
   return(out)
 }
@@ -174,7 +178,9 @@ check_output_column <- function(x, scenario, where) {
   return(x)
 }
 
-check_setting <- function(x, col, where) {
+# A setting column MAY have NA for "real" only. The fake scenarios use the
+# setting, and "real" then has no value of it.
+check_setting <- function(x, col, where, scenario) {
   if (make.names(col) != col || col %in% reserved_fields) {
     stop(
       where,
@@ -199,12 +205,15 @@ check_setting <- function(x, col, where) {
       call. = FALSE
     )
   }
-  if (anyNA(x)) {
+  fake_na <- is.na(x) & scenario != "real"
+  if (any(fake_na)) {
     stop(
       where,
       ": the setting column ",
       col,
-      " has NA. Each scenario needs a value.",
+      " has NA for the scenario ",
+      scenario[fake_na][1],
+      ". Each fake scenario needs a value. Only \"real\" MAY have NA.",
       call. = FALSE
     )
   }
@@ -212,13 +221,21 @@ check_setting <- function(x, col, where) {
 }
 
 # The settings of one scenario: a named list with one element for each
-# setting column, or an empty list when there are none.
+# setting column, or an empty list when there are none. A setting with NA,
+# which only "real" MAY have, is not in the list.
 settings_of <- function(table, scenario) {
   cols <- setting_columns(table)
+  row <- which(table$scenario == scenario)
+  cols <- cols[
+    !vapply(
+      cols,
+      function(col) return(is.na(table[[col]][row])),
+      logical(1)
+    )
+  ]
   if (length(cols) == 0) {
     return(list())
   }
-  row <- which(table$scenario == scenario)
   out <- lapply(cols, function(col) return(table[[col]][row]))
   names(out) <- cols
   return(out)

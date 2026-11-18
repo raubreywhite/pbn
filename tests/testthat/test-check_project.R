@@ -15,6 +15,7 @@ project_rule_names <- c(
   "no_local_assign",
   "no_absolute_paths",
   "blocks_list",
+  "real_results_are_fake",
   "unknown_path"
 )
 
@@ -37,7 +38,7 @@ test_that("check_project prints the line of the rules, one line per rule and a c
     out[2],
     "PASS  lower_case_names  no capital letter in a name"
   )
-  expect_identical(out[length(out)], "17 PASS, 0 WARN, 0 FAIL, 0 OFF")
+  expect_identical(out[length(out)], "18 PASS, 0 WARN, 0 FAIL, 0 OFF")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
 })
 
@@ -586,7 +587,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     "Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)",
     fixed = TRUE
   )
-  expect_match(ok$stdout, "17 PASS, 0 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
+  expect_match(ok$stdout, "18 PASS, 0 WARN, 0 FAIL, 0 OFF", fixed = TRUE)
 
   write_lines(p$home, "adhoc/Notes.txt", "x")
   bad <- callr::rscript(
@@ -602,7 +603,7 @@ test_that("check_project quits with status 1 after it prints every line", {
     fixed = TRUE
   )
   expect_match(bad$stdout, "PASS  unknown_path", fixed = TRUE)
-  expect_match(bad$stdout, "16 PASS, 0 WARN, 1 FAIL, 0 OFF", fixed = TRUE)
+  expect_match(bad$stdout, "17 PASS, 0 WARN, 1 FAIL, 0 OFF", fixed = TRUE)
 })
 
 test_that("check_project reads only the files that git does not ignore", {

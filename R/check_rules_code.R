@@ -104,7 +104,11 @@ absolute_path_hits <- function(file) {
 # file.path("data", ...). Such a path is absolute, or it depends on the
 # working directory.
 literal_path_calls <- function(tokens, exempt, parents) {
-  out <- list(data.frame(line = integer(0), col = integer(0), shown = character(0)))
+  out <- list(data.frame(
+    line = integer(0),
+    col = integer(0),
+    shown = character(0)
+  ))
   rows <- which(
     tokens$token == "SYMBOL_FUNCTION_CALL" &
       tokens$text %in% c("file.path", "path")
@@ -112,7 +116,10 @@ literal_path_calls <- function(tokens, exempt, parents) {
   for (i in rows) {
     pkg <- call_package(tokens, i)
     call_id <- tokens$parent[match(tokens$parent[i], tokens$id)]
-    if (!is_path_call(tokens$text[i], pkg) || has_ancestor(call_id, parents, exempt)) {
+    if (
+      !is_path_call(tokens$text[i], pkg) ||
+        has_ancestor(call_id, parents, exempt)
+    ) {
       next
     }
     value <- first_string_argument(tokens, call_id)
@@ -120,7 +127,11 @@ literal_path_calls <- function(tokens, exempt, parents) {
       next
     }
     row <- match(call_id, tokens$id)
-    name <- if (is.na(pkg)) tokens$text[i] else paste0(pkg, "::", tokens$text[i])
+    name <- if (is.na(pkg)) {
+      tokens$text[i]
+    } else {
+      paste0(pkg, "::", tokens$text[i])
+    }
     out[[length(out) + 1]] <- data.frame(
       line = tokens$line1[row],
       col = tokens$col1[row],
@@ -149,7 +160,10 @@ first_string_argument <- function(tokens, call_id) {
   group <- cumsum(kids$token == "','")
   for (g in unique(group)) {
     part <- kids[group == g & !kids$token %in% c("','", "')'"), , drop = FALSE]
-    if (nrow(part) == 0 || identical(part$text[part$token == "SYMBOL_SUB"], "fsep")) {
+    if (
+      nrow(part) == 0 ||
+        identical(part$text[part$token == "SYMBOL_SUB"], "fsep")
+    ) {
       next
     }
     value <- part[part$token == "expr", , drop = FALSE]
@@ -214,51 +228,243 @@ has_ancestor <- function(id, parents, ids) {
   return(FALSE)
 }
 
-# The rule blocks_list: the functions folder MAY define the object `blocks`
-# of show_block(). When it does, one top-level assignment of the folder
-# assigns it, and its value is a call of list() in which each element has a
-# name of its own, and each element is a function, or the name of a
-# function that a top-level assignment of the folder defines.
+# The rule blocks_list, for each functions folder vNN_functions/ of `path`:
+# - only the file vNN_functions/blocks.R assigns `blocks`, at its top level,
+#   and it assigns it once. pbn leaves that file out of manifest$source_md5,
+#   so a change of the blocks does not make the results stale.
+# - the value is a call of list() in which each element has a name of its
+#   own, and each element is a function, or the name of a function that a
+#   top-level assignment of the folder defines.
+# - no other file of the folder and no vNN_run.R uses a name that blocks.R
+#   assigns at its top level. The run then never depends on blocks.R.
+# A folder without blocks.R and without blocks passes.
 rule_blocks_list <- function(path) {
-  rule <- "blocks_list"
-  found <- blocks_assignments(path)
-  where <- found$where
-  if (length(where) == 0) {
-    return(project_row(rule, "FAIL", character(0), character(0)))
+  rows <- list()
+  for (folder in sort(functions_folders(path), method = "radix")) {
+    found <- blocks_folder_problems(path, folder)
+    rows <- c(
+      rows,
+      list(project_row(
+        "blocks_list",
+        "FAIL",
+        sub(":[0-9]+$", "", found$where),
+        paste0(found$where, ": ", found$problem, recycle0 = TRUE)
+      ))
+    )
   }
-  if (length(where) > 1) {
-    return(project_row(
-      rule,
-      "FAIL",
-      sub(":[0-9]+$", "", where[1]),
+  return(bind_rows(rows))
+}
+
+# The problems of blocks_list in the functions folder `folder` of `path`:
+# `where`, each as <file>:<line>, and `problem`, the text of each.
+blocks_folder_problems <- function(path, folder) {
+  home_file <- paste0(folder, "/blocks.R")
+  found <- blocks_assignments(path, folder)
+  where <- character(0)
+  problem <- character(0)
+  outside <- !startsWith(found$where, paste0(home_file, ":"))
+  where <- c(where, found$where[outside])
+  problem <- c(
+    problem,
+    rep(
+      paste0(
+        "blocks is assigned here. Assign it in ",
+        home_file,
+        " only, because pbn leaves that file out of manifest$source_md5"
+      ),
+      sum(outside)
+    )
+  )
+  inside <- found$where[!outside]
+  if (length(inside) > 1) {
+    where <- c(where, inside[1])
+    problem <- c(
+      problem,
       paste0(
         "blocks is assigned ",
-        length(where),
+        length(inside),
         " times, at ",
-        paste(where, collapse = ", "),
+        paste(inside, collapse = ", "),
         ". Assign it once"
       )
-    ))
+    )
+  } else if (length(inside) == 1) {
+    bad <- blocks_problem(found$values[!outside][[1]], found$functions)
+    if (!is.null(bad)) {
+      where <- c(where, inside)
+      problem <- c(problem, bad)
+    }
   }
-  problem <- blocks_problem(found$values[[1]], found$functions)
-  if (is.null(problem)) {
-    return(project_row(rule, "FAIL", character(0), character(0)))
-  }
-  return(project_row(
-    rule,
-    "FAIL",
-    sub(":[0-9]+$", "", where),
-    paste0(where, ": ", problem)
+  files <- functions_files(path)
+  others <- setdiff(files[dirname(files) == folder], home_file)
+  script <- sub("_functions$", "_run.R", folder)
+  found <- blocks_file_problems(path, home_file, others, script)
+  return(list(
+    where = c(where, found$where),
+    problem = c(problem, found$problem)
   ))
 }
 
-# The top-level assignments of blocks in the files of the functions folders
-# of `path`: `where`, each as <file>:<line>, `values`, the expression that
-# each assigns, and `functions`, the names of the functions of the top-level
-# assignments of those files.
-blocks_assignments <- function(path) {
+# The problems of the file `home_file`, vNN_functions/blocks.R, of `path`
+# that let it change the results, although pbn leaves it out of
+# manifest$source_md5. `others` are the other .R files of its folder and
+# `script` the run script, relative to `path`. The value is a list:
+# `where`, each as <file>:<line>, `problem`, and `parsed`, FALSE when
+# blocks.R exists and does not parse. The problems are:
+# - a top-level expression other than an assignment with <- or = of a name
+#   to function(...), or of blocks to list(...).
+# - a name that blocks.R assigns and another file of the folder assigns too.
+# - a use of a name of blocks.R in another file or in the run script.
+blocks_file_problems <- function(path, home_file, others, script) {
+  out <- list(where = character(0), problem = character(0), parsed = TRUE)
+  file <- file.path(path, home_file)
+  if (!file.exists(file)) {
+    return(out)
+  }
+  exprs <- parse_or_null(file, keep_source = TRUE)
+  if (is.null(exprs)) {
+    out$parsed <- FALSE
+    return(out)
+  }
+  lines <- vapply(
+    attr(exprs, "srcref"),
+    function(r) return(as.integer(r[[1]])),
+    integer(1)
+  )
+  for (i in seq_along(exprs)) {
+    if (!is_blocks_shape(exprs[[i]])) {
+      out$where <- c(out$where, paste0(home_file, ":", lines[i]))
+      out$problem <- c(
+        out$problem,
+        paste0(
+          "the top level of blocks.R holds ",
+          cut_code(exprs[[i]]),
+          ". It MUST hold only assignments of a name to function(...), and ",
+          "blocks <- list(...), because pbn leaves it out of ",
+          "manifest$source_md5"
+        )
+      )
+    }
+  }
+  twice <- blocks_redefinitions(path, exprs, lines, home_file, others)
+  used <- blocks_names_used(path, home_file, c(script, others))
+  out$where <- c(out$where, twice$where, used$where)
+  out$problem <- c(out$problem, twice$problem, used$problem)
+  return(out)
+}
+
+# TRUE when the top-level expression `e` of blocks.R assigns with <- or =
+# a name to function(...), or blocks to list(...).
+is_blocks_shape <- function(e) {
+  if (!is_assignment_call(e) || !is.symbol(e[[2]])) {
+    return(FALSE)
+  }
+  if (!as.character(e[[1]]) %in% c("<-", "=") || !is.call(e[[3]])) {
+    return(FALSE)
+  }
+  want <- if (identical(e[[2]], as.name("blocks"))) "list" else "function"
+  return(identical(e[[3]][[1]], as.name(want)))
+}
+
+# The first line of the code of `e`, cut at 40 characters, in backticks.
+cut_code <- function(e) {
+  text <- deparse(e, width.cutoff = 60L)[1]
+  if (nchar(text) > 40) {
+    text <- paste0(substr(text, 1, 40), "...")
+  }
+  return(paste0("`", text, "`"))
+}
+
+# The names that blocks.R, with the expressions `exprs` on the lines
+# `lines`, assigns at its top level and that a file of `others` assigns at
+# its top level too: `where`, the place in blocks.R, and `problem`, which
+# names the other place.
+blocks_redefinitions <- function(path, exprs, lines, home_file, others) {
+  out <- list(where = character(0), problem = character(0))
+  mine <- vapply(
+    exprs,
+    function(e) {
+      n <- assigned_name(e)
+      return(if (is.null(n)) NA_character_ else n)
+    },
+    character(1)
+  )
+  # An assignment of blocks in another file has its own check.
+  mine[mine %in% "blocks"] <- NA_character_
+  for (f in sort(others, method = "radix")) {
+    theirs <- top_level_assignments(file.path(path, f))
+    for (i in which(mine %in% theirs$name)) {
+      at <- theirs$line[match(mine[i], theirs$name)]
+      out$where <- c(out$where, paste0(home_file, ":", lines[i]))
+      out$problem <- c(
+        out$problem,
+        paste0(
+          mine[i],
+          " is assigned here and at ",
+          f,
+          ":",
+          at,
+          ". A name of blocks.R MUST NOT be assigned in another file, because ",
+          "pbn leaves blocks.R out of manifest$source_md5"
+        )
+      )
+    }
+  }
+  return(out)
+}
+
+# The names that the file `file` assigns at its top level, with the line of
+# each: a data.frame with the columns `name` and `line`. None for a file
+# that does not parse.
+top_level_assignments <- function(file) {
+  exprs <- parse_or_null(file, keep_source = TRUE)
+  if (length(exprs) == 0) {
+    return(data.frame(name = character(0), line = integer(0)))
+  }
+  name <- vapply(
+    exprs,
+    function(e) {
+      n <- assigned_name(e)
+      return(if (is.null(n)) NA_character_ else n)
+    },
+    character(1)
+  )
+  line <- vapply(
+    attr(exprs, "srcref"),
+    function(r) return(as.integer(r[[1]])),
+    integer(1)
+  )
+  keep <- !is.na(name)
+  return(data.frame(name = name[keep], line = line[keep]))
+}
+
+# TRUE when the file vNN_functions/blocks.R of `version` in `home` cannot
+# change the results: it does not exist, or it parses and has none of the
+# problems of blocks_file_problems(). The other files are those that org
+# sources. initialize_project() leaves blocks.R out of manifest$source_md5
+# only then.
+blocks_file_inert <- function(home, version) {
+  home_file <- blocks_file(version)
+  if (!file.exists(file.path(home, home_file))) {
+    return(TRUE)
+  }
+  others <- setdiff(sourcing_order(home, version), home_file)
+  script <- paste0(version, "_run.R")
+  if (!file.exists(file.path(home, script))) {
+    script <- character(0)
+  }
+  found <- blocks_file_problems(home, home_file, others, script)
+  return(found$parsed && length(found$where) == 0)
+}
+
+# The top-level assignments of blocks in the files of the functions folder
+# `folder` of `path`: `where`, each as <file>:<line>, `values`, the
+# expression that each assigns, and `functions`, the names of the functions
+# of the top-level assignments of those files.
+blocks_assignments <- function(path, folder) {
   out <- list(where = character(0), values = list(), functions = character(0))
-  for (f in sort(functions_files(path), method = "radix")) {
+  files <- functions_files(path)
+  for (f in sort(files[dirname(files) == folder], method = "radix")) {
     exprs <- parse_or_null(file.path(path, f), keep_source = TRUE)
     lines <- vapply(
       attr(exprs, "srcref"),
@@ -277,6 +483,99 @@ blocks_assignments <- function(path) {
     }
   }
   return(out)
+}
+
+# The uses of the names that `home_file`, vNN_functions/blocks.R, assigns
+# at its top level, in the files `others` of `path`, such as the other
+# files of its folder and its run script: `where`, each as <file>:<line>,
+# and `problem`. A use is a
+# name in the code, and not the name of an argument or of an element after
+# `$` or `@`. A file that does not parse fails loc_per_file, so this rule
+# skips it.
+blocks_names_used <- function(path, home_file, others) {
+  out <- list(where = character(0), problem = character(0))
+  defined <- blocks_file_names(file.path(path, home_file))
+  others <- others[file.exists(file.path(path, others))]
+  if (length(defined) == 0) {
+    return(out)
+  }
+  for (f in sort(others, method = "radix")) {
+    found <- name_uses(file.path(path, f), defined)
+    out$where <- c(out$where, paste0(f, ":", found$line, recycle0 = TRUE))
+    out$problem <- c(
+      out$problem,
+      paste0(
+        "uses ",
+        found$name,
+        ", which ",
+        home_file,
+        " assigns. pbn leaves that file out of manifest$source_md5, so the ",
+        "run MUST NOT use it. Move ",
+        found$name,
+        " to another file",
+        recycle0 = TRUE
+      )
+    )
+  }
+  return(out)
+}
+
+# The names that the file `file` assigns at its top level, also blocks.
+# None for a file that does not exist or does not parse.
+blocks_file_names <- function(file) {
+  if (!file.exists(file)) {
+    return(character(0))
+  }
+  exprs <- parse_or_null(file)
+  return(unique(as.character(unlist(lapply(exprs, assigned_name)))))
+}
+
+# The uses of the names `defined` in the file `file`: a data.frame with the
+# columns `name` and `line`, in the order of the file. A name after `$` or
+# `@` and the name of an argument do not count.
+name_uses <- function(file, defined) {
+  none <- data.frame(name = character(0), line = integer(0))
+  parsed <- parse_or_null(file, keep_source = TRUE)
+  tokens <- if (is.null(parsed)) NULL else utils::getParseData(parsed)
+  if (is.null(tokens)) {
+    return(none)
+  }
+  tokens <- tokens[tokens$terminal, , drop = FALSE]
+  tokens <- tokens[order(tokens$line1, tokens$col1), , drop = FALSE]
+  before <- c("", tokens$token[-nrow(tokens)])
+  after <- c(tokens$token[-1], "")
+  # The target of an assignment is no use. blocks_list checks an assignment
+  # of blocks, and of another name of blocks.R, on its own.
+  hit <- tokens$token %in%
+    c("SYMBOL", "SYMBOL_FUNCTION_CALL") &
+    tokens$text %in% defined &
+    !before %in% c("'$'", "'@'") &
+    !after %in% c("LEFT_ASSIGN", "EQ_ASSIGN")
+  return(data.frame(name = tokens$text[hit], line = tokens$line1[hit]))
+}
+
+# The name that the top-level expression `e` assigns with <-, =, <<-, -> or
+# ->>, or NULL. For x$a <- 1 and names(x) <- y it is x.
+assigned_name <- function(e) {
+  if (!is_assignment_call(e)) {
+    return(NULL)
+  }
+  target <- e[[2]]
+  while (is.call(target) && length(target) >= 2) {
+    target <- target[[2]]
+  }
+  return(if (is.symbol(target)) as.character(target) else NULL)
+}
+
+# TRUE when `e` is a call of <-, = or <<-. R parses -> and ->> as <- and
+# <<-.
+is_assignment_call <- function(e) {
+  return(
+    is.call(e) &&
+      length(e) == 3 &&
+      is.symbol(e[[1]]) &&
+      as.character(e[[1]]) %in% c("<-", "=", "<<-")
+  )
 }
 
 # TRUE when `e` assigns to the name `name` with <-, = or <<-.

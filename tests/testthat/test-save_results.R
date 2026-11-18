@@ -79,13 +79,18 @@ test_that("the manifest names the run, the data, the rows of the data and the an
       "settings",
       "source_md5",
       "data_files",
+      "fake_real_data",
       "n_rows_data",
+      "n_rows_lists",
       "n_rows_before_exclusions",
       "n_rows_after_exclusions",
       "analyses",
       "data_cache"
     )
   )
+  expect_false(m$fake_real_data)
+  # No data element is a list of data.frames with 2 or more numbers of rows.
+  expect_identical(m$n_rows_lists, stats::setNames(list(), character(0)))
   # The data of this project is no cohort.
   expect_identical(m$n_rows_before_exclusions, c(d = NA_integer_))
   expect_identical(m$n_rows_after_exclusions, c(d = NA_integer_))
@@ -122,7 +127,12 @@ test_that("the manifest names the run, the data, the rows of the data and the an
   )
   expect_identical(
     m$data_cache,
-    data.frame(data = "d", cache = FALSE, from_cache = FALSE, cache_key = NA_character_)
+    data.frame(
+      data = "d",
+      cache = FALSE,
+      from_cache = FALSE,
+      cache_key = NA_character_
+    )
   )
 
   f <- read_results("v01", "null", sim = 3, home = p$home)$manifest
@@ -531,7 +541,12 @@ test_that("save_results stops for real when a folder did not exist, names it, an
 # with an expect_null() that passes for any number of simulations.
 set_null_sims <- function(p, sims) {
   cfg <- file.path(p$home, "v01_functions", "_cfg.R")
-  lines <- sub("sims = c(1, 1, 3)", paste0("sims = c(1, 1, ", sims, ")"), readLines(cfg), fixed = TRUE)
+  lines <- sub(
+    "sims = c(1, 1, 3)",
+    paste0("sims = c(1, 1, ", sims, ")"),
+    readLines(cfg),
+    fixed = TRUE
+  )
   writeLines(lines, cfg)
   write_lines(
     p$home,
@@ -731,7 +746,12 @@ test_that("save_results stops on a value of run_plan from another plan, or witho
   expect_identical(no_log(results_files(p)), character(0))
   # The value of its own plan saves.
   quiet_save(run)
-  expect_true(file.exists(file.path(p$home, "v01_results", "real", "results.qs2")))
+  expect_true(file.exists(file.path(
+    p$home,
+    "v01_results",
+    "real",
+    "results.qs2"
+  )))
 })
 
 test_that("save_results stops when the settings of `scenarios` are not those of the argsets", {
@@ -756,12 +776,16 @@ test_that("save_results stops when the settings of `scenarios` are not those of 
 
 test_that("read_results stops on results whose check.csv holds a failed assertion, and names how to read them", {
   p <- local_project()
-  write_lines(p$home, "v01_functions/expect_null.R", sub(
-    "abs(b) < 1",
-    "abs(b) > 100",
-    expect_null_lines(),
-    fixed = TRUE
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/expect_null.R",
+    sub(
+      "abs(b) < 1",
+      "abs(b) > 100",
+      expect_null_lines(),
+      fixed = TRUE
+    )
+  )
   run <- run_project(p)
   expect_error(
     quiet_save(run),
@@ -791,7 +815,10 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
   expect_identical(names(qs2::qs_read(file))[1], "manifest")
   # The other scenarios read as before: known has a check.csv that passes,
   # real has none.
-  expect_identical(names(read_results("v01", "known", home = p$home))[1], "manifest")
+  expect_identical(
+    names(read_results("v01", "known", home = p$home))[1],
+    "manifest"
+  )
   expect_identical(names(read_results("v01", home = p$home))[1], "manifest")
   # A check.csv without a column pass stops too, and so does one with a
   # header and no assertion, as an interrupted write can leave it.
@@ -799,7 +826,10 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
   writeLines("a,b", csv)
   expect_error(
     read_results("v01", "known", home = p$home),
-    paste0(csv, " has no column pass that R can read, so read_results() does not read"),
+    paste0(
+      csv,
+      " has no column pass that R can read, so read_results() does not read"
+    ),
     fixed = TRUE
   )
   writeLines("\"assertion\",\"expected\",\"observed\",\"pass\"", csv)
@@ -813,7 +843,9 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
 test_that("save_results saves a plan whose CFG$scenarios has no setting column", {
   p <- local_project()
   sourced <- init(p)
-  sc <- scenarios(list(scenarios = sourced$CFG$scenarios[, c("scenario", "sims")]))
+  sc <- scenarios(list(
+    scenarios = sourced$CFG$scenarios[, c("scenario", "sims")]
+  ))
   plan <- build_plan(sourced, sc)
   r <- run_plan(plan)
   utils::capture.output(save_results(r, plan, sc))
@@ -837,10 +869,18 @@ test_that("an expect_real() that returns zero assertions is a failed assertion, 
     "  real: expect_real() returns at least one assertion (expected see the assertion, observed 0 rows)" %in%
       out
   )
-  found <- utils::read.csv(file.path(p$home, "v01_results", "real", "check.csv"))
+  found <- utils::read.csv(file.path(
+    p$home,
+    "v01_results",
+    "real",
+    "check.csv"
+  ))
   expect_identical(found$pass, FALSE)
   expect_identical(found$observed, "0 rows")
-  expect_error(read_results("v01", home = p$home), "holds an assertion that did not pass")
+  expect_error(
+    read_results("v01", home = p$home),
+    "holds an assertion that did not pass"
+  )
 })
 
 test_that("check.csv is written to a temporary file in its folder and renamed into place", {
@@ -901,10 +941,70 @@ test_that("read_results with sim = 1 reads the results.qs2 of a scenario with 1 
     read_results("v01", "null", sim = 1, home = p$home)$manifest$sim,
     1L
   )
-  unlink(file.path(p$home, "v01_results", "null", "sims_gitexclude"), recursive = TRUE)
+  unlink(
+    file.path(p$home, "v01_results", "null", "sims_gitexclude"),
+    recursive = TRUE
+  )
   expect_error(
     read_results("v01", "null", sim = 1, home = p$home),
     "There is no results file of the simulation 1",
     fixed = TRUE
   )
+})
+
+test_that("save_results deletes output/ and output_fake_data/ of each scenario that it writes, prints one line, and the run log says that the run made no output", {
+  p <- local_project()
+  save_run(p, only = c("real", "known"))
+  write_lines(p$home, "v01_results/real/output/figure.png", "x")
+  write_lines(
+    p$home,
+    "v01_results/known/output_fake_data/fake_data_figure.png",
+    "x"
+  )
+  write_lines(
+    p$home,
+    "v01_results/null/output_fake_data/fake_data_figure.png",
+    "x"
+  )
+  run <- save_run(p, only = c("real", "known"))
+  expect_true(any(
+    run$out ==
+      paste0(
+        "pbn: deleted the output of an earlier run beside the new results: ",
+        "v01_results/real/output/, v01_results/known/output_fake_data/. Run ",
+        "pbn::make_outputs() for the output of these results."
+      )
+  ))
+  expect_false(dir.exists(file.path(p$home, "v01_results", "real", "output")))
+  expect_false(dir.exists(file.path(
+    p$home,
+    "v01_results",
+    "known",
+    "output_fake_data"
+  )))
+  # A scenario that the run did not write keeps its output.
+  expect_true(file.exists(file.path(
+    p$home,
+    "v01_results",
+    "null",
+    "output_fake_data",
+    "fake_data_figure.png"
+  )))
+  md <- readLines(file.path(p$home, "v01_results", "run.md"))
+  at <- match("## Output", md)
+  expect_identical(
+    md[at + 2:4],
+    c(
+      "make_outputs() did not run after save_results() in this R session, so this run made no output.",
+      "",
+      "save_results() deleted the output of an earlier run beside the new results: `v01_results/real/output/` and `v01_results/known/output_fake_data/`."
+    )
+  )
+  # Nothing to delete: no line.
+  run <- save_run(p, only = c("real", "known"))
+  expect_false(any(grepl(
+    "deleted the output of an earlier run",
+    run$out,
+    fixed = TRUE
+  )))
 })

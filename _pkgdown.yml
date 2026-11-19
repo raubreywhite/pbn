@@ -17,6 +17,13 @@ template:
           text: "Browse the reference"
           href: "reference/index.html"
 
+articles:
+- title: "Articles"
+  navbar: ~
+  contents:
+  - pbn
+  - articles/agents
+
 reference:
 - title: "Run a project version"
   contents:

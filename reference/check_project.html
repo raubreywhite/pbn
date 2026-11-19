@@ -11,7 +11,7 @@ it quits with status 1 when any rule fails."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -90,7 +90,8 @@ the tracked files, and the untracked files that git does not ignore.</p></li>
 files <code>~$*</code>, and everything in <code>.git/</code> or <code>.Rproj.user/</code>.</p>
 <p>The rules, with their level in the set <code>house_2026_11_19</code>, are below.
 The set <code>house_2026_11_17</code> has the same rules at the same levels, without
-<code>frozen_versions_unchanged</code>, <code>no_cross_version_reads</code> and
+<code>frozen_versions_unchanged</code>, <code>readme_and_changelog</code>,
+<code>changelog_with_code</code>, <code>comment_share</code>, <code>no_cross_version_reads</code> and
 <code>no_escape_hatches</code>. A rule that the set of the project does not have
 prints no line.</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
 Everything under <code>background/</code> is not checked. These are exempt:
@@ -116,6 +117,25 @@ disk. The detail names the file, with <code>changed</code>, <code>added</code> o
 <code>removed</code>.</p></li>
 <li><p>a line of <code>vNN_frozen.md5</code> is not <code>&lt;md5&gt;  &lt;path&gt;</code>.</p></li>
 </ul></li>
+<li><p><code>readme_and_changelog</code> (FAIL): <code>README.md</code> or <code>CHANGELOG.md</code> is not at
+the top level, or <code>CHANGELOG.md</code> has no section for a version. A
+section is a line that starts with <code>## vNN</code>, with a space or nothing
+after it, for example <code>## v01</code> or <code>## v01 (2026-11-19)</code>. A version is a
+<code>vNN_run.R</code> or a <code>vNN_functions/</code> at the top level. <code>README.md</code> says
+what the project is, how to run it and why its code is as it is.
+<code>CHANGELOG.md</code> says what changed in each version. The detail is
+<code>README.md: missing</code>, <code>CHANGELOG.md: missing</code> or
+<code>CHANGELOG.md: no section "## vNN"</code>.</p></li>
+<li><p><code>changelog_with_code</code> (WARN): in a git repository, a <code>vNN_run.R</code> or a
+file under <code>vNN_functions/</code> differs from the last commit, and
+<code>CHANGELOG.md</code> does not. A change is staged or not staged, or the file
+is untracked and git does not ignore it. A deleted file counts too. In
+a repository without a commit, each staged file is a change. The rule
+reads the project folder <code>path</code> only, also when it is a folder inside a
+repository. When git is not installed or <code>path</code> is not in a git
+repository, the rule has nothing to compare. It then prints one PASS
+line that says so. The detail is
+<code>&lt;file&gt;: changed since the last commit, and CHANGELOG.md did not change</code>.</p></li>
 <li><p><code>results_contract</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/results.qs2</code> or a
 <code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> of pbn 2026.11.22 fails
 <code><a href="check_results.html">check_results()</a></code>, or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p>
@@ -151,8 +171,8 @@ another folder. <code><a href="make_outputs.html">make_outputs()</a></code> writ
 export. The one exception is <code>get_data</code>: a project MAY name its data
 function <code>get_data(scenario, sim)</code>, and a run script calls the export
 as <code><a href="get_data.html">pbn::get_data()</a></code>. The set <code>house_2026_11_17</code> does not know the
-exports <code>freeze_version</code> and <code>verify</code>, so a local function with such a
-name passes there.</p></li>
+exports <code>create_project</code>, <code>freeze_version</code>, <code>new_version</code> and <code>verify</code>,
+so a local function with such a name passes there.</p></li>
 <li><p><code>loc_per_file</code> (FAIL): an <code>.R</code> file has more than <code>limit</code> code lines, as
 counted by <code><a href="https://www.rwhite.no/org/reference/loc_per_file.html" class="external-link">org::loc_per_file()</a></code>. The house <code>limit</code> is 1000. The rule
 reads each <code>.R</code> file of the project but <code>vNN_one_file.R</code>.</p></li>
@@ -167,6 +187,19 @@ is not a function gets no score. The rule parses each file and runs no
 code of it. It skips a file that R cannot parse, which <code>loc_per_file</code>
 fails. The detail gives the file, the function and its score. A path
 under <code>allow</code> allows each function of one file.</p></li>
+<li><p><code>comment_share</code> (WARN): in <code>vNN_run.R</code> or an <code>.R</code> file at the top of
+<code>vNN_functions/</code>, the share of comment lines is more than <code>limit</code>. The
+share is the comment lines divided by the lines that are not blank. The
+house <code>limit</code> is 0.25, so a file of 20 such lines MAY have 5 comment
+lines. The parse data decides what is a comment, so a <code>#</code> in a string
+does not count. A line with code and a comment after it is a comment
+line. A section marker is not a comment line. A section marker is a
+comment with text and then four or more <code>=</code> or <code>-</code> at its end, as in
+<code># PART 1 ====</code>. The rule skips a file that R cannot parse. The detail
+is
+<code>&lt;file&gt;: &lt;n&gt; of &lt;m&gt; lines that are not blank are comments, &lt;share&gt;, above the limit of &lt;limit&gt;</code>.
+An explanation of why the code is as it is goes into <code>README.md</code>, and
+what changed goes into <code>CHANGELOG.md</code>.</p></li>
 <li><p><code>no_environment_variables</code> (FAIL): a run script or a file in a functions
 folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
 <li><p><code>no_cross_version_reads</code> (FAIL): a string constant of <code>vNN_run.R</code> or of
@@ -312,8 +345,8 @@ a project. To read the set, run
 <li><p><code>warn</code>: a finding is WARN.</p></li>
 <li><p><code>off</code>: the rule does not run, and its one line is OFF.</p></li>
 </ul><p>The parameters of the rules are <code>limit</code> of <code>loc_per_file</code>, <code>limit</code> of
-<code>cyclomatic_complexity</code> and <code>forbid</code> of <code>no_local_assign</code>. The list of
-the rules above gives their house values.</p>
+<code>cyclomatic_complexity</code>, <code>limit</code> of <code>comment_share</code> and <code>forbid</code> of
+<code>no_local_assign</code>. The list of the rules above gives their house values.</p>
 <p>The key <code>rules</code> MAY change the level of a rule, a parameter, or both. A
 change merges into the entry of the set. So <code>cyclomatic_complexity: {limit: 25}</code> keeps the level <code>fail</code>. The short form <code>lower_case_names: warn</code> changes the level only. <code>forbid</code> MAY list fewer constructs than the
 house set.</p>
@@ -353,7 +386,8 @@ a tab. The message holds the message of the yaml package.</p></li>
 oldest set with it.</p></li>
 <li><p>a parameter that the rule does not have.</p></li>
 <li><p>a level other than <code>fail</code>, <code>warn</code> and <code>off</code>.</p></li>
-<li><p>a <code>limit</code> that is not a whole number of 1 or more.</p></li>
+<li><p>a <code>limit</code> that is not a whole number of 1 or more. For
+<code>comment_share</code>, a <code>limit</code> that is not a number from 0 to 1.</p></li>
 <li><p>a construct in <code>forbid</code> that the rule does not know, or an empty
 <code>forbid</code>. To turn the rule off, set its level to <code>off</code>.</p></li>
 <li><p>a value under <code>allow</code> that is not a path, for example <code>off</code>. YAML reads
@@ -377,12 +411,16 @@ quotes.</p></li>
 <span class="r-in"><span>  <span class="st">'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))'</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"# A fake project"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"README.md"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"# Changelog"</span>, <span class="st">""</span>, <span class="st">"## v01"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"CHANGELOG.md"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_project</span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  readme_and_changelog  README.md and CHANGELOG.md exist, and CHANGELOG.md has a section ## vNN for every version</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  changelog_with_code  the project is not a git repository, so nothing to compare</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and each vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
@@ -392,6 +430,7 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  comment_share  no run script or .R file of a functions folder has more than 25% comment lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
@@ -400,7 +439,7 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 21 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 24 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

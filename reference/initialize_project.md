@@ -306,8 +306,10 @@ is in the file.
 builds and runs a small fake project.
 
 Other project setup:
+[`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md),
 [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md),
 [`folder()`](https://www.rwhite.no/pbn/reference/folder.md),
+[`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md),
 [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
 
 ## Examples
@@ -329,11 +331,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpFNdilv/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp28uSBm/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpFNdilv/pbn_initialize_example/v01_results"
+#> [1] "/tmp/Rtmp28uSBm/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmpFNdilv/pbn_initialize_example/data"
+#> [1] "/tmp/Rtmp28uSBm/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

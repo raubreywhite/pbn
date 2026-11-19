@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -254,7 +254,7 @@ environment variable:</p>
 <span><span class="co">#&gt; FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.</span></span>
 <span><span class="co">#&gt; FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().</span></span>
 <span><span class="co">#&gt; FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().</span></span>
-<span><span class="co">#&gt; 18 PASS, 0 WARN, 3 FAIL, 0 OFF</span></span>
+<span><span class="co">#&gt; 21 PASS, 0 WARN, 3 FAIL, 0 OFF</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">raw_code</span>, <span class="va">raw_file</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_folder.R"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <p>Each finding names the rule, the file, the line where one applies,
@@ -324,10 +324,10 @@ a fake scenario with a failed assertion:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"confounded"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2").</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2").</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> manifest$failed_fake_checks of /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2").</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> manifest$failed_fake_checks of /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2").</span></span></code></pre></div>
 <p><code><a href="../reference/check_project.html">check_project()</a></code> also fails the project:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">checked</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"check_project.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
@@ -363,19 +363,31 @@ An agent MUST NOT decide them alone.</p>
 <h2 id="layer-4-prose-last">Layer 4: prose last<a class="anchor" aria-label="anchor" href="#layer-4-prose-last"></a>
 </h2>
 <p>The layout of pbn has the file <code>AGENTS.md</code>, for the rules
-of the project that no check can state. Keep it short. It points the
-agent to two pages that pbn writes for agents:</p>
-<ul>
-<li>
-<a href="https://www.rwhite.no/pbn/articles/pbn.md">pbn.md</a>: the
-manual, in plain Markdown, built to be read in one piece.</li>
-<li>
-<a href="https://www.rwhite.no/pbn/llms.txt">llms.txt</a>: the list
-of every other page.</li>
-</ul>
-<p>The rest of <code>AGENTS.md</code> is what only a person knows: the
-question of the study, and the decisions that are not checks yet. Each
-such decision is a candidate for a check in layer 2.</p>
+of the project that no check can state. Keep it short.
+<code><a href="../reference/create_project.html">pbn::create_project()</a></code> writes it from this template of
+pbn:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">readLines</span>(<span class="fu">system.file</span>(<span class="st">"templates"</span>, <span class="st">"AGENTS.md"</span>, <span class="at">package =</span> <span class="st">"pbn"</span>)), <span class="at">sep =</span> <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" tabindex="-1"></a><span class="co"># AGENTS.md</span></span>
+<span id="cb12-3"><a href="#cb12-3" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" tabindex="-1"></a>This project uses the R package pbn. Before you change any code, read how to use pbn<span class="sc">:</span> https<span class="sc">:</span><span class="er">//</span>www.rwhite.no<span class="sc">/</span>pbn<span class="sc">/</span>articles<span class="sc">/</span>pbn.md</span>
+<span id="cb12-5"><a href="#cb12-5" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" tabindex="-1"></a><span class="do">## Before you report a change</span></span>
+<span id="cb12-7"><a href="#cb12-7" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" tabindex="-1"></a><span class="sc">-</span> Run <span class="st">`</span><span class="at">pbn::verify("vNN")</span><span class="st">`</span> on the newest version. Continue until the verdict is PASS. Each finding of a rule names its fix.</span>
+<span id="cb12-9"><a href="#cb12-9" tabindex="-1"></a><span class="sc">-</span> A PASS without the scenario <span class="st">`</span><span class="at">real</span><span class="st">`</span> covers the fake scenarios only. Say so when you report.</span>
+<span id="cb12-10"><a href="#cb12-10" tabindex="-1"></a><span class="sc">-</span> Add what changed and why to <span class="st">`</span><span class="at">CHANGELOG.md</span><span class="st">`</span>, under the section of the version.</span>
+<span id="cb12-11"><a href="#cb12-11" tabindex="-1"></a></span>
+<span id="cb12-12"><a href="#cb12-12" tabindex="-1"></a><span class="do">## What a person decides</span></span>
+<span id="cb12-13"><a href="#cb12-13" tabindex="-1"></a></span>
+<span id="cb12-14"><a href="#cb12-14" tabindex="-1"></a><span class="sc">-</span> Propose the fake scenarios and their expected values. A person confirms them before they count. After that, do not change an expected value <span class="cf">in</span> an <span class="st">`</span><span class="at">expect_</span><span class="st">`</span> <span class="cf">function</span>, or add or remove a fake scenario, without asking.</span>
+<span id="cb12-15"><a href="#cb12-15" tabindex="-1"></a><span class="sc">-</span> Do not change <span class="st">`</span><span class="at">pbn.yml</span><span class="st">`</span>. Ask.</span>
+<span id="cb12-16"><a href="#cb12-16" tabindex="-1"></a><span class="sc">-</span> Do not freeze a version or start a new one. Ask.</span></code></pre></div>
+<p>The template points the agent to <a href="https://www.rwhite.no/pbn/articles/pbn.md">pbn.md</a>, the manual
+in plain Markdown, built to be read in one piece. <a href="https://www.rwhite.no/pbn/llms.txt">llms.txt</a> lists every other
+page. The question of the study goes into <code>README.md</code>. A
+project MAY add to <code>AGENTS.md</code> a decision of a person that is
+not a check yet. Each such decision is a candidate for a check in layer
+2.</p>
 <p>pbn supports two more practices:</p>
 <ul>
 <li>

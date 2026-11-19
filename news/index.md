@@ -1,5 +1,47 @@
 # Changelog
 
+## pbn 2026.11.28
+
+- New
+  [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  writes a new project at version v01 that passes
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md).
+  It stops, and writes nothing, when one of its files exists. Its run
+  script runs the fake scenarios only, so `verify("v01")` gives a PASS
+  on the fake scenarios before code reads the real data. It stops before
+  it writes anything when the package cohort is not installed.
+- New
+  [`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
+  freezes the newest version and copies its run script and its functions
+  folder to a new version. It changes the version of the call
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+  and adds the section of the version to `CHANGELOG.md`. It stops in the
+  cases that
+  [`?new_version`](https://www.rwhite.no/pbn/reference/new_version.md)
+  lists.
+- [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  and
+  [`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
+  remove each file and folder that they created when they stop part way,
+  so a second call can start again.
+- Behaviour change: after a run without real results, the verdict line
+  of a PASS of
+  [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) names the
+  fake scenarios only. The verdict and the exit status stay the same.
+- [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) writes
+  “The run wrote no check of a fake scenario.” for a run without
+  `check.csv`.
+- New template `inst/templates/AGENTS.md`.
+  [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  copies it into the project.
+- The set `house_2026_11_19` gets three new rules:
+  `readme_and_changelog` (fail), `changelog_with_code` (warn) and
+  `comment_share` (warn, `limit` 0.25). pbn 2026.11.26 released this
+  set, and no project used it yet. The maintainer approved the change. A
+  project on `house_2026_11_17` sees no change.
+- In `house_2026_11_19`, `no_local_copy_of_pbn_function` knows the
+  exports `create_project` and `new_version`.
+
 ## pbn 2026.11.27
 
 - Behaviour change:
@@ -28,7 +70,7 @@
   newest has no `vNN_frozen.md5`.
 - New rule `no_cross_version_reads` fails a string of a run script or a
   functions folder that names another version, such as `"v01_results"`
-  in `v02_functions/`, or `adhoc/`.
+  in `v02_functions/`, or that names the folder `adhoc/`.
 - New rule `no_escape_hatches` warns on
   [`suppressWarnings()`](https://rdrr.io/r/base/warning.html),
   [`suppressMessages()`](https://rdrr.io/r/base/message.html),
@@ -67,7 +109,7 @@
   [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
   stop on such real results too.
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
-  skips `"real"` then, with one line.
+  then skips `"real"` and prints one line.
 - The rule `manifest_data` of
   [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
   checks `failed_fake_checks` of `"real"`. It needs it when

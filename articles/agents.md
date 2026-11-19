@@ -143,7 +143,7 @@ cat(grep("^FAIL|PASS, ", strsplit(checked$stdout, "\r?\n")[[1]], value = TRUE), 
 #> FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.
 #> FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().
 #> FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().
-#> 18 PASS, 0 WARN, 3 FAIL, 0 OFF
+#> 21 PASS, 0 WARN, 3 FAIL, 0 OFF
 writeLines(raw_code, raw_file)
 unlink(file.path(home, "v01_functions", "data_folder.R"))
 ```
@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -272,17 +272,36 @@ An agent MUST NOT decide them alone.
 ## Layer 4: prose last
 
 The layout of pbn has the file `AGENTS.md`, for the rules of the project
-that no check can state. Keep it short. It points the agent to two pages
-that pbn writes for agents:
+that no check can state. Keep it short.
+[`pbn::create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+writes it from this template of pbn:
 
-- [pbn.md](https://www.rwhite.no/pbn/articles/pbn.md): the manual, in
-  plain Markdown, built to be read in one piece.
-- [llms.txt](https://www.rwhite.no/pbn/llms.txt): the list of every
-  other page.
+``` r
+cat(readLines(system.file("templates", "AGENTS.md", package = "pbn")), sep = "\n")
+# AGENTS.md
 
-The rest of `AGENTS.md` is what only a person knows: the question of the
-study, and the decisions that are not checks yet. Each such decision is
-a candidate for a check in layer 2.
+This project uses the R package pbn. Before you change any code, read how to use pbn: https://www.rwhite.no/pbn/articles/pbn.md
+
+## Before you report a change
+
+- Run `pbn::verify("vNN")` on the newest version. Continue until the verdict is PASS. Each finding of a rule names its fix.
+- A PASS without the scenario `real` covers the fake scenarios only. Say so when you report.
+- Add what changed and why to `CHANGELOG.md`, under the section of the version.
+
+## What a person decides
+
+- Propose the fake scenarios and their expected values. A person confirms them before they count. After that, do not change an expected value in an `expect_` function, or add or remove a fake scenario, without asking.
+- Do not change `pbn.yml`. Ask.
+- Do not freeze a version or start a new one. Ask.
+```
+
+The template points the agent to
+[pbn.md](https://www.rwhite.no/pbn/articles/pbn.md), the manual in plain
+Markdown, built to be read in one piece.
+[llms.txt](https://www.rwhite.no/pbn/llms.txt) lists every other page.
+The question of the study goes into `README.md`. A project MAY add to
+`AGENTS.md` a decision of a person that is not a check yet. Each such
+decision is a candidate for a check in layer 2.
 
 pbn supports two more practices:
 

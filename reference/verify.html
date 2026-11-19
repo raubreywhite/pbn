@@ -13,7 +13,7 @@ each FAIL and WARN finding."><meta property="og:image" content="https://www.rwhi
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -103,7 +103,11 @@ example because it stopped before <code><a href="save_results.html">save_results
 <li><p>a <code>check.csv</code> of the run has a failed assertion. This holds at each
 level of the rule <code>scenario_checks</code> in <code>pbn.yml</code>, also <code>off</code>.</p></li>
 <li><p>a rule of <code><a href="check_project.html">check_project()</a></code> fails.</p></li>
-</ul><p>Else the verdict is PASS. The last line names each reason of a FAIL. In a
+</ul><p>Else the verdict is PASS. The last line names each reason of a FAIL. A
+PASS of a run that did not write <code>&lt;version&gt;_results/real/results.qs2</code>
+has the last line
+<code>Verdict: PASS on the fake scenarios only. The scenario `real` did not run.</code>
+It covers the fake data only. Its verdict is still PASS. In a
 non-interactive R session, <code>verify()</code> quits R with status 1 after a
 verdict FAIL, as <code><a href="check_project.html">check_project()</a></code> does.</p>
     </div>

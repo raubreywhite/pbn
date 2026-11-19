@@ -41,8 +41,10 @@ Invisibly, `NULL`, when `"real"` is in `scenarios`.
 builds and runs a small fake project.
 
 Other project setup:
+[`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md),
 [`folder()`](https://www.rwhite.no/pbn/reference/folder.md),
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+[`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md),
 [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
 
 ## Examples

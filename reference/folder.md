@@ -57,8 +57,10 @@ gives the same results.
 builds and runs a small fake project.
 
 Other project setup:
+[`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md),
 [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md),
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+[`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md),
 [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
 
 ## Examples
@@ -75,11 +77,11 @@ pbn::initialize_project(
   env = new.env()
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpFNdilv/pbn_folder_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp28uSBm/pbn_folder_example/v01_functions into 
 pbn::folder("lookup")
-#> [1] "/tmp/RtmpFNdilv/pbn_folder_example/codes"
+#> [1] "/tmp/Rtmp28uSBm/pbn_folder_example/codes"
 pbn::folder("main", "sub", "d.csv")
-#> [1] "/tmp/RtmpFNdilv/pbn_folder_example/data/sub/d.csv"
+#> [1] "/tmp/Rtmp28uSBm/pbn_folder_example/data/sub/d.csv"
 
 unlink(home, recursive = TRUE)
 ```

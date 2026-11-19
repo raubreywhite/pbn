@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,19 @@
     </div>
 
     <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.28" id="pbn-20261128">pbn 2026.11.28<a class="anchor" aria-label="anchor" href="#pbn-20261128"></a></h2>
+<ul><li>New <code><a href="../reference/create_project.html">create_project()</a></code> writes a new project at version v01 that passes <code><a href="../reference/check_project.html">check_project()</a></code>. It stops, and writes nothing, when one of its files exists. Its run script runs the fake scenarios only, so <code>verify("v01")</code> gives a PASS on the fake scenarios before code reads the real data. It stops before it writes anything when the package cohort is not installed.</li>
+<li>New <code><a href="../reference/new_version.html">new_version()</a></code> freezes the newest version and copies its run script and its functions folder to a new version. It changes the version of the call <code><a href="../reference/initialize_project.html">initialize_project()</a></code>, and adds the section of the version to <code>CHANGELOG.md</code>. It stops in the cases that <code><a href="../reference/new_version.html">?new_version</a></code> lists.</li>
+<li>
+<code><a href="../reference/create_project.html">create_project()</a></code> and <code><a href="../reference/new_version.html">new_version()</a></code> remove each file and folder that they created when they stop part way, so a second call can start again.</li>
+<li>Behaviour change: after a run without real results, the verdict line of a PASS of <code><a href="../reference/verify.html">verify()</a></code> names the fake scenarios only. The verdict and the exit status stay the same.</li>
+<li>
+<code><a href="../reference/verify.html">verify()</a></code> writes “The run wrote no check of a fake scenario.” for a run without <code>check.csv</code>.</li>
+<li>New template <code>inst/templates/AGENTS.md</code>. <code><a href="../reference/create_project.html">create_project()</a></code> copies it into the project.</li>
+<li>The set <code>house_2026_11_19</code> gets three new rules: <code>readme_and_changelog</code> (fail), <code>changelog_with_code</code> (warn) and <code>comment_share</code> (warn, <code>limit</code> 0.25). pbn 2026.11.26 released this set, and no project used it yet. The maintainer approved the change. A project on <code>house_2026_11_17</code> sees no change.</li>
+<li>In <code>house_2026_11_19</code>, <code>no_local_copy_of_pbn_function</code> knows the exports <code>create_project</code> and <code>new_version</code>.</li>
+</ul></div>
+    <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.27" id="pbn-20261127">pbn 2026.11.27<a class="anchor" aria-label="anchor" href="#pbn-20261127"></a></h2>
 <ul><li>Behaviour change: <code><a href="../reference/run_plan.html">run_plan()</a></code> fails an analysis that changes values of the shared data in place, for example <code>data$d[1, x := 0]</code>. The error names each changed column. Before, each later analysis in the same R session got the changed data.</li>
 <li>The cache key of <code>add_data(cache = TRUE)</code> holds the code of each function of <code>vNN_functions/</code> that the data code calls, also through other functions. A changed helper in another file now computes the data again, and the cache line names it.</li>
@@ -56,7 +69,7 @@
 <h2 class="pkg-version" data-toc-text="2026.11.26" id="pbn-20261126">pbn 2026.11.26<a class="anchor" aria-label="anchor" href="#pbn-20261126"></a></h2>
 <ul><li>New rule set <code>house_2026_11_19</code>: the set <code>house_2026_11_17</code> with three new rules. A project on <code>house_2026_11_17</code> sees no change. The line for a new <code>pbn.yml</code> now names <code>house_2026_11_19</code>.</li>
 <li>New <code><a href="../reference/freeze_version.html">freeze_version()</a></code> writes <code>vNN_frozen.md5</code>, the md5 of <code>vNN_run.R</code> and of each file under <code>vNN_functions/</code>. The new rule <code>frozen_versions_unchanged</code> fails when such a file changes, comes or goes, and when a version older than the newest has no <code>vNN_frozen.md5</code>.</li>
-<li>New rule <code>no_cross_version_reads</code> fails a string of a run script or a functions folder that names another version, such as <code>"v01_results"</code> in <code>v02_functions/</code>, or <code>adhoc/</code>.</li>
+<li>New rule <code>no_cross_version_reads</code> fails a string of a run script or a functions folder that names another version, such as <code>"v01_results"</code> in <code>v02_functions/</code>, or that names the folder <code>adhoc/</code>.</li>
 <li>New rule <code>no_escape_hatches</code> warns on <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code>, <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>, <code><a href="https://rdrr.io/r/base/try.html" class="external-link">try()</a></code>, <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code> and <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code> in a run script or a functions folder.</li>
 <li>New <code><a href="../reference/verify.html">verify()</a></code> runs <code>vNN_run.R</code> in a new R session, checks the project, and prints the exit status, the failed assertions and each FAIL and WARN. Its verdict is FAIL also for a failed assertion when <code>scenario_checks</code> is off, and for a run that wrote no <code>check.csv</code>. It reads only the <code>check.csv</code> files of this run.</li>
 <li>In <code>house_2026_11_19</code>, <code>unknown_path</code> names <code>vNN_frozen.md5</code>, and <code>no_local_copy_of_pbn_function</code> knows the exports <code>freeze_version</code> and <code>verify</code>.</li>
@@ -70,7 +83,7 @@
 <li>
 <code><a href="../reference/save_results.html">save_results()</a></code> writes each fake scenario with a failed assertion to the new <code>manifest$failed_fake_checks</code> of the real results. It writes the fake scenarios first. Real results of pbn 2026.11.24 or older have no such element, and read as before.</li>
 <li>
-<code><a href="../reference/show_blocks.html">show_block()</a></code> and <code><a href="../reference/show_blocks.html">show_blocks()</a></code> stop on such real results too. <code><a href="../reference/make_outputs.html">make_outputs()</a></code> skips <code>"real"</code> then, with one line.</li>
+<code><a href="../reference/show_blocks.html">show_block()</a></code> and <code><a href="../reference/show_blocks.html">show_blocks()</a></code> stop on such real results too. <code><a href="../reference/make_outputs.html">make_outputs()</a></code> then skips <code>"real"</code> and prints one line.</li>
 <li>The rule <code>manifest_data</code> of <code><a href="../reference/check_results.html">check_results()</a></code> checks <code>failed_fake_checks</code> of <code>"real"</code>. It needs it when <code>manifest$pbn_version</code> is 2026.11.25 or newer.</li>
 <li>Each WARN and FAIL of <code><a href="../reference/check_project.html">check_project()</a></code> ends with <code>Fix:</code> and the change that removes it. The rules, their levels, each status and the columns of the value stay the same.</li>
 </ul></div>

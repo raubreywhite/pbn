@@ -1,5 +1,12 @@
 # Package index
 
+## Start a project or a version
+
+- [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  : Create a new project
+- [`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
+  : Start a new version of a project
+
 ## Run a project version
 
 - [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)

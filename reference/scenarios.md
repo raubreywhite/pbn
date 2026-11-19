@@ -77,9 +77,11 @@ there before
 builds and runs a small fake project.
 
 Other project setup:
+[`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md),
 [`end_unless_real()`](https://www.rwhite.no/pbn/reference/end_unless_real.md),
 [`folder()`](https://www.rwhite.no/pbn/reference/folder.md),
-[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md),
+[`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
 
 ## Examples
 

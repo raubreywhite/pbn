@@ -44,7 +44,8 @@ files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 
 The rules, with their level in the set `house_2026_11_19`, are below.
 The set `house_2026_11_17` has the same rules at the same levels,
-without `frozen_versions_unchanged`, `no_cross_version_reads` and
+without `frozen_versions_unchanged`, `readme_and_changelog`,
+`changelog_with_code`, `comment_share`, `no_cross_version_reads` and
 `no_escape_hatches`. A rule that the set of the project does not have
 prints no line.
 
@@ -84,6 +85,27 @@ prints no line.
     `added` or `removed`.
 
   - a line of `vNN_frozen.md5` is not `<md5> <path>`.
+
+- `readme_and_changelog` (FAIL): `README.md` or `CHANGELOG.md` is not at
+  the top level, or `CHANGELOG.md` has no section for a version. A
+  section is a line that starts with `## vNN`, with a space or nothing
+  after it, for example `## v01` or `## v01 (2026-11-19)`. A version is
+  a `vNN_run.R` or a `vNN_functions/` at the top level. `README.md` says
+  what the project is, how to run it and why its code is as it is.
+  `CHANGELOG.md` says what changed in each version. The detail is
+  `README.md: missing`, `CHANGELOG.md: missing` or
+  `CHANGELOG.md: no section "## vNN"`.
+
+- `changelog_with_code` (WARN): in a git repository, a `vNN_run.R` or a
+  file under `vNN_functions/` differs from the last commit, and
+  `CHANGELOG.md` does not. A change is staged or not staged, or the file
+  is untracked and git does not ignore it. A deleted file counts too. In
+  a repository without a commit, each staged file is a change. The rule
+  reads the project folder `path` only, also when it is a folder inside
+  a repository. When git is not installed or `path` is not in a git
+  repository, the rule has nothing to compare. It then prints one PASS
+  line that says so. The detail is
+  `<file>: changed since the last commit, and CHANGELOG.md did not change`.
 
 - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
   `vNN_results/<scenario>/sim_NNNN/results.qs2` of pbn 2026.11.22 fails
@@ -142,8 +164,9 @@ prints no line.
   function `get_data(scenario, sim)`, and a run script calls the export
   as
   [`pbn::get_data()`](https://www.rwhite.no/pbn/reference/get_data.md).
-  The set `house_2026_11_17` does not know the exports `freeze_version`
-  and `verify`, so a local function with such a name passes there.
+  The set `house_2026_11_17` does not know the exports `create_project`,
+  `freeze_version`, `new_version` and `verify`, so a local function with
+  such a name passes there.
 
 - `loc_per_file` (FAIL): an `.R` file has more than `limit` code lines,
   as counted by
@@ -163,6 +186,20 @@ prints no line.
   file that R cannot parse, which `loc_per_file` fails. The detail gives
   the file, the function and its score. A path under `allow` allows each
   function of one file.
+
+- `comment_share` (WARN): in `vNN_run.R` or an `.R` file at the top of
+  `vNN_functions/`, the share of comment lines is more than `limit`. The
+  share is the comment lines divided by the lines that are not blank.
+  The house `limit` is 0.25, so a file of 20 such lines MAY have 5
+  comment lines. The parse data decides what is a comment, so a `#` in a
+  string does not count. A line with code and a comment after it is a
+  comment line. A section marker is not a comment line. A section marker
+  is a comment with text and then four or more `=` or `-` at its end, as
+  in `# PART 1 ====`. The rule skips a file that R cannot parse. The
+  detail is
+  `<file>: <n> of <m> lines that are not blank are comments, <share>, above the limit of <limit>`.
+  An explanation of why the code is as it is goes into `README.md`, and
+  what changed goes into `CHANGELOG.md`.
 
 - `no_environment_variables` (FAIL): a run script or a file in a
   functions folder uses `Sys.getenv` or `Sys.setenv`.
@@ -391,8 +428,8 @@ The set gives each rule one of three levels:
 - `off`: the rule does not run, and its one line is OFF.
 
 The parameters of the rules are `limit` of `loc_per_file`, `limit` of
-`cyclomatic_complexity` and `forbid` of `no_local_assign`. The list of
-the rules above gives their house values.
+`cyclomatic_complexity`, `limit` of `comment_share` and `forbid` of
+`no_local_assign`. The list of the rules above gives their house values.
 
 The key `rules` MAY change the level of a rule, a parameter, or both. A
 change merges into the entry of the set. So
@@ -455,7 +492,8 @@ the key:
 
 - a level other than `fail`, `warn` and `off`.
 
-- a `limit` that is not a whole number of 1 or more.
+- a `limit` that is not a whole number of 1 or more. For
+  `comment_share`, a `limit` that is not a number from 0 to 1.
 
 - a construct in `forbid` that the rule does not know, or an empty
   `forbid`. To turn the rule off, set its level to `off`.
@@ -482,12 +520,16 @@ writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
 )
+writeLines("# A fake project", file.path(home, "README.md"))
+writeLines(c("# Changelog", "", "## v01"), file.path(home, "CHANGELOG.md"))
 pbn::check_project(home)
 #> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
 #> PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()
+#> PASS  readme_and_changelog  README.md and CHANGELOG.md exist, and CHANGELOG.md has a section ## vNN for every version
+#> PASS  changelog_with_code  the project is not a git repository, so nothing to compare
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -497,6 +539,7 @@ pbn::check_project(home)
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
+#> PASS  comment_share  no run script or .R file of a functions folder has more than 25% comment lines
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
 #> PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
@@ -505,7 +548,7 @@ pbn::check_project(home)
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path
-#> 21 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 24 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

@@ -163,6 +163,177 @@ test_that("each part of the cache key computes the data again with its reason, a
   )
 })
 
+test_that("a change of a function in another file that a data step calls computes the data again and names it, also through another function, and a change of a function that only an analysis calls does not", {
+  skip_if_not_installed("cohort")
+  p <- local_cohort_project()
+  files <- cohort_function_files()
+  edit <- function(rel, lines) {
+    write_lines(p$home, file.path("v01_functions", rel), lines)
+  }
+  step <- function(why) {
+    before <- length(calls(p))
+    run <- cohort_run(p)
+    expect_identical(run$out, cache_lines(p, why))
+    now <- calls(p)
+    return(now[seq_along(now) > before])
+  }
+  # data_clean() calls lower_names() of utils.R, which calls name_case() of
+  # case.R. fit_mean() calls mean_of() of analysis_utils.R.
+  edit(
+    "data_clean.R",
+    c(
+      "data_clean <- function(d) {",
+      "  d <- data.table::as.data.table(d)",
+      "  lower_names(d)",
+      "}"
+    )
+  )
+  edit(
+    "utils.R",
+    c(
+      "lower_names <- function(d) {",
+      "  data.table::setnames(d, name_case(names(d)))",
+      "  d",
+      "}"
+    )
+  )
+  case_lines <- c("name_case <- function(x) {", "  tolower(x)", "}")
+  edit("case.R", case_lines)
+  edit(
+    "analyses.R",
+    sub(
+      "mean(d[[CFG$outcome]])",
+      "mean_of(d[[CFG$outcome]])",
+      files[["analyses.R"]],
+      fixed = TRUE
+    )
+  )
+  mean_lines <- c("mean_of <- function(x) {", "  mean(x)", "}")
+  edit("analysis_utils.R", mean_lines)
+  expect_identical(step(rep(no_file, 3)), c("real 1", "null 1", "null 2"))
+
+  # A function that only an analysis calls: the data comes from the cache.
+  edit(
+    "analysis_utils.R",
+    sub("mean(x)", "sum(x) / length(x)", mean_lines, fixed = TRUE)
+  )
+  expect_identical(step(rep(NA, 3)), character(0))
+
+  # A comment changes no code of the function.
+  edit("case.R", c("# A new comment.", case_lines))
+  expect_identical(step(rep(NA, 3)), character(0))
+
+  # A function that the data calls through another function.
+  edit(
+    "case.R",
+    sub("tolower(x)", "casefold(x, upper = FALSE)", case_lines, fixed = TRUE)
+  )
+  expect_identical(
+    step(rep("the function `name_case` changed", 3)),
+    c("real 1", "null 1", "null 2")
+  )
+
+  # A function that the data calls directly, and the run after it.
+  edit(
+    "utils.R",
+    c(
+      "lower_names <- function(d) {",
+      "  data.table::setnames(d, name_case(names(d)))",
+      "  return(d)",
+      "}"
+    )
+  )
+  expect_identical(
+    step(rep("the function `lower_names` changed", 3)),
+    c("real 1", "null 1", "null 2")
+  )
+  expect_identical(step(rep(NA, 3)), character(0))
+})
+
+test_that("a function that a data step calls through do.call() with its name as a string is in the cache key, and its change computes the data again", {
+  skip_if_not_installed("cohort")
+  p <- local_cohort_project()
+  edit <- function(rel, lines) {
+    write_lines(p$home, file.path("v01_functions", rel), lines)
+  }
+  edit(
+    "data_clean.R",
+    c(
+      "data_clean <- function(d) {",
+      "  d <- data.table::as.data.table(d)",
+      "  do.call(\"lower_names\", list(d))",
+      "}"
+    )
+  )
+  helper <- c(
+    "lower_names <- function(d) {",
+    "  data.table::setnames(d, tolower(names(d)))",
+    "  d",
+    "}"
+  )
+  edit("utils.R", helper)
+  expect_identical(cohort_run(p)$out, cache_lines(p, rep(no_file, 3)))
+  edit("utils.R", sub("  d$", "  return(d)", helper))
+  expect_identical(
+    cohort_run(p)$out,
+    cache_lines(p, rep("the function `lower_names` changed", 3))
+  )
+  expect_identical(calls(p), rep(c("real 1", "null 1", "null 2"), 2))
+})
+
+test_that("the part helpers of the cache key holds each function of the functions folder that the data calls, also as an argument, in a formula and as a string, also for the steps, and no function that only an analysis calls", {
+  skip_if_not_installed("cohort")
+  p <- local_cohort_project()
+  write_lines(
+    p$home,
+    "v01_functions/utils.R",
+    c(
+      "helper_a <- function(d) helper_b(d)",
+      "helper_b <- function(d) lapply(d, helper_c)",
+      "helper_c <- function(x, f = ~ helper_d(.x)) x",
+      "helper_d <- function(x) get(\"helper_e\")(x)",
+      "helper_e <- function(x) x",
+      "only_analysis <- function(x) x"
+    )
+  )
+  write_lines(
+    p$home,
+    "v01_functions/data_clean.R",
+    c(
+      "data_clean <- function(d) {",
+      "  d <- data.table::as.data.table(helper_a(d))",
+      "  data.table::setnames(d, tolower(names(d)))",
+      "  d",
+      "}"
+    )
+  )
+  run <- cohort_plan(p)
+  fns <- c(
+    "data_clean",
+    "data_cohort",
+    "data_raw",
+    "helper_a",
+    "helper_b",
+    "helper_c",
+    "helper_d",
+    "helper_e"
+  )
+  md5 <- helper_md5(plan_info(run$plan), "d")
+  expect_identical(names(md5), fns)
+  expect_identical(
+    unname(md5[["helper_c"]]),
+    function_md5(list(helper_c = run$sourced$helper_c))
+  )
+  steps <- cohort_plan(p, steps = cohort_steps)
+  expect_identical(
+    names(helper_md5(plan_info(steps$plan), "d")),
+    c("helper_a", "helper_b", "helper_c", "helper_d", "helper_e")
+  )
+  # Without initialize_project(), no function of a functions folder exists.
+  local_clean_state()
+  expect_identical(unname(helper_md5(plan_info(run$plan), "d")), character(0))
+})
+
 test_that("an unreadable cache file, a missing or partial key file, and a cache file of another key are computed again with a line that says so", {
   skip_if_not_installed("cohort")
   p <- local_cohort_project()
@@ -329,19 +500,30 @@ test_that("in a new R session, the run script up to the add_ calls and p$get_dat
   skip_if_not_installed("cohort")
   skip_if_pbn_not_installed()
   p <- local_cohort_project()
-  write_lines(p$home, "v01_run.R", cohort_script_lines(p, "r <- pbn::run_plan(p)"))
+  write_lines(
+    p$home,
+    "v01_run.R",
+    cohort_script_lines(p, "r <- pbn::run_plan(p)")
+  )
   first <- run_script(p$home)
   expect_identical(first$status, 0L, info = first$stdout)
-  expect_match(first$stdout, "null sim_0002: computed, because there is no cache file.", fixed = TRUE)
+  expect_match(
+    first$stdout,
+    "null sim_0002: computed, because there is no cache file.",
+    fixed = TRUE
+  )
   expect_length(calls(p), 3)
 
   write_lines(
     p$home,
     "v01_run.R",
-    cohort_script_lines(p, c(
-      "d <- p$get_data(\"null__sim_0002__means__1\")$d",
-      "cat(\"rows\", nrow(d), \"\\n\")"
-    ))
+    cohort_script_lines(
+      p,
+      c(
+        "d <- p$get_data(\"null__sim_0002__means__1\")$d",
+        "cat(\"rows\", nrow(d), \"\\n\")"
+      )
+    )
   )
   second <- run_script(p$home)
   expect_identical(second$status, 0L, info = second$stdout)
@@ -379,7 +561,10 @@ test_that("a raw data file changed after initialize_project() changes the key an
     attr(r[["real__sim_0001__pbn_n_rows"]], "exclusions")$d$n_excluded,
     3L
   )
-  read_stat <- c(size = file.size(csv), mtime = floor(as.numeric(file.mtime(csv))))
+  read_stat <- c(
+    size = file.size(csv),
+    mtime = floor(as.numeric(file.mtime(csv)))
+  )
   # The file changes again after the run, and a step by hand reads it. The
   # manifest of the run still names the data that the run read.
   write_cohort_data(p$data_default, age = c(16, 16, 16, 16, 40, 50, 60, 25))
@@ -438,7 +623,10 @@ test_that("a data_*.R file changed after initialize_project() stops run_plan and
   again <- cohort_run(p)
   expect_identical(
     again$out,
-    cache_lines(p, rep("v01_functions/data_clean.R, v01_functions/data_extra.R changed", 3))
+    cache_lines(
+      p,
+      rep("v01_functions/data_clean.R, v01_functions/data_extra.R changed", 3)
+    )
   )
 })
 
@@ -463,13 +651,23 @@ test_that("the key file records the loaded packages after the data function, and
   key_file <- cache_file(p, "null", 1, key = TRUE)
   record <- qs2::qs_read(key_file)$packages
   expect_true(all(c("cohort", "data.table", "R6") %in% names(record)))
-  expect_false(any(c("pbn", "plnr", "testthat", "qs2", "stats", "utils") %in% names(record)))
-  expect_identical(record[["cohort"]], as.character(utils::packageVersion("cohort")))
+  expect_false(any(
+    c("pbn", "plnr", "testthat", "qs2", "stats", "utils") %in% names(record)
+  ))
+  expect_identical(
+    record[["cohort"]],
+    as.character(utils::packageVersion("cohort"))
+  )
   # Each version is in the form of utils::packageVersion(), so an unchanged
   # package compares equal.
   expect_identical(
     unname(record),
-    vapply(names(record), function(n) as.character(utils::packageVersion(n)), "", USE.NAMES = FALSE)
+    vapply(
+      names(record),
+      function(n) as.character(utils::packageVersion(n)),
+      "",
+      USE.NAMES = FALSE
+    )
   )
 
   for (s in list(c("real", 1), c("null", 1), c("null", 2))) {
@@ -484,11 +682,14 @@ test_that("the key file records the loaded packages after the data function, and
   run <- cohort_run(p)
   expect_identical(
     run$out,
-    cache_lines(p, c(
-      "the version of cohort changed",
-      "the version of cohort changed",
-      "the version of cohort, the version of pbnnotapackage changed"
-    ))
+    cache_lines(
+      p,
+      c(
+        "the version of cohort changed",
+        "the version of cohort changed",
+        "the version of cohort, the version of pbnnotapackage changed"
+      )
+    )
   )
   expect_identical(
     qs2::qs_read(key_file)$packages[["cohort"]],
@@ -501,7 +702,10 @@ test_that("on a worker, the record holds the packages that the data function loa
   skip_if_pbn_not_installed()
   p <- local_cohort_project()
   run <- cohort_run(p, workers = 2)
-  for (f in c(cache_file(p, "real", 1, key = TRUE), cache_file(p, "null", 1:2, key = TRUE))) {
+  for (f in c(
+    cache_file(p, "real", 1, key = TRUE),
+    cache_file(p, "null", 1:2, key = TRUE)
+  )) {
     expect_true("cohort" %in% names(qs2::qs_read(f)$packages), info = f)
   }
   expect_identical(cohort_run(p)$out, cache_lines(p, rep(NA, 3)))

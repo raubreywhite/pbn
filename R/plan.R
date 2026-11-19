@@ -65,7 +65,8 @@ registry_finalizer <- function(key, registry) {
   })
 }
 
-# .pbn_fn, .pbn_catch, .pbn_shape, .pbn_finish, .pbn_log, .pbn_drain,
+# .pbn_fn, .pbn_catch, .pbn_shape, .pbn_finish, .pbn_values,
+# .pbn_values_before, .pbn_values_value, .pbn_log, .pbn_drain,
 # .pbn_cache, .pbn_plan, .pbn_clock, .pbn_run, .pbn_enter, .pbn_begin,
 # .pbn_done, .pbn_take, .pbn_objects, .pbn_objects_value, .pbn_data_checked,
 # .pbn_rng, .pbn_globals, .pbn_stopping, .pbn_failed, .pbn_not_run,
@@ -77,6 +78,9 @@ utils::globalVariables(c(
   ".pbn_catch",
   ".pbn_shape",
   ".pbn_finish",
+  ".pbn_values",
+  ".pbn_values_before",
+  ".pbn_values_value",
   ".pbn_log",
   ".pbn_drain",
   ".pbn_cache",
@@ -135,6 +139,9 @@ wrapper_env <- function(fn, log = NULL, drain = FALSE) {
       .pbn_run = NULL,
       .pbn_shape = data_shape,
       .pbn_finish = action_value,
+      .pbn_values = data_values,
+      .pbn_values_before = values_before,
+      .pbn_values_value = values_value,
       .pbn_enter = run_enter,
       .pbn_begin = run_begin,
       .pbn_done = run_done,
@@ -373,11 +380,13 @@ action_run <- function(data, argset) {
 
 # The call of fn(data, argset) of action_run(), with the run context `run`,
 # and the checks of the data, the objects and the global environment after
-# it. Returns a list: `out`, the value, `seconds`, the elapsed time of the
+# it. The analysis that counts the rows is code of pbn, so it gets the
+# check of the shape of the data only. Returns a list: `out`, the value, `seconds`, the elapsed time of the
 # call, and `end`, the elapsed time at its end. Its environment is that of
 # the wrapper.
 action_call <- function(data, argset, run) {
   before <- .pbn_shape(data)
+  values <- if (.pbn_drain) NULL else .pbn_values_before(data, run)
   objects <- if (.pbn_drain) NULL else .pbn_objects(run)
   globals <- if (.pbn_drain) NULL else .pbn_globals(run, NULL)
   .pbn_rng(run)
@@ -406,6 +415,9 @@ action_call <- function(data, argset, run) {
   })
   end <- proc.time()[["elapsed"]]
   out <- .pbn_finish(out, before, .pbn_shape(data))
+  if (!is.null(values)) {
+    out <- .pbn_values_value(out, values, .pbn_values(data))
+  }
   out <- .pbn_objects_value(out, run, objects)
   out <- .pbn_globals(run, globals, out)
   return(list(out = out, seconds = end - start, end = end))
@@ -666,6 +678,13 @@ environment(count_rows) <- list2env(
 #'   the files.
 #' - the code of `fn`, or of each step, deparsed without its source
 #'   references.
+#' - the code of each function of `<version>_functions/` that `fn` or a step
+#'   calls, also through other functions of the folder. pbn deparses each
+#'   without its source references. A function counts when its name is in
+#'   the code. That includes an argument such as `lapply(x, f)`, a formula,
+#'   and a string such as `do.call("f", args)`.
+#'   So a helper in `utils.R` counts. A function that only an analysis calls
+#'   does not change the key.
 #' - `CFG$data`, when `CFG` has the element `data`. Put the config that the
 #'   data code reads there. A change in another element of `CFG` does not
 #'   change the key.
@@ -690,10 +709,12 @@ environment(count_rows) <- list2env(
 #' file with its recorded size and modification time is not hashed again,
 #' so a change that keeps both is not found.
 #'
-#' Keep the data code in the files `data_*.R`. The key holds no other file.
-#' A function of the data code can be in another file. A change in it then
-#' leaves the key the same, and the run reads the old data. This is the one
-#' change of the data code that the cache does not find.
+#' The key holds no other part of `<version>_functions/`. These changes
+#' leave the key the same, and the run reads the old data:
+#' - a function whose name the data code builds when it runs, for example
+#'   `get(paste0("f", 1))`.
+#' - an object of the folder that is neither a function nor `CFG$data`.
+#'   Examples are a lookup vector in `utils.R` and a function inside a list.
 #'
 #' When the key is the same, [run_plan()] reads the value from the cache and
 #' does not call `fn` or a step. Each analysis sets its own seed, so its
@@ -708,7 +729,8 @@ environment(count_rows) <- list2env(
 #' settings. It names changed raw data with its folders, for example "the
 #' raw data in the folder lookup". It names a changed `fn` as "the data function of
 #' add_data()", and each changed step as, for example, "the function given
-#' as `clean`". It can also name the kind of random
+#' as `clean`". It names each changed function that the data calls, for
+#' example "the function `lower_names`". It can also name the kind of random
 #' number generator, or each package with another version. With `workers = 1`, the line comes before the
 #' data function runs. With more workers, [run_plan()] prints the lines after
 #' the run, in the order of the plan.
@@ -858,15 +880,40 @@ add_data <- function(
 #'
 #' While [run_plan()] runs, an analysis fails when it changes the shared data
 #' in place. plnr gives every analysis of one scenario and simulation the
-#' same object. pbn compares the names, the number of rows, the
-#' data.table key and the address of each column of each data.frame before
-#' and after the analysis. That finds an added, removed, renamed or replaced
-#' column, for example `data$d[, x := 1]`, and a new key from
-#' `data.table::setkey()`. It does not find a change of values in place:
-#' `data$d[1, x := 0]`, `data$d[g == "a", y := 0]`, `data.table::set()` on
-#' some rows, `data.table::setorder()` and `data.table::setattr()` on a
-#' column. Copy the data first with [data.table::copy()] when the analysis
-#' changes it.
+#' same object, so a later analysis in the same R session would get the
+#' changed data. pbn compares two things before and after each analysis:
+#' - the names, the number of rows, the data.table key and the address of
+#'   each column of each data.frame. This finds an added, removed, renamed or
+#'   replaced column, for example `data$d[, x := 1]`, and a new key from
+#'   `data.table::setkey()`.
+#' - a hash of the values and the attributes of each column of each
+#'   data.frame, and of each data.frame in a list of data.frames. The
+#'   attributes of such a list, such as its names, have a hash too. This finds
+#'   a change of values in place. Examples are `data$d[1, x := 0]`,
+#'   `data$d[g == "a", y := NA]` and `data.table::set()` on some rows. It
+#'   also finds `data.table::setorder()`, and `data.table::setattr()` on a
+#'   column or on the table. The error names the data and each changed
+#'   column.
+#'
+#' The hash leaves out the index that a data.table subset such as
+#' `data$d[g == "a"]` adds to the table, because the index changes no value.
+#'
+#' Each other data element, for example a vector or a model, gets one hash of
+#' its whole value. The error then names the data and says "in its value".
+#' That hash leaves out each function in the value and the contents of each
+#' environment in it, such as that of a formula. R changes a function when it
+#' compiles it, so a read could look like a change. pbn does not check a data
+#' element that is a function or an environment, also an R6 object. Copy the data first with [data.table::copy()] when the
+#' analysis changes it, or make the change in a data step.
+#'
+#' pbn hashes each data object before its first analysis in an R session,
+#' and after each analysis. An analysis that changes the data fails and
+#' stops the run, so the first hash holds for each later analysis. The time
+#' grows with the size of the data. On one computer, the hash after an
+#' analysis took 0.07 s for a data.table with one million rows and 20
+#' columns of mixed types. It took 0.03 s for ten million rows and 5 numeric
+#' columns. The same data as a plain data.frame took 0.10 s and 0.23 s. The
+#' first analysis of each data object costs a second hash.
 #'
 #' While [run_plan()] runs, an analysis also fails when it changes an object
 #' of the functions folder, for example `CFG`. plnr runs many analyses in one

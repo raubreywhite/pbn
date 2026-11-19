@@ -1,3 +1,9 @@
+# pbn 2026.11.27
+
+- Behaviour change: `run_plan()` fails an analysis that changes values of the shared data in place, for example `data$d[1, x := 0]`. The error names each changed column. Before, each later analysis in the same R session got the changed data.
+- The cache key of `add_data(cache = TRUE)` holds the code of each function of `vNN_functions/` that the data code calls, also through other functions. A changed helper in another file now computes the data again, and the cache line names it.
+- `rlang` moves into Imports, because the check of the shared data uses `rlang::hash()`.
+
 # pbn 2026.11.26
 
 - New rule set `house_2026_11_19`: the set `house_2026_11_17` with three new rules. A project on `house_2026_11_17` sees no change. The line for a new `pbn.yml` now names `house_2026_11_19`.

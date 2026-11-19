@@ -525,18 +525,180 @@ test_that("an analysis that changes the shared data in place fails, and one that
   r <- run_plan(p)
   expect_identical(r[["null__sim_0002__a__1"]], 3L)
   expect_identical(r[["null__sim_0002__b__1"]], 2L)
+})
 
-  # The documented limit: a change of values in place is not found, and the
-  # next analysis gets the changed data.
+test_that("an analysis that changes values of the shared data in place fails and names the data and the columns, for a data.table, a data.frame and a list of data.tables", {
+  sc <- small_scenarios()
+  in_global <- function(f, ...) {
+    environment(f) <- list2env(list(...), parent = globalenv())
+    return(f)
+  }
+  table_fn <- in_global(function(scenario, sim) {
+    return(data.table::data.table(
+      x = 1:3,
+      g = c("a", "b", "b"),
+      y = c(2, 4, 6),
+      f = factor(c("p", "q", "p")),
+      l = c(TRUE, FALSE, NA),
+      day = as.Date("2026-01-01") + 0:2
+    ))
+  })
+  # data.frame() keeps 1:3 as a compact sequence, whose serialize() version
+  # 3 holds its description only.
+  frame_fn <- in_global(function(scenario, sim) {
+    return(data.frame(x = 1:3, y = c(2, 4, 6), s = c("a", "b", "c")))
+  })
+  vector_fn <- in_global(function(scenario, sim) {
+    return(c(1, 2, 3))
+  })
+  model_fn <- in_global(function(scenario, sim) {
+    return(stats::lm(y ~ x, data = data.frame(x = 1:5, y = c(2, 4, 5, 8, 9))))
+  })
+  list_fn <- in_global(function(scenario, sim) {
+    return(lapply(1:2, function(i) data.table::data.table(x = 1:3 + i)))
+  })
+  cases <- list(
+    list(table_fn, function(d) d[1, x := 0L], "in the column 'x'"),
+    list(table_fn, function(d) d[g == "b", y := NA], "in the column 'y'"),
+    list(
+      table_fn,
+      function(d) data.table::set(d, 2L, "g", "z"),
+      "in the column 'g'"
+    ),
+    list(
+      table_fn,
+      function(d) data.table::setattr(d$f, "levels", c("q", "p")),
+      "in the column 'f'"
+    ),
+    list(table_fn, function(d) d[3, l := TRUE], "in the column 'l'"),
+    list(table_fn, function(d) d[1, day := day + 1], "in the column 'day'"),
+    # The column f reads p, q, p in both orders, so it does not change.
+    list(
+      table_fn,
+      function(d) data.table::setorder(d, -x),
+      "in the columns 'x', 'g', 'y', 'l', 'day'"
+    ),
+    list(
+      table_fn,
+      function(d) data.table::setattr(d, "label", "new"),
+      "in the attributes of the table"
+    ),
+    list(
+      frame_fn,
+      function(d) data.table::set(d, 1L, "x", 0L),
+      "in the column 'x'"
+    ),
+    list(
+      frame_fn,
+      function(d) data.table::set(d, 1L, "y", 0),
+      "in the column 'y'"
+    ),
+    list(
+      frame_fn,
+      function(d) data.table::set(d, 3L, "s", "z"),
+      "in the column 's'"
+    ),
+    list(list_fn, function(d) d[[2]][1, x := 0L], "in the column '[[2]]$x'"),
+    list(
+      list_fn,
+      function(d) data.table::setattr(d, "names", c("p", "q")),
+      "in the attributes of the list"
+    ),
+    list(
+      vector_fn,
+      function(d) data.table::setattr(d, "label", "new"),
+      "in its value"
+    ),
+    list(
+      model_fn,
+      function(d) data.table::setattr(d$coefficients, "names", c("a", "b")),
+      "in its value"
+    )
+  )
+  for (i in seq_along(cases)) {
+    p <- plnr::Plan$new()
+    add_data(p, "d", fn = cases[[i]][[1]])
+    add_analyses(
+      p,
+      sc,
+      "a",
+      fn = in_global(
+        function(data, argset) {
+          change(data$d)
+          return(1)
+        },
+        change = in_global(cases[[i]][[2]])
+      )
+    )
+    # expect_error() fails when the run does not stop.
+    out <- utils::capture.output(
+      expect_error(
+        run_plan(p),
+        "^1 of 6 analyses failed, and the run stopped early: 2 analyses did not run\\. ",
+        info = paste("case", i)
+      )
+    )
+    expect_identical(
+      out[2:3],
+      c(
+        "pbn: the analysis real__sim_0001__a__1 failed:",
+        paste0(
+          "The analysis changed values of the shared data in place: the ",
+          "data 'd', ",
+          cases[[i]][[3]],
+          ". plnr gives every analysis of one scenario and simulation the ",
+          "same data object, so each later analysis in the same R session ",
+          "would get the changed data, and a result would depend on the ",
+          "order of the analyses. Copy the data first, for example ",
+          "d <- data.table::copy(data$d), or make the change in a data step."
+        )
+      ),
+      info = paste("case", i)
+    )
+  }
+})
+
+test_that("an analysis that reads the shared data without a change passes, also with a data.table subset that adds an index, and the next analysis gets the data as it was", {
+  sc <- small_scenarios()
+  in_global <- function(f) {
+    environment(f) <- globalenv()
+    return(f)
+  }
   p <- plnr::Plan$new()
-  add_data(p, "d", fn = shared)
+  add_data(
+    p,
+    "d",
+    fn = in_global(function(scenario, sim) {
+      return(data.table::data.table(
+        x = c(3L, 1L, 2L),
+        g = c("a", "b", "b"),
+        y = c(2, 4, 6)
+      ))
+    })
+  )
+  add_data(
+    p,
+    "e",
+    fn = in_global(function(scenario, sim) {
+      return(data.frame(x = 1:3, y = c(2, 4, 6)))
+    })
+  )
   add_analyses(
     p,
     sc,
     "a",
     fn = in_global(function(data, argset) {
-      data$d[1, x := 0L]
-      return(1)
+      d <- data$d
+      e <- data$e
+      return(c(
+        nrow(d[g == "b"]),
+        d[order(x)]$x[1],
+        d[, .N, by = g]$N[2],
+        d[g == "a", sum(y)],
+        unname(stats::coef(stats::lm(y ~ x, data = e))[2]),
+        sum(e$x + 0L),
+        nrow(merge(d, e, by = "x"))
+      ))
     })
   )
   add_analyses(
@@ -544,11 +706,116 @@ test_that("an analysis that changes the shared data in place fails, and one that
     sc,
     "b",
     fn = in_global(function(data, argset) {
-      return(data$d$x[1])
+      return(c(data$d$x, data$e$x))
+    })
+  )
+  # Elements that are not data.frames: a vector, a model, a named list of
+  # data.tables and an environment, which pbn does not check.
+  add_data(p, "v", fn = in_global(function(scenario, sim) return(c(1, 2, 3))))
+  add_data(
+    p,
+    "m",
+    fn = in_global(function(scenario, sim) {
+      return(stats::lm(y ~ x, data = data.frame(x = 1:5, y = c(2, 4, 5, 8, 9))))
+    })
+  )
+  add_data(
+    p,
+    "l",
+    fn = in_global(function(scenario, sim) {
+      return(list(
+        p = data.table::data.table(x = 1:2),
+        q = data.table::data.table(x = 3:4)
+      ))
+    })
+  )
+  add_data(
+    p,
+    "en",
+    fn = in_global(function(scenario, sim) {
+      e <- new.env()
+      e$k <- 5
+      return(e)
+    })
+  )
+  add_analyses(
+    p,
+    sc,
+    "c",
+    fn = in_global(function(data, argset) {
+      return(c(
+        sum(data$v),
+        round(unname(stats::predict(data$m)[1]), 6),
+        round(unname(stats::coef(summary(data$m))[2, 1]), 6),
+        nrow(data$l$q[x > 3]),
+        length(names(data$l)),
+        get("k", envir = data$en)
+      ))
     })
   )
   r <- run_plan(p)
-  expect_identical(r[["null__sim_0002__b__1"]], 0L)
+  expect_identical(r[["null__sim_0002__c__1"]], c(6, 2, 1.8, 1, 2, 5))
+  # The subset added an index to the shared table, which changes no value.
+  expect_identical(
+    r[["null__sim_0002__a__1"]],
+    c(2, 1, 2, 2, 2, 6, 3)
+  )
+  expect_identical(r[["null__sim_0002__b__1"]], c(3L, 1L, 2L, 1:3))
+})
+
+test_that("an analysis that changes values in place after an analysis that read the same data fails, also with the hashes kept from the first analysis", {
+  sc <- small_scenarios()
+  in_global <- function(f) {
+    environment(f) <- globalenv()
+    return(f)
+  }
+  p <- plnr::Plan$new()
+  add_data(
+    p,
+    "d",
+    fn = in_global(function(scenario, sim) {
+      return(data.table::data.table(x = 1:3, g = c("a", "b", "b")))
+    })
+  )
+  add_analyses(
+    p,
+    sc,
+    "a",
+    fn = in_global(function(data, argset) {
+      return(nrow(data$d[g == "b"]))
+    })
+  )
+  add_analyses(
+    p,
+    sc,
+    "b",
+    fn = in_global(function(data, argset) {
+      data$d[1, x := 0L]
+      return(1)
+    })
+  )
+  # expect_error() fails when the run does not stop.
+  out <- utils::capture.output(
+    expect_error(
+      run_plan(p),
+      "^1 of 9 analyses failed, and the run stopped early: 2 analyses did not run\\. "
+    )
+  )
+  expect_identical(
+    out[2:3],
+    c(
+      "pbn: the analysis real__sim_0001__b__1 failed:",
+      paste0(
+        "The analysis changed values of the shared data in place: the data ",
+        "'d', in the column 'x'. plnr gives every analysis of one scenario ",
+        "and simulation the same data object, so each later analysis in the ",
+        "same R session would get the changed data, and a result would ",
+        "depend on the order of the analyses. Copy the data first, for ",
+        "example d <- data.table::copy(data$d), or make the change in a data ",
+        "step."
+      )
+    )
+  )
 })
 
 test_that("an analysis on a worker that changes the shared data in place fails too", {
@@ -578,6 +845,49 @@ test_that("an analysis on a worker that changes the shared data in place fails t
     sum(grepl("The analysis changed the data 'd' in place", out, fixed = TRUE)),
     n
   )
+})
+
+test_that("on a worker, an analysis that changes values of the shared data in place fails, and one that reads them passes", {
+  skip_if_pbn_not_installed()
+  shared <- function(scenario, sim) {
+    return(data.table::data.table(x = 1:3, g = c("a", "b", "b")))
+  }
+  sets <- function(data, argset) {
+    data$d[g == "b", x := 0L]
+    return(1)
+  }
+  reads <- function(data, argset) {
+    return(nrow(data$d[g == "b"]))
+  }
+  environment(shared) <- globalenv()
+  environment(sets) <- globalenv()
+  environment(reads) <- globalenv()
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = shared)
+  add_analyses(p, small_scenarios(), "a", fn = sets)
+  out <- utils::capture.output(
+    err <- expect_error(
+      run_plan(p, workers = 2),
+      "^[1-3] of 6 analyses failed, and the run stopped early: [0-5] analyses did not run\\. "
+    )
+  )
+  if (is.null(err)) {
+    return(invisible(NULL))
+  }
+  n <- as.integer(sub(" of 6 .*", "", conditionMessage(err)))
+  expect_identical(
+    sum(grepl(
+      "changed values of the shared data in place: the data 'd', in the column 'x'.",
+      out,
+      fixed = TRUE
+    )),
+    n
+  )
+  p <- plnr::Plan$new()
+  add_data(p, "d", fn = shared)
+  add_analyses(p, small_scenarios(), "a", fn = reads)
+  r <- run_plan(p, workers = 2)
+  expect_identical(r[["null__sim_0002__a__1"]], 2L)
 })
 
 test_that("the seed of the data does not depend on the scenario: two scenarios with the same data code and another setting draw the same numbers in one simulation, with 1 and 2 workers, and an analysis gets the same seed in both", {
@@ -615,10 +925,17 @@ test_that("the seed of the data does not depend on the scenario: two scenarios w
     expect_identical(aa$x, bb$x, info = paste("workers", workers))
     expect_identical(aa$draw, bb$draw, info = paste("workers", workers))
     expect_identical(aa$seed, bb$seed, info = paste("workers", workers))
-    expect_identical(aa$seed[1], analysis_seed("a", 1, 3), info = paste("workers", workers))
+    expect_identical(
+      aa$seed[1],
+      analysis_seed("a", 1, 3),
+      info = paste("workers", workers)
+    )
     four <- r[["aa__sim_0004__a__1"]]
     expect_false(identical(aa$x, four$x), info = paste("workers", workers))
-    expect_false(identical(aa$seed, four$seed), info = paste("workers", workers))
+    expect_false(
+      identical(aa$seed, four$seed),
+      info = paste("workers", workers)
+    )
     # The data of simulation 3 is set.seed(3) and then the draws.
     set.seed(3)
     expect_identical(aa$x, stats::rnorm(5), info = paste("workers", workers))

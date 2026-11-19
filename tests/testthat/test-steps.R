@@ -562,22 +562,49 @@ test_that("with a cache, a changed step computes the data again, and the line na
       return(x)
     }
   )
+  # Each new step calls the function that was the step. That function is
+  # now a function that the data calls, so the line names it too.
+  called <- c(
+    raw = "data_raw",
+    clean = "data_clean",
+    cohort = "data_cohort",
+    after_cohort = "data_impute"
+  )
   steps <- impute_steps
   for (s in names(other)) {
     steps[[s]] <- other[[s]]
-    step(rep(paste0("the function given as `", s, "` changed"), 3), steps)
+    step(
+      rep(
+        paste0(
+          "the function given as `",
+          s,
+          "`, the function `",
+          called[[s]],
+          "` changed"
+        ),
+        3
+      ),
+      steps
+    )
   }
   # Two steps at once are both named, in the order of the steps.
   step(
     rep(
-      "the function given as `raw`, the function given as `clean` changed",
+      paste0(
+        "the function given as `raw`, the function given as `clean`, the ",
+        "function `data_clean`, the function `data_raw` changed"
+      ),
       3
     ),
     c(impute_steps[c("raw", "clean")], steps[c("cohort", "after_cohort")])
   )
   step(
     rep(
-      "the function given as `cohort`, the function given as `after_cohort` changed",
+      paste0(
+        "the function given as `cohort`, the function given as ",
+        "`after_cohort`, the function `data_cohort`, the function ",
+        "`data_impute` changed"
+      ),
       3
     ),
     impute_steps
@@ -586,13 +613,28 @@ test_that("with a cache, a changed step computes the data again, and the line na
   run <- cohort_run(p, steps = cohort_steps)
   expect_identical(
     run$out,
-    cache_lines(p, rep("the function given as `after_cohort` changed", 3))
+    cache_lines(
+      p,
+      rep(
+        "the function given as `after_cohort`, the function `impute_draws` changed",
+        3
+      )
+    )
   )
   # From the steps to fn: the data function of add_data() changed.
   run <- cohort_run(p)
   expect_identical(
     run$out,
-    cache_lines(p, rep("the data function of add_data() changed", 3))
+    cache_lines(
+      p,
+      rep(
+        paste0(
+          "the data function of add_data(), the function `data_clean`, the ",
+          "function `data_cohort`, the function `data_raw` changed"
+        ),
+        3
+      )
+    )
   )
 })
 

@@ -49,8 +49,9 @@ run_context <- function(info, index, workers, progressor, stop_path) {
 # Empties the state of one R session in the run context `run`: the batch of
 # finished analyses not sent yet, with its scenario `bs`, its count `bn`,
 # its failed analyses `bf` and its start `t0`, the current analysis, the
-# fingerprint of the objects, and whether this session knows that the run
-# stops, see run_stopping().
+# fingerprint of the objects, the kept hashes of the data, see
+# values_before(), and whether this session knows that the run stops, see
+# run_stopping().
 run_reset <- function(run) {
   run$sent <- -Inf
   run$bs <- NULL
@@ -66,6 +67,7 @@ run_reset <- function(run) {
   run$cur_wrote <- FALSE
   run$fp <- NULL
   run$gl <- NULL
+  run$vals <- NULL
   return(invisible(run))
 }
 environment(run_reset) <- baseenv()
@@ -224,9 +226,7 @@ run_done <- function(run, argset, now, failed = FALSE) {
   run$cur_start <- NA_real_
   run$cur_wrote <- FALSE
   # i is the position of the analysis, so a flush point is TRUE there.
-  if (
-    failed || wrote || isTRUE(run$flush[i]) || now - run$sent >= run$every
-  ) {
+  if (failed || wrote || isTRUE(run$flush[i]) || now - run$sent >= run$every) {
     run$send(run, now)
   }
   return(invisible(NULL))

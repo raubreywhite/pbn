@@ -297,6 +297,7 @@ cache_parts <- function(ctx, where) {
     raw_data = if (identical(s, "real")) ctx[["raw_data"]] else NULL,
     data_files = ctx[["data_files"]],
     data_function = ctx[["data_function"]],
+    helpers = ctx[["helpers"]],
     cfg_data = ctx[["cfg_data"]],
     versions = ctx[["versions"]],
     rng = ctx[["rng"]]
@@ -373,8 +374,9 @@ changed_packages <- function(packages, memo) {
 }
 
 # The names of the parts of the key that differ between `old` and `new`. A
-# changed data_*.R file, a changed version and a changed step of the data
-# are each named.
+# changed data_*.R file, a changed version, a changed step of the data and
+# a changed function of the functions folder that the data calls are each
+# named.
 changed_parts <- function(old, new) {
   out <- character(0)
   for (nm in names(new)) {
@@ -392,8 +394,13 @@ part_change <- function(nm, a, b) {
   if (nm == "data_function" && !is.null(names(a)) && !is.null(names(b))) {
     return(paste0("the function given as `", differing_names(a, b), "`"))
   }
-  if (nm == "versions") {
-    return(paste("the version of", differing_names(a, b)))
+  # The words before and after each changed name of the part.
+  around <- list(
+    versions = c("the version of ", ""),
+    helpers = c("the function `", "`")
+  )
+  if (nm %in% names(around)) {
+    return(paste0(around[[nm]][1], differing_names(a, b), around[[nm]][2]))
   }
   if (nm == "data_files") {
     return(differing_names(a, b))
@@ -548,7 +555,8 @@ cache_context <- function(info, name, print_now) {
       paste0(state$version, "_cache_gitexclude"),
       name
     ),
-    data_function = data_function_md5(info, name)
+    data_function = data_function_md5(info, name),
+    helpers = helper_md5(info, name)
   ))
 }
 

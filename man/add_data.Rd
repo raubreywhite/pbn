@@ -204,6 +204,13 @@ not seen.
 the files.
 \item the code of \code{fn}, or of each step, deparsed without its source
 references.
+\item the code of each function of \verb{<version>_functions/} that \code{fn} or a step
+calls, also through other functions of the folder. pbn deparses each
+without its source references. A function counts when its name is in
+the code. That includes an argument such as \code{lapply(x, f)}, a formula,
+and a string such as \code{do.call("f", args)}.
+So a helper in \code{utils.R} counts. A function that only an analysis calls
+does not change the key.
 \item \code{CFG$data}, when \code{CFG} has the element \code{data}. Put the config that the
 data code reads there. A change in another element of \code{CFG} does not
 change the key.
@@ -229,10 +236,14 @@ removed. The error names the file. Run \code{\link[=initialize_project]{initiali
 file with its recorded size and modification time is not hashed again,
 so a change that keeps both is not found.
 
-Keep the data code in the files \code{data_*.R}. The key holds no other file.
-A function of the data code can be in another file. A change in it then
-leaves the key the same, and the run reads the old data. This is the one
-change of the data code that the cache does not find.
+The key holds no other part of \verb{<version>_functions/}. These changes
+leave the key the same, and the run reads the old data:
+\itemize{
+\item a function whose name the data code builds when it runs, for example
+\code{get(paste0("f", 1))}.
+\item an object of the folder that is neither a function nor \code{CFG$data}.
+Examples are a lookup vector in \code{utils.R} and a function inside a list.
+}
 
 When the key is the same, \code{\link[=run_plan]{run_plan()}} reads the value from the cache and
 does not call \code{fn} or a step. Each analysis sets its own seed, so its
@@ -247,7 +258,8 @@ The reason names each changed \code{data_*.R} file, \code{CFG$data}, or the
 settings. It names changed raw data with its folders, for example "the
 raw data in the folder lookup". It names a changed \code{fn} as "the data function of
 add_data()", and each changed step as, for example, "the function given
-as \code{clean}". It can also name the kind of random
+as \code{clean}". It names each changed function that the data calls, for
+example "the function \code{lower_names}". It can also name the kind of random
 number generator, or each package with another version. With \code{workers = 1}, the line comes before the
 data function runs. With more workers, \code{\link[=run_plan]{run_plan()}} prints the lines after
 the run, in the order of the plan.

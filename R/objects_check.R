@@ -367,3 +367,221 @@ main_change <- function(before) {
   after <- objects_fingerprint(state$env, names(before))
   return(objects_changed(before, after, object_change))
 }
+
+# The check that an analysis does not change the values of the shared data
+# in place, for example with data$d[1, x := 0]. The check of the shape in
+# data_shape() finds a new, a removed or a replaced column only, because a
+# change of values in place keeps the address of the column.
+
+# The hashes of the values of each data element of `data`, named by the data,
+# or NULL for an element that is not checked. A data.frame gets one hash for
+# each column and one for its attributes, see frame_hashes(). A list of
+# data.frames, for example imputed data sets, gets these hashes for each
+# data.frame, named "[[<i>]]$<column>", and one hash of the attributes of
+# the list, such as its names, named "<list attributes>". Each other element
+# gets one hash of its whole value, see whole_hash(). plnr adds the element
+# hash, which is not data.
+data_values <- function(data) {
+  data <- data[names(data) != "hash"]
+  return(lapply(data, function(x) {
+    if (is.data.frame(x)) {
+      return(frame_hashes(x, ""))
+    }
+    frames <- is.list(x) &&
+      length(x) > 0 &&
+      all(vapply(x, is.data.frame, logical(1)))
+    if (!frames) {
+      return(whole_hash(x))
+    }
+    out <- unlist(lapply(seq_along(x), function(i) {
+      return(frame_hashes(x[[i]], paste0("[[", i, "]]$")))
+    }))
+    return(c(out, "<list attributes>" = unname(whole_hash(attributes(x)))))
+  }))
+}
+
+# The hash of the whole value `x` of a data element that is not a data.frame
+# or a list of data.frames, named "<value>", or NULL for an environment or a
+# function. An environment, also an R6 object, holds its contents by
+# reference, and a function changes its bytes when R compiles it. So a
+# function inside a list does not count, and the contents of an environment
+# inside the value, such as that of a formula, do not count either.
+# serialize() version 2 writes each value of an ALTREP vector.
+whole_hash <- function(x) {
+  if (is.environment(x) || is.function(x)) {
+    return(NULL)
+  }
+  if (is.list(x)) {
+    x <- rapply(
+      x,
+      function(f) return(NULL),
+      classes = "function",
+      how = "replace"
+    )
+  }
+  bytes <- serialize(
+    x,
+    NULL,
+    xdr = FALSE,
+    version = 2,
+    refhook = function(e) return("")
+  )
+  return(c("<value>" = qs2::xxhash_raw(bytes)))
+}
+
+# The hash of each column of the data.frame `x`, named by `prefix` and the
+# column, and the hash of its attributes, named by `prefix` and
+# "<attributes>". The hash of a column covers its values and its
+# attributes, such as the levels of a factor. The attributes of the table
+# leave out the names, which data_shape() compares, the self-reference of a
+# data.table and the index that a data.table subset such as
+# d[group == "a"] adds in place, because that index changes no value.
+# rlang::hash() streams serialize() into xxhash and makes no copy. A column
+# of a data.table is never an ALTREP object. A column of a plain data.frame
+# MAY be one, for example the compact sequence of data.frame(id = 1:3).
+# serialize() writes such a column from its description, also after
+# data.table::set() changed a value of it, so a column of a plain
+# data.frame is hashed from serialize() version 2, which writes each value.
+frame_hashes <- function(x, prefix) {
+  hash_column <- if (inherits(x, "data.table")) {
+    rlang::hash
+  } else {
+    function(col) {
+      return(qs2::xxhash_raw(serialize(col, NULL, xdr = FALSE, version = 2)))
+    }
+  }
+  out <- vapply(x, hash_column, character(1), USE.NAMES = FALSE)
+  a <- attributes(x)
+  a <- a[setdiff(names(a), c("names", ".internal.selfref", "index"))]
+  out <- c(out, rlang::hash(a))
+  names(out) <- paste0(prefix, c(names(x), "<attributes>"))
+  return(out)
+}
+
+# The value of an analysis after the check of the shape, `out`: `out`, or a
+# pbn_failed_analysis when a value of the shared data changed in place from
+# the hashes `before` to `after` of data_values(). `after` is computed only
+# when `out` did not fail.
+values_value <- function(out, before, after) {
+  if (inherits(out, "pbn_failed_analysis")) {
+    return(out)
+  }
+  changed <- names(after)[!mapply(identical, before[names(after)], after)]
+  if (length(changed) == 0) {
+    return(out)
+  }
+  where <- vapply(
+    changed,
+    function(nm) return(values_where(nm, before[[nm]], after[[nm]])),
+    character(1)
+  )
+  return(structure(
+    list(
+      message = paste0(
+        "The analysis changed values of the shared data in place: ",
+        paste(where, collapse = "; "),
+        ". plnr gives every analysis of one scenario and ",
+        "simulation the same data object, so each later analysis in the ",
+        "same R session would get the changed data, and a result would ",
+        "depend on the order of the analyses. Copy the data first, for ",
+        "example d <- data.table::copy(data$d), or make the change in a ",
+        "data step."
+      )
+    ),
+    class = "pbn_failed_analysis"
+  ))
+}
+
+# The words of the change of the data `nm` from the hashes `a` to `b` of
+# data_values(), for example "the data 'd', in the columns 'x', 'y'", "the
+# data 'd', in the attributes of the table" or "the data 'm', in its value".
+values_where <- function(nm, a, b) {
+  parts <- union(names(a), names(b))
+  parts <- parts[!mapply(identical, a[parts], b[parts])]
+  whole <- c(
+    "<list attributes>" = "the attributes of the list",
+    "<value>" = "its value"
+  )
+  special <- parts %in% names(whole)
+  words <- unname(whole[parts[special]])
+  parts <- parts[!special]
+  attrs <- endsWith(parts, "<attributes>")
+  if (any(!attrs)) {
+    words <- c(
+      words,
+      paste0(
+        if (sum(!attrs) == 1) "the column '" else "the columns '",
+        paste(parts[!attrs], collapse = "', '"),
+        "'"
+      )
+    )
+  }
+  for (p in sub("\\$<attributes>$|<attributes>$", "", parts[attrs])) {
+    words <- c(
+      words,
+      if (p == "") {
+        "the attributes of the table"
+      } else {
+        paste0("the attributes of ", p)
+      }
+    )
+  }
+  return(paste0("the data '", nm, "', in ", paste(words, collapse = " and ")))
+}
+
+# The hashes of data_values() of `data` before an analysis. The hashes of
+# each data element are computed before its first analysis in this R
+# session, and kept in run$vals for the analyses after it. The key is the
+# name of the element, the digest that plnr made of it when the data
+# function returned, data$hash$current_elements, and its address. An element
+# without that digest, or a call without a run context, is hashed each time.
+values_before <- function(data, run) {
+  if (!is.environment(run)) {
+    return(data_values(data))
+  }
+  if (is.null(run$vals)) {
+    run$vals <- new.env(parent = emptyenv())
+  }
+  digests <- data[["hash"]][["current_elements"]]
+  out <- list()
+  for (nm in names(data)[names(data) != "hash"]) {
+    digest <- digests[[nm]]
+    if (!is.character(digest) || length(digest) != 1) {
+      out[nm] <- list(data_values(data[nm])[[1]])
+      next
+    }
+    key <- paste(nm, digest, data.table::address(data[[nm]]))
+    # An analysis that changes the data fails, and the run stops at the first
+    # failed analysis. So the kept hashes are those of the data that each
+    # later analysis of this session gets.
+    if (!exists(key, envir = run$vals, inherits = FALSE)) {
+      assign(key, data_values(data[nm])[[1]], envir = run$vals)
+    }
+    out[nm] <- list(get(key, envir = run$vals, inherits = FALSE))
+  }
+  return(out)
+}
+
+# data_values(), values_before() and values_value() run on a worker without
+# pbn. They and
+# their helpers live in one environment whose parent is the base
+# environment, so they find each other there.
+data_values_env <- new.env(parent = baseenv())
+for (nm in c(
+  "data_values",
+  "frame_hashes",
+  "whole_hash",
+  "values_before",
+  "values_value",
+  "values_where"
+)) {
+  local({
+    f <- get(nm)
+    environment(f) <- data_values_env
+    assign(nm, f, envir = data_values_env)
+  })
+}
+data_values <- data_values_env$data_values
+values_before <- data_values_env$values_before
+values_value <- data_values_env$values_value
+rm(nm)

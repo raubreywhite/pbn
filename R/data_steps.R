@@ -121,6 +121,82 @@ data_function_md5 <- function(info, name) {
   ))
 }
 
+# The part helpers of the cache key of the data `name`: the md5 of each
+# function of the functions folder that `fn` or a step calls, directly or
+# through other such functions, named by the function and sorted in the C
+# locale. A function counts when its name is a name in the code of `fn`, of
+# a step or of a function that counts, see code_names(). function_md5()
+# hashes the code and the arguments without the source references. A
+# function that only an analysis calls is not in the part.
+helper_md5 <- function(info, name) {
+  fns <- project_functions()
+  steps <- info$steps[[name]]
+  todo <- if (is.null(steps)) info$data[name] else steps
+  seen <- character(0)
+  while (length(todo) > 0) {
+    found <- unlist(lapply(todo, code_names))
+    new <- setdiff(intersect(found, names(fns)), seen)
+    seen <- c(seen, new)
+    todo <- fns[new]
+  }
+  seen <- sort(seen, method = "radix")
+  return(vapply(
+    seen,
+    function(nm) return(function_md5(fns[nm])),
+    character(1)
+  ))
+}
+
+# Each name in the code of the function `f`: in its arguments and in its
+# body, also inside a formula such as ~ f(.x), after $ and in a nested
+# function. A local variable counts too. So does each string, such as "f" in
+# do.call("f", args) or get("f"), see code_strings().
+code_names <- function(f) {
+  if (!is.function(f) || is.primitive(f)) {
+    return(character(0))
+  }
+  args <- as.call(c(as.name("list"), as.list(formals(f))))
+  return(unique(c(
+    all.names(args),
+    all.names(body(f)),
+    code_strings(formals(f)),
+    code_strings(body(f))
+  )))
+}
+
+# Each string constant in the code `x`, a call, a pairlist of arguments or a
+# constant. A symbol, also the empty symbol of an argument without a default,
+# is skipped before it is passed on, because a missing argument cannot be
+# passed.
+code_strings <- function(x) {
+  if (is.character(x)) {
+    return(x)
+  }
+  if (!is.call(x) && !is.pairlist(x)) {
+    return(character(0))
+  }
+  out <- character(0)
+  for (i in seq_along(x)) {
+    if (!is.symbol(x[[i]])) {
+      out <- c(out, code_strings(x[[i]]))
+    }
+  }
+  return(out)
+}
+
+# The functions that the functions folder defined when initialize_project()
+# sourced it, named by the function, see defined_names(). An empty list
+# without initialize_project().
+project_functions <- function() {
+  env <- state$env
+  if (!is.environment(env)) {
+    return(list())
+  }
+  names <- intersect(state$sourced, ls(env, all.names = TRUE))
+  fns <- mget(names, envir = env)
+  return(fns[vapply(fns, is.function, logical(1))])
+}
+
 # The worker functions ------------------------------------------------------
 
 # The value of the steps of the data `name`. `x` is the value of the step

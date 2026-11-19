@@ -138,9 +138,11 @@ folders of the project again, with their sizes and modification times.
 It reads no content of a file. The value carries this fingerprint in its
 stamp, and \code{\link[=save_results]{save_results()}} writes it to \code{manifest$data_files}.
 
-An analysis that changes the shared data or an object of the functions
-folder in place fails. An analysis that leaves a new object in the global
-environment fails too. \code{\link[=add_analyses]{add_analyses()}} gives the rules.
+An analysis that changes the shared data in place fails, also for a change
+of values such as \code{data$d[1, x := 0]}. The error names the data and each
+changed column. An analysis that changes an object of the functions
+folder in place fails too. So does an analysis that leaves a new object in
+the global environment. \code{\link[=add_analyses]{add_analyses()}} gives the rules.
 
 An error outside the wrappers of pbn ends the run. Examples are a worker
 that stops, and an error of plnr or of the backend of the workers.

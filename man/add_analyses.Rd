@@ -89,15 +89,42 @@ that names both kinds.
 
 While \code{\link[=run_plan]{run_plan()}} runs, an analysis fails when it changes the shared data
 in place. plnr gives every analysis of one scenario and simulation the
-same object. pbn compares the names, the number of rows, the
-data.table key and the address of each column of each data.frame before
-and after the analysis. That finds an added, removed, renamed or replaced
-column, for example \code{data$d[, x := 1]}, and a new key from
-\code{data.table::setkey()}. It does not find a change of values in place:
-\code{data$d[1, x := 0]}, \code{data$d[g == "a", y := 0]}, \code{data.table::set()} on
-some rows, \code{data.table::setorder()} and \code{data.table::setattr()} on a
-column. Copy the data first with \code{\link[data.table:copy]{data.table::copy()}} when the analysis
-changes it.
+same object, so a later analysis in the same R session would get the
+changed data. pbn compares two things before and after each analysis:
+\itemize{
+\item the names, the number of rows, the data.table key and the address of
+each column of each data.frame. This finds an added, removed, renamed or
+replaced column, for example \code{data$d[, x := 1]}, and a new key from
+\code{data.table::setkey()}.
+\item a hash of the values and the attributes of each column of each
+data.frame, and of each data.frame in a list of data.frames. The
+attributes of such a list, such as its names, have a hash too. This finds
+a change of values in place. Examples are \code{data$d[1, x := 0]},
+\code{data$d[g == "a", y := NA]} and \code{data.table::set()} on some rows. It
+also finds \code{data.table::setorder()}, and \code{data.table::setattr()} on a
+column or on the table. The error names the data and each changed
+column.
+}
+
+The hash leaves out the index that a data.table subset such as
+\code{data$d[g == "a"]} adds to the table, because the index changes no value.
+
+Each other data element, for example a vector or a model, gets one hash of
+its whole value. The error then names the data and says "in its value".
+That hash leaves out each function in the value and the contents of each
+environment in it, such as that of a formula. R changes a function when it
+compiles it, so a read could look like a change. pbn does not check a data
+element that is a function or an environment, also an R6 object. Copy the data first with \code{\link[data.table:copy]{data.table::copy()}} when the
+analysis changes it, or make the change in a data step.
+
+pbn hashes each data object before its first analysis in an R session,
+and after each analysis. An analysis that changes the data fails and
+stops the run, so the first hash holds for each later analysis. The time
+grows with the size of the data. On one computer, the hash after an
+analysis took 0.07 s for a data.table with one million rows and 20
+columns of mixed types. It took 0.03 s for ten million rows and 5 numeric
+columns. The same data as a plain data.frame took 0.10 s and 0.23 s. The
+first analysis of each data object costs a second hash.
 
 While \code{\link[=run_plan]{run_plan()}} runs, an analysis also fails when it changes an object
 of the functions folder, for example \code{CFG}. plnr runs many analyses in one

@@ -339,10 +339,7 @@ pbn supports two more practices:
 
 ## What the checks do not catch
 
-The checks find only the mistakes that they name. [What pbn does not do yet](pbn.html#what-pbn-does-not-do-yet) lists the gaps. Two of them apply to code that an agent writes:
-
-- pbn finds an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place, for example `data$d[1, x := 0]`. Copy the data first with `data.table::copy()`.
-- Of the files of code, the cache key holds the files `data_*.R` and each data step. A helper that a data step calls, in another file, can change, and the run then uses the old data.
+The checks find only the mistakes that they name. [What pbn does not do yet](pbn.html#what-pbn-does-not-do-yet) lists the gaps. One of them applies to code that an agent writes. The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, can change, and the run then uses the old data.
 
 ```{r, include = FALSE}
 unlink(root, recursive = TRUE)

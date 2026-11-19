@@ -369,6 +369,8 @@ This holds for functions that depend only on their arguments, the functions and 
 
 Each worker runs with 1 thread. Without this, packages such as data.table, fixest and a threaded BLAS start many threads in each worker. The computer then runs far more threads than it has cores. `run_plan()` starts each worker with `OMP_NUM_THREADS`, `OPENBLAS_NUM_THREADS` and `MKL_NUM_THREADS` at 1, and calls `data.table::setDTthreads(1)` there. An analysis that needs more threads sets them in its own code, for example `data.table::setDTthreads(4)` at the top of its function. With `workers = 1`, pbn changes no thread setting. `?run_plan` gives the caveat of a threaded BLAS.
 
+An analysis MUST NOT change the shared data in place, for example with `data$d[1, x := 0]`. Every analysis of one scenario and simulation gets the same data object. `run_plan()` fails such an analysis and names the changed columns. Copy the data first with `data.table::copy()`.
+
 An analysis MUST NOT change `CFG` or another object of `v01_functions/`. A later analysis in the same R session would see the change, so its result would depend on the analyses before it. `run_plan()` fails such an analysis, also for the index that a data.table subset such as `CFG$vars[var == "x"]` adds in place. `?add_analyses` gives the rules.
 
 ## Progress
@@ -672,7 +674,7 @@ rows <- grep("^\\| 20", log, value = TRUE)
 stopifnot(length(rows) == 6, grepl(" analyses failed", rows[4], fixed = TRUE), grepl("| real, known ", rows[2], fixed = TRUE))
 ```
 
-The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, the fingerprint of the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. Keep the data code in `data_*.R` files: a change in another file does not change the key. To compute every value again, delete `v01_cache_gitexclude/`.
+The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, and of each function of `v01_functions/` that a step calls, also through other functions. So a helper in `utils.R` counts. A function that only an analysis calls does not change the key. The key also holds the fingerprint of the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. To compute every value again, delete `v01_cache_gitexclude/`.
 
 ## Stepping through one analysis by hand
 
@@ -1002,7 +1004,7 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 - No tool shows the tracked changes between two Word manuscripts.
 - No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
 - When `run_plan()` stops on a failed analysis, the results files of an earlier run stay as they are. `read_results()` reads them.
-- pbn finds an analysis that adds, removes, renames or replaces a column of the shared data. It does not find a change of values in place, for example `data$d[1, x := 0]`. Copy the data first with `data.table::copy()`.
+- pbn does not check a data element that is a function or an environment, for example an R6 object, for a change in place. In an element that is not a data.frame, the check leaves out each function and each environment, such as that of a formula.
 - pbn finds an analysis that changes an object of `v01_functions/`, such as `CFG`. It does not find a change of a function inside the object, a change inside an environment of the object, or a change by a data function.
 - With 2 or more workers, each worker has 1 thread. A threaded BLAS MAY then give a matrix product that differs in its last digits from that of `workers = 1`.
 - `workers` limits the R sessions of pbn only. An analysis that starts its own processes in a worker multiplies them, for example with `parallel::mclapply()`. Two workers that each start 4 processes run 8 processes at the same time.
@@ -1010,7 +1012,7 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 - The checks between the steps compare the number of rows, not which rows. A `data_clean()`, or a `data_cohort()` before `$new()`, that drops one row and repeats another passes. pbn does not check the rows of the step `after_cohort`.
 - The check of the rows of the data compares sizes only. A copy of the data with one row less passes.
 - The cache stores the whole value of one data element for each scenario and simulation. A change of the code of one imputation computes every imputation again.
-- The cache key holds the files `data_*.R` only. A change in data code in another file does not change the key, and the run uses the old data. This is the one change of the data code that the cache does not find.
+- The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string such as `do.call("f", args)`. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, is not in the key. Nor is an object that is neither a function nor `CFG$data`, for example a lookup vector in `utils.R`. A change of either then leaves the old data in use.
 - No argument computes the cached data again. Delete `v01_cache_gitexclude/` to do that.
 - A use of the cache stops when a `data_*.R` file changed after `initialize_project()`. Run `initialize_project()` again.
 - Do not run one scenario of one version in two R sessions at the same time. The two runs can mix the files of their results.

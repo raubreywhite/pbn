@@ -8,8 +8,8 @@ template:
       title: "An R analysis framework built for AI agents."
       lede: >
         One layout, rules that code enforces, and fake data with known
-        answers that runs through the same code as the real data. A person
-        can then check the code that an agent writes.
+        answers. An AI agent checks its own code with pbn::verify(), and
+        each problem comes with its fix.
       cta:
         primary:
           text: "Get started"

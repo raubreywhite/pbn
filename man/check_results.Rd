@@ -108,6 +108,13 @@ with \code{data_md5}, the md5 of the data files of an older pbn, fails this
 rule: run the scenario again. For \code{"real"}, \code{manifest$fake_real_data}
 MUST be \code{TRUE} or \code{FALSE}. A real manifest of an older pbn has no
 \code{fake_real_data}, so it fails this rule: run the scenario again.
+
+For \code{"real"}, \code{manifest$failed_fake_checks} MUST be a character vector
+without attributes, also no names. It MAY be empty. Each element MUST
+match \verb{^[a-z0-9_]+$}, MUST NOT be \code{NA} or \code{"real"}, and MUST come once.
+The element MUST be there when \code{manifest$pbn_version} is a version of
+2026.11.25 or newer. A manifest without it and without such a version
+passes, as the results of an older pbn do.
 \item \code{manifest_source}: \code{manifest$source_md5} is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script \verb{<version>_run.R} of \code{manifest$version}, or a \code{vNN_run.R} when

@@ -111,6 +111,12 @@ modification times, give the same manifest.
 \code{\link[=initialize_project]{initialize_project()}} ran.
 \item For the scenario \code{"real"} only, \code{fake_real_data}, \code{TRUE} or \code{FALSE}:
 the argument \code{fake_real_data} of \code{\link[=initialize_project]{initialize_project()}}.
+\item For the scenario \code{"real"} only, \code{failed_fake_checks}, a character
+vector. It holds each fake scenario of the same call of
+\code{save_results()} with a failed assertion, in the order of \code{scenarios}.
+It is empty when each one passed, or when \code{scenarios} has no fake
+scenario.
+\code{\link[=read_results]{read_results()}} stops on real results where it is not empty.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
 functions of \code{\link[=add_data]{add_data()}}, without their source references: each \code{fn},
 and each step of the steps form. A change in a function that \code{fn} or a
@@ -161,7 +167,14 @@ and it writes the run log with its error.
 with more than 1 simulation, and checks each with \code{\link[=check_results]{check_results()}}. On
 a failure, it prints each failed rule with \code{cat()}, writes no results
 file and stops.
-\item For each scenario, it replaces \code{check.csv} with one failed assertion,
+\item When \code{scenarios} holds \code{"real"}, it first replaces the \code{check.csv}
+of \code{"real"} with one failed assertion, \verb{not checked yet}. So
+\code{\link[=read_results]{read_results()}} refuses the real results of an earlier run, also when
+\code{save_results()} stops before it writes \code{"real"}. It does steps 3 and
+4 for the fake scenarios first, and then for \code{"real"}. So the manifest
+of the real results records each fake scenario of the same run with a
+failed assertion. The element \code{failed_fake_checks} holds them. For
+each scenario, it replaces \code{check.csv} with one failed assertion,
 \verb{not checked yet}, so that \code{\link[=read_results]{read_results()}} refuses the new results
 until step 4 checks them. It deletes the folders \verb{output/} and
 \verb{output_fake_data/} of each scenario that it writes, with one printed

@@ -22,7 +22,9 @@ it quits with status 1 when any rule fails.
 The first line names the rule set of \code{pbn.yml}, and counts its changes
 and its allowed paths. A rule with no finding prints one PASS line, and a
 rule that is off prints one OFF line. Each finding prints one line:
-\verb{PASS|WARN|FAIL  <rule>  <detail>}. A count line comes last.
+\verb{PASS|WARN|FAIL  <rule>  <detail>}. The detail of a WARN or a FAIL ends
+with \verb{Fix:} and the change that removes the finding. A count line comes
+last.
 
 Every rule reads one list of files and their folders:
 \itemize{
@@ -249,7 +251,7 @@ it. So the folder \code{adhoc} allows \code{adhoc/Notes.txt} and
 \code{adhoc/Old/Data.csv}, but not \code{adhoc2/x.R}. A final \code{/} changes nothing:
 \code{adhoc} and \verb{adhoc/} are the same entry. pbn does not look on the disk
 for a file or a folder of that name. An allowed finding is WARN, with
-\code{(allowed)} at the end. A path that matches no finding is a WARN of the
+\code{(allowed)} before its fix. A path that matches no finding is a WARN of the
 rule \code{allow}.
 
 Three rules are locked: \code{results_contract}, \code{gitexclude_not_tracked} and

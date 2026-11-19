@@ -4,11 +4,12 @@ template:
   package: rwtemplate
   params:
     hero:
-      overline: "R package - Analysis framework"
+      overline: "R package: analysis framework"
       title: "An R analysis framework built for AI agents."
       lede: >
         One layout, rules that code enforces, and fake data with known
-        answers, so a person can check the code that an agent writes.
+        answers that runs through the same code as the real data. A person
+        can then check the code that an agent writes.
       cta:
         primary:
           text: "Get started"

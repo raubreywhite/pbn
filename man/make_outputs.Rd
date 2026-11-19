@@ -75,9 +75,12 @@ that did not pass. Then it deletes the output folder of the scenario, so
 no output of an earlier run stays beside absent or failed results. The
 line says so. It does not touch a scenario that is not in \code{scenarios}. A
 \code{"real"} without \code{check.csv} is not skipped, because \code{expect_real()} is
-optional. When \code{fn} stops for one scenario, \code{make_outputs()} stops with an
-error that names the scenario. The output of the scenarios before it
-stays.
+optional. \code{make_outputs()} also skips \code{"real"} when its
+\code{manifest$failed_fake_checks} names a fake scenario with a failed
+assertion. \code{\link[=read_results]{read_results()}} has the same rule.
+
+When \code{fn} stops for one scenario, \code{make_outputs()} stops with an error
+that names the scenario. The output of the scenarios before it stays.
 
 \code{fn} MUST write into \code{dir} only. Around each call for a fake scenario,
 \code{make_outputs()} lists the path, the size and the modification time of

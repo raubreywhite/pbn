@@ -49,8 +49,10 @@
 #' blocks come from the functions folder that it sourced. Without it they
 #' stop. They read the real results from the disk at each call, with
 #' [read_results()]. So they work in the project folder, and on a server
-#' after the file of [to_one_file()]. [read_results()] stops on real results
-#' whose `check.csv` holds a failed assertion, and so do they.
+#' after the file of [to_one_file()]. They stop where [read_results()]
+#' stops. So they also stop on real results whose
+#' `manifest$failed_fake_checks` names a fake scenario with a failed
+#' assertion.
 #'
 #' `show_blocks()` calls each block function once. For each block, it prints
 #' the number, the name, the rows and the pages. For a function that stops,

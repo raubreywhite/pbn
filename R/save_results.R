@@ -90,6 +90,12 @@
 #'   [initialize_project()] ran.
 #' - For the scenario `"real"` only, `fake_real_data`, `TRUE` or `FALSE`:
 #'   the argument `fake_real_data` of [initialize_project()].
+#' - For the scenario `"real"` only, `failed_fake_checks`, a character
+#'   vector. It holds each fake scenario of the same call of
+#'   `save_results()` with a failed assertion, in the order of `scenarios`.
+#'   It is empty when each one passed, or when `scenarios` has no fake
+#'   scenario.
+#'   [read_results()] stops on real results where it is not empty.
 #' - For a fake scenario only, `fake_md5`, one md5 of the code of the data
 #'   functions of [add_data()], without their source references: each `fn`,
 #'   and each step of the steps form. A change in a function that `fn` or a
@@ -138,7 +144,14 @@
 #'    with more than 1 simulation, and checks each with [check_results()]. On
 #'    a failure, it prints each failed rule with `cat()`, writes no results
 #'    file and stops.
-#' 3. For each scenario, it replaces `check.csv` with one failed assertion,
+#' 3. When `scenarios` holds `"real"`, it first replaces the `check.csv`
+#'    of `"real"` with one failed assertion, `not checked yet`. So
+#'    [read_results()] refuses the real results of an earlier run, also when
+#'    `save_results()` stops before it writes `"real"`. It does steps 3 and
+#'    4 for the fake scenarios first, and then for `"real"`. So the manifest
+#'    of the real results records each fake scenario of the same run with a
+#'    failed assertion. The element `failed_fake_checks` holds them. For
+#'    each scenario, it replaces `check.csv` with one failed assertion,
 #'    `not checked yet`, so that [read_results()] refuses the new results
 #'    until step 4 checks them. It deletes the folders `output/` and
 #'    `output_fake_data/` of each scenario that it writes, with one printed
@@ -438,13 +451,42 @@ save_steps <- function(r, index, table, info, gitexclude, done) {
   root <- state$results
   start <- proc.time()[["elapsed"]]
   done$outputs_deleted <- drop_outputs(root, table$scenario)
-  for (s in table$scenario) {
+  done$seconds[["write"]] <- done$seconds[["write"]] + elapsed_since(start)
+  # The fake scenarios come first, so that the manifest of the real results
+  # records the fake scenarios of this run whose assertions did not pass.
+  # read_results() refuses the real results of an earlier run from here
+  # on, also when this call stops before it writes "real".
+  if ("real" %in% table$scenario) {
+    mark_not_checked(file.path(root, "real"))
+  }
+  fakes <- table$scenario[table$scenario != "real"]
+  checks <- write_and_check(objects, fakes, root, done, list())
+  if ("real" %in% table$scenario) {
+    objects$real <- record_failed_fakes(objects$real, checks)
+    checks <- write_and_check(objects, "real", root, done, checks)
+  }
+  checks <- checks[intersect(table$scenario, names(checks))]
+  checks <- if (length(checks) == 0) {
+    empty_checks()
+  } else {
+    do.call(rbind, unname(checks))
+  }
+  done$checks <- checks
+  return(checks)
+}
+
+# Writes the results of the scenarios `scenarios` under `root`, then checks
+# each with its expect_ function. Returns `checks`, the list of the
+# assertions of each scenario, with these scenarios added. The environment
+# `done` gets the seconds of the writes and of the checks.
+write_and_check <- function(objects, scenarios, root, done, checks) {
+  start <- proc.time()[["elapsed"]]
+  for (s in scenarios) {
     write_scenario(objects[[s]], root, s)
   }
   done$seconds[["write"]] <- done$seconds[["write"]] + elapsed_since(start)
   start <- proc.time()[["elapsed"]]
-  checks <- list()
-  for (s in table$scenario) {
+  for (s in scenarios) {
     fn <- expect_function(s)
     if (!is.null(fn)) {
       checks[[s]] <- check_expectations(fn, root, s)
@@ -453,14 +495,27 @@ save_steps <- function(r, index, table, info, gitexclude, done) {
       delete_paths(file.path(root, s, "check.csv"))
     }
   }
-  checks <- if (length(checks) == 0) {
-    empty_checks()
-  } else {
-    do.call(rbind, unname(checks))
-  }
-  done$seconds[["expect"]] <- elapsed_since(start)
-  done$checks <- checks
+  done$seconds[["expect"]] <- done$seconds[["expect"]] + elapsed_since(start)
   return(checks)
+}
+
+# The results `o` of "real" from build_objects(), with each fake scenario
+# of `checks` with a failed assertion in manifest$failed_fake_checks of each
+# simulation, in the order of `checks`.
+record_failed_fakes <- function(o, checks) {
+  failed <- names(checks)[vapply(
+    checks,
+    function(x) return(!all(x$pass %in% TRUE)),
+    logical(1)
+  )]
+  failed <- as.character(failed)
+  for (k in seq_along(o$runs)) {
+    o$runs[[k]]$manifest$failed_fake_checks <- failed
+  }
+  if (!is.null(o$stacked)) {
+    o$stacked$manifest$failed_fake_checks <- failed
+  }
+  return(o)
 }
 
 # Stops when the plan has no data or analysis of pbn, or when `r` is not the
@@ -722,7 +777,10 @@ build_object <- function(r, index, table, info, s, sim, fake_md5, data_files) {
     if (s == "real") {
       list(
         data_files = data_files,
-        fake_real_data = isTRUE(state$fake_real_data)
+        fake_real_data = isTRUE(state$fake_real_data),
+        # save_steps() writes each fake scenario with a failed assertion
+        # here before it writes the real results.
+        failed_fake_checks = character(0)
       )
     } else {
       list(fake_md5 = fake_md5)
@@ -964,14 +1022,12 @@ drop_outputs <- function(root, scenarios) {
   return(rel)
 }
 
-# Writes the results of one scenario under `root`, and stacks them when the
-# scenario has more than 1 simulation.
-write_scenario <- function(o, root, s) {
-  folder <- file.path(root, s)
+# Writes a check.csv with one failed assertion, "not checked yet", into the
+# scenario folder `folder`, and creates the folder. read_results() then
+# refuses the results there until the expect_ function has checked them. A
+# reader thus never gets new results with the check.csv of an earlier run.
+mark_not_checked <- function(folder) {
   dir.create(folder, recursive = TRUE, showWarnings = FALSE)
-  # Until the expect_ function has checked the new results, check.csv holds
-  # one failed assertion, so read_results() refuses them. A reader thus
-  # never gets new results with the check.csv of an earlier run.
   write_csv_atomic(
     failed_assertion(
       "save_results() checks these results with expect_<scenario>()",
@@ -979,6 +1035,14 @@ write_scenario <- function(o, root, s) {
     ),
     file.path(folder, "check.csv")
   )
+  return(invisible(NULL))
+}
+
+# Writes the results of one scenario under `root`, and stacks them when the
+# scenario has more than 1 simulation.
+write_scenario <- function(o, root, s) {
+  folder <- file.path(root, s)
+  mark_not_checked(folder)
   empty_sims_folder(folder, s, o$sims)
   if (o$sims == 1) {
     qs2::qs_save(o$runs[[1]], file.path(folder, "results.qs2"))

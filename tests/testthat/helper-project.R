@@ -478,3 +478,17 @@ save_run <- function(
   )
   return(list(out = out, err = err, plan = plan, scenarios = sc))
 }
+
+# The detail `x` of a finding of the rule `rule`, with the fix of the rule
+# at its end, as check_project() writes it. `fix` replaces the fix of the
+# rule, for example parse_fix for a file that R cannot parse.
+with_fix <- function(rule, x, fix = NULL) {
+  if (is.null(fix)) {
+    fix <- if (rule == "allow") {
+      "remove the entry from pbn.yml"
+    } else {
+      project_rules()[[rule]][[3]]
+    }
+  }
+  return(paste0(x, ". Fix: ", fix, "."))
+}

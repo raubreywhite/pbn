@@ -201,9 +201,18 @@ test_that("a file pbn_allow.txt stops with its lines as the YAML of the section 
   expect_identical(
     found$detail[found$status == "WARN"],
     c(
-      "adhoc/Notes.txt: the name has a capital letter (allowed)",
-      "notes.txt: the house layout does not name it (allowed)",
-      "pbn.yml: the entry allow: unknown_path: a \"quoted\" name.txt matches no finding"
+      with_fix(
+        "lower_case_names",
+        "adhoc/Notes.txt: the name has a capital letter (allowed)"
+      ),
+      with_fix(
+        "unknown_path",
+        "notes.txt: the house layout does not name it (allowed)"
+      ),
+      with_fix(
+        "allow",
+        "pbn.yml: the entry allow: unknown_path: a \"quoted\" name.txt matches no finding"
+      )
     )
   )
 })
@@ -564,7 +573,13 @@ test_that("a project with only extends gives the output of pbn before pbn.yml, w
       )
     }
     out <- project_report(p$home)
-    before <- fixture_lines(fixture, name)
+    # The fix "Run git rm --cached on it" of gitexclude_not_tracked moved
+    # from the detail to the fix at the end of the line.
+    before <- sub(
+      "\\. Run git rm --cached on it$",
+      "",
+      fixture_lines(fixture, name)
+    )
     n <- length(before)
     expect_identical(
       out[1],
@@ -577,7 +592,8 @@ test_that("a project with only extends gives the output of pbn before pbn.yml, w
     )
     # The rules that came after the fixture pass on each variant, and the
     # other lines are those of the fixture.
-    body <- as.character(out[-c(1, length(out))])
+    # The fixture is older than the fix at the end of each WARN and FAIL.
+    body <- sub("\\. Fix: .*$", "", as.character(out[-c(1, length(out))]))
     later <- sub("^[A-Z]+  ([a-z_]+)  .*$", "\\1", body) %in%
       rules_after_fixture
     expect_identical(body[!later], before[2:(n - 1)], info = name)
@@ -687,18 +703,21 @@ test_that("an override merges into the house entry, and each parameter changes i
     found[found$rule == "cyclomatic_complexity", c("status", "detail")],
     data.frame(
       status = "FAIL",
-      detail = "adhoc/wide.R: wide scores 31 (limit 25)"
+      detail = with_fix(
+        "cyclomatic_complexity",
+        "adhoc/wide.R: wide scores 31 (limit 25)"
+      )
     ),
     ignore_attr = TRUE
   )
   expect_identical(
     found$detail[found$rule == "loc_per_file"],
-    "adhoc/short.R: 41 code lines, more than 40"
+    with_fix("loc_per_file", "adhoc/short.R: 41 code lines, more than 40")
   )
   expect_identical(found$status[found$rule == "loc_per_file"], "WARN")
   expect_identical(
     found$detail[found$rule == "no_local_assign"],
-    "adhoc/early.R:3: <<-"
+    with_fix("no_local_assign", "adhoc/early.R:3: <<-")
   )
 
   # The PASS lines name the limits and the constructs of pbn.yml.
@@ -761,9 +780,12 @@ test_that("an allow entry of a folder covers each finding at any depth under it,
   found <- project_findings(p$home)
   expect_identical(
     found$detail[found$rule == "allow"],
-    paste0(
-      "pbn.yml: the entry allow: lower_case_names: ",
-      "archive/deep/Er/Data.txt/x matches no finding"
+    with_fix(
+      "allow",
+      paste0(
+        "pbn.yml: the entry allow: lower_case_names: ",
+        "archive/deep/Er/Data.txt/x matches no finding"
+      )
     )
   )
 })
@@ -793,7 +815,10 @@ test_that("allow covers a path and each path under it, with or without a final /
   expect_identical(rows$status, c("WARN", "WARN", "WARN"))
   expect_identical(
     found$detail[found$rule == "allow"],
-    "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
+    with_fix(
+      "allow",
+      "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
+    )
   )
   expect_identical(
     out[1],
@@ -811,7 +836,10 @@ test_that("allow covers a path and each path under it, with or without a final /
   found <- project_findings(p$home)
   expect_identical(
     found$detail[found$rule == "allow"],
-    "pbn.yml: the entry allow: loc_per_file: a.R matches no finding, because the rule is off"
+    with_fix(
+      "allow",
+      "pbn.yml: the entry allow: loc_per_file: a.R matches no finding, because the rule is off"
+    )
   )
   expect_identical(
     rules_line(read_rules(p$home)),

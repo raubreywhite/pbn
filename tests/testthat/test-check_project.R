@@ -277,10 +277,13 @@ test_that("cyclomatic_complexity passes a function that scores 15 and fails one 
   # Sorted by the file, then by the score.
   expect_identical(
     bad$detail,
-    c(
-      "adhoc/more.R: tidy scores 17 (limit 15)",
-      "v01_functions/branchy.R: fit_b scores 21 (limit 15)",
-      "v01_functions/branchy.R: fit_a scores 16 (limit 15)"
+    with_fix(
+      "cyclomatic_complexity",
+      c(
+        "adhoc/more.R: tidy scores 17 (limit 15)",
+        "v01_functions/branchy.R: fit_b scores 21 (limit 15)",
+        "v01_functions/branchy.R: fit_a scores 16 (limit 15)"
+      )
     )
   )
   expect_identical(
@@ -321,9 +324,12 @@ test_that("cyclomatic_complexity scores a function in a top-level list, ignores 
   found <- project_findings(p$home)
   expect_identical(
     found$detail[found$rule == "cyclomatic_complexity"],
-    c(
-      "v01_functions/zz_cfg.R: outer scores 17 (limit 15)",
-      "v01_functions/zz_cfg.R: helpers$pick scores 16 (limit 15)"
+    with_fix(
+      "cyclomatic_complexity",
+      c(
+        "v01_functions/zz_cfg.R: outer scores 17 (limit 15)",
+        "v01_functions/zz_cfg.R: helpers$pick scores 16 (limit 15)"
+      )
     )
   )
 })
@@ -347,7 +353,10 @@ test_that("cyclomatic_complexity skips a file that R cannot parse, which loc_per
   expect_identical(row$status, "WARN")
   expect_identical(
     row$detail,
-    "adhoc/more.R: tidy scores 17 (limit 15) (allowed)"
+    with_fix(
+      "cyclomatic_complexity",
+      "adhoc/more.R: tidy scores 17 (limit 15) (allowed)"
+    )
   )
 })
 
@@ -420,7 +429,7 @@ test_that("no_local_assign fails each construct at top level and inside a functi
   expect_identical(failed_rules(found), "no_local_assign")
   expect_identical(
     found$detail[found$rule == "no_local_assign"],
-    c(
+    with_fix("no_local_assign", c(
       "adhoc/early.R:2: assign()",
       paste0(
         "v01_functions/zz_bad.R:",
@@ -443,7 +452,7 @@ test_that("no_local_assign fails each construct at top level and inside a functi
           "->>"
         )
       )
-    )
+    ))
   )
   expect_identical(
     unique(found$path[found$rule == "no_local_assign"]),
@@ -501,7 +510,10 @@ test_that("no_local_assign gives the right lines in a file with CR LF line ends"
   found <- project_findings(p$home)
   expect_identical(
     found$detail[found$rule == "no_local_assign"],
-    c("adhoc_crlf.R:5: assign()", "adhoc_crlf.R:7: <<-")
+    with_fix(
+      "no_local_assign",
+      c("adhoc_crlf.R:5: assign()", "adhoc_crlf.R:7: <<-")
+    )
   )
 })
 
@@ -529,7 +541,10 @@ test_that("no_local_assign skips a file that R cannot parse, which loc_per_file 
   expect_identical(row$status, c("WARN", "WARN"))
   expect_identical(
     row$detail,
-    c("adhoc/more.R:2: assign() (allowed)", "adhoc/more.R:3: <<- (allowed)")
+    with_fix(
+      "no_local_assign",
+      c("adhoc/more.R:2: assign() (allowed)", "adhoc/more.R:3: <<- (allowed)")
+    )
   )
   expect_false(any(found$rule == "allow"))
 })
@@ -553,7 +568,10 @@ test_that("an allowed finding becomes WARN with (allowed)", {
   expect_identical(row$status, "WARN")
   expect_identical(
     row$detail,
-    "adhoc/Notes.txt: the name has a capital letter (allowed)"
+    with_fix(
+      "lower_case_names",
+      "adhoc/Notes.txt: the name has a capital letter (allowed)"
+    )
   )
   expect_false("allow" %in% found$rule)
 })
@@ -568,7 +586,10 @@ test_that("a stale allowlist entry is a WARN", {
   expect_identical(stale$path, "pbn.yml")
   expect_identical(
     stale$detail,
-    "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
+    with_fix(
+      "allow",
+      "pbn.yml: the entry allow: loc_per_file: adhoc/gone.R matches no finding"
+    )
   )
 })
 
@@ -817,7 +838,7 @@ test_that("scenario_checks fails on a check.csv with a header and no assertion",
   expect_identical(failed_rules(found), "scenario_checks")
   expect_identical(
     found$detail[found$status == "FAIL"],
-    "v01_results/null/check.csv: it holds no assertion"
+    with_fix("scenario_checks", "v01_results/null/check.csv: it holds no assertion")
   )
 })
 
@@ -911,7 +932,11 @@ test_that("manuscript_reads_real fails on an .R file that R cannot parse", {
   )
   expect_identical(
     found$detail[found$rule == "manuscript_reads_real"],
-    "manuscript/built/v01/tables.R: R cannot parse it"
+    with_fix(
+      "manuscript_reads_real",
+      "manuscript/built/v01/tables.R: R cannot parse it",
+      parse_fix
+    )
   )
 
   write_lines(
@@ -938,9 +963,12 @@ test_that("run_script_initialises fails on a call with an argument initialize_pr
   expect_identical(failed_rules(found), "run_script_initialises")
   expect_identical(
     found$detail[found$status == "FAIL"],
-    paste0(
-      "v01_run.R: no call pbn::initialize_project(version = \"v01\"). ",
-      "pbn::initialize_project() has no argument scenario"
+    with_fix(
+      "run_script_initialises",
+      paste0(
+        "v01_run.R: no call pbn::initialize_project(version = \"v01\"). ",
+        "pbn::initialize_project() has no argument scenario"
+      )
     )
   )
 })
@@ -998,4 +1026,80 @@ test_that("fake_data_names passes the output folders of make_outputs and fails a
     failed$detail[4],
     "fake_data_ is for a file in a folder output_fake_data/ only"
   )
+})
+
+test_that("each WARN and FAIL of check_project ends with the fix of its rule, and the rules, levels and columns stay", {
+  fixes <- c(
+    lower_case_names = "rename it in lower case",
+    run_script_initialises = "call pbn::initialize_project(version = \"vNN\") in it",
+    version_items_complete = "create the missing vNN_run.R or vNN_functions/, or delete the one that is there",
+    results_contract = "delete the file, and write it again with pbn::run_plan() and pbn::save_results()",
+    gitexclude_not_tracked = "remove the path from git with git rm --cached, and add the line *gitexclude* to .gitignore",
+    scenario_checks = "correct the analysis, and run the scenario again with pbn::run_plan() and pbn::save_results()",
+    manual_manuscript_names = "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx",
+    manuscript_reads_real = "remove the argument scenario from the call",
+    fake_data_names = "write the output of fake data with pbn::make_outputs(), and rename any other file whose name starts with fake_data_",
+    no_local_copy_of_pbn_function = "rename the function, or use the pbn export and correct any fault in pbn",
+    loc_per_file = "split the file into smaller files",
+    cyclomatic_complexity = "split the function into smaller functions",
+    no_environment_variables = "put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project()",
+    no_local_assign = "return the value from a function, and assign it with <- where it is used",
+    no_absolute_paths = "start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs()",
+    blocks_list = "keep the list blocks and the functions of the blocks in vNN_functions/blocks.R only, and use none of its names in another file",
+    real_results_are_fake = "run the scenario \"real\" again with pbn::initialize_project(fake_real_data = FALSE)",
+    unknown_path = "move it into a folder of the layout, such as adhoc/, or delete it"
+  )
+  expect_identical(
+    vapply(project_rules(), function(d) return(d[[3]]), character(1)),
+    fixes
+  )
+  expect_identical(parse_fix, "correct the syntax of the file")
+
+  p <- local_project()
+  clean <- project_findings(p$home)
+  write_lines(
+    p$home,
+    "v01_functions/paths.R",
+    "read_d <- function() return(utils::read.csv(\"/home/ana/project/d.csv\"))"
+  )
+  write_lines(p$home, "adhoc/broken.R", "f <- function( {")
+  write_lines(p$home, "notes.txt", "x")
+  write_pbn_yml(p$home, "allow:", "  lower_case_names: [adhoc/Gone.txt]")
+  out <- project_report(p$home)
+  expect_identical(
+    grep("^(WARN|FAIL)", out, value = TRUE),
+    c(
+      paste0(
+        "FAIL  loc_per_file  adhoc/broken.R: R cannot parse it. ",
+        "Fix: correct the syntax of the file."
+      ),
+      paste0(
+        "FAIL  no_absolute_paths  v01_functions/paths.R:1: ",
+        "\"/home/ana/project/d.csv\". Fix: start a path to data from ",
+        "pbn::folder(), and a path for output from the argument dir of the ",
+        "output function of pbn::make_outputs()."
+      ),
+      paste0(
+        "WARN  unknown_path  notes.txt: the house layout does not name it. ",
+        "Fix: move it into a folder of the layout, such as adhoc/, or ",
+        "delete it."
+      ),
+      paste0(
+        "WARN  allow  pbn.yml: the entry allow: lower_case_names: ",
+        "adhoc/Gone.txt matches no finding. Fix: remove the entry from ",
+        "pbn.yml."
+      )
+    )
+  )
+  # The fix changes the text only: the rules, their order, the columns and
+  # each status are those without it.
+  found <- attr(out, "findings")
+  expect_identical(names(found), c("rule", "status", "path", "detail"))
+  expect_identical(unique(found$rule), c(names(project_rules()), "allow"))
+  expect_identical(unique(clean$rule), names(project_rules()))
+  expect_identical(
+    found$status[found$rule %in% c("no_absolute_paths", "loc_per_file")],
+    c("FAIL", "FAIL")
+  )
+  expect_identical(clean$detail[clean$status == "PASS"][1], "no capital letter in a name")
 })

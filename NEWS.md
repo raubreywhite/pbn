@@ -1,3 +1,11 @@
+# pbn 2026.11.25
+
+- Behaviour change: `read_results()` for `"real"` now stops when a fake scenario of the same run has a failed assertion. The fake and the real results come from the same code, so a failed fake check can show a fault in the real results.
+- `save_results()` writes each fake scenario with a failed assertion to the new `manifest$failed_fake_checks` of the real results. It writes the fake scenarios first. Real results of pbn 2026.11.24 or older have no such element, and read as before.
+- `show_block()` and `show_blocks()` stop on such real results too. `make_outputs()` skips `"real"` then, with one line.
+- The rule `manifest_data` of `check_results()` checks `failed_fake_checks` of `"real"`. It needs it when `manifest$pbn_version` is 2026.11.25 or newer.
+- Each WARN and FAIL of `check_project()` ends with `Fix:` and the change that removes it. The rules, their levels, each status and the columns of the value stay the same.
+
 # pbn 2026.11.24
 
 - `initialize_project()` now applies the rule `loc_per_file` as `check_project()` does, also the section `allow` of `pbn.yml`. Before, a file under `allow: loc_per_file:` stopped the start of the project.

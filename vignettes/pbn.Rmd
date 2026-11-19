@@ -580,6 +580,16 @@ The real data runs through the same functions as the fake data. A fake scenario 
 pbn::read_results("v01", scenario = "known", home = home)
 ```
 
+The same code gave the real results of this run, so `read_results()` stops on them too. `save_results()` records each fake scenario with a failed assertion in `manifest$failed_fake_checks` of the real results:
+
+```{r, error = TRUE}
+pbn::read_results("v01", home = home)
+```
+
+```{r, include = FALSE}
+stopifnot(inherits(try(pbn::read_results("v01", home = home), silent = TRUE), "try-error"))
+```
+
 Put the copy back, and run the script again. Its assertions pass.
 
 ```{r}
@@ -731,7 +741,7 @@ A script with output code after the run that is not in a function MAY use `pbn::
 pbn::check_project()
 ```
 
-`check_project()` checks a project folder against the rules of `pbn.yml`. It prints the name of the set, one line for each rule that passes, one line for each finding, and a count. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
+`check_project()` checks a project folder against the rules of `pbn.yml`. It prints the name of the set, one line for each rule that passes, one line for each finding, and a count. Each WARN and FAIL line ends with the fix. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
 
 ```{r}
 pbn::check_project(home)
@@ -931,7 +941,7 @@ pbn::show_blocks()
 pbn::show_block(1)
 ```
 
-A page has 35 rows. `pbn::show_block()` reads the real results from the disk at each call, and it stops when their `check.csv` holds a failed assertion, as `read_results()` does.
+A page has 35 rows. `pbn::show_block()` reads the real results from the disk at each call, and it stops where `read_results()` stops.
 
 ## What pbn does not do yet
 

@@ -69,8 +69,10 @@ Both functions need \code{\link[=initialize_project]{initialize_project()}} in t
 blocks come from the functions folder that it sourced. Without it they
 stop. They read the real results from the disk at each call, with
 \code{\link[=read_results]{read_results()}}. So they work in the project folder, and on a server
-after the file of \code{\link[=to_one_file]{to_one_file()}}. \code{\link[=read_results]{read_results()}} stops on real results
-whose \code{check.csv} holds a failed assertion, and so do they.
+after the file of \code{\link[=to_one_file]{to_one_file()}}. They stop where \code{\link[=read_results]{read_results()}}
+stops. So they also stop on real results whose
+\code{manifest$failed_fake_checks} names a fake scenario with a failed
+assertion.
 
 \code{show_blocks()} calls each block function once. For each block, it prints
 the number, the name, the rows and the pages. For a function that stops,

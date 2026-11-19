@@ -2,19 +2,19 @@
 
 **An R analysis framework built for AI agents.**
 
-An AI agent can write most of the code of an analysis. pbn ("paint by numbers") makes that code checkable. It gives each project one layout, rules that code enforces, and fake data with known answers that runs through the same code as the real data.
+pbn ("paint by numbers") is for analysis projects where an AI agent writes code. It lets a person check that code. It gives each project one layout and rules that code enforces. It adds fake data with known answers, which runs through the same code as the real data.
 
 This is a trial version. It holds the smallest set of functions that one real project can use.
 
 ## What pbn does
 
-- **One way to do each thing.** One run script, four data steps, and `pbn::folder()` for every path to the data. An agent has fewer choices to get wrong.
-- **Checks that name the fix.** `pbn::check_project()` checks the project folder against the rules in `pbn.yml`. Checks between the data steps stop a run that breaks a rule. Each error names the rule and the file.
-- **Verification on fake data.** The real data is one scenario among fake ones with known answers. `expect_` functions check each fake scenario, and `pbn::read_results()` does not read the results of a scenario with a failed assertion.
-- **Records to review.** Each run writes `check.csv` with every assertion, a run log `run.md`, and a manifest with the md5 of the code. A person reviews these, not only the changed lines.
-- **The data stays on its server.** An agent works on the code and the fake scenarios, and needs no real data. `pbn::to_one_file()` writes the run of the real data as one script for a server without a network.
+- **One way to do each thing.** One run script, up to four data steps, and `pbn::folder()` for every path to the data. An agent has fewer choices to get wrong.
+- **Checks that name the fix.** `pbn::check_project()` checks the project folder against the rules in `pbn.yml`. Checks between the data steps stop a run that breaks a rule. Each finding names the rule, the file and the fix.
+- **Verification on fake data.** The real data is one scenario among fake ones with known answers. `expect_` functions check each fake scenario, and `pbn::read_results()` does not read the results of a fake scenario with a failed assertion. It also does not read the real results of a run that had a fake scenario with a failed assertion.
+- **Records to review.** Each run writes `check.csv` with every assertion, a run log `run.md`, and a manifest with the md5 of the code. A person reviews these files as well as the changed lines.
+- **The data stays on its server.** An agent works on the code and the fake scenarios, and needs no real data. `pbn::to_one_file()` writes the code for the run of the real data into one script, for a server without a network.
 
-pbn is the one policy package of its family. `org` (paths), `cohort` (exclusions) and `plnr` (plans) are mechanism packages without opinions.
+pbn is the only package of its family that sets rules for a project. `org` (paths), `cohort` (exclusions) and `plnr` (plans) set no rules.
 
 ## For an AI agent
 

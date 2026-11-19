@@ -65,9 +65,12 @@ output_state <- new.env(parent = emptyenv())
 #' no output of an earlier run stays beside absent or failed results. The
 #' line says so. It does not touch a scenario that is not in `scenarios`. A
 #' `"real"` without `check.csv` is not skipped, because `expect_real()` is
-#' optional. When `fn` stops for one scenario, `make_outputs()` stops with an
-#' error that names the scenario. The output of the scenarios before it
-#' stays.
+#' optional. `make_outputs()` also skips `"real"` when its
+#' `manifest$failed_fake_checks` names a fake scenario with a failed
+#' assertion. [read_results()] has the same rule.
+#'
+#' When `fn` stops for one scenario, `make_outputs()` stops with an error
+#' that names the scenario. The output of the scenarios before it stays.
 #'
 #' `fn` MUST write into `dir` only. Around each call for a fake scenario,
 #' `make_outputs()` lists the path, the size and the modification time of
@@ -236,14 +239,20 @@ drop_other_real_output <- function(folder, fake) {
   return(invisible(NULL))
 }
 
-# The printed line, when the scenario has no results.qs2, or when its
-# check.csv holds a failure. Then it also deletes the output folder `dir`.
+# The printed line, when the scenario has no results.qs2, when its
+# check.csv holds a failure, or for "real" when its manifest names a fake
+# scenario with a failed assertion. Then it also deletes the output folder `dir`.
 # NULL otherwise.
 skip_scenario <- function(folder, dir, rel, s) {
   reason <- if (!file.exists(file.path(folder, "results.qs2"))) {
     "it has no results.qs2. Run the scenario first"
   } else if (!is.null(assertion_problem(folder))) {
     paste0("its check.csv ", assertion_problem(folder))
+  } else if (s == "real") {
+    # read_results() refuses real results whose manifest names a fake
+    # scenario with a failed assertion.
+    clause <- failed_fakes_clause(results_manifest(folder))
+    if (!is.null(clause)) paste("its manifest$failed_fake_checks", clause)
   }
   if (is.null(reason)) {
     return(NULL)

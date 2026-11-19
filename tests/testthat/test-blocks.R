@@ -141,6 +141,17 @@ test_that("show_blocks needs initialize_project(), the blocks of the functions f
     )),
     fixed = TRUE
   )
+  # A failed fake scenario that the real manifest records stops them too.
+  unlink(file.path(p$home, "v01_results", "real", "check.csv"))
+  file <- file.path(p$home, "v01_results", "real", "results.qs2")
+  x <- qs2::qs_read(file)
+  x$manifest$failed_fake_checks <- "known"
+  qs2::qs_save(x, file)
+  expect_error(
+    show_blocks(),
+    "names a fake scenario with a failed assertion: \"known\".",
+    fixed = TRUE
+  )
 })
 
 test_that("show_block and show_blocks set back each option that a block function sets or adds", {

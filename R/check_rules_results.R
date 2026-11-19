@@ -599,6 +599,41 @@ manifest_data_failure <- function(m) {
   if (!isTRUE(flag) && !isFALSE(flag)) {
     return("manifest$fake_real_data is not TRUE or FALSE")
   }
+  return(failed_fake_checks_failure(m))
+}
+
+# The failure of manifest$failed_fake_checks of the real manifest `m`, or
+# character(0). pbn 2026.11.25 and newer write it. An older pbn did not, and
+# a manifest without it and without a newer pbn_version passes.
+failed_fake_checks_failure <- function(m) {
+  x <- m[["failed_fake_checks"]]
+  if (is.null(x)) {
+    v <- tryCatch(
+      package_version(m[["pbn_version"]]),
+      error = function(e) return(NULL)
+    )
+    new <- length(v) == 1 && v >= package_version("2026.11.25")
+    if (new) {
+      return(paste(
+        "manifest has no failed_fake_checks. pbn 2026.11.25 and newer write",
+        "it for \"real\""
+      ))
+    }
+    return(character(0))
+  }
+  ok <- is.character(x) &&
+    is.null(attributes(x)) &&
+    !anyNA(x) &&
+    all(grepl("^[a-z0-9_]+$", x)) &&
+    !"real" %in% x &&
+    !anyDuplicated(x)
+  if (!ok) {
+    return(paste(
+      "manifest$failed_fake_checks is not a character vector of names of",
+      "fake scenarios. Each name has lower-case letters, digits and",
+      "underscores only, is not \"real\" and comes once"
+    ))
+  }
   return(character(0))
 }
 

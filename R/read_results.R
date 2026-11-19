@@ -28,6 +28,19 @@
 #' can find the fault. The error names the file and how to read it with
 #' [qs2::qs_read()].
 #'
+#' For `"real"`, `read_results()` also stops when `manifest$failed_fake_checks`
+#' names a fake scenario. [save_results()] writes into it each fake scenario
+#' of the same run with a failed assertion. The real data and the fake
+#' scenarios run through the same code. So a fake scenario with a failed
+#' assertion can show a fault in the code of the real results. The error
+#' names each such scenario, the path of its `check.csv` and the fix.
+#'
+#' The run that writes the real results writes this record. A run of
+#' `"real"` alone records no fake scenario with a failed assertion. A later
+#' run of a fake scenario alone does not change the record of the real
+#' results. Real results of pbn 2026.11.24 or older have no
+#' `failed_fake_checks`, and `read_results()` reads them as before.
+#'
 #' `read_results()` returns one list with the elements of both files. The
 #' order is that of a results object: `manifest`, `exclusions`, and the
 #' analysis kinds in the order of `manifest$analyses`. These rules apply to
@@ -77,7 +90,77 @@ read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
     stop("There is no results file at ", file, call. = FALSE)
   }
   check_assertions(folder, file)
-  return(merge_gitexclude(qs2::qs_read(file), file))
+  results <- qs2::qs_read(file)
+  if (scenario == "real") {
+    check_run_of_real(folder, file, results[["manifest"]])
+  }
+  return(merge_gitexclude(results, file))
+}
+
+# Stops when the manifest `manifest` of the real results in the scenario
+# folder `folder` names a fake scenario with a failed assertion. `file` is the
+# results file that read_results() read.
+check_run_of_real <- function(folder, file, manifest) {
+  clause <- failed_fakes_clause(manifest)
+  if (is.null(clause)) {
+    return(invisible(NULL))
+  }
+  failed <- as.character(manifest[["failed_fake_checks"]])
+  csv <- file.path(
+    dirname(folder),
+    if (length(failed) == 1) failed else "<scenario>",
+    "check.csv"
+  )
+  stop(
+    "manifest$failed_fake_checks of ",
+    file,
+    " ",
+    clause,
+    ". ",
+    if (length(failed) == 1) "Its" else "Their",
+    " assertions are in ",
+    csv,
+    ". Correct the analysis, and run the scenario \"real\" again with the ",
+    "fake scenarios. To look at the results for debugging, read them with ",
+    "qs2::qs_read(\"",
+    file,
+    "\").",
+    call. = FALSE
+  )
+}
+
+# The clause that says which fake scenarios with a failed assertion the
+# element failed_fake_checks of the real manifest `manifest` names. NULL when
+# the element is missing, as in the results of pbn 2026.11.24 or older, and
+# when it is empty.
+failed_fakes_clause <- function(manifest) {
+  failed <- if (is.list(manifest)) manifest[["failed_fake_checks"]]
+  if (is.null(failed) || identical(failed, character(0))) {
+    return(NULL)
+  }
+  failed <- as.character(failed)
+  return(paste0(
+    "names ",
+    if (length(failed) == 1) {
+      "a fake scenario"
+    } else {
+      paste(length(failed), "fake scenarios")
+    },
+    " with a failed assertion: ",
+    paste0("\"", failed, "\"", collapse = ", ")
+  ))
+}
+
+# The manifest of the results.qs2 in the scenario folder `folder`, or NULL
+# when R cannot read it.
+results_manifest <- function(folder) {
+  file <- file.path(folder, "results.qs2")
+  if (!file.exists(file)) {
+    return(NULL)
+  }
+  return(tryCatch(qs2::qs_read(file)[["manifest"]], error = function(e) {
+    return(NULL)
+  }))
 }
 
 # TRUE when the results.qs2 of the scenario folder `folder` is the results

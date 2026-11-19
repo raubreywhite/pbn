@@ -43,6 +43,19 @@ no column \code{pass} that R can read. \code{\link[=save_results]{save_results()
 can find the fault. The error names the file and how to read it with
 \code{\link[qs2:qs_read]{qs2::qs_read()}}.
 
+For \code{"real"}, \code{read_results()} also stops when \code{manifest$failed_fake_checks}
+names a fake scenario. \code{\link[=save_results]{save_results()}} writes into it each fake scenario
+of the same run with a failed assertion. The real data and the fake
+scenarios run through the same code. So a fake scenario with a failed
+assertion can show a fault in the code of the real results. The error
+names each such scenario, the path of its \code{check.csv} and the fix.
+
+The run that writes the real results writes this record. A run of
+\code{"real"} alone records no fake scenario with a failed assertion. A later
+run of a fake scenario alone does not change the record of the real
+results. Real results of pbn 2026.11.24 or older have no
+\code{failed_fake_checks}, and \code{read_results()} reads them as before.
+
 \code{read_results()} returns one list with the elements of both files. The
 order is that of a results object: \code{manifest}, \code{exclusions}, and the
 analysis kinds in the order of \code{manifest$analyses}. These rules apply to

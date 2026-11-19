@@ -80,6 +80,7 @@ test_that("the manifest names the run, the data, the rows of the data and the an
       "source_md5",
       "data_files",
       "fake_real_data",
+      "failed_fake_checks",
       "n_rows_data",
       "n_rows_lists",
       "n_rows_before_exclusions",
@@ -813,13 +814,18 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
     fixed = TRUE
   )
   expect_identical(names(qs2::qs_read(file))[1], "manifest")
-  # The other scenarios read as before: known has a check.csv that passes,
-  # real has none.
+  # known has a check.csv that passes, and reads as before. real has none,
+  # but its manifest records that null of its run failed, so real stops.
+  # test-read_results.R gives the rules of the record.
   expect_identical(
     names(read_results("v01", "known", home = p$home))[1],
     "manifest"
   )
-  expect_identical(names(read_results("v01", home = p$home))[1], "manifest")
+  expect_error(
+    read_results("v01", home = p$home),
+    "names a fake scenario with a failed assertion: \"null\".",
+    fixed = TRUE
+  )
   # A check.csv without a column pass stops too, and so does one with a
   # header and no assertion, as an interrupted write can leave it.
   csv <- file.path(p$home, "v01_results", "known", "check.csv")

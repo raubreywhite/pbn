@@ -188,6 +188,30 @@ test_that("make_outputs skips a scenario that was not run, or whose checks faile
   )
 })
 
+test_that("make_outputs skips real when its manifest records a failed fake scenario of its run, and writes it when the run passed", {
+  p <- local_project()
+  write_lines(p$home, "v01_functions/_cfg.R", cfg_with_output())
+  sc <- run_and_save(p, only = c("real", "known"))
+  seen <- new.env()
+  utils::capture.output(make_outputs(recording_output(seen), sc))
+  expect_true("real" %in% ls(seen))
+
+  write_lines(p$home, "v01_functions/expect_known.R", expect_known_lines(5))
+  run <- save_run(p, only = c("real", "known"))
+  expect_true(inherits(run$err, "error"))
+  seen <- new.env()
+  printed <- utils::capture.output(make_outputs(recording_output(seen), sc))
+  expect_identical(
+    printed[1],
+    paste0(
+      "pbn: no output for the scenario \"real\", because its ",
+      "manifest$failed_fake_checks names a fake scenario with a failed ",
+      "assertion: \"known\"."
+    )
+  )
+  expect_false("real" %in% ls(seen))
+})
+
 test_that("make_outputs deletes the old output of a chosen scenario without results, and leaves a scenario that is not chosen alone", {
   p <- local_project()
   write_lines(p$home, "v01_functions/_cfg.R", cfg_with_output())
@@ -358,7 +382,8 @@ figure_parts <- function(g) {
   walk <- function(x) {
     if (inherits(x, "gtable")) {
       drawn <- !vapply(x$grobs, inherits, logical(1), what = "zeroGrob")
-      panels <<- panels + sum(grepl("^panel(-[0-9-]+)?$", x$layout$name) & drawn)
+      panels <<- panels +
+        sum(grepl("^panel(-[0-9-]+)?$", x$layout$name) & drawn)
     }
     if (inherits(x, "text") && identical(x$label, "FAKE DATA")) {
       labels <<- labels + 1L

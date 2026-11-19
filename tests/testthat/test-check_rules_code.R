@@ -88,11 +88,14 @@ test_that("no_absolute_paths fails each absolute string with its file and line, 
   expect_identical(found$status, rep("FAIL", 4))
   expect_identical(
     found$detail,
-    c(
-      "adhoc/server.R:8: \"N:/durable/other\"",
-      "v01_functions/paths.R:3: \"/home/a/codes.csv\"",
-      paste0("v01_functions/paths.R:6: \"", substr(long, 1, 40), "\"..."),
-      "v01_functions/paths.R:7: \"C:\\\\data\""
+    with_fix(
+      "no_absolute_paths",
+      c(
+        "adhoc/server.R:8: \"N:/durable/other\"",
+        "v01_functions/paths.R:3: \"/home/a/codes.csv\"",
+        paste0("v01_functions/paths.R:6: \"", substr(long, 1, 40), "\"..."),
+        "v01_functions/paths.R:7: \"C:\\\\data\""
+      )
     )
   )
   expect_identical(
@@ -208,7 +211,11 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
     write_lines(p$home, "v01_functions/blocks.R", bad[[case]][1])
     found <- findings_of(p$home, "blocks_list")
     expect_identical(unique(found$status), "FAIL", info = case)
-    expect_identical(found$detail[1], bad[[case]][2], info = case)
+    expect_identical(
+      found$detail[1],
+      with_fix("blocks_list", bad[[case]][2]),
+      info = case
+    )
     expect_identical(unique(found$path), "v01_functions/blocks.R", info = case)
   }
   write_lines(
@@ -224,11 +231,11 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
   found <- findings_of(p$home, "blocks_list")
   expect_identical(
     found$detail,
-    paste0(
+    with_fix("blocks_list", paste0(
       "v01_functions/more.R:2: blocks is assigned here. Assign it in ",
       "v01_functions/blocks.R only, because pbn leaves that file out of ",
       "manifest$source_md5"
-    )
+    ))
   )
   expect_identical(found$path, "v01_functions/more.R")
   unlink(file.path(p$home, "v01_functions", "more.R"))
@@ -242,10 +249,10 @@ test_that("blocks_list passes no blocks and a named list of functions, and fails
   )
   expect_identical(
     findings_of(p$home, "blocks_list")$detail,
-    paste0(
+    with_fix("blocks_list", paste0(
       "v01_functions/blocks.R:1: blocks is assigned 2 times, at ",
       "v01_functions/blocks.R:1, v01_functions/blocks.R:2. Assign it once"
-    )
+    ))
   )
 })
 
@@ -282,7 +289,7 @@ test_that("no_absolute_paths fails file.path() and fs::path() that start from a 
   found <- findings_of(p$home, "no_absolute_paths")
   expect_identical(
     found$detail,
-    c(
+    with_fix("no_absolute_paths", c(
       "v01_functions/paths.R:2: file.path(\"/\", ...)",
       "v01_functions/paths.R:3: file.path(\"data\", ...)",
       "v01_functions/paths.R:4: base::file.path(\"results\", ...)",
@@ -293,7 +300,7 @@ test_that("no_absolute_paths fails file.path() and fs::path() that start from a 
         "\"..., ...)"
       ),
       "v01_functions/paths.R:7: file.path(\"out\", ...)"
-    )
+    ))
   )
   unlink(file.path(p$home, "v01_functions", "paths.R"))
   expect_identical(findings_of(p$home, "no_absolute_paths")$status, "PASS")
@@ -325,11 +332,11 @@ test_that("blocks_list fails a name of blocks.R that another file of the folder 
   expect_identical(found$path, "v01_functions/report.R")
   expect_identical(
     found$detail,
-    paste0(
+    with_fix("blocks_list", paste0(
       "v01_functions/report.R:4: uses fmt, which v01_functions/blocks.R ",
       "assigns. pbn leaves that file out of manifest$source_md5, so the run ",
       "MUST NOT use it. Move fmt to another file"
-    )
+    ))
   )
   unlink(file.path(p$home, "v01_functions", "report.R"))
   found <- findings_of(p$home, "blocks_list")
@@ -387,12 +394,12 @@ test_that("blocks_list fails each top-level expression of blocks.R that is not a
   found <- findings_of(p$home, "blocks_list")
   expect_identical(
     found$detail,
-    paste0(
+    with_fix("blocks_list", paste0(
       "v01_functions/blocks.R:3: double_it is assigned here and at ",
       "v01_functions/double_it.R:1. A name of blocks.R MUST NOT be assigned ",
       "in another file, because pbn leaves blocks.R out of ",
       "manifest$source_md5"
-    )
+    ))
   )
   write_lines(
     p$home,

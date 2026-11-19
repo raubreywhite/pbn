@@ -90,6 +90,13 @@
 #'   rule: run the scenario again. For `"real"`, `manifest$fake_real_data`
 #'   MUST be `TRUE` or `FALSE`. A real manifest of an older pbn has no
 #'   `fake_real_data`, so it fails this rule: run the scenario again.
+#'
+#'   For `"real"`, `manifest$failed_fake_checks` MUST be a character vector
+#'   without attributes, also no names. It MAY be empty. Each element MUST
+#'   match `^[a-z0-9_]+$`, MUST NOT be `NA` or `"real"`, and MUST come once.
+#'   The element MUST be there when `manifest$pbn_version` is a version of
+#'   2026.11.25 or newer. A manifest without it and without such a version
+#'   passes, as the results of an older pbn do.
 #' - `manifest_source`: `manifest$source_md5` is a named character vector of
 #'   md5 values, each a string of 32 lower-case hex digits. It names the run
 #'   script `<version>_run.R` of `manifest$version`, or a `vNN_run.R` when

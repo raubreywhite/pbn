@@ -9,7 +9,9 @@
 #' The first line names the rule set of `pbn.yml`, and counts its changes
 #' and its allowed paths. A rule with no finding prints one PASS line, and a
 #' rule that is off prints one OFF line. Each finding prints one line:
-#' `PASS|WARN|FAIL  <rule>  <detail>`. A count line comes last.
+#' `PASS|WARN|FAIL  <rule>  <detail>`. The detail of a WARN or a FAIL ends
+#' with `Fix:` and the change that removes the finding. A count line comes
+#' last.
 #'
 #' Every rule reads one list of files and their folders:
 #' - When `path` is the top folder of a git repository, the list is the
@@ -227,7 +229,7 @@
 #' `adhoc/Old/Data.csv`, but not `adhoc2/x.R`. A final `/` changes nothing:
 #' `adhoc` and `adhoc/` are the same entry. pbn does not look on the disk
 #' for a file or a folder of that name. An allowed finding is WARN, with
-#' `(allowed)` at the end. A path that matches no finding is a WARN of the
+#' `(allowed)` before its fix. A path that matches no finding is a WARN of the
 #' rule `allow`.
 #'
 #' Three rules are locked: `results_contract`, `gitexclude_not_tracked` and
@@ -329,9 +331,28 @@ project_findings <- function(path, rules = read_rules(path)) {
   for (rule in names(defs)) {
     out[[rule]] <- rule_findings(path, rule, defs[[rule]], rules$rules[[rule]])
   }
-  findings <- bind_rows(out)
-  return(apply_allow(findings, rules))
+  findings <- apply_allow(bind_rows(out), rules)
+  fixes <- c(
+    vapply(defs, function(d) return(d[[3]]), character(1)),
+    allow = "remove the entry from pbn.yml"
+  )
+  return(add_fix(findings, fixes))
 }
+
+# The findings with the fix of their rule at the end of the detail of each
+# WARN and FAIL, as "<detail>. Fix: <fix>.". `fixes` is the fix of each rule,
+# named by the rule. A file that R cannot parse gets the fix of parse_fix.
+add_fix <- function(findings, fixes) {
+  open <- findings$status %in% c("WARN", "FAIL")
+  detail <- sub("(?<!\\.)\\.$", "", findings$detail[open], perl = TRUE)
+  fix <- unname(fixes[findings$rule[open]])
+  fix[grepl(": R cannot parse it( \\(allowed\\))?$", detail)] <- parse_fix
+  findings$detail[open] <- paste0(detail, ". Fix: ", fix, ".", recycle0 = TRUE)
+  return(findings)
+}
+
+# The fix of a finding on a file that R cannot parse, for each rule.
+parse_fix <- "correct the syntax of the file"
 
 # The findings of the rule `rule` with the definition `def` of
 # project_rules() and the entry `entry` of the rules of the project. A rule

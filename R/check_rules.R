@@ -460,7 +460,7 @@ rule_gitexclude_not_tracked <- function(path) {
     paste0(
       bad,
       ": git tracks it, and a path with gitexclude in its name holds data ",
-      "for each person. Run git rm --cached on it",
+      "for each person",
       recycle0 = TRUE
     )
   ))
@@ -743,15 +743,21 @@ project_rules <- function() {
   return(list(
     lower_case_names = list(
       rule_lower_case_names,
-      "no capital letter in a name"
+      "no capital letter in a name",
+      "rename it in lower case"
     ),
     run_script_initialises = list(
       rule_run_script_initialises,
-      "every vNN_run.R calls pbn::initialize_project() with its own version"
+      "every vNN_run.R calls pbn::initialize_project() with its own version",
+      "call pbn::initialize_project(version = \"vNN\") in it"
     ),
     version_items_complete = list(
       rule_version_items_complete,
-      "every vNN_run.R has a vNN_functions/, and the reverse"
+      "every vNN_run.R has a vNN_functions/, and the reverse",
+      paste(
+        "create the missing vNN_run.R or vNN_functions/, or delete the one",
+        "that is there"
+      )
     ),
     results_contract = list(
       rule_results_contract,
@@ -759,34 +765,56 @@ project_rules <- function() {
         "every vNN_results/<scenario>/results.qs2 and each",
         "vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk",
         "passes check_results()"
+      ),
+      paste(
+        "delete the file, and write it again with pbn::run_plan() and",
+        "pbn::save_results()"
       )
     ),
     gitexclude_not_tracked = list(
       rule_gitexclude_not_tracked,
-      "git tracks no path with gitexclude in its name"
+      "git tracks no path with gitexclude in its name",
+      paste(
+        "remove the path from git with git rm --cached, and add the line",
+        "*gitexclude* to .gitignore"
+      )
     ),
     scenario_checks = list(
       rule_scenario_checks,
-      "every vNN_results/<scenario>/check.csv passes"
+      "every vNN_results/<scenario>/check.csv passes",
+      paste(
+        "correct the analysis, and run the scenario again with pbn::run_plan()",
+        "and pbn::save_results()"
+      )
     ),
     manual_manuscript_names = list(
       rule_manual_manuscript_names,
-      "every file in manuscript/manual/ is named vNN_<INITIALS>.docx"
+      "every file in manuscript/manual/ is named vNN_<INITIALS>.docx",
+      "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx"
     ),
     manuscript_reads_real = list(
       rule_manuscript_reads_real,
-      "manuscript/built/ reads only the real results"
+      "manuscript/built/ reads only the real results",
+      "remove the argument scenario from the call"
     ),
     fake_data_names = list(
       rule_fake_data_names,
       paste(
         "every file in an output_fake_data/ folder, and no file elsewhere,",
         "has a name that starts with fake_data_"
+      ),
+      paste(
+        "write the output of fake data with pbn::make_outputs(), and rename",
+        "any other file whose name starts with fake_data_"
       )
     ),
     no_local_copy_of_pbn_function = list(
       rule_no_local_copy_of_pbn_function,
-      "no vNN_functions/ file defines a pbn export"
+      "no vNN_functions/ file defines a pbn export",
+      paste(
+        "rename the function, or use the pbn export and correct any fault in",
+        "pbn"
+      )
     ),
     loc_per_file = list(
       rule_loc_per_file,
@@ -796,7 +824,8 @@ project_rules <- function() {
           entry$limit,
           " code lines"
         ))
-      }
+      },
+      "split the file into smaller files"
     ),
     cyclomatic_complexity = list(
       rule_cyclomatic_complexity,
@@ -805,21 +834,31 @@ project_rules <- function() {
           "no function of an .R file has a cyclomatic complexity above ",
           entry$limit
         ))
-      }
+      },
+      "split the function into smaller functions"
     ),
     no_environment_variables = list(
       rule_no_environment_variables,
-      "no Sys.getenv or Sys.setenv in a run script or a functions folder"
+      "no Sys.getenv or Sys.setenv in a run script or a functions folder",
+      paste(
+        "put the value in CFG, and the folder of data in the argument",
+        "folders of pbn::initialize_project()"
+      )
     ),
     no_local_assign = list(
       rule_no_local_assign,
-      function(entry) return(local_assign_pass_detail(entry$forbid))
+      function(entry) return(local_assign_pass_detail(entry$forbid)),
+      "return the value from a function, and assign it with <- where it is used"
     ),
     no_absolute_paths = list(
       rule_no_absolute_paths,
       paste(
         "no .R file has an absolute path or a file.path() from a string,",
         "outside the arguments of pbn::initialize_project()"
+      ),
+      paste(
+        "start a path to data from pbn::folder(), and a path for output from",
+        "the argument dir of the output function of pbn::make_outputs()"
       )
     ),
     blocks_list = list(
@@ -828,15 +867,25 @@ project_rules <- function() {
         "blocks, when a functions folder has it, is a list of named",
         "functions in vNN_functions/blocks.R, and no other code uses a name",
         "of that file"
+      ),
+      paste(
+        "keep the list blocks and the functions of the blocks in",
+        "vNN_functions/blocks.R only, and use none of its names in another",
+        "file"
       )
     ),
     real_results_are_fake = list(
       rule_real_results_are_fake,
-      "no real results on the disk come from fake real data"
+      "no real results on the disk come from fake real data",
+      paste(
+        "run the scenario \"real\" again with",
+        "pbn::initialize_project(fake_real_data = FALSE)"
+      )
     ),
     unknown_path = list(
       rule_unknown_path,
-      "the house layout names every top-level path"
+      "the house layout names every top-level path",
+      "move it into a folder of the layout, such as adhoc/, or delete it"
     )
   ))
 }

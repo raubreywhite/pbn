@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -101,23 +101,15 @@ Four layers. The widest, at the top, is the layout and the API of pbn.
 Below it are the checks, then verification on fake data. The narrowest,
 at the bottom, is prose for the agent.
 </title>
-<g stroke="currentColor" stroke-width="1" fill-opacity="0.18"><polygon points="10,10 630,10 590,75 50,75" fill="#2166ac"></polygon><polygon points="50,80 590,80 550,145 90,145" fill="#2166ac" fill-opacity="0.13"></polygon><polygon points="90,150 550,150 510,215 130,215" fill="#4d9221"></polygon><polygon points="130,220 510,220 470,285 170,285" fill="#999999"></polygon></g><g fill="currentColor" text-anchor="middle" font-size="15"><text x="320" y="38" font-weight="bold">1. Layout and API: one way to do
-each thing</text><text x="320" y="60" font-size="13">one run script,
-four data steps, pbn::folder(), no assign()</text><text x="320" y="108" font-weight="bold">2. Checks: each correction
-becomes a check</text><text x="320" y="130" font-size="13">check_project(), the checks between
-the data steps</text><text x="320" y="178" font-weight="bold">3.
-Verification on fake data</text><text x="320" y="200" font-size="13">scenarios with a known truth,
-check.csv, run.md</text><text x="320" y="248" font-weight="bold">4.
-Prose</text><text x="320" y="270" font-size="13">AGENTS.md,
-pbn.md</text></g></svg><figcaption>
+<g stroke="currentColor" stroke-width="1" fill-opacity="0.18"><polygon points="10,10 630,10 590,75 50,75" fill="#2166ac"></polygon><polygon points="50,80 590,80 550,145 90,145" fill="#2166ac" fill-opacity="0.13"></polygon><polygon points="90,150 550,150 510,215 130,215" fill="#4d9221"></polygon><polygon points="130,220 510,220 470,285 170,285" fill="#999999"></polygon></g><g fill="currentColor" text-anchor="middle" font-size="15"><text x="320" y="38" font-weight="bold">1. Layout and API: one way to do each thing</text><text x="320" y="60" font-size="13">one run script, four data steps, pbn::folder(), no assign()</text><text x="320" y="108" font-weight="bold">2. Checks: a correction that code can check becomes a check</text><text x="320" y="130" font-size="13">check_project(), the checks between the data steps</text><text x="320" y="178" font-weight="bold">3. Verification on fake data</text><text x="320" y="200" font-size="13">scenarios with known answers, check.csv, run.md</text><text x="320" y="248" font-weight="bold">4. Prose</text><text x="320" y="270" font-size="13">AGENTS.md, pbn.md</text></g></svg><figcaption>
 The layers of pbn, after Tan. pbn puts most of its code into layers 1
 and 2. Code enforces them. A project can turn a rule down to warn or off
 only in pbn.yml, where a person sees it.
 </figcaption></figure><div class="section level2">
 <h2 id="the-project">The project<a class="anchor" aria-label="anchor" href="#the-project"></a>
 </h2>
-<p>The project of this article is a smaller version of the one in <a href="../pbn.html">Get started</a>. It compares a 0/1 outcome between
-two groups, <code>a</code> and <code>b</code>, adjusted for a covariate
+<p>The project of this article is a smaller version of the one in <a href="pbn.html">Get started</a>. It compares a 0/1 outcome between two
+groups, <code>a</code> and <code>b</code>, adjusted for a covariate
 <code>x</code>. It has three scenarios:</p>
 <ul>
 <li>
@@ -236,14 +228,7 @@ A person corrects a mistake of an agent. If code can check it, the
 correction becomes a check, and the next agent gets an error that names
 the fix. If not, it becomes one line in AGENTS.md.
 </title>
-<defs><marker id="arr" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path></marker></defs><g stroke="currentColor" stroke-width="1" fill-opacity="0.15"><rect x="10" y="15" width="170" height="56" rx="6" fill="#999999"></rect><rect x="235" y="15" width="170" height="56" rx="6" fill="#999999"></rect><rect x="235" y="115" width="170" height="64" rx="6" fill="#2166ac"></rect><rect x="460" y="115" width="170" height="64" rx="6" fill="#4d9221"></rect><rect x="10" y="115" width="170" height="64" rx="6" fill="#999999" fill-opacity="0.06" stroke-dasharray="4 3"></rect><rect x="460" y="220" width="170" height="64" rx="6" fill="#4d9221" fill-opacity="0.08"></rect></g><g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#arr)"><line x1="180" y1="43" x2="233" y2="43"></line><line x1="320" y1="71" x2="320" y2="113"></line><line x1="405" y1="147" x2="458" y2="147"></line><line x1="235" y1="147" x2="182" y2="147" stroke-dasharray="4 3"></line><line x1="545" y1="179" x2="545" y2="218"></line></g><g fill="currentColor" text-anchor="middle" font-size="13"><text x="95" y="39">The agent makes</text><text x="95" y="57">a
-mistake</text><text x="320" y="39">A
-person</text><text x="320" y="57">corrects it</text><text x="320" y="143" font-weight="bold">Can
-code</text><text x="320" y="161" font-weight="bold">check it?</text><text x="545" y="136">A rule in pbn,</text><text x="545" y="153">a step
-check or</text><text x="545" y="170">an expect_ function</text><text x="95" y="143">One line
-in</text><text x="95" y="161">AGENTS.md</text><text x="545" y="241">The
-next agent</text><text x="545" y="258">gets an error
-that</text><text x="545" y="275">names the fix</text><text x="431" y="139" font-size="12">yes</text><text x="208" y="139" font-size="12">no</text></g></svg><figcaption>
+<defs><marker id="arr" viewbox="0 0 10 10" refx="9" refy="5" markerwidth="7" markerheight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"></path></marker></defs><g stroke="currentColor" stroke-width="1" fill-opacity="0.15"><rect x="10" y="15" width="170" height="56" rx="6" fill="#999999"></rect><rect x="235" y="15" width="170" height="56" rx="6" fill="#999999"></rect><rect x="235" y="115" width="170" height="64" rx="6" fill="#2166ac"></rect><rect x="460" y="115" width="170" height="64" rx="6" fill="#4d9221"></rect><rect x="10" y="115" width="170" height="64" rx="6" fill="#999999" fill-opacity="0.06" stroke-dasharray="4 3"></rect><rect x="460" y="220" width="170" height="64" rx="6" fill="#4d9221" fill-opacity="0.08"></rect></g><g stroke="currentColor" stroke-width="1.5" fill="none" marker-end="url(#arr)"><line x1="180" y1="43" x2="233" y2="43"></line><line x1="320" y1="71" x2="320" y2="113"></line><line x1="405" y1="147" x2="458" y2="147"></line><line x1="235" y1="147" x2="182" y2="147" stroke-dasharray="4 3"></line><line x1="545" y1="179" x2="545" y2="218"></line></g><g fill="currentColor" text-anchor="middle" font-size="13"><text x="95" y="39">The agent makes</text><text x="95" y="57">a mistake</text><text x="320" y="39">A person</text><text x="320" y="57">corrects it</text><text x="320" y="143" font-weight="bold">Can code</text><text x="320" y="161" font-weight="bold">check it?</text><text x="545" y="136">A rule in pbn,</text><text x="545" y="153">a step check or</text><text x="545" y="170">an expect_ function</text><text x="95" y="143">One line in</text><text x="95" y="161">AGENTS.md</text><text x="545" y="241">The next agent</text><text x="545" y="258">gets an error that</text><text x="545" y="275">names the fix</text><text x="431" y="139" font-size="12">yes</text><text x="208" y="139" font-size="12">no</text></g></svg><figcaption>
 Each correction goes into code where it can. A check holds for every
 later agent. An agent can ignore a line of instructions.
 </figcaption></figure><p>pbn contains the checks for the corrections that apply to every
@@ -266,15 +251,15 @@ environment variable:</p>
 <span><span class="va">checked</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^FAIL|PASS, "</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">checked</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\r?\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export</span></span>
-<span><span class="co">#&gt; FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2</span></span>
-<span><span class="co">#&gt; FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv"</span></span>
-<span><span class="co">#&gt; 15 PASS, 0 WARN, 3 FAIL, 0 OFF</span></span>
+<span><span class="co">#&gt; FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.</span></span>
+<span><span class="co">#&gt; FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().</span></span>
+<span><span class="co">#&gt; FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().</span></span>
+<span><span class="co">#&gt; 18 PASS, 0 WARN, 3 FAIL, 0 OFF</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">raw_code</span>, <span class="va">raw_file</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_folder.R"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>Each finding names the rule and the file, and the line where one
-applies. Tan also notes that an agent copies a workaround as if it were
-the pattern of the code. The rule
+<p>Each finding names the rule, the file, the line where one applies,
+and the fix. Tan also notes that an agent copies a workaround as if it
+were the pattern of the code. The rule
 <code>no_local_copy_of_pbn_function</code> stops one such workaround: a
 local copy that patches a pbn function. The fix belongs in pbn, where
 every project gets it.</p>
@@ -309,9 +294,11 @@ adjustment for <code>x</code>, because it judges that <code>x</code>
 <span><span class="co">#&gt; [1] 1</span></span></code></pre></div>
 <p>Yet the run fails, with status 1. On the real data, the estimate
 changes in the third decimal only, because there <code>x</code> is not
-related to the group:</p>
+related to the group. To look at the real results of a failed run for
+debugging, read them with <code><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs2::qs_read()</a></code>:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>correct <span class="op">=</span> <span class="va">correct</span>, simplified <span class="op">=</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">models</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span><span class="op">)</span><span class="op">]</span></span>
+<code class="sourceCode R"><span><span class="va">simplified_real</span> <span class="op">&lt;-</span> <span class="fu">qs2</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/qs2/man/qs_read.html" class="external-link">qs_read</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"real"</span>, <span class="st">"results.qs2"</span><span class="op">)</span><span class="op">)</span><span class="op">$</span><span class="va">models</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cbind.html" class="external-link">rbind</a></span><span class="op">(</span>correct <span class="op">=</span> <span class="va">correct</span>, simplified <span class="op">=</span> <span class="va">simplified_real</span><span class="op">)</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"estimate"</span>, <span class="st">"lower"</span>, <span class="st">"upper"</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="co">#&gt;             estimate     lower     upper</span></span>
 <span><span class="co">#&gt; correct    0.5568597 0.1839498 0.9297696</span></span>
 <span><span class="co">#&gt; simplified 0.5583728 0.1857086 0.9310369</span></span></code></pre></div>
@@ -332,16 +319,20 @@ related to the group:</p>
 <span><span class="co">#&gt; 4                             1.05; 140 of 140 simulations  TRUE</span></span></code></pre></div>
 <p><code><a href="../reference/save_results.html">save_results()</a></code> stops the script when an assertion fails.
 <code><a href="../reference/read_results.html">read_results()</a></code> does not read the results of a scenario with
-a failed assertion:</p>
+a failed assertion. It also does not read the real results of a run with
+a fake scenario with a failed assertion:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"confounded"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/results.qs2").</span></span></code></pre></div>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/results.qs2").</span></span>
+<span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> manifest$failed_fake_checks of /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmpd57cWS/pbn_agents/project/v01_results/real/results.qs2").</span></span></code></pre></div>
 <p><code><a href="../reference/check_project.html">check_project()</a></code> also fails the project:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">checked</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"check_project.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^FAIL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">checked</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\r?\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; FAIL  scenario_checks  v01_results/confounded/check.csv: these assertions failed: adjusted model: bias of estimate against 0.5; adjusted model: coverage of 0.5 by the 90% interval</span></span></code></pre></div>
+<span><span class="co">#&gt; FAIL  scenario_checks  v01_results/confounded/check.csv: these assertions failed: adjusted model: bias of estimate against 0.5; adjusted model: coverage of 0.5 by the 90% interval. Fix: correct the analysis, and run the scenario again with pbn::run_plan() and pbn::save_results().</span></span></code></pre></div>
 <p>Put the code back, and the run succeeds:</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">fit_code</span>, <span class="va">fit_file</span><span class="op">)</span></span>
@@ -405,7 +396,7 @@ network.</li>
 <div class="section level2">
 <h2 id="what-the-checks-do-not-catch">What the checks do not catch<a class="anchor" aria-label="anchor" href="#what-the-checks-do-not-catch"></a>
 </h2>
-<p>The checks find only the mistakes that they name. <a href="../pbn.html#what-pbn-does-not-do-yet">What pbn does not do yet</a>
+<p>The checks find only the mistakes that they name. <a href="pbn.html#what-pbn-does-not-do-yet">What pbn does not do yet</a>
 lists the gaps. Two of them apply to code that an agent writes:</p>
 <ul>
 <li>pbn finds an analysis that adds, removes, renames or replaces a

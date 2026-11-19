@@ -315,7 +315,7 @@ Other project setup:
 ``` r
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")
@@ -329,11 +329,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpTYLcmi/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpJTe3hZ/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpTYLcmi/pbn_initialize_example/v01_results"
+#> [1] "/tmp/RtmpJTe3hZ/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmpTYLcmi/pbn_initialize_example/data"
+#> [1] "/tmp/RtmpJTe3hZ/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

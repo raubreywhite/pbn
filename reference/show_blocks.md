@@ -93,9 +93,11 @@ the disk at each call, with
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md).
 So they work in the project folder, and on a server after the file of
 [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+They stop where
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-stops on real results whose `check.csv` holds a failed assertion, and so
-do they.
+stops. So they also stop on real results whose
+`manifest$failed_fake_checks` names a fake scenario with a failed
+assertion.
 
 `show_blocks()` calls each block function once. For each block, it
 prints the number, the name, the rows and the pages. For a function that

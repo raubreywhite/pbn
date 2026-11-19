@@ -67,6 +67,10 @@
 
 - [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
   : Check a project against the house layout
+- [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) : Run a
+  version and check the project
+- [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
+  : Freeze a version of a project
 
 ## Shared helpers
 

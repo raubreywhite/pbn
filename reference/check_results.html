@@ -11,7 +11,7 @@ nothing."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.png"
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -152,7 +152,13 @@ number. It has 0 rows when the data folders have no file. A manifest
 with <code>data_md5</code>, the md5 of the data files of an older pbn, fails this
 rule: run the scenario again. For <code>"real"</code>, <code>manifest$fake_real_data</code>
 MUST be <code>TRUE</code> or <code>FALSE</code>. A real manifest of an older pbn has no
-<code>fake_real_data</code>, so it fails this rule: run the scenario again.</p></li>
+<code>fake_real_data</code>, so it fails this rule: run the scenario again.</p>
+<p>For <code>"real"</code>, <code>manifest$failed_fake_checks</code> MUST be a character vector
+without attributes, also no names. It MAY be empty. Each element MUST
+match <code>^[a-z0-9_]+$</code>, MUST NOT be <code>NA</code> or <code>"real"</code>, and MUST come once.
+The element MUST be there when <code>manifest$pbn_version</code> is a version of
+2026.11.25 or newer. A manifest without it and without such a version
+passes, as the results of an older pbn do.</p></li>
 <li><p><code>manifest_source</code>: <code>manifest$source_md5</code> is a named character vector of
 md5 values, each a string of 32 lower-case hex digits. It names the run
 script <code>&lt;version&gt;_run.R</code> of <code>manifest$version</code>, or a <code>vNN_run.R</code> when

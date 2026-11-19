@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -105,6 +105,7 @@ v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
+v01_frozen.md5            optional md5 of the files of a frozen version
 check_project.R           one line: pbn::check_project()
 pbn.yml                   the rules of check_project()
 manuscript/manual/        manuscripts that a person edits
@@ -128,7 +129,7 @@ covariate <code>x</code>.</p>
 set of house rules that <code><a href="../reference/check_project.html">check_project()</a></code> and
 <code><a href="../reference/initialize_project.html">initialize_project()</a></code> use. This project uses the set as it
 is:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_17</span></span></code></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span></code></pre></div>
 <p>The real data of this fake project is a small csv file in the folder
 <code>data</code>, next to the project folder. In a real project, this
 folder holds the real data, and it is outside the repository. The file
@@ -483,7 +484,7 @@ prints one line for each scenario and simulation, and
 lines of the data:</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span>, chdir <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
 <span><span class="va">data_lines</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^pbn: data"</span>, <span class="va">out</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/table.html" class="external-link">table</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"^pbn: data d, [a-z]+ sim_[0-9]{4}: "</span>, <span class="st">""</span>, <span class="va">data_lines</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -510,7 +511,7 @@ other. The data and each analysis set their own seed. So one analysis by
 hand in this R session gives the value of the worker:</p>
 <div class="sourceCode" id="cb19"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">by_hand</span> <span class="op">&lt;-</span> <span class="va">p</span><span class="op">$</span><span class="fu">run_one</span><span class="op">(</span><span class="st">"confounded__sim_0003__models__1"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 11:20.</span></span>
+<span><span class="co">#&gt; pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 13:05.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/identical.html" class="external-link">identical</a></span><span class="op">(</span><span class="va">by_hand</span>, <span class="va">r</span><span class="op">[[</span><span class="st">"confounded__sim_0003__models__1"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 <p>This holds for functions that depend only on their arguments, the
@@ -707,7 +708,7 @@ returns the other elements, with one warning:</p>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/names.html" class="external-link">names</a></span><span class="op">(</span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: The manifest names the analysis kinds predicted in</span></span>
-<span><span class="co">#&gt; /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,</span></span>
+<span><span class="co">#&gt; /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,</span></span>
 <span><span class="co">#&gt; and that file is missing, for example in a clone of the repository.</span></span>
 <span><span class="co">#&gt; read_results() returns the other elements.</span></span>
 <span><span class="co">#&gt; [1] "manifest"   "exclusions" "table1"     "models"</span></span>
@@ -749,14 +750,14 @@ sections of the log of the run above:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ## When</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; The run started 2026-11-19 11:20:18 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.</span></span>
+<span><span class="co">#&gt; The run started 2026-11-19 13:05:26 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ## Run</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; - Result: All 9 assertions passed.</span></span>
 <span><span class="co">#&gt; - Scenarios of this run: real, known, null and confounded.</span></span>
 <span><span class="co">#&gt; - R version 4.6.2 (2026-10-29).</span></span>
-<span><span class="co">#&gt; - Packages: pbn 2026.11.24, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.</span></span>
+<span><span class="co">#&gt; - Packages: pbn 2026.11.26, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.</span></span>
 <span><span class="co">#&gt; - Workers: 2.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ## Scenarios</span></span>
@@ -808,13 +809,13 @@ seconds:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Step                                               | Wall seconds |</span></span>
 <span><span class="co">#&gt; |----------------------------------------------------|-------------:|</span></span>
-<span><span class="co">#&gt; | run_plan()                                         |         8.79 |</span></span>
-<span><span class="co">#&gt; | save_results(): build, write and stack the results |         1.59 |</span></span>
-<span><span class="co">#&gt; | save_results(): the checks of check_results()      |         0.66 |</span></span>
+<span><span class="co">#&gt; | run_plan()                                         |         9.62 |</span></span>
+<span><span class="co">#&gt; | save_results(): build, write and stack the results |         1.51 |</span></span>
+<span><span class="co">#&gt; | save_results(): the checks of check_results()      |         0.85 |</span></span>
 <span><span class="co">#&gt; | save_results(): the expect_ functions              |         0.01 |</span></span>
-<span><span class="co">#&gt; | save_results() in total                            |         2.34 |</span></span>
-<span><span class="co">#&gt; | make_outputs(): real                               |         0.64 |</span></span>
-<span><span class="co">#&gt; | make_outputs(): known                              |         0.33 |</span></span>
+<span><span class="co">#&gt; | save_results() in total                            |         2.46 |</span></span>
+<span><span class="co">#&gt; | make_outputs(): real                               |         0.70 |</span></span>
+<span><span class="co">#&gt; | make_outputs(): known                              |         0.39 |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ### Scenarios</span></span>
 <span><span class="co">#&gt; </span></span>
@@ -822,51 +823,51 @@ seconds:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Scenario   | Wall seconds |</span></span>
 <span><span class="co">#&gt; |------------|-------------:|</span></span>
-<span><span class="co">#&gt; | real       |         0.81 |</span></span>
-<span><span class="co">#&gt; | known      |         0.08 |</span></span>
-<span><span class="co">#&gt; | null       |         3.67 |</span></span>
-<span><span class="co">#&gt; | confounded |         3.30 |</span></span>
+<span><span class="co">#&gt; | real       |         0.86 |</span></span>
+<span><span class="co">#&gt; | known      |         0.09 |</span></span>
+<span><span class="co">#&gt; | null       |         4.26 |</span></span>
+<span><span class="co">#&gt; | confounded |         3.90 |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ### Data steps</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Data | Scenario   | Step         | Calls | Median | Maximum | Share |</span></span>
 <span><span class="co">#&gt; |------|------------|--------------|------:|-------:|--------:|------:|</span></span>
-<span><span class="co">#&gt; | d    | real       | raw          |     1 |   0.01 |    0.01 |  0.2% |</span></span>
-<span><span class="co">#&gt; | d    | real       | clean        |     1 |   0.57 |    0.57 |  9.2% |</span></span>
-<span><span class="co">#&gt; | d    | real       | cohort       |     1 |   0.00 |    0.00 |  0.1% |</span></span>
-<span><span class="co">#&gt; | d    | real       | after_cohort |     1 |   0.01 |    0.01 |  0.2% |</span></span>
+<span><span class="co">#&gt; | d    | real       | raw          |     1 |   0.01 |    0.01 |  0.1% |</span></span>
+<span><span class="co">#&gt; | d    | real       | clean        |     1 |   0.60 |    0.60 |  7.9% |</span></span>
+<span><span class="co">#&gt; | d    | real       | cohort       |     1 |   0.01 |    0.01 |  0.1% |</span></span>
+<span><span class="co">#&gt; | d    | real       | after_cohort |     1 |   0.02 |    0.02 |  0.2% |</span></span>
 <span><span class="co">#&gt; | d    | known      | raw          |     1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | d    | known      | clean        |     1 |   0.00 |    0.00 |  0.1% |</span></span>
+<span><span class="co">#&gt; | d    | known      | clean        |     1 |   0.01 |    0.01 |  0.1% |</span></span>
 <span><span class="co">#&gt; | d    | known      | cohort       |     1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | d    | null       | raw          |   140 |   0.00 |    0.01 |  0.6% |</span></span>
-<span><span class="co">#&gt; | d    | null       | clean        |   140 |   0.00 |    0.27 |   14% |</span></span>
-<span><span class="co">#&gt; | d    | null       | cohort       |   140 |   0.00 |    0.00 |  1.5% |</span></span>
-<span><span class="co">#&gt; | d    | null       | after_cohort |   140 |   0.00 |    0.01 |  6.2% |</span></span>
-<span><span class="co">#&gt; | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.4% |</span></span>
-<span><span class="co">#&gt; | d    | confounded | clean        |   140 |   0.00 |    0.01 |   10% |</span></span>
-<span><span class="co">#&gt; | d    | confounded | cohort       |   140 |   0.00 |    0.00 |  1.4% |</span></span>
-<span><span class="co">#&gt; | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  5.8% |</span></span>
+<span><span class="co">#&gt; | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.1% |</span></span>
+<span><span class="co">#&gt; | d    | null       | raw          |   140 |   0.00 |    0.01 |  0.5% |</span></span>
+<span><span class="co">#&gt; | d    | null       | clean        |   140 |   0.00 |    0.26 |   13% |</span></span>
+<span><span class="co">#&gt; | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.5% |</span></span>
+<span><span class="co">#&gt; | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  6.1% |</span></span>
+<span><span class="co">#&gt; | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.5% |</span></span>
+<span><span class="co">#&gt; | d    | confounded | clean        |   140 |   0.00 |    0.01 | 10.0% |</span></span>
+<span><span class="co">#&gt; | d    | confounded | cohort       |   140 |   0.00 |    0.01 |  1.6% |</span></span>
+<span><span class="co">#&gt; | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  6.3% |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ### Analysis kinds</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; | Scenario   | Kind      | Analyses | Median | Maximum | Share |</span></span>
 <span><span class="co">#&gt; |------------|-----------|---------:|-------:|--------:|------:|</span></span>
 <span><span class="co">#&gt; | real       | table1    |        1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | real       | models    |        1 |   0.11 |    0.11 |  1.7% |</span></span>
+<span><span class="co">#&gt; | real       | models    |        1 |   0.11 |    0.11 |  1.4% |</span></span>
 <span><span class="co">#&gt; | real       | predicted |        1 |   0.00 |    0.00 |  0.0% |</span></span>
 <span><span class="co">#&gt; | known      | table1    |        1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | known      | models    |        1 |   0.00 |    0.00 |  0.0% |</span></span>
+<span><span class="co">#&gt; | known      | models    |        1 |   0.00 |    0.00 |  0.1% |</span></span>
 <span><span class="co">#&gt; | known      | crude     |        1 |   0.00 |    0.00 |  0.0% |</span></span>
 <span><span class="co">#&gt; | known      | predicted |        1 |   0.00 |    0.00 |  0.0% |</span></span>
-<span><span class="co">#&gt; | null       | table1    |      140 |   0.00 |    0.00 |  3.4% |</span></span>
-<span><span class="co">#&gt; | null       | models    |      140 |   0.00 |    0.10 |   11% |</span></span>
-<span><span class="co">#&gt; | null       | crude     |      140 |   0.00 |    0.01 |  7.9% |</span></span>
-<span><span class="co">#&gt; | null       | predicted |      140 |   0.00 |    0.01 |  2.6% |</span></span>
-<span><span class="co">#&gt; | confounded | table1    |      140 |   0.00 |    0.01 |  3.4% |</span></span>
-<span><span class="co">#&gt; | confounded | models    |      140 |   0.00 |    0.02 |  9.3% |</span></span>
-<span><span class="co">#&gt; | confounded | crude     |      140 |   0.00 |    0.01 |  7.3% |</span></span>
-<span><span class="co">#&gt; | confounded | predicted |      140 |   0.00 |    0.01 |  2.4% |</span></span>
+<span><span class="co">#&gt; | null       | table1    |      140 |   0.00 |    0.01 |  3.6% |</span></span>
+<span><span class="co">#&gt; | null       | models    |      140 |   0.00 |    0.11 |   10% |</span></span>
+<span><span class="co">#&gt; | null       | crude     |      140 |   0.00 |    0.01 |  8.7% |</span></span>
+<span><span class="co">#&gt; | null       | predicted |      140 |   0.00 |    0.01 |  2.8% |</span></span>
+<span><span class="co">#&gt; | confounded | table1    |      140 |   0.00 |    0.01 |  3.7% |</span></span>
+<span><span class="co">#&gt; | confounded | models    |      140 |   0.00 |    0.01 |  9.3% |</span></span>
+<span><span class="co">#&gt; | confounded | crude     |      140 |   0.00 |    0.01 |  8.7% |</span></span>
+<span><span class="co">#&gt; | confounded | predicted |      140 |   0.00 |    0.01 |  2.8% |</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Median and Maximum are the seconds of one call. Share is the part of the seconds of all data steps and analyses of the run.</span></span></code></pre></div>
 <p>The section History has one line for each run of this version, oldest
@@ -1013,8 +1014,8 @@ copy of the file first.</p>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"rhs &lt;-"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "    rhs &lt;- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""</span></span>
 <span><span class="va">red</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span>status <span class="op">=</span> <span class="fl">1</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"known"</span>, <span class="st">"check.csv"</span><span class="op">)</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; "assertion","expected","observed","pass"</span></span>
 <span><span class="co">#&gt; "outcome events in group b",6,6,TRUE</span></span>
@@ -1028,14 +1029,23 @@ results files stay, so that you can find the fault, but
 <div class="sourceCode" id="cb39"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, scenario <span class="op">=</span> <span class="st">"known"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
 <span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
-<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
-<p>Put the copy back, and run the script again. Its assertions pass.</p>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2").</span></span></code></pre></div>
+<p>The same code gave the real results of this run, so
+<code><a href="../reference/read_results.html">read_results()</a></code> stops on them too.
+<code><a href="../reference/save_results.html">save_results()</a></code> records each fake scenario with a failed
+assertion in <code>manifest$failed_fake_checks</code> of the real
+results:</p>
 <div class="sourceCode" id="cb40"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00; font-weight: bold;">Error</span><span style="font-weight: bold;">:</span></span></span>
+<span><span class="co">#&gt; <span style="color: #BBBB00;">!</span> manifest$failed_fake_checks of /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2").</span></span></code></pre></div>
+<p>Put the copy back, and run the script again. Its assertions pass.</p>
+<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"fit_models_copy.R"</span><span class="op">)</span>, <span class="va">file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
 <span><span class="va">green</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.</span></span></code></pre></div>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="a-cleaning-step-that-drops-a-row">A cleaning step that drops a row<a class="anchor" aria-label="anchor" href="#a-cleaning-step-that-drops-a-row"></a>
@@ -1044,7 +1054,7 @@ results files stay, so that you can find the fault, but
 That is an exclusion, and it belongs in <code>data_cohort()</code>,
 where it is already. Keep a copy of the file first, and show the first
 failed analysis:</p>
-<div class="sourceCode" id="cb41"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">clean_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_clean.R"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">clean_file</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"data_clean_copy.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span>
@@ -1060,7 +1070,7 @@ failed analysis:</p>
 failed analysis stops the run, and the analyses after it do not run.
 <code><a href="../reference/run_plan.html">?run_plan</a></code> gives the rules of the stop. Put the copy
 back:</p>
-<div class="sourceCode" id="cb42"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"data_clean_copy.R"</span><span class="op">)</span>, <span class="va">clean_file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
 </div>
@@ -1087,20 +1097,20 @@ imputation.</p>
 <p>The two runs of the section A check that goes red read the cache.
 Change an analysis: <code>fit_models()</code> also reports the number of
 imputations. The data comes from the cache again:</p>
-<div class="sourceCode" id="cb43"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">file</span><span class="op">)</span></span>
 <span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"upper = mean(est) + z * se)"</span>, <span class="st">"upper = mean(est) + z * se, n_imp = length(est))"</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">code</span>, <span class="va">file</span><span class="op">)</span></span>
 <span><span class="va">third</span> <span class="op">&lt;-</span> <span class="fu">run_lines</span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.</span></span>
-<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.</span></span>
+<span><span class="co">#&gt; pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.</span></span>
+<span><span class="co">#&gt; pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">$</span><span class="va">models</span></span>
 <span><span class="co">#&gt;   adjust    term estimate        se     lower     upper n_imp</span></span>
 <span><span class="co">#&gt; 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3</span></span></code></pre></div>
 <p>Change the data code: <code>data_impute()</code> keeps one decimal of
 each draw. pbn computes the data again, and names the changed file and
 the changed step:</p>
-<div class="sourceCode" id="cb44"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_impute.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">code</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">"round(mu + "</span>, <span class="st">"round(digits = 1, mu + "</span>, <span class="va">code</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">code</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"data_impute.R"</span><span class="op">)</span><span class="op">)</span></span>
@@ -1110,17 +1120,17 @@ the changed step:</p>
 <p>The section History of the run log now has one line for each run of
 this article. The runs with <code>only = c("real", "known")</code> name
 their scenarios:</p>
-<div class="sourceCode" id="cb45"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">log</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span>, <span class="st">"run.md"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">log</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^## History"</span>, <span class="va">log</span><span class="op">)</span> <span class="op">+</span> <span class="fl">4</span>, <span class="fu"><a href="https://rdrr.io/r/base/length.html" class="external-link">length</a></span><span class="op">(</span><span class="va">log</span><span class="op">)</span><span class="op">)</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; | Started             | Result                   | Scenarios   |  Workers | run_plan() | save_results() | make_outputs() | pbn        |</span></span>
 <span><span class="co">#&gt; |---------------------|--------------------------|-------------|---------:|-----------:|---------------:|---------------:|------------|</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:18 | All 9 assertions passed  | 4           |        2 |       8.79 |           2.34 |           0.98 | 2026.11.24 |</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:31 | 1 of 2 assertions failed | real, known |        2 |       1.18 |           0.02 |                | 2026.11.24 |</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:33 | All 2 assertions passed  | real, known |        2 |       1.21 |           0.03 |           0.77 | 2026.11.24 |</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:35 | 9 of 9 analyses failed   | real, known |        2 |       1.28 |                |                | 2026.11.24 |</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:37 | All 2 assertions passed  | real, known |        2 |       1.16 |           0.02 |           0.72 | 2026.11.24 |</span></span>
-<span><span class="co">#&gt; | 2026-11-19 11:20:39 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.02 |           0.75 | 2026.11.24 |</span></span></code></pre></div>
+<span><span class="co">#&gt; | 2026-11-19 13:05:26 | All 9 assertions passed  | 4           |        2 |       9.62 |           2.46 |           1.09 | 2026.11.26 |</span></span>
+<span><span class="co">#&gt; | 2026-11-19 13:05:40 | 1 of 2 assertions failed | real, known |        2 |       1.26 |           0.03 |                | 2026.11.26 |</span></span>
+<span><span class="co">#&gt; | 2026-11-19 13:05:43 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |</span></span>
+<span><span class="co">#&gt; | 2026-11-19 13:05:45 | 9 of 9 analyses failed   | real, known |        2 |       1.44 |                |                | 2026.11.26 |</span></span>
+<span><span class="co">#&gt; | 2026-11-19 13:05:47 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |</span></span>
+<span><span class="co">#&gt; | 2026-11-19 13:05:50 | All 2 assertions passed  | real, known |        2 |       1.45 |           0.03 |           0.93 | 2026.11.26 |</span></span></code></pre></div>
 <p>The cache key holds the md5 of each <code>data_*.R</code> file of
 <code>v01_functions/</code>, and <code>CFG$data</code>. It also holds
 the code of each step, the fingerprint of the raw data, the settings,
@@ -1144,7 +1154,7 @@ argset of <code>confounded__sim_0003__models__1</code>, and
 argument of <code><a href="../reference/get_data.html">get_argset()</a></code>, <code>&lt;i&gt;</code>, is 1 by
 default. Put back the line of <code><a href="../reference/scenarios.html">pbn::scenarios()</a></code> in
 <code>v01_run.R</code>, so that the plan has every scenario:</p>
-<div class="sourceCode" id="cb46"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">script</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">sub</a></span><span class="op">(</span><span class="st">'pbn::scenarios(CFG, only = c("real", "known"))'</span>, <span class="st">"pbn::scenarios(CFG)"</span>, <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="va">run_file</span><span class="op">)</span>, fixed <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="va">script</span>, <span class="va">run_file</span><span class="op">)</span></span></code></pre></div>
 <p>To step through one analysis of <code>fit_models()</code> by hand,
@@ -1152,10 +1162,10 @@ run the script up to <code><a href="../reference/run_plan.html">pbn::run_plan()<
 the function line by line. At the top level of the console,
 <code><a href="https://www.rwhite.no/plnr/reference/is_run_directly.html" class="external-link">plnr::is_run_directly()</a></code> is <code>TRUE</code>, so the first
 lines load that analysis:</p>
-<div class="sourceCode" id="cb47"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">upto</span> <span class="op">&lt;-</span> <span class="va">script</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"run_plan"</span>, <span class="va">script</span><span class="op">)</span> <span class="op">-</span> <span class="fl">1</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/eval.html" class="external-link">eval</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/parse.html" class="external-link">parse</a></span><span class="op">(</span>text <span class="op">=</span> <span class="va">upto</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span>
 <span><span class="va">argset</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/get_data.html">get_argset</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"confounded"</span>, <span class="fl">3</span>, <span class="st">"models"</span><span class="op">)</span></span>
 <span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/get_data.html">get_data</a></span><span class="op">(</span><span class="va">p</span>, <span class="st">"confounded"</span>, <span class="fl">3</span><span class="op">)</span></span>
 <span><span class="co">#&gt; pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.</span></span>
@@ -1185,7 +1195,7 @@ output function for <code>real</code> and for each fake scenario with
 renames each file there so that its name starts with
 <code>fake_data_</code>. Before each call, it empties the folder, so no
 file of an earlier run stays.</p>
-<div class="sourceCode" id="cb48"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.files.html" class="external-link">list.files</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_results"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"output"</span>, <span class="va">files</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] "known/output_fake_data/fake_data_outcome_by_group.png"</span></span>
@@ -1209,23 +1219,25 @@ data.</p>
 <h2 id="checking-the-project">Checking the project<a class="anchor" aria-label="anchor" href="#checking-the-project"></a>
 </h2>
 <p><code>check_project.R</code> holds one line.</p>
-<div class="sourceCode" id="cb49"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_project.html">check_project</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="../reference/check_project.html">check_project()</a></code> checks a project folder against the
 rules of <code>pbn.yml</code>. It prints the name of the set, one line
-for each rule that passes, one line for each finding, and a count. The
-rule <code>cyclomatic_complexity</code> fails a function that scores
-above 15 in <code>cyclocomp</code>, as the lint gate of the house
-packages does. The rule <code>no_local_assign</code> fails
-<code><a href="https://rdrr.io/r/base/eval.html" class="external-link">local()</a></code>, <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>, <code>&lt;&lt;-</code> and
-the other constructs of <code><a href="../reference/check_project.html">?check_project</a></code>. Each object then
-gets its value on the line that names it.</p>
-<div class="sourceCode" id="cb50"><pre class="downlit sourceCode r">
+for each rule that passes, one line for each finding, and a count. Each
+WARN and FAIL line ends with the fix. The rule
+<code>cyclomatic_complexity</code> fails a function that scores above 15
+in <code>cyclocomp</code>, as the lint gate of the house packages does.
+The rule <code>no_local_assign</code> fails <code><a href="https://rdrr.io/r/base/eval.html" class="external-link">local()</a></code>,
+<code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>, <code>&lt;&lt;-</code> and the other constructs
+of <code><a href="../reference/check_project.html">?check_project</a></code>. Each object then gets its value on the
+line that names it.</p>
+<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)</span></span>
+<span><span class="co">#&gt; Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)</span></span>
 <span><span class="co">#&gt; PASS  lower_case_names  no capital letter in a name</span></span>
 <span><span class="co">#&gt; PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span></span>
 <span><span class="co">#&gt; PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span></span>
+<span><span class="co">#&gt; PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()</span></span>
 <span><span class="co">#&gt; PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and each vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()</span></span>
 <span><span class="co">#&gt; PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span></span>
 <span><span class="co">#&gt; PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span></span>
@@ -1236,24 +1248,26 @@ gets its value on the line that names it.</p>
 <span><span class="co">#&gt; PASS  loc_per_file  no .R file has more than 1000 code lines</span></span>
 <span><span class="co">#&gt; PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span></span>
 <span><span class="co">#&gt; PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span></span>
+<span><span class="co">#&gt; PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/</span></span>
 <span><span class="co">#&gt; PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span></span>
+<span><span class="co">#&gt; PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()</span></span>
 <span><span class="co">#&gt; PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()</span></span>
 <span><span class="co">#&gt; PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span></span>
 <span><span class="co">#&gt; PASS  real_results_are_fake  no real results on the disk come from fake real data</span></span>
 <span><span class="co">#&gt; PASS  unknown_path  the house layout names every top-level path</span></span>
-<span><span class="co">#&gt; 18 PASS, 0 WARN, 0 FAIL, 0 OFF</span></span></code></pre></div>
+<span><span class="co">#&gt; 21 PASS, 0 WARN, 0 FAIL, 0 OFF</span></span></code></pre></div>
 <p>In a non-interactive R session, <code><a href="../reference/check_project.html">check_project()</a></code> quits R
 with status 1 when a rule fails. Add a file with a capital letter in its
 name, and run <code>check_project.R</code> in a new R session:</p>
-<div class="sourceCode" id="cb51"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb52"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"notes"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span>, <span class="st">"Notes.txt"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"check_project.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">out</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 1</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"FAIL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\r?\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
-<span><span class="co">#&gt; FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter</span></span>
-<span><span class="co">#&gt; 17 PASS, 0 WARN, 1 FAIL, 0 OFF</span></span>
+<span><span class="co">#&gt; FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter. Fix: rename it in lower case.</span></span>
+<span><span class="co">#&gt; 20 PASS, 0 WARN, 1 FAIL, 0 OFF</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p><code>pbn.yml</code> MAY change the set. Under <code>rules</code>, it
 changes the level or a parameter of a rule. Under <code>allow</code>, it
@@ -1261,20 +1275,21 @@ lists the paths that a rule allows. This file raises the limit of
 <code>cyclomatic_complexity</code> to 25, turns
 <code>unknown_path</code> off, and allows one name with a capital
 letter:</p>
-<div class="sourceCode" id="cb52"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb52-1"><a href="#cb52-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_17</span></span>
-<span id="cb52-2"><a href="#cb52-2" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
-<span id="cb52-3"><a href="#cb52-3" tabindex="-1"></a><span class="at">  </span><span class="fu">cyclomatic_complexity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">limit</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span><span class="kw">}</span></span>
-<span id="cb52-4"><a href="#cb52-4" tabindex="-1"></a><span class="at">  </span><span class="fu">unknown_path</span><span class="kw">:</span><span class="at"> </span><span class="ch">off</span></span>
-<span id="cb52-5"><a href="#cb52-5" tabindex="-1"></a><span class="fu">allow</span><span class="kw">:</span></span>
-<span id="cb52-6"><a href="#cb52-6" tabindex="-1"></a><span class="at">  </span><span class="fu">lower_case_names</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">adhoc/Notes.txt</span><span class="kw">]</span></span></code></pre></div>
-<div class="sourceCode" id="cb53"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb53"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb53-1"><a href="#cb53-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span>
+<span id="cb53-2"><a href="#cb53-2" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
+<span id="cb53-3"><a href="#cb53-3" tabindex="-1"></a><span class="at">  </span><span class="fu">cyclomatic_complexity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">limit</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span><span class="kw">}</span></span>
+<span id="cb53-4"><a href="#cb53-4" tabindex="-1"></a><span class="at">  </span><span class="fu">unknown_path</span><span class="kw">:</span><span class="at"> </span><span class="ch">off</span></span>
+<span id="cb53-5"><a href="#cb53-5" tabindex="-1"></a><span class="fu">allow</span><span class="kw">:</span></span>
+<span id="cb53-6"><a href="#cb53-6" tabindex="-1"></a><span class="at">  </span><span class="fu">lower_case_names</span><span class="kw">:</span><span class="at"> </span><span class="kw">[</span><span class="at">adhoc/Notes.txt</span><span class="kw">]</span></span></code></pre></div>
+<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"notes"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"adhoc"</span>, <span class="st">"Notes.txt"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Rules: house_2026_11_17, 2 overrides, 1 allowed path (pbn.yml)</span></span>
-<span><span class="co">#&gt; WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed)</span></span>
+<span><span class="co">#&gt; Rules: house_2026_11_19, 2 overrides, 1 allowed path (pbn.yml)</span></span>
+<span><span class="co">#&gt; WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed). Fix: rename it in lower case.</span></span>
 <span><span class="co">#&gt; PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span></span>
 <span><span class="co">#&gt; PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span></span>
+<span><span class="co">#&gt; PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()</span></span>
 <span><span class="co">#&gt; PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and each vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()</span></span>
 <span><span class="co">#&gt; PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span></span>
 <span><span class="co">#&gt; PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span></span>
@@ -1285,12 +1300,14 @@ letter:</p>
 <span><span class="co">#&gt; PASS  loc_per_file  no .R file has more than 1000 code lines</span></span>
 <span><span class="co">#&gt; PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 25</span></span>
 <span><span class="co">#&gt; PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span></span>
+<span><span class="co">#&gt; PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/</span></span>
 <span><span class="co">#&gt; PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span></span>
+<span><span class="co">#&gt; PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()</span></span>
 <span><span class="co">#&gt; PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()</span></span>
 <span><span class="co">#&gt; PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span></span>
 <span><span class="co">#&gt; PASS  real_results_are_fake  no real results on the disk come from fake real data</span></span>
 <span><span class="co">#&gt; OFF  unknown_path  off in pbn.yml</span></span>
-<span><span class="co">#&gt; 16 PASS, 1 WARN, 0 FAIL, 1 OFF</span></span></code></pre></div>
+<span><span class="co">#&gt; 19 PASS, 1 WARN, 0 FAIL, 1 OFF</span></span></code></pre></div>
 <p>The allowed file is now a WARN, and <code>unknown_path</code> is OFF.
 An entry covers its path and each path under it, with or without a final
 <code>/</code>. So <code>lower_case_names: [archive]</code> allows each
@@ -1303,6 +1320,69 @@ the levels, the parameters, and the locked rules that
 <code>pbn.yml</code> cannot change.</p>
 </div>
 <div class="section level2">
+<h2 id="verifying-a-version">Verifying a version<a class="anchor" aria-label="anchor" href="#verifying-a-version"></a>
+</h2>
+<p><code>pbn::verify("v01")</code> runs <code>v01_run.R</code> in a new
+R session, as <code>Rscript v01_run.R</code> does from the project
+folder. Then it checks the project with the rules of
+<code><a href="../reference/check_project.html">check_project()</a></code>. It prints the output of the run, and then
+a short verdict. These are the last lines:</p>
+<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">res</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/verify.html">verify</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">out</span>, <span class="fl">5</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; verify(v01): v01_run.R ended with status 0.</span></span>
+<span><span class="co">#&gt; check.csv files of this run: 3.</span></span>
+<span><span class="co">#&gt; Failed assertions: 0.</span></span>
+<span><span class="co">#&gt; check_project(): 0 FAIL, 0 WARN.</span></span>
+<span><span class="co">#&gt; Verdict: PASS</span></span></code></pre></div>
+<p>The verdict reads only the <code>check.csv</code> files of this run,
+and lists each failed assertion in them. It also lists each FAIL and
+WARN finding. The verdict is FAIL in each of these cases:</p>
+<ul>
+<li>the run ends with a status other than 0.</li>
+<li>the run wrote no <code>check.csv</code>.</li>
+<li>an assertion failed, also when <code>pbn.yml</code> turns
+<code>scenario_checks</code> off.</li>
+<li>a rule fails.</li>
+</ul>
+<p>In a non-interactive R session, <code><a href="../reference/verify.html">verify()</a></code> then quits R
+with status 1. Its value holds the exit status, the failed assertions
+and the findings.</p>
+</div>
+<div class="section level2">
+<h2 id="freezing-a-version">Freezing a version<a class="anchor" aria-label="anchor" href="#freezing-a-version"></a>
+</h2>
+<p>Freeze a version when its results go into a manuscript.
+<code>pbn::freeze_version("v01")</code> writes
+<code>v01_frozen.md5</code>, with the md5 of <code>v01_run.R</code> and
+of each file under <code>v01_functions/</code>:</p>
+<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/freeze_version.html">freeze_version</a></span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_frozen.md5"</span><span class="op">)</span><span class="op">)</span><span class="op">[</span><span class="fl">1</span><span class="op">:</span><span class="fl">3</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 58b5572c834365fe2b79bb90201b69b9  v01_functions/_cfg.R</span></span>
+<span><span class="co">#&gt; 5326dbb9f8aae1cf418c61686b57d737  v01_functions/analyses.R</span></span>
+<span><span class="co">#&gt; 05702c83dc7972393f11275792fcd099  v01_functions/data_clean.R</span></span></code></pre></div>
+<p>The rule <code>frozen_versions_unchanged</code> of
+<code><a href="../reference/check_project.html">check_project()</a></code> then fails when one of these files changes,
+comes or goes. It also fails each version older than the newest without
+its <code>vNN_frozen.md5</code>. So when <code>v02_run.R</code> exists,
+<code>v01</code> MUST be frozen. Change a file of the frozen version,
+and run <code>check_project.R</code> in a new R session:</p>
+<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">cfg_file</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span>, <span class="st">"_cfg.R"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="va">cfg_file</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"cfg_copy.R"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="st">"# a late change\n"</span>, file <span class="op">=</span> <span class="va">cfg_file</span>, append <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"check_project.R"</span><span class="op">)</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^FAIL"</span>, <span class="fu"><a href="https://rdrr.io/r/base/strsplit.html" class="external-link">strsplit</a></span><span class="op">(</span><span class="va">out</span><span class="op">$</span><span class="va">stdout</span>, <span class="st">"\r?\n"</span><span class="op">)</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>, value <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; FAIL  frozen_versions_unchanged  v01_functions/_cfg.R: changed after pbn::freeze_version() wrote v01_frozen.md5. Fix: put the files of the version back as they were and make the change in a new version, or run pbn::freeze_version() again to accept the change on purpose.</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/files.html" class="external-link">file.copy</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">root</span>, <span class="st">"cfg_copy.R"</span><span class="op">)</span>, <span class="va">cfg_file</span>, overwrite <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] TRUE</span></span></code></pre></div>
+<p>Make a change to a frozen version in a new version, such as
+<code>v02</code>. Run <code><a href="../reference/freeze_version.html">freeze_version()</a></code> again only to accept
+a change on purpose. It then prints each file whose md5 it changes.</p>
+</div>
+<div class="section level2">
 <h2 id="manuscripts">Manuscripts<a class="anchor" aria-label="anchor" href="#manuscripts"></a>
 </h2>
 <p><code>manuscript/manual/</code> holds the Word files that a person
@@ -1313,7 +1393,7 @@ builds from the results. A built manuscript MUST read the real results
 only, and <code><a href="../reference/check_project.html">check_project()</a></code> fails a
 <code><a href="../reference/read_results.html">read_results()</a></code> call there with another scenario. A call
 without <code>scenario</code> reads the real results:</p>
-<div class="sourceCode" id="cb54"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">r</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/read_results.html">read_results</a></span><span class="op">(</span><span class="st">"v01"</span><span class="op">)</span></span></code></pre></div>
 <p>The default <code>home = "."</code> is the working directory, so this
 file MUST run with the project folder as the working directory.</p>
@@ -1333,7 +1413,7 @@ object <code>blocks</code>. It is a named list of functions of the real
 results, in the order of the manuscript. The name of each block is its
 place in the manuscript. A block function returns a data.frame, or a
 character vector of lines, and it formats the numbers itself:</p>
-<div class="sourceCode" id="cb55"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">blocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Table 1"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">t1</span> <span class="op">&lt;-</span> <span class="va">results</span><span class="op">$</span><span class="va">table1</span></span>
@@ -1376,7 +1456,7 @@ example <code><a href="https://rdrr.io/pkg/data.table/man/data.table.html" class
 changed other code of the project, so run it again here. Then start the
 project in this R session with the first call of <code>v01_run.R</code>,
 as you do at the console in the project folder:</p>
-<div class="sourceCode" id="cb56"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">callr</span><span class="fu">::</span><span class="fu"><a href="https://callr.r-lib.org/reference/rscript.html" class="external-link">rscript</a></span><span class="op">(</span><span class="va">run_file</span>, wd <span class="op">=</span> <span class="va">home</span>, show <span class="op">=</span> <span class="cn">FALSE</span>, fail_on_status <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">out</span><span class="op">$</span><span class="va">status</span></span>
 <span><span class="co">#&gt; [1] 0</span></span>
@@ -1387,7 +1467,7 @@ as you do at the console in the project folder:</p>
 <span>  one_file_home <span class="op">=</span> <span class="st">"N:/durable/project"</span>,</span>
 <span>  one_file_folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"N:/durable/data"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span></code></pre></div>
+<span><span class="co">#&gt; Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="the-one-file">The one file<a class="anchor" aria-label="anchor" href="#the-one-file"></a>
@@ -1403,18 +1483,18 @@ file, run the first call of the script and then
 and it writes <code>v01_one_file.R</code> in the project folder. It
 needs no results, so you MAY write and read the file before the first
 full run:</p>
-<div class="sourceCode" id="cb57"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb61"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/to_one_file.html">to_one_file</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="co">#&gt; pbn: wrote v01_one_file.R in the project folder /tmp/RtmpO6ewLa/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.</span></span></code></pre></div>
+<span><span class="co">#&gt; pbn: wrote v01_one_file.R in the project folder /tmp/Rtmp0xzl4k/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.</span></span></code></pre></div>
 <p>The file starts with a header and the call of
 <code><a href="../reference/initialize_project.html">pbn::initialize_project()</a></code> with the paths of the server:</p>
-<div class="sourceCode" id="cb58"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">one</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/readLines.html" class="external-link">readLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_one_file.R"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="va">one</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/seq.html" class="external-link">seq_len</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/grep.html" class="external-link">grep</a></span><span class="op">(</span><span class="st">"^pbn::initialize_project\\("</span>, <span class="va">one</span><span class="op">)</span> <span class="op">+</span> <span class="fl">9</span><span class="op">)</span><span class="op">]</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; # v01_one_file.R: the run of the real data of the project project, version v01,</span></span>
 <span><span class="co">#&gt; # as one file for a computer without the project folder.</span></span>
 <span><span class="co">#&gt; #</span></span>
-<span><span class="co">#&gt; # pbn 2026.11.24 generated it on 2026-11-19 from the project folder project.</span></span>
+<span><span class="co">#&gt; # pbn 2026.11.26 generated it on 2026-11-19 from the project folder project.</span></span>
 <span><span class="co">#&gt; # Do not edit: change the project and generate again with pbn::to_one_file().</span></span>
 <span><span class="co">#&gt; #</span></span>
 <span><span class="co">#&gt; # The md5 of each file in this file, as pbn computes it for the manifest:</span></span>
@@ -1460,7 +1540,7 @@ runs the scenario <code>real</code> only. The file ends with the run
 script, where <code>pbn::scenarios(CFG)</code> became
 <code>pbn::scenarios(CFG, only = "real")</code>, and with what to type
 next:</p>
-<div class="sourceCode" id="cb59"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat</a></span><span class="op">(</span><span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">tail</a></span><span class="op">(</span><span class="va">one</span>, <span class="fl">20</span><span class="op">)</span>, sep <span class="op">=</span> <span class="st">"\n"</span><span class="op">)</span></span>
 <span><span class="co">#&gt;   clean = data_clean,</span></span>
 <span><span class="co">#&gt;   cohort = data_cohort,</span></span>
@@ -1507,7 +1587,7 @@ compares the real results of that run with those of the project. Then it
 runs each block on both results in a new R session, which attaches no
 package of the run script. It compares each page as text. It prints PASS
 or the first difference:</p>
-<div class="sourceCode" id="cb60"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb64"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">said</span> <span class="op">&lt;-</span> <span class="fu">utils</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/r/utils/capture.output.html" class="external-link">capture.output</a></span><span class="op">(</span><span class="va">pass</span> <span class="op">&lt;-</span> <span class="fu">withr</span><span class="fu">::</span><span class="fu"><a href="https://withr.r-lib.org/reference/with_dir.html" class="external-link">with_dir</a></span><span class="op">(</span><span class="va">home</span>, <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/check_one_file.html">check_one_file</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
 <pre><code><span><span class="co">#&gt; PASS: the file of pbn::to_one_file() gives the real results of the project, apart from manifest$run_date, manifest$packages, manifest$data_cache$from_cache and manifest$fake_real_data. Each page of the 3 blocks prints the same for both.</span></span></code></pre>
 <p>Run it before you go to the server. It cannot find a difference of
@@ -1520,7 +1600,7 @@ in the formats of the real data. The code that reads the real data then
 runs there. Say so in the run script of that computer. pbn then labels
 the real results as fake real data in the run log, the output and the
 blocks:</p>
-<div class="sourceCode" id="cb62"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb66"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/initialize_project.html">initialize_project</a></span><span class="op">(</span>version <span class="op">=</span> <span class="st">"v01"</span>, home <span class="op">=</span> <span class="st">"."</span>, folders <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="st">"../data"</span><span class="op">)</span>, fake_real_data <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></code></pre></div>
 <p>The file of <code><a href="../reference/to_one_file.html">to_one_file()</a></code> never holds
 <code>fake_real_data</code>, and <code><a href="../reference/check_one_file.html">check_one_file()</a></code> leaves
@@ -1540,7 +1620,7 @@ blocks.</li>
 <li>Take a screenshot of each page.</li>
 </ol>
 <p>These are the index and block 1 of this project:</p>
-<div class="sourceCode" id="cb63"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb67"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="../reference/show_blocks.html">show_blocks</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="co">#&gt; pbn: 3 blocks of v01, from the real results of 2026-11-19:</span></span>
 <span><span class="co">#&gt;   1  Table 1                              6 rows, 1 page</span></span>
@@ -1559,9 +1639,8 @@ blocks.</li>
 <span><span class="co">#&gt;         x     a 188  50.0 (9.9)</span></span>
 <span><span class="co">#&gt;         x     b 180  49.4 (9.7)</span></span></code></pre></div>
 <p>A page has 35 rows. <code><a href="../reference/show_blocks.html">pbn::show_block()</a></code> reads the real
-results from the disk at each call, and it stops when their
-<code>check.csv</code> holds a failed assertion, as
-<code><a href="../reference/read_results.html">read_results()</a></code> does.</p>
+results from the disk at each call, and it stops where
+<code><a href="../reference/read_results.html">read_results()</a></code> stops.</p>
 </div>
 </div>
 <div class="section level2">

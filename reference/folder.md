@@ -66,7 +66,7 @@ Other project setup:
 ``` r
 home <- file.path(tempdir(), "pbn_folder_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines("CFG <- list()", file.path(home, "v01_functions", "_cfg.R"))
 pbn::initialize_project(
   "v01",
@@ -75,11 +75,11 @@ pbn::initialize_project(
   env = new.env()
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpTYLcmi/pbn_folder_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpJTe3hZ/pbn_folder_example/v01_functions into 
 pbn::folder("lookup")
-#> [1] "/tmp/RtmpTYLcmi/pbn_folder_example/codes"
+#> [1] "/tmp/RtmpJTe3hZ/pbn_folder_example/codes"
 pbn::folder("main", "sub", "d.csv")
-#> [1] "/tmp/RtmpTYLcmi/pbn_folder_example/data/sub/d.csv"
+#> [1] "/tmp/RtmpJTe3hZ/pbn_folder_example/data/sub/d.csv"
 
 unlink(home, recursive = TRUE)
 ```

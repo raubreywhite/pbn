@@ -13,7 +13,7 @@ their names start with fake_data_."><meta property="og:image" content="https://w
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -129,9 +129,11 @@ that did not pass. Then it deletes the output folder of the scenario, so
 no output of an earlier run stays beside absent or failed results. The
 line says so. It does not touch a scenario that is not in <code>scenarios</code>. A
 <code>"real"</code> without <code>check.csv</code> is not skipped, because <code>expect_real()</code> is
-optional. When <code>fn</code> stops for one scenario, <code>make_outputs()</code> stops with an
-error that names the scenario. The output of the scenarios before it
-stays.</p>
+optional. <code>make_outputs()</code> also skips <code>"real"</code> when its
+<code>manifest$failed_fake_checks</code> names a fake scenario with a failed
+assertion. <code><a href="read_results.html">read_results()</a></code> has the same rule.</p>
+<p>When <code>fn</code> stops for one scenario, <code>make_outputs()</code> stops with an error
+that names the scenario. The output of the scenarios before it stays.</p>
 <p><code>fn</code> MUST write into <code>dir</code> only. Around each call for a fake scenario,
 <code>make_outputs()</code> lists the path, the size and the modification time of
 each file in <code>&lt;version&gt;_results/</code> outside <code>dir</code>. It also lists the md5 of

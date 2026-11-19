@@ -62,6 +62,21 @@ still writes such results, so that you can find the fault. The error
 names the file and how to read it with
 [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html).
 
+For `"real"`, `read_results()` also stops when
+`manifest$failed_fake_checks` names a fake scenario.
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+writes into it each fake scenario of the same run with a failed
+assertion. The real data and the fake scenarios run through the same
+code. So a fake scenario with a failed assertion can show a fault in the
+code of the real results. The error names each such scenario, the path
+of its `check.csv` and the fix.
+
+The run that writes the real results writes this record. A run of
+`"real"` alone records no fake scenario with a failed assertion. A later
+run of a fake scenario alone does not change the record of the real
+results. Real results of pbn 2026.11.24 or older have no
+`failed_fake_checks`, and `read_results()` reads them as before.
+
 `read_results()` returns one list with the elements of both files. The
 order is that of a results object: `manifest`, `exclusions`, and the
 analysis kinds in the order of `manifest$analyses`. These rules apply to

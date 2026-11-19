@@ -11,7 +11,7 @@ it quits with status 1 when any rule fails."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -79,14 +79,20 @@ it quits with status 1 when any rule fails.</p>
     <p>The first line names the rule set of <code>pbn.yml</code>, and counts its changes
 and its allowed paths. A rule with no finding prints one PASS line, and a
 rule that is off prints one OFF line. Each finding prints one line:
-<code>PASS|WARN|FAIL  &lt;rule&gt;  &lt;detail&gt;</code>. A count line comes last.</p>
+<code>PASS|WARN|FAIL  &lt;rule&gt;  &lt;detail&gt;</code>. The detail of a WARN or a FAIL ends
+with <code>Fix:</code> and the change that removes the finding. A count line comes
+last.</p>
 <p>Every rule reads one list of files and their folders:</p><ul><li><p>When <code>path</code> is the top folder of a git repository, the list is the
 output of <code>git ls-files --cached --others --exclude-standard</code>. These are
 the tracked files, and the untracked files that git does not ignore.</p></li>
 <li><p>Otherwise, the list is every file and folder on disk.</p></li>
 </ul><p>Both lists leave out <code>.DS_Store</code>, <code>.Rhistory</code>, <code>.RData</code>, the Word lock
 files <code>~$*</code>, and everything in <code>.git/</code> or <code>.Rproj.user/</code>.</p>
-<p>The rules, with their level in the set <code>house_2026_11_17</code>:</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
+<p>The rules, with their level in the set <code>house_2026_11_19</code>, are below.
+The set <code>house_2026_11_17</code> has the same rules at the same levels, without
+<code>frozen_versions_unchanged</code>, <code>no_cross_version_reads</code> and
+<code>no_escape_hatches</code>. A rule that the set of the project does not have
+prints no line.</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
 Everything under <code>background/</code> is not checked. These are exempt:
 <code>README.md</code>, <code>CHANGELOG.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>LICENSE</code>,
 <code>DESCRIPTION</code>, a top-level dotfile, a top-level <code>*.Rproj</code> file, file
@@ -97,6 +103,19 @@ call <code><a href="initialize_project.html">pbn::initialize_project()</a></code
 have does not count, and the detail names that argument.</p></li>
 <li><p><code>version_items_complete</code> (FAIL): a <code>vNN_run.R</code> has no <code>vNN_functions/</code>,
 or the reverse.</p></li>
+<li><p><code>frozen_versions_unchanged</code> (FAIL): one of these is true:</p><ul><li><p>a version older than the newest has no <code>vNN_frozen.md5</code> of
+<code><a href="freeze_version.html">freeze_version()</a></code>. A version is a <code>vNN_run.R</code> or a <code>vNN_functions/</code>
+at the top level, and the newest is the one with the largest <code>NN</code>.
+So a deleted <code>vNN_frozen.md5</code> of an older version fails. The newest
+version needs none. The fix names the call
+<code>pbn::freeze_version("vNN")</code>.</p></li>
+<li><p>a file of a version changed, came or went after <code><a href="freeze_version.html">freeze_version()</a></code>
+wrote its <code>vNN_frozen.md5</code>. The files are <code>vNN_run.R</code> and each file
+under <code>vNN_functions/</code>, as <code><a href="freeze_version.html">freeze_version()</a></code> lists them from the
+disk. The detail names the file, with <code>changed</code>, <code>added</code> or
+<code>removed</code>.</p></li>
+<li><p>a line of <code>vNN_frozen.md5</code> is not <code>&lt;md5&gt;  &lt;path&gt;</code>.</p></li>
+</ul></li>
 <li><p><code>results_contract</code> (FAIL): a <code>vNN_results/&lt;scenario&gt;/results.qs2</code> or a
 <code>vNN_results/&lt;scenario&gt;/sim_NNNN/results.qs2</code> of pbn 2026.11.22 fails
 <code><a href="check_results.html">check_results()</a></code>, or a <code>results.qs2</code> is directly in <code>vNN_results/</code>.</p>
@@ -131,7 +150,9 @@ another folder. <code><a href="make_outputs.html">make_outputs()</a></code> writ
 <code>vNN_functions/*.R</code> file defines a function with the name of a pbn
 export. The one exception is <code>get_data</code>: a project MAY name its data
 function <code>get_data(scenario, sim)</code>, and a run script calls the export
-as <code><a href="get_data.html">pbn::get_data()</a></code>.</p></li>
+as <code><a href="get_data.html">pbn::get_data()</a></code>. The set <code>house_2026_11_17</code> does not know the
+exports <code>freeze_version</code> and <code>verify</code>, so a local function with such a
+name passes there.</p></li>
 <li><p><code>loc_per_file</code> (FAIL): an <code>.R</code> file has more than <code>limit</code> code lines, as
 counted by <code><a href="https://www.rwhite.no/org/reference/loc_per_file.html" class="external-link">org::loc_per_file()</a></code>. The house <code>limit</code> is 1000. The rule
 reads each <code>.R</code> file of the project but <code>vNN_one_file.R</code>.</p></li>
@@ -148,6 +169,24 @@ fails. The detail gives the file, the function and its score. A path
 under <code>allow</code> allows each function of one file.</p></li>
 <li><p><code>no_environment_variables</code> (FAIL): a run script or a file in a functions
 folder uses <code>Sys.getenv</code> or <code>Sys.setenv</code>.</p></li>
+<li><p><code>no_cross_version_reads</code> (FAIL): a string constant of <code>vNN_run.R</code> or of
+an <code>.R</code> file at the top of <code>vNN_functions/</code> names another version or the
+folder <code>adhoc/</code>. The rule splits each string at <code>/</code> and <code>\</code>. A string
+fails when one of its parts is one of these:</p><ul><li><p><code>vMM</code>, with <code>MM</code> other than <code>NN</code>, as in <code>read_results("v01")</code> in
+<code>v02_run.R</code>.</p></li>
+<li><p><code>vMM_</code> and an item of the layout: <code>run.R</code>, <code>functions</code>, <code>results</code>,
+<code>cache_gitexclude</code>, <code>test</code>, <code>check_functions.R</code>, <code>one_file.R</code> or
+<code>frozen.md5</code>. An example is <code>"../v01_functions/get_data.R"</code>.</p></li>
+<li><p><code>adhoc</code>, as in <code>"adhoc/helpers.R"</code>.</p></li>
+</ul><p>These pass:</p><ul><li><p>the version of the file and its items, and a comment.</p></li>
+<li><p>a column name such as <code>"v01_age"</code>, and <code>"v1"</code> and <code>"v100"</code>.</p></li>
+<li><p>a part with more words, such as <code>"an adhoc analysis of v01"</code>.</p></li>
+<li><p>a string that <code><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste0()</a></code> or <code><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf()</a></code> builds. The rule misses it.</p></li>
+</ul><p>A column or a level with the name <code>v01</code> fails, so allow its file in
+<code>pbn.yml</code>. The rule skips a file that R cannot parse, and a string of
+more than 1000 bytes. The detail is
+<code>&lt;file&gt;:&lt;line&gt;: "&lt;the string, cut at 40 characters&gt;" names vMM</code>, or
+<code>names adhoc/</code>.</p></li>
 <li><p><code>no_local_assign</code> (FAIL): an <code>.R</code> file uses a construct of <code>forbid</code> at
 any depth. The house <code>forbid</code> holds all seven constructs: <code><a href="https://rdrr.io/r/base/eval.html" class="external-link">local()</a></code>,
 <code><a href="https://rdrr.io/r/base/assign.html" class="external-link">assign()</a></code>, <code><a href="https://rdrr.io/r/base/delayedAssign.html" class="external-link">delayedAssign()</a></code>, <code><a href="https://rdrr.io/r/utils/getFromNamespace.html" class="external-link">assignInNamespace()</a></code>,
@@ -159,6 +198,16 @@ counts. A call of the same name from another package passes. A variable or an ar
 passes, and so do <code>&lt;-</code>, <code>-&gt;</code>, <code>=</code> and <code>:=</code>. The rule skips a file that R
 cannot parse. The detail gives the file, the line and the construct. A
 path under <code>allow</code> allows each finding of one file.</p></li>
+<li><p><code>no_escape_hatches</code> (WARN): <code>vNN_run.R</code> or an <code>.R</code> file at the top of
+<code>vNN_functions/</code> calls <code><a href="https://rdrr.io/r/base/warning.html" class="external-link">suppressWarnings()</a></code>, <code><a href="https://rdrr.io/r/base/message.html" class="external-link">suppressMessages()</a></code>,
+<code><a href="https://rdrr.io/r/base/try.html" class="external-link">try()</a></code>, <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">tryCatch()</a></code> or <code><a href="https://rdrr.io/r/base/conditions.html" class="external-link">withCallingHandlers()</a></code>, at any depth. Each of
+these can hide a warning or an error of the run. A call with the prefix
+<code>base::</code> counts. A call of the same name from another package passes. So
+do a word in a comment or a string, and a variable or an argument named
+<code>try</code>.
+The rule skips a file that R cannot parse. The detail gives the file,
+the line and the call. A path under <code>allow</code> allows each finding of one
+file. Give the reason in a comment in <code>pbn.yml</code>.</p></li>
 <li><p><code>no_absolute_paths</code> (FAIL): a string constant of an <code>.R</code> file of
 <code>loc_per_file</code> is an absolute path, or a path starts from a string
 constant. The rule reads the strings from the
@@ -227,7 +276,9 @@ ignores is not in the list, so the rule does not see it.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code>,
-<code>vNN_one_file.R</code>, <code>check_project.R</code> and <code>pbn.yml</code>, among others. A top-level dotfile and a top-level
+<code>vNN_one_file.R</code>, <code>check_project.R</code> and <code>pbn.yml</code>, among others. From
+the set <code>house_2026_11_19</code>, it also names <code>vNN_frozen.md5</code> of
+<code><a href="freeze_version.html">freeze_version()</a></code>. A top-level dotfile and a top-level
 <code>*.Rproj</code> file are never unknown. The rule also reads the files
 directly in <code>vNN_results/</code>. There it names the run log <code>run.md</code>, its PDF
 <code>run.pdf</code> and its errors file <code>run_errors_gitexclude.md</code>, and no rule
@@ -250,13 +301,13 @@ ran on the server.</p>
 <p>Each project MUST have the file <code>pbn.yml</code> in its top folder <code>path</code>. pbn
 reads no other file. A file <code>pbn.yaml</code> stops <code>check_project()</code> with the
 advice to rename it. The smallest <code>pbn.yml</code> is one line:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_17</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span></code></pre><p></p></div>
 <p>The key <code>extends</code> names a house rule set. A set is a dated file in the
 folder <code>rules/</code> of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-<code>readLines(system.file("rules", "house_2026_11_17.yml", package = "pbn"))</code>.</p>
+<code>readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))</code>.</p>
 <p>The set gives each rule one of three levels:</p><ul><li><p><code>fail</code>: a finding is FAIL, and <code>check_project.R</code> ends with status 1.</p></li>
 <li><p><code>warn</code>: a finding is WARN.</p></li>
 <li><p><code>off</code>: the rule does not run, and its one line is OFF.</p></li>
@@ -272,7 +323,7 @@ it. So the folder <code>adhoc</code> allows <code>adhoc/Notes.txt</code> and
 <code>adhoc/Old/Data.csv</code>, but not <code>adhoc2/x.R</code>. A final <code>/</code> changes nothing:
 <code>adhoc</code> and <code>adhoc/</code> are the same entry. pbn does not look on the disk
 for a file or a folder of that name. An allowed finding is WARN, with
-<code>(allowed)</code> at the end. A path that matches no finding is a WARN of the
+<code>(allowed)</code> before its fix. A path that matches no finding is a WARN of the
 rule <code>allow</code>.</p>
 <p>Three rules are locked: <code>results_contract</code>, <code>gitexclude_not_tracked</code> and
 <code>fake_data_names</code>. The first two keep data for each person out of git. The
@@ -280,7 +331,7 @@ third keeps the output of fake data apart from the output of real data.
 <code>pbn.yml</code> cannot set a locked rule to <code>warn</code> or <code>off</code>, and cannot allow a
 path for it. It cannot name a rule of <code><a href="check_results.html">check_results()</a></code> either.</p>
 <p>This <code>pbn.yml</code> changes two rules and allows three paths:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_17</span></span>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">cyclomatic_complexity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">limit</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span><span class="kw">}</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">  </span><span class="fu">unknown_path</span><span class="kw">:</span><span class="at"> </span><span class="ch">off</span></span>
@@ -298,6 +349,8 @@ a tab. The message holds the message of the yaml package.</p></li>
 <li><p>there is no key <code>extends</code>, or it names a set that pbn does not have.</p></li>
 <li><p>a key other than <code>extends</code>, <code>rules</code> and <code>allow</code>.</p></li>
 <li><p>a name that is not a rule. The message names the nearest rule.</p></li>
+<li><p>a rule that the set of <code>extends</code> does not have. The message names the
+oldest set with it.</p></li>
 <li><p>a parameter that the rule does not have.</p></li>
 <li><p>a level other than <code>fail</code>, <code>warn</code> and <code>off</code>.</p></li>
 <li><p>a <code>limit</code> that is not a whole number of 1 or more.</p></li>
@@ -308,21 +361,28 @@ a tab. The message holds the message of the yaml package.</p></li>
 quotes.</p></li>
 <li><p>a change or an allowed path of a locked rule.</p></li>
 </ul></div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Other checks:
+<code><a href="freeze_version.html">freeze_version()</a></code>,
+<code><a href="verify.html">verify()</a></code></p></div>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_check_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_17"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_19"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="st">'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))'</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_project</span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  results_contract  every vNN_results/&lt;scenario&gt;/results.qs2 and each vNN_results/&lt;scenario&gt;/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
@@ -333,12 +393,14 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 18 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 21 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

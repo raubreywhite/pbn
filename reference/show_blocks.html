@@ -11,7 +11,7 @@ numbers leave a server only as a screenshot."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -127,8 +127,10 @@ screenshots from the screen is the responsibility of that person.</p>
 blocks come from the functions folder that it sourced. Without it they
 stop. They read the real results from the disk at each call, with
 <code><a href="read_results.html">read_results()</a></code>. So they work in the project folder, and on a server
-after the file of <code><a href="to_one_file.html">to_one_file()</a></code>. <code><a href="read_results.html">read_results()</a></code> stops on real results
-whose <code>check.csv</code> holds a failed assertion, and so do they.</p>
+after the file of <code><a href="to_one_file.html">to_one_file()</a></code>. They stop where <code><a href="read_results.html">read_results()</a></code>
+stops. So they also stop on real results whose
+<code>manifest$failed_fake_checks</code> names a fake scenario with a failed
+assertion.</p>
 <p><code>show_blocks()</code> calls each block function once. For each block, it prints
 the number, the name, the rows and the pages. For a function that stops,
 it prints the error in the place of the rows, and goes on.</p>

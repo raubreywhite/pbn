@@ -19,7 +19,7 @@ pbn applies these rules to a statistical analysis project, in four
 layers. This article shows each layer, and three mistakes of an agent
 that pbn stops.
 
-![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDMwMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InB5ci10aXRsZSIgc3R5bGU9IndpZHRoOiAxMDAlOyBtYXgtd2lkdGg6IDY0MHB4OyBoZWlnaHQ6IGF1dG87IGRpc3BsYXk6IGJsb2NrOyBtYXJnaW46IDAgYXV0bzsgZm9udC1mYW1pbHk6IGluaGVyaXQ7Ij48dGl0bGUgaWQ9InB5ci10aXRsZSI+CkZvdXIgbGF5ZXJzLiBUaGUgd2lkZXN0LCBhdCB0aGUgdG9wLCBpcyB0aGUgbGF5b3V0IGFuZCB0aGUgQVBJIG9mIHBibi4KQmVsb3cgaXQgYXJlIHRoZSBjaGVja3MsIHRoZW4gdmVyaWZpY2F0aW9uIG9uIGZha2UgZGF0YS4gVGhlIG5hcnJvd2VzdCwKYXQgdGhlIGJvdHRvbSwgaXMgcHJvc2UgZm9yIHRoZSBhZ2VudC4KPC90aXRsZT4KPGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgZmlsbC1vcGFjaXR5PSIwLjE4Ij48cG9seWdvbiBwb2ludHM9IjEwLDEwIDYzMCwxMCA1OTAsNzUgNTAsNzUiIGZpbGw9IiMyMTY2YWMiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjUwLDgwIDU5MCw4MCA1NTAsMTQ1IDkwLDE0NSIgZmlsbD0iIzIxNjZhYyIgZmlsbC1vcGFjaXR5PSIwLjEzIj48L3BvbHlnb24+PHBvbHlnb24gcG9pbnRzPSI5MCwxNTAgNTUwLDE1MCA1MTAsMjE1IDEzMCwyMTUiIGZpbGw9IiM0ZDkyMjEiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjEzMCwyMjAgNTEwLDIyMCA0NzAsMjg1IDE3MCwyODUiIGZpbGw9IiM5OTk5OTkiPjwvcG9seWdvbj48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE1Ij48dGV4dCB4PSIzMjAiIHk9IjM4IiBmb250LXdlaWdodD0iYm9sZCI+MS4gTGF5b3V0IGFuZCBBUEk6IG9uZSB3YXkgdG8gZG8KZWFjaCB0aGluZzwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjYwIiBmb250LXNpemU9IjEzIj5vbmUgcnVuIHNjcmlwdCwKZm91ciBkYXRhIHN0ZXBzLCBwYm46OmZvbGRlcigpLCBubyBhc3NpZ24oKTwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjEwOCIgZm9udC13ZWlnaHQ9ImJvbGQiPjIuIENoZWNrczogZWFjaCBjb3JyZWN0aW9uCmJlY29tZXMgYSBjaGVjazwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjEzMCIgZm9udC1zaXplPSIxMyI+Y2hlY2tfcHJvamVjdCgpLCB0aGUgY2hlY2tzIGJldHdlZW4KdGhlIGRhdGEgc3RlcHM8L3RleHQ+PHRleHQgeD0iMzIwIiB5PSIxNzgiIGZvbnQtd2VpZ2h0PSJib2xkIj4zLgpWZXJpZmljYXRpb24gb24gZmFrZSBkYXRhPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjAwIiBmb250LXNpemU9IjEzIj5zY2VuYXJpb3Mgd2l0aCBhIGtub3duIHRydXRoLApjaGVjay5jc3YsIHJ1bi5tZDwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjI0OCIgZm9udC13ZWlnaHQ9ImJvbGQiPjQuClByb3NlPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjcwIiBmb250LXNpemU9IjEzIj5BR0VOVFMubWQsCnBibi5tZDwvdGV4dD48L2c+PC9zdmc+)
+![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDMwMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InB5ci10aXRsZSIgc3R5bGU9IndpZHRoOiAxMDAlOyBtYXgtd2lkdGg6IDY0MHB4OyBoZWlnaHQ6IGF1dG87IGRpc3BsYXk6IGJsb2NrOyBtYXJnaW46IDAgYXV0bzsgZm9udC1mYW1pbHk6IGluaGVyaXQ7Ij48dGl0bGUgaWQ9InB5ci10aXRsZSI+CkZvdXIgbGF5ZXJzLiBUaGUgd2lkZXN0LCBhdCB0aGUgdG9wLCBpcyB0aGUgbGF5b3V0IGFuZCB0aGUgQVBJIG9mIHBibi4KQmVsb3cgaXQgYXJlIHRoZSBjaGVja3MsIHRoZW4gdmVyaWZpY2F0aW9uIG9uIGZha2UgZGF0YS4gVGhlIG5hcnJvd2VzdCwKYXQgdGhlIGJvdHRvbSwgaXMgcHJvc2UgZm9yIHRoZSBhZ2VudC4KPC90aXRsZT4KPGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgZmlsbC1vcGFjaXR5PSIwLjE4Ij48cG9seWdvbiBwb2ludHM9IjEwLDEwIDYzMCwxMCA1OTAsNzUgNTAsNzUiIGZpbGw9IiMyMTY2YWMiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjUwLDgwIDU5MCw4MCA1NTAsMTQ1IDkwLDE0NSIgZmlsbD0iIzIxNjZhYyIgZmlsbC1vcGFjaXR5PSIwLjEzIj48L3BvbHlnb24+PHBvbHlnb24gcG9pbnRzPSI5MCwxNTAgNTUwLDE1MCA1MTAsMjE1IDEzMCwyMTUiIGZpbGw9IiM0ZDkyMjEiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjEzMCwyMjAgNTEwLDIyMCA0NzAsMjg1IDE3MCwyODUiIGZpbGw9IiM5OTk5OTkiPjwvcG9seWdvbj48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE1Ij48dGV4dCB4PSIzMjAiIHk9IjM4IiBmb250LXdlaWdodD0iYm9sZCI+MS7CoExheW91dMKgYW5kwqBBUEk6wqBvbmXCoHdhecKgdG/CoGRvwqBlYWNowqB0aGluZzwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjYwIiBmb250LXNpemU9IjEzIj5vbmXCoHJ1bsKgc2NyaXB0LMKgZm91csKgZGF0YcKgc3RlcHMswqBwYm46OmZvbGRlcigpLMKgbm/CoGFzc2lnbigpPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTA4IiBmb250LXdlaWdodD0iYm9sZCI+Mi7CoENoZWNrczrCoGHCoGNvcnJlY3Rpb27CoHRoYXTCoGNvZGXCoGNhbsKgY2hlY2vCoGJlY29tZXPCoGHCoGNoZWNrPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTMwIiBmb250LXNpemU9IjEzIj5jaGVja19wcm9qZWN0KCkswqB0aGXCoGNoZWNrc8KgYmV0d2VlbsKgdGhlwqBkYXRhwqBzdGVwczwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjE3OCIgZm9udC13ZWlnaHQ9ImJvbGQiPjMuwqBWZXJpZmljYXRpb27CoG9uwqBmYWtlwqBkYXRhPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjAwIiBmb250LXNpemU9IjEzIj5zY2VuYXJpb3PCoHdpdGjCoGtub3duwqBhbnN3ZXJzLMKgY2hlY2suY3N2LMKgcnVuLm1kPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjQ4IiBmb250LXdlaWdodD0iYm9sZCI+NC7CoFByb3NlPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjcwIiBmb250LXNpemU9IjEzIj5BR0VOVFMubWQswqBwYm4ubWQ8L3RleHQ+PC9nPjwvc3ZnPg==)
 
 The layers of pbn, after Tan. pbn puts most of its code into layers 1
 and 2. Code enforces them. A project can turn a rule down to warn or off
@@ -28,9 +28,9 @@ only in pbn.yml, where a person sees it.
 ## The project
 
 The project of this article is a smaller version of the one in [Get
-started](https://www.rwhite.no/pbn/pbn.md). It compares a 0/1 outcome
-between two groups, `a` and `b`, adjusted for a covariate `x`. It has
-three scenarios:
+started](https://www.rwhite.no/pbn/articles/pbn.md). It compares a 0/1
+outcome between two groups, `a` and `b`, adjusted for a covariate `x`.
+It has three scenarios:
 
 - `real` reads the data file. Here it is a simulated csv file of 400
   rows, 12 of them with a missing outcome. In it, `x` is not related to
@@ -113,7 +113,7 @@ writeLines(clean_code, clean_file)
 
 ## Layer 2: each correction becomes a check
 
-![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDI5MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9Imxvb3AtdGl0bGUiIHN0eWxlPSJ3aWR0aDogMTAwJTsgbWF4LXdpZHRoOiA2NDBweDsgaGVpZ2h0OiBhdXRvOyBkaXNwbGF5OiBibG9jazsgbWFyZ2luOiAwIGF1dG87IGZvbnQtZmFtaWx5OiBpbmhlcml0OyI+PHRpdGxlIGlkPSJsb29wLXRpdGxlIj4KQSBwZXJzb24gY29ycmVjdHMgYSBtaXN0YWtlIG9mIGFuIGFnZW50LiBJZiBjb2RlIGNhbiBjaGVjayBpdCwgdGhlCmNvcnJlY3Rpb24gYmVjb21lcyBhIGNoZWNrLCBhbmQgdGhlIG5leHQgYWdlbnQgZ2V0cyBhbiBlcnJvciB0aGF0IG5hbWVzCnRoZSBmaXguIElmIG5vdCwgaXQgYmVjb21lcyBvbmUgbGluZSBpbiBBR0VOVFMubWQuCjwvdGl0bGU+CjxkZWZzPjxtYXJrZXIgaWQ9ImFyciIgdmlld2JveD0iMCAwIDEwIDEwIiByZWZ4PSI5IiByZWZ5PSI1IiBtYXJrZXJ3aWR0aD0iNyIgbWFya2VyaGVpZ2h0PSI3IiBvcmllbnQ9ImF1dG8tc3RhcnQtcmV2ZXJzZSI+PHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSJjdXJyZW50Q29sb3IiIC8+PC9tYXJrZXI+PC9kZWZzPjxnIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjEiIGZpbGwtb3BhY2l0eT0iMC4xNSI+PHJlY3QgeD0iMTAiIHk9IjE1IiB3aWR0aD0iMTcwIiBoZWlnaHQ9IjU2IiByeD0iNiIgZmlsbD0iIzk5OTk5OSIgLz48cmVjdCB4PSIyMzUiIHk9IjE1IiB3aWR0aD0iMTcwIiBoZWlnaHQ9IjU2IiByeD0iNiIgZmlsbD0iIzk5OTk5OSIgLz48cmVjdCB4PSIyMzUiIHk9IjExNSIgd2lkdGg9IjE3MCIgaGVpZ2h0PSI2NCIgcng9IjYiIGZpbGw9IiMyMTY2YWMiIC8+PHJlY3QgeD0iNDYwIiB5PSIxMTUiIHdpZHRoPSIxNzAiIGhlaWdodD0iNjQiIHJ4PSI2IiBmaWxsPSIjNGQ5MjIxIiAvPjxyZWN0IHg9IjEwIiB5PSIxMTUiIHdpZHRoPSIxNzAiIGhlaWdodD0iNjQiIHJ4PSI2IiBmaWxsPSIjOTk5OTk5IiBmaWxsLW9wYWNpdHk9IjAuMDYiIHN0cm9rZS1kYXNoYXJyYXk9IjQgMyIgLz48cmVjdCB4PSI0NjAiIHk9IjIyMCIgd2lkdGg9IjE3MCIgaGVpZ2h0PSI2NCIgcng9IjYiIGZpbGw9IiM0ZDkyMjEiIGZpbGwtb3BhY2l0eT0iMC4wOCIgLz48L2c+PGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIiBtYXJrZXItZW5kPSJ1cmwoI2FycikiPjxsaW5lIHgxPSIxODAiIHkxPSI0MyIgeDI9IjIzMyIgeTI9IjQzIj48L2xpbmU+PGxpbmUgeDE9IjMyMCIgeTE9IjcxIiB4Mj0iMzIwIiB5Mj0iMTEzIj48L2xpbmU+PGxpbmUgeDE9IjQwNSIgeTE9IjE0NyIgeDI9IjQ1OCIgeTI9IjE0NyI+PC9saW5lPjxsaW5lIHgxPSIyMzUiIHkxPSIxNDciIHgyPSIxODIiIHkyPSIxNDciIHN0cm9rZS1kYXNoYXJyYXk9IjQgMyI+PC9saW5lPjxsaW5lIHgxPSI1NDUiIHkxPSIxNzkiIHgyPSI1NDUiIHkyPSIyMTgiPjwvbGluZT48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEzIj48dGV4dCB4PSI5NSIgeT0iMzkiPlRoZSBhZ2VudCBtYWtlczwvdGV4dD48dGV4dCB4PSI5NSIgeT0iNTciPmEKbWlzdGFrZTwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjM5Ij5BCnBlcnNvbjwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjU3Ij5jb3JyZWN0cyBpdDwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjE0MyIgZm9udC13ZWlnaHQ9ImJvbGQiPkNhbgpjb2RlPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTYxIiBmb250LXdlaWdodD0iYm9sZCI+Y2hlY2sgaXQ/PC90ZXh0Pjx0ZXh0IHg9IjU0NSIgeT0iMTM2Ij5BIHJ1bGUgaW4gcGJuLDwvdGV4dD48dGV4dCB4PSI1NDUiIHk9IjE1MyI+YSBzdGVwCmNoZWNrIG9yPC90ZXh0Pjx0ZXh0IHg9IjU0NSIgeT0iMTcwIj5hbiBleHBlY3RfIGZ1bmN0aW9uPC90ZXh0Pjx0ZXh0IHg9Ijk1IiB5PSIxNDMiPk9uZSBsaW5lCmluPC90ZXh0Pjx0ZXh0IHg9Ijk1IiB5PSIxNjEiPkFHRU5UUy5tZDwvdGV4dD48dGV4dCB4PSI1NDUiIHk9IjI0MSI+VGhlCm5leHQgYWdlbnQ8L3RleHQ+PHRleHQgeD0iNTQ1IiB5PSIyNTgiPmdldHMgYW4gZXJyb3IKdGhhdDwvdGV4dD48dGV4dCB4PSI1NDUiIHk9IjI3NSI+bmFtZXMgdGhlIGZpeDwvdGV4dD48dGV4dCB4PSI0MzEiIHk9IjEzOSIgZm9udC1zaXplPSIxMiI+eWVzPC90ZXh0Pjx0ZXh0IHg9IjIwOCIgeT0iMTM5IiBmb250LXNpemU9IjEyIj5ubzwvdGV4dD48L2c+PC9zdmc+)
+![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDI5MCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9Imxvb3AtdGl0bGUiIHN0eWxlPSJ3aWR0aDogMTAwJTsgbWF4LXdpZHRoOiA2NDBweDsgaGVpZ2h0OiBhdXRvOyBkaXNwbGF5OiBibG9jazsgbWFyZ2luOiAwIGF1dG87IGZvbnQtZmFtaWx5OiBpbmhlcml0OyI+PHRpdGxlIGlkPSJsb29wLXRpdGxlIj4KQSBwZXJzb24gY29ycmVjdHMgYSBtaXN0YWtlIG9mIGFuIGFnZW50LiBJZiBjb2RlIGNhbiBjaGVjayBpdCwgdGhlCmNvcnJlY3Rpb24gYmVjb21lcyBhIGNoZWNrLCBhbmQgdGhlIG5leHQgYWdlbnQgZ2V0cyBhbiBlcnJvciB0aGF0IG5hbWVzCnRoZSBmaXguIElmIG5vdCwgaXQgYmVjb21lcyBvbmUgbGluZSBpbiBBR0VOVFMubWQuCjwvdGl0bGU+CjxkZWZzPjxtYXJrZXIgaWQ9ImFyciIgdmlld2JveD0iMCAwIDEwIDEwIiByZWZ4PSI5IiByZWZ5PSI1IiBtYXJrZXJ3aWR0aD0iNyIgbWFya2VyaGVpZ2h0PSI3IiBvcmllbnQ9ImF1dG8tc3RhcnQtcmV2ZXJzZSI+PHBhdGggZD0iTTAsMCBMMTAsNSBMMCwxMCB6IiBmaWxsPSJjdXJyZW50Q29sb3IiIC8+PC9tYXJrZXI+PC9kZWZzPjxnIHN0cm9rZT0iY3VycmVudENvbG9yIiBzdHJva2Utd2lkdGg9IjEiIGZpbGwtb3BhY2l0eT0iMC4xNSI+PHJlY3QgeD0iMTAiIHk9IjE1IiB3aWR0aD0iMTcwIiBoZWlnaHQ9IjU2IiByeD0iNiIgZmlsbD0iIzk5OTk5OSIgLz48cmVjdCB4PSIyMzUiIHk9IjE1IiB3aWR0aD0iMTcwIiBoZWlnaHQ9IjU2IiByeD0iNiIgZmlsbD0iIzk5OTk5OSIgLz48cmVjdCB4PSIyMzUiIHk9IjExNSIgd2lkdGg9IjE3MCIgaGVpZ2h0PSI2NCIgcng9IjYiIGZpbGw9IiMyMTY2YWMiIC8+PHJlY3QgeD0iNDYwIiB5PSIxMTUiIHdpZHRoPSIxNzAiIGhlaWdodD0iNjQiIHJ4PSI2IiBmaWxsPSIjNGQ5MjIxIiAvPjxyZWN0IHg9IjEwIiB5PSIxMTUiIHdpZHRoPSIxNzAiIGhlaWdodD0iNjQiIHJ4PSI2IiBmaWxsPSIjOTk5OTk5IiBmaWxsLW9wYWNpdHk9IjAuMDYiIHN0cm9rZS1kYXNoYXJyYXk9IjQgMyIgLz48cmVjdCB4PSI0NjAiIHk9IjIyMCIgd2lkdGg9IjE3MCIgaGVpZ2h0PSI2NCIgcng9IjYiIGZpbGw9IiM0ZDkyMjEiIGZpbGwtb3BhY2l0eT0iMC4wOCIgLz48L2c+PGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMS41IiBmaWxsPSJub25lIiBtYXJrZXItZW5kPSJ1cmwoI2FycikiPjxsaW5lIHgxPSIxODAiIHkxPSI0MyIgeDI9IjIzMyIgeTI9IjQzIj48L2xpbmU+PGxpbmUgeDE9IjMyMCIgeTE9IjcxIiB4Mj0iMzIwIiB5Mj0iMTEzIj48L2xpbmU+PGxpbmUgeDE9IjQwNSIgeTE9IjE0NyIgeDI9IjQ1OCIgeTI9IjE0NyI+PC9saW5lPjxsaW5lIHgxPSIyMzUiIHkxPSIxNDciIHgyPSIxODIiIHkyPSIxNDciIHN0cm9rZS1kYXNoYXJyYXk9IjQgMyI+PC9saW5lPjxsaW5lIHgxPSI1NDUiIHkxPSIxNzkiIHgyPSI1NDUiIHkyPSIyMTgiPjwvbGluZT48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjEzIj48dGV4dCB4PSI5NSIgeT0iMzkiPlRoZcKgYWdlbnTCoG1ha2VzPC90ZXh0Pjx0ZXh0IHg9Ijk1IiB5PSI1NyI+YcKgbWlzdGFrZTwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjM5Ij5BwqBwZXJzb248L3RleHQ+PHRleHQgeD0iMzIwIiB5PSI1NyI+Y29ycmVjdHPCoGl0PC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTQzIiBmb250LXdlaWdodD0iYm9sZCI+Q2FuwqBjb2RlPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTYxIiBmb250LXdlaWdodD0iYm9sZCI+Y2hlY2vCoGl0PzwvdGV4dD48dGV4dCB4PSI1NDUiIHk9IjEzNiI+QcKgcnVsZcKgaW7CoHBibiw8L3RleHQ+PHRleHQgeD0iNTQ1IiB5PSIxNTMiPmHCoHN0ZXDCoGNoZWNrwqBvcjwvdGV4dD48dGV4dCB4PSI1NDUiIHk9IjE3MCI+YW7CoGV4cGVjdF/CoGZ1bmN0aW9uPC90ZXh0Pjx0ZXh0IHg9Ijk1IiB5PSIxNDMiPk9uZcKgbGluZcKgaW48L3RleHQ+PHRleHQgeD0iOTUiIHk9IjE2MSI+QUdFTlRTLm1kPC90ZXh0Pjx0ZXh0IHg9IjU0NSIgeT0iMjQxIj5UaGXCoG5leHTCoGFnZW50PC90ZXh0Pjx0ZXh0IHg9IjU0NSIgeT0iMjU4Ij5nZXRzwqBhbsKgZXJyb3LCoHRoYXQ8L3RleHQ+PHRleHQgeD0iNTQ1IiB5PSIyNzUiPm5hbWVzwqB0aGXCoGZpeDwvdGV4dD48dGV4dCB4PSI0MzEiIHk9IjEzOSIgZm9udC1zaXplPSIxMiI+eWVzPC90ZXh0Pjx0ZXh0IHg9IjIwOCIgeT0iMTM5IiBmb250LXNpemU9IjEyIj5ubzwvdGV4dD48L2c+PC9zdmc+)
 
 Each correction goes into code where it can. A check holds for every
 later agent. An agent can ignore a line of instructions.
@@ -140,16 +140,16 @@ checked <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = 
 checked$status
 #> [1] 1
 cat(grep("^FAIL|PASS, ", strsplit(checked$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
-#> FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export
-#> FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2
-#> FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv"
-#> 15 PASS, 0 WARN, 3 FAIL, 0 OFF
+#> FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.
+#> FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().
+#> FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().
+#> 18 PASS, 0 WARN, 3 FAIL, 0 OFF
 writeLines(raw_code, raw_file)
 unlink(file.path(home, "v01_functions", "data_folder.R"))
 ```
 
-Each finding names the rule and the file, and the line where one
-applies. Tan also notes that an agent copies a workaround as if it were
+Each finding names the rule, the file, the line where one applies, and
+the fix. Tan also notes that an agent copies a workaround as if it were
 the pattern of the code. The rule `no_local_copy_of_pbn_function` stops
 one such workaround: a local copy that patches a pbn function. The fix
 belongs in pbn, where every project gets it.
@@ -189,10 +189,12 @@ simplified$status
 
 Yet the run fails, with status 1. On the real data, the estimate changes
 in the third decimal only, because there `x` is not related to the
-group:
+group. To look at the real results of a failed run for debugging, read
+them with [`qs2::qs_read()`](https://rdrr.io/pkg/qs2/man/qs_read.html):
 
 ``` r
-rbind(correct = correct, simplified = pbn::read_results("v01", home = home)$models)[, c("estimate", "lower", "upper")]
+simplified_real <- qs2::qs_read(file.path(home, "v01_results", "real", "results.qs2"))$models
+rbind(correct = correct, simplified = simplified_real)[, c("estimate", "lower", "upper")]
 #>             estimate     lower     upper
 #> correct    0.5568597 0.1839498 0.9297696
 #> simplified 0.5583728 0.1857086 0.9310369
@@ -219,12 +221,17 @@ check[, c("assertion", "observed", "pass")]
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 stops the script when an assertion fails.
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-does not read the results of a scenario with a failed assertion:
+does not read the results of a scenario with a failed assertion. It also
+does not read the real results of a run with a fake scenario with a
+failed assertion:
 
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpyMpqDE/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/results.qs2").
+pbn::read_results("v01", home = home)
+#> Error:
+#> ! manifest$failed_fake_checks of /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmpd57cWS/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmpd57cWS/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -233,7 +240,7 @@ also fails the project:
 ``` r
 checked <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
 cat(grep("^FAIL", strsplit(checked$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
-#> FAIL  scenario_checks  v01_results/confounded/check.csv: these assertions failed: adjusted model: bias of estimate against 0.5; adjusted model: coverage of 0.5 by the 90% interval
+#> FAIL  scenario_checks  v01_results/confounded/check.csv: these assertions failed: adjusted model: bias of estimate against 0.5; adjusted model: coverage of 0.5 by the 90% interval. Fix: correct the analysis, and run the scenario again with pbn::run_plan() and pbn::save_results().
 ```
 
 Put the code back, and the run succeeds:
@@ -294,8 +301,8 @@ pbn supports two more practices:
 ## What the checks do not catch
 
 The checks find only the mistakes that they name. [What pbn does not do
-yet](https://www.rwhite.no/pbn/pbn.html#what-pbn-does-not-do-yet) lists
-the gaps. Two of them apply to code that an agent writes:
+yet](https://www.rwhite.no/pbn/articles/pbn.html#what-pbn-does-not-do-yet)
+lists the gaps. Two of them apply to code that an agent writes:
 
 - pbn finds an analysis that adds, removes, renames or replaces a column
   of the shared data. It does not find a change of values in place, for

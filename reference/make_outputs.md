@@ -91,9 +91,14 @@ that did not pass. Then it deletes the output folder of the scenario, so
 no output of an earlier run stays beside absent or failed results. The
 line says so. It does not touch a scenario that is not in `scenarios`. A
 `"real"` without `check.csv` is not skipped, because `expect_real()` is
-optional. When `fn` stops for one scenario, `make_outputs()` stops with
-an error that names the scenario. The output of the scenarios before it
-stays.
+optional. `make_outputs()` also skips `"real"` when its
+`manifest$failed_fake_checks` names a fake scenario with a failed
+assertion.
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+has the same rule.
+
+When `fn` stops for one scenario, `make_outputs()` stops with an error
+that names the scenario. The output of the scenarios before it stays.
 
 `fn` MUST write into `dir` only. Around each call for a fake scenario,
 `make_outputs()` lists the path, the size and the modification time of

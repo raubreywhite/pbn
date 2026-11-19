@@ -13,7 +13,7 @@ an object fails check_results()."><meta property="og:image" content="https://www
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -166,6 +166,12 @@ modification times, give the same manifest.
 <code><a href="initialize_project.html">initialize_project()</a></code> ran.</p></li>
 <li><p>For the scenario <code>"real"</code> only, <code>fake_real_data</code>, <code>TRUE</code> or <code>FALSE</code>:
 the argument <code>fake_real_data</code> of <code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
+<li><p>For the scenario <code>"real"</code> only, <code>failed_fake_checks</code>, a character
+vector. It holds each fake scenario of the same call of
+<code>save_results()</code> with a failed assertion, in the order of <code>scenarios</code>.
+It is empty when each one passed, or when <code>scenarios</code> has no fake
+scenario.
+<code><a href="read_results.html">read_results()</a></code> stops on real results where it is not empty.</p></li>
 <li><p>For a fake scenario only, <code>fake_md5</code>, one md5 of the code of the data
 functions of <code><a href="add_data.html">add_data()</a></code>, without their source references: each <code>fn</code>,
 and each step of the steps form. A change in a function that <code>fn</code> or a
@@ -212,7 +218,14 @@ and it writes the run log with its error.</p></li>
 with more than 1 simulation, and checks each with <code><a href="check_results.html">check_results()</a></code>. On
 a failure, it prints each failed rule with <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>, writes no results
 file and stops.</p></li>
-<li><p>For each scenario, it replaces <code>check.csv</code> with one failed assertion,
+<li><p>When <code>scenarios</code> holds <code>"real"</code>, it first replaces the <code>check.csv</code>
+of <code>"real"</code> with one failed assertion, <code>not checked yet</code>. So
+<code><a href="read_results.html">read_results()</a></code> refuses the real results of an earlier run, also when
+<code>save_results()</code> stops before it writes <code>"real"</code>. It does steps 3 and
+4 for the fake scenarios first, and then for <code>"real"</code>. So the manifest
+of the real results records each fake scenario of the same run with a
+failed assertion. The element <code>failed_fake_checks</code> holds them. For
+each scenario, it replaces <code>check.csv</code> with one failed assertion,
 <code>not checked yet</code>, so that <code><a href="read_results.html">read_results()</a></code> refuses the new results
 until step 4 checks them. It deletes the folders <code>output/</code> and
 <code>output_fake_data/</code> of each scenario that it writes, with one printed
@@ -419,7 +432,7 @@ the section Stacking.</p></li>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_save_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_17"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_19"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"# The run script."</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span></span>
@@ -434,7 +447,7 @@ the section Stacking.</p></li>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span>, env <span class="op">=</span> <span class="va">env</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpTYLcmi/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/RtmpJTe3hZ/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>

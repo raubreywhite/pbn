@@ -28,6 +28,7 @@ v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
+v01_frozen.md5            optional md5 of the files of a frozen version
 check_project.R           one line: pbn::check_project()
 pbn.yml                   the rules of check_project()
 manuscript/manual/        manuscripts that a person edits
@@ -59,7 +60,7 @@ and
 use. This project uses the set as it is:
 
 ``` yaml
-extends: house_2026_11_17
+extends: house_2026_11_19
 ```
 
 The real data of this fake project is a small csv file in the folder
@@ -436,7 +437,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -469,7 +470,7 @@ value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 11:20.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 13:05.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -704,7 +705,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -753,14 +754,14 @@ cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
     #> 
     #> ## When
     #> 
-    #> The run started 2026-11-19 11:20:18 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
+    #> The run started 2026-11-19 13:05:26 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
     #> 
     #> ## Run
     #> 
     #> - Result: All 9 assertions passed.
     #> - Scenarios of this run: real, known, null and confounded.
     #> - R version 4.6.2 (2026-10-29).
-    #> - Packages: pbn 2026.11.24, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.
+    #> - Packages: pbn 2026.11.26, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.
     #> - Workers: 2.
     #> 
     #> ## Scenarios
@@ -816,13 +817,13 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Step                                               | Wall seconds |
 #> |----------------------------------------------------|-------------:|
-#> | run_plan()                                         |         8.79 |
-#> | save_results(): build, write and stack the results |         1.59 |
-#> | save_results(): the checks of check_results()      |         0.66 |
+#> | run_plan()                                         |         9.62 |
+#> | save_results(): build, write and stack the results |         1.51 |
+#> | save_results(): the checks of check_results()      |         0.85 |
 #> | save_results(): the expect_ functions              |         0.01 |
-#> | save_results() in total                            |         2.34 |
-#> | make_outputs(): real                               |         0.64 |
-#> | make_outputs(): known                              |         0.33 |
+#> | save_results() in total                            |         2.46 |
+#> | make_outputs(): real                               |         0.70 |
+#> | make_outputs(): known                              |         0.39 |
 #> 
 #> ### Scenarios
 #> 
@@ -830,51 +831,51 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Scenario   | Wall seconds |
 #> |------------|-------------:|
-#> | real       |         0.81 |
-#> | known      |         0.08 |
-#> | null       |         3.67 |
-#> | confounded |         3.30 |
+#> | real       |         0.86 |
+#> | known      |         0.09 |
+#> | null       |         4.26 |
+#> | confounded |         3.90 |
 #> 
 #> ### Data steps
 #> 
 #> | Data | Scenario   | Step         | Calls | Median | Maximum | Share |
 #> |------|------------|--------------|------:|-------:|--------:|------:|
-#> | d    | real       | raw          |     1 |   0.01 |    0.01 |  0.2% |
-#> | d    | real       | clean        |     1 |   0.57 |    0.57 |  9.2% |
-#> | d    | real       | cohort       |     1 |   0.00 |    0.00 |  0.1% |
-#> | d    | real       | after_cohort |     1 |   0.01 |    0.01 |  0.2% |
+#> | d    | real       | raw          |     1 |   0.01 |    0.01 |  0.1% |
+#> | d    | real       | clean        |     1 |   0.60 |    0.60 |  7.9% |
+#> | d    | real       | cohort       |     1 |   0.01 |    0.01 |  0.1% |
+#> | d    | real       | after_cohort |     1 |   0.02 |    0.02 |  0.2% |
 #> | d    | known      | raw          |     1 |   0.00 |    0.00 |  0.0% |
-#> | d    | known      | clean        |     1 |   0.00 |    0.00 |  0.1% |
+#> | d    | known      | clean        |     1 |   0.01 |    0.01 |  0.1% |
 #> | d    | known      | cohort       |     1 |   0.00 |    0.00 |  0.0% |
-#> | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.0% |
-#> | d    | null       | raw          |   140 |   0.00 |    0.01 |  0.6% |
-#> | d    | null       | clean        |   140 |   0.00 |    0.27 |   14% |
-#> | d    | null       | cohort       |   140 |   0.00 |    0.00 |  1.5% |
-#> | d    | null       | after_cohort |   140 |   0.00 |    0.01 |  6.2% |
-#> | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.4% |
-#> | d    | confounded | clean        |   140 |   0.00 |    0.01 |   10% |
-#> | d    | confounded | cohort       |   140 |   0.00 |    0.00 |  1.4% |
-#> | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  5.8% |
+#> | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.1% |
+#> | d    | null       | raw          |   140 |   0.00 |    0.01 |  0.5% |
+#> | d    | null       | clean        |   140 |   0.00 |    0.26 |   13% |
+#> | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.5% |
+#> | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  6.1% |
+#> | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.5% |
+#> | d    | confounded | clean        |   140 |   0.00 |    0.01 | 10.0% |
+#> | d    | confounded | cohort       |   140 |   0.00 |    0.01 |  1.6% |
+#> | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  6.3% |
 #> 
 #> ### Analysis kinds
 #> 
 #> | Scenario   | Kind      | Analyses | Median | Maximum | Share |
 #> |------------|-----------|---------:|-------:|--------:|------:|
 #> | real       | table1    |        1 |   0.00 |    0.00 |  0.0% |
-#> | real       | models    |        1 |   0.11 |    0.11 |  1.7% |
+#> | real       | models    |        1 |   0.11 |    0.11 |  1.4% |
 #> | real       | predicted |        1 |   0.00 |    0.00 |  0.0% |
 #> | known      | table1    |        1 |   0.00 |    0.00 |  0.0% |
-#> | known      | models    |        1 |   0.00 |    0.00 |  0.0% |
+#> | known      | models    |        1 |   0.00 |    0.00 |  0.1% |
 #> | known      | crude     |        1 |   0.00 |    0.00 |  0.0% |
 #> | known      | predicted |        1 |   0.00 |    0.00 |  0.0% |
-#> | null       | table1    |      140 |   0.00 |    0.00 |  3.4% |
-#> | null       | models    |      140 |   0.00 |    0.10 |   11% |
-#> | null       | crude     |      140 |   0.00 |    0.01 |  7.9% |
-#> | null       | predicted |      140 |   0.00 |    0.01 |  2.6% |
-#> | confounded | table1    |      140 |   0.00 |    0.01 |  3.4% |
-#> | confounded | models    |      140 |   0.00 |    0.02 |  9.3% |
-#> | confounded | crude     |      140 |   0.00 |    0.01 |  7.3% |
-#> | confounded | predicted |      140 |   0.00 |    0.01 |  2.4% |
+#> | null       | table1    |      140 |   0.00 |    0.01 |  3.6% |
+#> | null       | models    |      140 |   0.00 |    0.11 |   10% |
+#> | null       | crude     |      140 |   0.00 |    0.01 |  8.7% |
+#> | null       | predicted |      140 |   0.00 |    0.01 |  2.8% |
+#> | confounded | table1    |      140 |   0.00 |    0.01 |  3.7% |
+#> | confounded | models    |      140 |   0.00 |    0.01 |  9.3% |
+#> | confounded | crude     |      140 |   0.00 |    0.01 |  8.7% |
+#> | confounded | predicted |      140 |   0.00 |    0.01 |  2.8% |
 #> 
 #> Median and Maximum are the seconds of one call. Share is the part of the seconds of all data steps and analyses of the run.
 ```
@@ -999,8 +1000,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -1018,7 +1019,20 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpO6ewLa/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2").
+```
+
+The same code gave the real results of this run, so
+[`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+stops on them too.
+[`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+records each fake scenario with a failed assertion in
+`manifest$failed_fake_checks` of the real results:
+
+``` r
+pbn::read_results("v01", home = home)
+#> Error:
+#> ! manifest$failed_fake_checks of /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -1027,8 +1041,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
 ```
 
 ### A cleaning step that drops a row
@@ -1090,8 +1104,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 11:20.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 11:20.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -1118,12 +1132,12 @@ log <- readLines(file.path(home, "v01_results", "run.md"))
 cat(log[seq(grep("^## History", log) + 4, length(log))], sep = "\n")
 #> | Started             | Result                   | Scenarios   |  Workers | run_plan() | save_results() | make_outputs() | pbn        |
 #> |---------------------|--------------------------|-------------|---------:|-----------:|---------------:|---------------:|------------|
-#> | 2026-11-19 11:20:18 | All 9 assertions passed  | 4           |        2 |       8.79 |           2.34 |           0.98 | 2026.11.24 |
-#> | 2026-11-19 11:20:31 | 1 of 2 assertions failed | real, known |        2 |       1.18 |           0.02 |                | 2026.11.24 |
-#> | 2026-11-19 11:20:33 | All 2 assertions passed  | real, known |        2 |       1.21 |           0.03 |           0.77 | 2026.11.24 |
-#> | 2026-11-19 11:20:35 | 9 of 9 analyses failed   | real, known |        2 |       1.28 |                |                | 2026.11.24 |
-#> | 2026-11-19 11:20:37 | All 2 assertions passed  | real, known |        2 |       1.16 |           0.02 |           0.72 | 2026.11.24 |
-#> | 2026-11-19 11:20:39 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.02 |           0.75 | 2026.11.24 |
+#> | 2026-11-19 13:05:26 | All 9 assertions passed  | 4           |        2 |       9.62 |           2.46 |           1.09 | 2026.11.26 |
+#> | 2026-11-19 13:05:40 | 1 of 2 assertions failed | real, known |        2 |       1.26 |           0.03 |                | 2026.11.26 |
+#> | 2026-11-19 13:05:43 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |
+#> | 2026-11-19 13:05:45 | 9 of 9 analyses failed   | real, known |        2 |       1.44 |                |                | 2026.11.26 |
+#> | 2026-11-19 13:05:47 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |
+#> | 2026-11-19 13:05:50 | All 2 assertions passed  | real, known |        2 |       1.45 |           0.03 |           0.93 | 2026.11.26 |
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`,
@@ -1165,7 +1179,7 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- pbn::get_argset(p, "confounded", 3, "models")
 data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
@@ -1231,10 +1245,10 @@ pbn::check_project()
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
 checks a project folder against the rules of `pbn.yml`. It prints the
 name of the set, one line for each rule that passes, one line for each
-finding, and a count. The rule `cyclomatic_complexity` fails a function
-that scores above 15 in `cyclocomp`, as the lint gate of the house
-packages does. The rule `no_local_assign` fails
-[`local()`](https://rdrr.io/r/base/eval.html),
+finding, and a count. Each WARN and FAIL line ends with the fix. The
+rule `cyclomatic_complexity` fails a function that scores above 15 in
+`cyclocomp`, as the lint gate of the house packages does. The rule
+`no_local_assign` fails [`local()`](https://rdrr.io/r/base/eval.html),
 [`assign()`](https://rdrr.io/r/base/assign.html), `<<-` and the other
 constructs of
 [`?check_project`](https://www.rwhite.no/pbn/reference/check_project.md).
@@ -1242,10 +1256,11 @@ Each object then gets its value on the line that names it.
 
 ``` r
 pbn::check_project(home)
-#> Rules: house_2026_11_17, 0 overrides, 0 allowed paths (pbn.yml)
+#> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
+#> PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -1256,12 +1271,14 @@ pbn::check_project(home)
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 15
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
+#> PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
+#> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()
 #> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path
-#> 18 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 21 PASS, 0 WARN, 0 FAIL, 0 OFF
 ```
 
 In a non-interactive R session,
@@ -1276,8 +1293,8 @@ out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALS
 out$status
 #> [1] 1
 cat(grep("FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
-#> FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter
-#> 17 PASS, 0 WARN, 1 FAIL, 0 OFF
+#> FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter. Fix: rename it in lower case.
+#> 20 PASS, 0 WARN, 1 FAIL, 0 OFF
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
@@ -1287,7 +1304,7 @@ allows. This file raises the limit of `cyclomatic_complexity` to 25,
 turns `unknown_path` off, and allows one name with a capital letter:
 
 ``` yaml
-extends: house_2026_11_17
+extends: house_2026_11_19
 rules:
   cyclomatic_complexity: {limit: 25}
   unknown_path: off
@@ -1299,10 +1316,11 @@ allow:
 dir.create(file.path(home, "adhoc"))
 writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
 pbn::check_project(home)
-#> Rules: house_2026_11_17, 2 overrides, 1 allowed path (pbn.yml)
-#> WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed)
+#> Rules: house_2026_11_19, 2 overrides, 1 allowed path (pbn.yml)
+#> WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed). Fix: rename it in lower case.
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
+#> PASS  frozen_versions_unchanged  every version but the newest has a vNN_frozen.md5, and no file of a frozen version changed after pbn::freeze_version()
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
@@ -1313,12 +1331,14 @@ pbn::check_project(home)
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
 #> PASS  cyclomatic_complexity  no function of an .R file has a cyclomatic complexity above 25
 #> PASS  no_environment_variables  no Sys.getenv or Sys.setenv in a run script or a functions folder
+#> PASS  no_cross_version_reads  no string in a run script or a functions folder names another version or adhoc/
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
+#> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()
 #> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> OFF  unknown_path  off in pbn.yml
-#> 16 PASS, 1 WARN, 0 FAIL, 1 OFF
+#> 19 PASS, 1 WARN, 0 FAIL, 1 OFF
 ```
 
 The allowed file is now a WARN, and `unknown_path` is OFF. An entry
@@ -1332,6 +1352,77 @@ stop it.
 [`?check_project`](https://www.rwhite.no/pbn/reference/check_project.md)
 lists the levels, the parameters, and the locked rules that `pbn.yml`
 cannot change.
+
+## Verifying a version
+
+`pbn::verify("v01")` runs `v01_run.R` in a new R session, as
+`Rscript v01_run.R` does from the project folder. Then it checks the
+project with the rules of
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md).
+It prints the output of the run, and then a short verdict. These are the
+last lines:
+
+``` r
+out <- utils::capture.output(res <- pbn::verify("v01", home = home))
+cat(utils::tail(out, 5), sep = "\n")
+#> verify(v01): v01_run.R ended with status 0.
+#> check.csv files of this run: 3.
+#> Failed assertions: 0.
+#> check_project(): 0 FAIL, 0 WARN.
+#> Verdict: PASS
+```
+
+The verdict reads only the `check.csv` files of this run, and lists each
+failed assertion in them. It also lists each FAIL and WARN finding. The
+verdict is FAIL in each of these cases:
+
+- the run ends with a status other than 0.
+- the run wrote no `check.csv`.
+- an assertion failed, also when `pbn.yml` turns `scenario_checks` off.
+- a rule fails.
+
+In a non-interactive R session,
+[`verify()`](https://www.rwhite.no/pbn/reference/verify.md) then quits R
+with status 1. Its value holds the exit status, the failed assertions
+and the findings.
+
+## Freezing a version
+
+Freeze a version when its results go into a manuscript.
+`pbn::freeze_version("v01")` writes `v01_frozen.md5`, with the md5 of
+`v01_run.R` and of each file under `v01_functions/`:
+
+``` r
+pbn::freeze_version("v01", home = home)
+cat(readLines(file.path(home, "v01_frozen.md5"))[1:3], sep = "\n")
+#> 58b5572c834365fe2b79bb90201b69b9  v01_functions/_cfg.R
+#> 5326dbb9f8aae1cf418c61686b57d737  v01_functions/analyses.R
+#> 05702c83dc7972393f11275792fcd099  v01_functions/data_clean.R
+```
+
+The rule `frozen_versions_unchanged` of
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+then fails when one of these files changes, comes or goes. It also fails
+each version older than the newest without its `vNN_frozen.md5`. So when
+`v02_run.R` exists, `v01` MUST be frozen. Change a file of the frozen
+version, and run `check_project.R` in a new R session:
+
+``` r
+cfg_file <- file.path(home, "v01_functions", "_cfg.R")
+file.copy(cfg_file, file.path(root, "cfg_copy.R"))
+#> [1] TRUE
+cat("# a late change\n", file = cfg_file, append = TRUE)
+out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+cat(grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
+#> FAIL  frozen_versions_unchanged  v01_functions/_cfg.R: changed after pbn::freeze_version() wrote v01_frozen.md5. Fix: put the files of the version back as they were and make the change in a new version, or run pbn::freeze_version() again to accept the change on purpose.
+file.copy(file.path(root, "cfg_copy.R"), cfg_file, overwrite = TRUE)
+#> [1] TRUE
+```
+
+Make a change to a frozen version in a new version, such as `v02`. Run
+[`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
+again only to accept a change on purpose. It then prints each file whose
+md5 it changes.
 
 ## Manuscripts
 
@@ -1428,7 +1519,7 @@ withr::with_dir(home, pbn::initialize_project(
   one_file_home = "N:/durable/project",
   one_file_folders = c(main = "N:/durable/data")
 ))
-#> Sourcing all code inside /tmp/RtmpO6ewLa/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
 ```
 
 ### The one file
@@ -1446,7 +1537,7 @@ file before the first full run:
 
 ``` r
 withr::with_dir(home, pbn::to_one_file())
-#> pbn: wrote v01_one_file.R in the project folder /tmp/RtmpO6ewLa/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.
+#> pbn: wrote v01_one_file.R in the project folder /tmp/Rtmp0xzl4k/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.
 ```
 
 The file starts with a header and the call of
@@ -1459,7 +1550,7 @@ cat(one[seq_len(grep("^pbn::initialize_project\\(", one) + 9)], sep = "\n")
 #> # v01_one_file.R: the run of the real data of the project project, version v01,
 #> # as one file for a computer without the project folder.
 #> #
-#> # pbn 2026.11.24 generated it on 2026-11-19 from the project folder project.
+#> # pbn 2026.11.26 generated it on 2026-11-19 from the project folder project.
 #> # Do not edit: change the project and generate again with pbn::to_one_file().
 #> #
 #> # The md5 of each file in this file, as pbn computes it for the manifest:
@@ -1624,10 +1715,9 @@ pbn::show_block(1)
 
 A page has 35 rows.
 [`pbn::show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
-reads the real results from the disk at each call, and it stops when
-their `check.csv` holds a failed assertion, as
+reads the real results from the disk at each call, and it stops where
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-does.
+stops.
 
 ## What pbn does not do yet
 

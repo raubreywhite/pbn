@@ -25,7 +25,7 @@
 
     <a class="navbar-brand me-2" href="index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.24</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -69,12 +69,12 @@
 
 <div class="rw-hero">
   <div class="rw-hero-body">
-    <p class="overline">R package - Analysis framework</p>
+    <p class="overline">R package: analysis framework</p>
     <div class="page-header">
 <img src="logo.png" class="logo" alt=""><h1>An R analysis framework built for AI agents.</h1>
 </div>
     <div class="rw-rule"></div>
-    <p class="rw-lede">One layout, rules that code enforces, and fake data with known answers, so a person can check the code that an agent writes.
+    <p class="rw-lede">One layout, rules that code enforces, and fake data with known answers that runs through the same code as the real data. A person can then check the code that an agent writes.
 </p>
     <p class="rw-cta"><a class="rw-btn" href="articles/pbn.html">Get started</a> <a class="rw-btn-link" href="articles/agents.html">pbn with AI agents</a></p>
   </div>
@@ -87,24 +87,24 @@
 <a class="anchor" aria-label="anchor" href="#pbn-"></a>
 </h1>
 <p><strong>An R analysis framework built for AI agents.</strong></p>
-<p>An AI agent can write most of the code of an analysis. pbn (“paint by numbers”) makes that code checkable. It gives each project one layout, rules that code enforces, and fake data with known answers that runs through the same code as the real data.</p>
+<p>pbn (“paint by numbers”) is for analysis projects where an AI agent writes code. It lets a person check that code. It gives each project one layout and rules that code enforces. It adds fake data with known answers, which runs through the same code as the real data.</p>
 <p>This is a trial version. It holds the smallest set of functions that one real project can use.</p>
 <div class="section level2">
 <h2 id="what-pbn-does">What pbn does<a class="anchor" aria-label="anchor" href="#what-pbn-does"></a>
 </h2>
 <ul>
 <li>
-<strong>One way to do each thing.</strong> One run script, four data steps, and <code><a href="reference/folder.html">pbn::folder()</a></code> for every path to the data. An agent has fewer choices to get wrong.</li>
+<strong>One way to do each thing.</strong> One run script, up to four data steps, and <code><a href="reference/folder.html">pbn::folder()</a></code> for every path to the data. An agent has fewer choices to get wrong.</li>
 <li>
-<strong>Checks that name the fix.</strong> <code><a href="reference/check_project.html">pbn::check_project()</a></code> checks the project folder against the rules in <code>pbn.yml</code>. Checks between the data steps stop a run that breaks a rule. Each error names the rule and the file.</li>
+<strong>Checks that name the fix.</strong> <code><a href="reference/check_project.html">pbn::check_project()</a></code> checks the project folder against the rules in <code>pbn.yml</code>. Checks between the data steps stop a run that breaks a rule. Each finding names the rule, the file and the fix.</li>
 <li>
-<strong>Verification on fake data.</strong> The real data is one scenario among fake ones with known answers. <code>expect_</code> functions check each fake scenario, and <code><a href="reference/read_results.html">pbn::read_results()</a></code> does not read the results of a scenario with a failed assertion.</li>
+<strong>Verification on fake data.</strong> The real data is one scenario among fake ones with known answers. <code>expect_</code> functions check each fake scenario, and <code><a href="reference/read_results.html">pbn::read_results()</a></code> does not read the results of a fake scenario with a failed assertion. It also does not read the real results of a run that had a fake scenario with a failed assertion.</li>
 <li>
-<strong>Records to review.</strong> Each run writes <code>check.csv</code> with every assertion, a run log <code>run.md</code>, and a manifest with the md5 of the code. A person reviews these, not only the changed lines.</li>
+<strong>Records to review.</strong> Each run writes <code>check.csv</code> with every assertion, a run log <code>run.md</code>, and a manifest with the md5 of the code. A person reviews these files as well as the changed lines.</li>
 <li>
-<strong>The data stays on its server.</strong> An agent works on the code and the fake scenarios, and needs no real data. <code><a href="reference/to_one_file.html">pbn::to_one_file()</a></code> writes the run of the real data as one script for a server without a network.</li>
+<strong>The data stays on its server.</strong> An agent works on the code and the fake scenarios, and needs no real data. <code><a href="reference/to_one_file.html">pbn::to_one_file()</a></code> writes the code for the run of the real data into one script, for a server without a network.</li>
 </ul>
-<p>pbn is the one policy package of its family. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) are mechanism packages without opinions.</p>
+<p>pbn is the only package of its family that sets rules for a project. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) set no rules.</p>
 </div>
 <div class="section level2">
 <h2 id="for-an-ai-agent">For an AI agent<a class="anchor" aria-label="anchor" href="#for-an-ai-agent"></a>
@@ -132,7 +132,7 @@
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">p</span>, <span class="va">scenarios</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/make_outputs.html">make_outputs</a></span><span class="op">(</span><span class="va">make_output</span>, <span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
-<p>The file <code>pbn.yml</code> in the project folder names the rules of <code><a href="reference/check_project.html">pbn::check_project()</a></code>, as one line: <code>extends: house_2026_11_17</code>. From the project folder, run the script with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
+<p>The file <code>pbn.yml</code> in the project folder names the rules of <code><a href="reference/check_project.html">pbn::check_project()</a></code>, as one line: <code>extends: house_2026_11_19</code>. From the project folder, run the script with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>. <code>pbn::verify("v01")</code> does both, and prints a short verdict.</p>
 </div>
 <div class="section level2">
 <h2 id="read-next">Read next<a class="anchor" aria-label="anchor" href="#read-next"></a>

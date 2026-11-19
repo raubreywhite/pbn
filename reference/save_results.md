@@ -160,6 +160,14 @@ The `manifest` is a list with these elements:
   the argument `fake_real_data` of
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
 
+- For the scenario `"real"` only, `failed_fake_checks`, a character
+  vector. It holds each fake scenario of the same call of
+  `save_results()` with a failed assertion, in the order of `scenarios`.
+  It is empty when each one passed, or when `scenarios` has no fake
+  scenario.
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  stops on real results where it is not empty.
+
 - For a fake scenario only, `fake_md5`, one md5 of the code of the data
   functions of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
@@ -228,7 +236,15 @@ step that fails:
     [`cat()`](https://rdrr.io/r/base/cat.html), writes no results file
     and stops.
 
-3.  For each scenario, it replaces `check.csv` with one failed
+3.  When `scenarios` holds `"real"`, it first replaces the `check.csv`
+    of `"real"` with one failed assertion, `not checked yet`. So
+    [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+    refuses the real results of an earlier run, also when
+    `save_results()` stops before it writes `"real"`. It does steps 3
+    and 4 for the fake scenarios first, and then for `"real"`. So the
+    manifest of the real results records each fake scenario of the same
+    run with a failed assertion. The element `failed_fake_checks` holds
+    them. For each scenario, it replaces `check.csv` with one failed
     assertion, `not checked yet`, so that
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
     refuses the new results until step 4 checks them. It deletes the
@@ -504,7 +520,7 @@ Other results:
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   c(
@@ -519,7 +535,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpTYLcmi/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpJTe3hZ/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

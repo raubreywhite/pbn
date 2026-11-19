@@ -1,5 +1,32 @@
 # Changelog
 
+## pbn 2026.11.29
+
+- Fix: a .R file with CR LF line ends no longer counts as changed in
+  [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
+  and the rule `frozen_versions_unchanged` of `house_2026_11_19`, which
+  pbn 2026.11.26 released. pbn hashes a .R file with each CR LF as LF,
+  and each other file as its bytes.
+- Behaviour change: `fake_md5` also holds the code of each function of
+  the functions folder that the data code calls, as the cache key does.
+  Data code that calls no such function keeps its `fake_md5`.
+- Each record of the loaded packages of a cache key now holds the
+  packages that qs2 loads, such as Rcpp. Before, only the records after
+  the first save of the cache in an R session held them.
+- The run log, the progress line of a failed analysis, the error of
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  on failed assertions and the error of
+  [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md) on a
+  missing setting write each scenario name as code, for example “the
+  scenario `real`”. The error of
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  says “scenario” for one scenario.
+- The fix of `frozen_versions_unchanged` says to run
+  [`pbn::freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
+  again “to record the change as intended”. The message of
+  [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
+  says “now records these changes as intended:”.
+
 ## pbn 2026.11.28
 
 - New

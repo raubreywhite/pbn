@@ -13,7 +13,7 @@ each analysis of that scenario and simulation."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -273,8 +273,9 @@ leaves out the packages that run the plan, tests and documents: pbn,
 plnr, foreach, doParallel, doFuture, future, future.apply, globals,
 listenv, parallelly, progressr, iterators, qs2, digest, uuid, progress,
 testthat, pkgload, devtools, callr, processx, ps, knitr, rmarkdown and
-evaluate. A later use
-compares each recorded version with <code><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">utils::packageVersion()</a></code> now. A
+evaluate. pbn loads qs2 before the record, so each record holds the
+packages that qs2 loads, such as Rcpp. A later use compares each
+recorded version with <code><a href="https://rdrr.io/r/utils/packageDescription.html" class="external-link">utils::packageVersion()</a></code> now. A
 package with another version, or one that is not installed now, computes
 the value again.</p>
 <p>Each use of the cache stops when a <code>data_*.R</code> file on disk differs from

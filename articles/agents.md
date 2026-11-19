@@ -19,7 +19,7 @@ pbn applies these rules to a statistical analysis project, in four
 layers. This article shows each layer, and three mistakes of an agent
 that pbn stops.
 
-![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDMwMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InB5ci10aXRsZSIgc3R5bGU9IndpZHRoOiAxMDAlOyBtYXgtd2lkdGg6IDY0MHB4OyBoZWlnaHQ6IGF1dG87IGRpc3BsYXk6IGJsb2NrOyBtYXJnaW46IDAgYXV0bzsgZm9udC1mYW1pbHk6IGluaGVyaXQ7Ij48dGl0bGUgaWQ9InB5ci10aXRsZSI+CkZvdXIgbGF5ZXJzLiBUaGUgd2lkZXN0LCBhdCB0aGUgdG9wLCBpcyB0aGUgbGF5b3V0IGFuZCB0aGUgQVBJIG9mIHBibi4KQmVsb3cgaXQgYXJlIHRoZSBjaGVja3MsIHRoZW4gdmVyaWZpY2F0aW9uIG9uIGZha2UgZGF0YS4gVGhlIG5hcnJvd2VzdCwKYXQgdGhlIGJvdHRvbSwgaXMgcHJvc2UgZm9yIHRoZSBhZ2VudC4KPC90aXRsZT4KPGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgZmlsbC1vcGFjaXR5PSIwLjE4Ij48cG9seWdvbiBwb2ludHM9IjEwLDEwIDYzMCwxMCA1OTAsNzUgNTAsNzUiIGZpbGw9IiMyMTY2YWMiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjUwLDgwIDU5MCw4MCA1NTAsMTQ1IDkwLDE0NSIgZmlsbD0iIzIxNjZhYyIgZmlsbC1vcGFjaXR5PSIwLjEzIj48L3BvbHlnb24+PHBvbHlnb24gcG9pbnRzPSI5MCwxNTAgNTUwLDE1MCA1MTAsMjE1IDEzMCwyMTUiIGZpbGw9IiM0ZDkyMjEiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjEzMCwyMjAgNTEwLDIyMCA0NzAsMjg1IDE3MCwyODUiIGZpbGw9IiM5OTk5OTkiPjwvcG9seWdvbj48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE1Ij48dGV4dCB4PSIzMjAiIHk9IjM4IiBmb250LXdlaWdodD0iYm9sZCI+MS7CoExheW91dMKgYW5kwqBBUEk6wqBvbmXCoHdhecKgdG/CoGRvwqBlYWNowqB0aGluZzwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjYwIiBmb250LXNpemU9IjEzIj5vbmXCoHJ1bsKgc2NyaXB0LMKgZm91csKgZGF0YcKgc3RlcHMswqBwYm46OmZvbGRlcigpLMKgbm/CoGFzc2lnbigpPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTA4IiBmb250LXdlaWdodD0iYm9sZCI+Mi7CoENoZWNrczrCoGHCoGNvcnJlY3Rpb27CoHRoYXTCoGNvZGXCoGNhbsKgY2hlY2vCoGJlY29tZXPCoGHCoGNoZWNrPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTMwIiBmb250LXNpemU9IjEzIj5jaGVja19wcm9qZWN0KCkswqB0aGXCoGNoZWNrc8KgYmV0d2VlbsKgdGhlwqBkYXRhwqBzdGVwczwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjE3OCIgZm9udC13ZWlnaHQ9ImJvbGQiPjMuwqBWZXJpZmljYXRpb27CoG9uwqBmYWtlwqBkYXRhPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjAwIiBmb250LXNpemU9IjEzIj5zY2VuYXJpb3PCoHdpdGjCoGtub3duwqBhbnN3ZXJzLMKgY2hlY2suY3N2LMKgcnVuLm1kPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjQ4IiBmb250LXdlaWdodD0iYm9sZCI+NC7CoFByb3NlPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjcwIiBmb250LXNpemU9IjEzIj5BR0VOVFMubWQswqBwYm4ubWQ8L3RleHQ+PC9nPjwvc3ZnPg==)
+![](data:image/svg+xml;base64,PHN2ZyB2aWV3Ym94PSIwIDAgNjQwIDMwMCIgcm9sZT0iaW1nIiBhcmlhLWxhYmVsbGVkYnk9InB5ci10aXRsZSIgc3R5bGU9IndpZHRoOiAxMDAlOyBtYXgtd2lkdGg6IDY0MHB4OyBoZWlnaHQ6IGF1dG87IGRpc3BsYXk6IGJsb2NrOyBtYXJnaW46IDAgYXV0bzsgZm9udC1mYW1pbHk6IGluaGVyaXQ7Ij48dGl0bGUgaWQ9InB5ci10aXRsZSI+CkZvdXIgbGF5ZXJzLiBUaGUgd2lkZXN0LCBhdCB0aGUgdG9wLCBpcyB0aGUgbGF5b3V0IGFuZCB0aGUgQVBJIG9mIHBibi4KQmVsb3cgaXQgYXJlIHRoZSBjaGVja3MsIHRoZW4gdmVyaWZpY2F0aW9uIG9uIGZha2UgZGF0YS4gVGhlIG5hcnJvd2VzdCwKYXQgdGhlIGJvdHRvbSwgaXMgcHJvc2UgZm9yIHRoZSBhZ2VudC4KPC90aXRsZT4KPGcgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iMSIgZmlsbC1vcGFjaXR5PSIwLjE4Ij48cG9seWdvbiBwb2ludHM9IjEwLDEwIDYzMCwxMCA1OTAsNzUgNTAsNzUiIGZpbGw9IiMyMTY2YWMiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjUwLDgwIDU5MCw4MCA1NTAsMTQ1IDkwLDE0NSIgZmlsbD0iIzIxNjZhYyIgZmlsbC1vcGFjaXR5PSIwLjEzIj48L3BvbHlnb24+PHBvbHlnb24gcG9pbnRzPSI5MCwxNTAgNTUwLDE1MCA1MTAsMjE1IDEzMCwyMTUiIGZpbGw9IiM0ZDkyMjEiPjwvcG9seWdvbj48cG9seWdvbiBwb2ludHM9IjEzMCwyMjAgNTEwLDIyMCA0NzAsMjg1IDE3MCwyODUiIGZpbGw9IiM5OTk5OTkiPjwvcG9seWdvbj48L2c+PGcgZmlsbD0iY3VycmVudENvbG9yIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmb250LXNpemU9IjE1Ij48dGV4dCB4PSIzMjAiIHk9IjM4IiBmb250LXdlaWdodD0iYm9sZCI+MS7CoExheW91dMKgYW5kwqBBUEk6wqBvbmXCoHdhecKgdG/CoGRvwqBlYWNowqB0aGluZzwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjYwIiBmb250LXNpemU9IjEzIj5vbmXCoHJ1bsKgc2NyaXB0LMKgZm91csKgZGF0YcKgc3RlcHMswqBwYm46OmZvbGRlcigpLMKgbm/CoGFzc2lnbigpPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTA4IiBmb250LXdlaWdodD0iYm9sZCI+Mi7CoENoZWNrczrCoGHCoGNvcnJlY3Rpb27CoHRoYXTCoGNvZGXCoGNhbsKgY2hlY2vCoGJlY29tZXPCoGHCoGNoZWNrPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMTMwIiBmb250LXNpemU9IjEzIj5jaGVja19wcm9qZWN0KCkswqB0aGXCoGNoZWNrc8KgYmV0d2VlbsKgdGhlwqBkYXRhwqBzdGVwczwvdGV4dD48dGV4dCB4PSIzMjAiIHk9IjE3OCIgZm9udC13ZWlnaHQ9ImJvbGQiPjMuwqBWZXJpZmljYXRpb27CoG9uwqBmYWtlwqBkYXRhPC90ZXh0Pjx0ZXh0IHg9IjMyMCIgeT0iMjAwIiBmb250LXNpemU9IjEzIj5zY2VuYXJpb3PCoHdpdGjCoGV4cGVjdGVkwqB2YWx1ZXMswqBjaGVjay5jc3YswqBydW4ubWQ8L3RleHQ+PHRleHQgeD0iMzIwIiB5PSIyNDgiIGZvbnQtd2VpZ2h0PSJib2xkIj40LsKgUHJvc2U8L3RleHQ+PHRleHQgeD0iMzIwIiB5PSIyNzAiIGZvbnQtc2l6ZT0iMTMiPkFHRU5UUy5tZCzCoHBibi5tZDwvdGV4dD48L2c+PC9zdmc+)
 
 The layers of pbn, after Tan. pbn puts most of its code into layers 1
 and 2. Code enforces them. A project can turn a rule down to warn or off
@@ -167,7 +167,7 @@ step, or in an assertion of an `expect_` function.
 ## Layer 3: verification on fake data
 
 A review of the code that an agent writes finds some mistakes. A run on
-fake data with a known answer can find a mistake that looks correct in
+fake data with expected values can find a mistake that looks correct in
 the code. In pbn, the real data is one scenario among fake ones, and
 every scenario runs through the same functions. So a fake scenario tests
 the code that gives the real results.
@@ -200,8 +200,8 @@ rbind(correct = correct, simplified = simplified_real)[, c("estimate", "lower", 
 #> simplified 0.5583728 0.1857086 0.9310369
 ```
 
-The scenario `confounded` has a known true log odds ratio, 0.5. Two of
-its four assertions fail:
+The scenario `confounded` has the true log odds ratio 0.5. Two of its
+four assertions fail:
 
 ``` r
 check <- utils::read.csv(file.path(home, "v01_results", "confounded", "check.csv"))
@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp7eEoIk/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

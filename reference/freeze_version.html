@@ -13,7 +13,7 @@ one of these files changes, or when a file comes or goes."><meta property="og:im
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -84,13 +84,19 @@ one of these files changes, or when a file comes or goes.</p>
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The file has one line for each file, <code>&lt;md5&gt;  &lt;path&gt;</code>, in the format of
 the command <code>md5sum</code>. Each path is relative to <code>home</code>, and the lines are
-sorted by path in the C locale. So <code>md5sum -c v01_frozen.md5</code>, run in
-<code>home</code>, also checks the files. The files under <code>&lt;version&gt;_functions/</code> are
+sorted by path in the C locale. The files under <code>&lt;version&gt;_functions/</code> are
 all files at any depth, hidden files too.</p>
+<p>The md5 of a file with the extension <code>.R</code> or <code>.r</code> is the md5 of its text
+with LF line ends. Each CR LF counts as LF, because R parses the file the
+same either way. So a checkout with CR LF line ends, for example on
+Windows with the git setting <code>core.autocrlf = true</code>, gives the same md5
+for such a file. The md5 of every other file is that of its bytes. When
+each <code>.R</code> file has LF line ends, <code>md5sum -c v01_frozen.md5</code>, run in
+<code>home</code>, also checks the files.</p>
 <p>Freeze a version when its results go into a manuscript or to a reader.
 A change after that goes into a new version. A second call of
-<code>freeze_version()</code> writes the file again, so it accepts every change
-since the first call. It then prints the files whose md5 it changes.</p>
+<code>freeze_version()</code> writes the file again, so it records every change
+since the first call as intended. It then prints the files whose md5 it changes.</p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

@@ -82,7 +82,10 @@ prints no line.
     under `vNN_functions/`, as
     [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md)
     lists them from the disk. The detail names the file, with `changed`,
-    `added` or `removed`.
+    `added` or `removed`. A `.R` file whose line ends change between LF
+    and CR LF, and nothing else, does not count as changed. A change of
+    the line ends of any other file counts, see
+    [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md).
 
   - a line of `vNN_frozen.md5` is not `<md5> <path>`.
 

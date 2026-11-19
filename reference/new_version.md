@@ -65,8 +65,8 @@ It stops before it writes anything in each of these cases:
 - `to` is not newer than each version of the project.
 
 - `<from>_frozen.md5` exists, and a file of `from` changed, came or went
-  after it. The error names each file. Put the files back, or accept the
-  change on purpose with
+  after it. The error names each file. Put the files back, or record the
+  change as intended with
   [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md).
 
 - `<from>_run.R` has no call
@@ -92,7 +92,7 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_new_version_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/Rtmp28uSBm/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/Rtmpwvi2uA/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::new_version("v01", home = home)
 #> new_version(): v01 is now frozen in v01_frozen.md5. Wrote v02_run.R and v02_functions/. Added the section ## v02 to CHANGELOG.md.
 pbn::check_project(home)

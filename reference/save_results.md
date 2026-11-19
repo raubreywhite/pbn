@@ -171,10 +171,11 @@ The `manifest` is a list with these elements:
 - For a fake scenario only, `fake_md5`, one md5 of the code of the data
   functions of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md),
-  without their source references: each `fn`, and each step of the steps
-  form. A change in a function that `fn` or a step calls does not change
-  `fake_md5`. `source_md5` holds the md5 of the files of those
-  functions.
+  without their source references. The code is each `fn`, each step of
+  the steps form, and each function of the functions folder that `fn` or
+  a step calls. A function counts also when another such function calls
+  it. These are the functions of the cache key of
+  `add_data(cache = TRUE)`.
 
 - `n_rows_data`, a named integer vector with the number of rows of each
   data element. A list of data.frames with one number of rows, for
@@ -535,7 +536,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmp28uSBm/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmpwvi2uA/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

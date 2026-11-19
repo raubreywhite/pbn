@@ -13,7 +13,7 @@ an object fails check_results()."><meta property="og:image" content="https://www
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -173,10 +173,11 @@ It is empty when each one passed, or when <code>scenarios</code> has no fake
 scenario.
 <code><a href="read_results.html">read_results()</a></code> stops on real results where it is not empty.</p></li>
 <li><p>For a fake scenario only, <code>fake_md5</code>, one md5 of the code of the data
-functions of <code><a href="add_data.html">add_data()</a></code>, without their source references: each <code>fn</code>,
-and each step of the steps form. A change in a function that <code>fn</code> or a
-step calls does not change <code>fake_md5</code>. <code>source_md5</code> holds the md5 of
-the files of those functions.</p></li>
+functions of <code><a href="add_data.html">add_data()</a></code>, without their source references. The code
+is each <code>fn</code>, each step of the steps form, and each function of the
+functions folder that <code>fn</code> or a step calls. A function counts also when
+another such function calls it. These are the functions of the cache
+key of <code>add_data(cache = TRUE)</code>.</p></li>
 <li><p><code>n_rows_data</code>, a named integer vector with the number of rows of each
 data element. A list of data.frames with one number of rows, for
 example a list of imputed data sets, has the rows of one of them. Each
@@ -447,7 +448,7 @@ the section Stacking.</p></li>
 <span class="r-in"><span><span class="va">env</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/environment.html" class="external-link">new.env</a></span><span class="op">(</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="initialize_project.html">initialize_project</a></span><span class="op">(</span><span class="st">"v01"</span>, <span class="va">home</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>main <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"data"</span><span class="op">)</span><span class="op">)</span>, env <span class="op">=</span> <span class="va">env</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmp28uSBm/pbn_save_example/v01_functions into </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Sourcing all code inside /tmp/Rtmpwvi2uA/pbn_save_example/v01_functions into </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="va">scenarios</span> <span class="op">&lt;-</span> <span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="scenarios.html">scenarios</a></span><span class="op">(</span><span class="va">env</span><span class="op">$</span><span class="va">CFG</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fu">plnr</span><span class="fu">::</span><span class="va"><a href="https://www.rwhite.no/plnr/reference/Plan.html" class="external-link">Plan</a></span><span class="op">$</span><span class="fu">new</span><span class="op">(</span><span class="op">)</span></span></span>

@@ -11,7 +11,7 @@ rule frozen_versions_unchanged of check_project()."><meta property="og:image" co
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,8 +104,8 @@ names each one.</p></li>
 newest.</p></li>
 <li><p><code>to</code> is not newer than each version of the project.</p></li>
 <li><p><code>&lt;from&gt;_frozen.md5</code> exists, and a file of <code>from</code> changed, came or went
-after it. The error names each file. Put the files back, or accept the
-change on purpose with <code><a href="freeze_version.html">freeze_version()</a></code>.</p></li>
+after it. The error names each file. Put the files back, or record the
+change as intended with <code><a href="freeze_version.html">freeze_version()</a></code>.</p></li>
 <li><p><code>&lt;from&gt;_run.R</code> has no call <code><a href="initialize_project.html">pbn::initialize_project()</a></code> whose argument
 <code>version</code> is the string <code>from</code>.</p></li>
 </ul><p>When a step stops after <code>new_version()</code> wrote something, it removes each
@@ -127,7 +127,7 @@ writes <code>CHANGELOG.md</code> back as it was. So a second call can start agai
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_new_version_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="create_project.html">create_project</a></span><span class="op">(</span>home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/Rtmp28uSBm/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/Rtmpwvi2uA/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">new_version</span><span class="op">(</span><span class="st">"v01"</span>, home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-msg co"><span class="r-pr">#&gt;</span> new_version(): v01 is now frozen in v01_frozen.md5. Wrote v02_run.R and v02_functions/. Added the section ## v02 to CHANGELOG.md.</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>

@@ -11,12 +11,12 @@ Source:
 [`DESCRIPTION`](https://github.com/raubreywhite/pbn/blob/main/DESCRIPTION)
 
 White RA (2026). *pbn: House Layout and Checks for Analysis Projects*. R
-package version 2026.11.28, <https://www.rwhite.no/pbn/>.
+package version 2026.11.29, <https://www.rwhite.no/pbn/>.
 
     @Manual{,
       title = {pbn: House Layout and Checks for Analysis Projects},
       author = {Richard Aubrey White},
       year = {2026},
-      note = {R package version 2026.11.28},
+      note = {R package version 2026.11.29},
       url = {https://www.rwhite.no/pbn/},
     }

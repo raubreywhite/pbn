@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.28</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,14 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.29" id="pbn-20261129">pbn 2026.11.29<a class="anchor" aria-label="anchor" href="#pbn-20261129"></a></h2>
+<ul><li>Fix: a .R file with CR LF line ends no longer counts as changed in <code><a href="../reference/freeze_version.html">freeze_version()</a></code> and the rule <code>frozen_versions_unchanged</code> of <code>house_2026_11_19</code>, which pbn 2026.11.26 released. pbn hashes a .R file with each CR LF as LF, and each other file as its bytes.</li>
+<li>Behaviour change: <code>fake_md5</code> also holds the code of each function of the functions folder that the data code calls, as the cache key does. Data code that calls no such function keeps its <code>fake_md5</code>.</li>
+<li>Each record of the loaded packages of a cache key now holds the packages that qs2 loads, such as Rcpp. Before, only the records after the first save of the cache in an R session held them.</li>
+<li>The run log, the progress line of a failed analysis, the error of <code><a href="../reference/save_results.html">save_results()</a></code> on failed assertions and the error of <code><a href="../reference/scenarios.html">scenarios()</a></code> on a missing setting write each scenario name as code, for example “the scenario <code>real</code>”. The error of <code><a href="../reference/save_results.html">save_results()</a></code> says “scenario” for one scenario.</li>
+<li>The fix of <code>frozen_versions_unchanged</code> says to run <code><a href="../reference/freeze_version.html">pbn::freeze_version()</a></code> again “to record the change as intended”. The message of <code><a href="../reference/freeze_version.html">freeze_version()</a></code> says “now records these changes as intended:”.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.28" id="pbn-20261128">pbn 2026.11.28<a class="anchor" aria-label="anchor" href="#pbn-20261128"></a></h2>
 <ul><li>New <code><a href="../reference/create_project.html">create_project()</a></code> writes a new project at version v01 that passes <code><a href="../reference/check_project.html">check_project()</a></code>. It stops, and writes nothing, when one of its files exists. Its run script runs the fake scenarios only, so <code>verify("v01")</code> gives a PASS on the fake scenarios before code reads the real data. It stops before it writes anything when the package cohort is not installed.</li>

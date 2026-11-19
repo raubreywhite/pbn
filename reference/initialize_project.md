@@ -182,9 +182,9 @@ of such a computer. It is about the scenario `"real"` only:
 - The manifest of the real results gets `fake_real_data = TRUE`. It is
   `FALSE` without the flag. A fake scenario has no such field.
 
-- The run log says that the scenario real ran on fake real data, in the
-  sections Run and History. The sections Data and Exclusions name the
-  scenario `real (fake real data)`.
+- The run log says that the scenario `real` ran on fake real data, in
+  the sections Run and History. The sections Data and Exclusions name
+  the scenario `real (fake real data)`.
 
 - [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
   writes the output of `"real"` as fake output, into
@@ -331,11 +331,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmp28uSBm/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmpwvi2uA/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/Rtmp28uSBm/pbn_initialize_example/v01_results"
+#> [1] "/tmp/Rtmpwvi2uA/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/Rtmp28uSBm/pbn_initialize_example/data"
+#> [1] "/tmp/Rtmpwvi2uA/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

@@ -437,7 +437,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpdacvDd/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -470,7 +470,7 @@ value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 13:18.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -705,7 +705,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpdacvDd/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -754,7 +754,7 @@ cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
     #> 
     #> ## When
     #> 
-    #> The run started 2026-11-19 13:05:26 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
+    #> The run started 2026-11-19 13:18:39 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
     #> 
     #> ## Run
     #> 
@@ -817,13 +817,13 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Step                                               | Wall seconds |
 #> |----------------------------------------------------|-------------:|
-#> | run_plan()                                         |         9.62 |
-#> | save_results(): build, write and stack the results |         1.51 |
-#> | save_results(): the checks of check_results()      |         0.85 |
-#> | save_results(): the expect_ functions              |         0.01 |
-#> | save_results() in total                            |         2.46 |
-#> | make_outputs(): real                               |         0.70 |
-#> | make_outputs(): known                              |         0.39 |
+#> | run_plan()                                         |        11.65 |
+#> | save_results(): build, write and stack the results |         1.82 |
+#> | save_results(): the checks of check_results()      |         0.99 |
+#> | save_results(): the expect_ functions              |         0.02 |
+#> | save_results() in total                            |         2.93 |
+#> | make_outputs(): real                               |         0.62 |
+#> | make_outputs(): known                              |         0.42 |
 #> 
 #> ### Scenarios
 #> 
@@ -831,51 +831,51 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Scenario   | Wall seconds |
 #> |------------|-------------:|
-#> | real       |         0.86 |
-#> | known      |         0.09 |
-#> | null       |         4.26 |
-#> | confounded |         3.90 |
+#> | real       |         0.64 |
+#> | known      |         0.10 |
+#> | null       |         4.82 |
+#> | confounded |         5.02 |
 #> 
 #> ### Data steps
 #> 
 #> | Data | Scenario   | Step         | Calls | Median | Maximum | Share |
 #> |------|------------|--------------|------:|-------:|--------:|------:|
-#> | d    | real       | raw          |     1 |   0.01 |    0.01 |  0.1% |
-#> | d    | real       | clean        |     1 |   0.60 |    0.60 |  7.9% |
+#> | d    | real       | raw          |     1 |   0.02 |    0.02 |  0.2% |
+#> | d    | real       | clean        |     1 |   0.35 |    0.35 |  3.8% |
 #> | d    | real       | cohort       |     1 |   0.01 |    0.01 |  0.1% |
 #> | d    | real       | after_cohort |     1 |   0.02 |    0.02 |  0.2% |
 #> | d    | known      | raw          |     1 |   0.00 |    0.00 |  0.0% |
 #> | d    | known      | clean        |     1 |   0.01 |    0.01 |  0.1% |
 #> | d    | known      | cohort       |     1 |   0.00 |    0.00 |  0.0% |
-#> | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.1% |
-#> | d    | null       | raw          |   140 |   0.00 |    0.01 |  0.5% |
-#> | d    | null       | clean        |   140 |   0.00 |    0.26 |   13% |
-#> | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.5% |
-#> | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  6.1% |
+#> | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.0% |
+#> | d    | null       | raw          |   140 |   0.00 |    0.02 |  0.5% |
+#> | d    | null       | clean        |   140 |   0.01 |    0.20 |   13% |
+#> | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.4% |
+#> | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  6.3% |
 #> | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.5% |
-#> | d    | confounded | clean        |   140 |   0.00 |    0.01 | 10.0% |
-#> | d    | confounded | cohort       |   140 |   0.00 |    0.01 |  1.6% |
-#> | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  6.3% |
+#> | d    | confounded | clean        |   140 |   0.01 |    0.01 |   11% |
+#> | d    | confounded | cohort       |   140 |   0.00 |    0.00 |  1.4% |
+#> | d    | confounded | after_cohort |   140 |   0.00 |    0.02 |  6.6% |
 #> 
 #> ### Analysis kinds
 #> 
 #> | Scenario   | Kind      | Analyses | Median | Maximum | Share |
 #> |------------|-----------|---------:|-------:|--------:|------:|
 #> | real       | table1    |        1 |   0.00 |    0.00 |  0.0% |
-#> | real       | models    |        1 |   0.11 |    0.11 |  1.4% |
+#> | real       | models    |        1 |   0.12 |    0.12 |  1.3% |
 #> | real       | predicted |        1 |   0.00 |    0.00 |  0.0% |
 #> | known      | table1    |        1 |   0.00 |    0.00 |  0.0% |
 #> | known      | models    |        1 |   0.00 |    0.00 |  0.1% |
-#> | known      | crude     |        1 |   0.00 |    0.00 |  0.0% |
+#> | known      | crude     |        1 |   0.00 |    0.00 |  0.1% |
 #> | known      | predicted |        1 |   0.00 |    0.00 |  0.0% |
-#> | null       | table1    |      140 |   0.00 |    0.01 |  3.6% |
-#> | null       | models    |      140 |   0.00 |    0.11 |   10% |
-#> | null       | crude     |      140 |   0.00 |    0.01 |  8.7% |
-#> | null       | predicted |      140 |   0.00 |    0.01 |  2.8% |
+#> | null       | table1    |      140 |   0.00 |    0.01 |  3.8% |
+#> | null       | models    |      140 |   0.01 |    0.12 |   11% |
+#> | null       | crude     |      140 |   0.01 |    0.01 |  9.2% |
+#> | null       | predicted |      140 |   0.00 |    0.01 |  2.9% |
 #> | confounded | table1    |      140 |   0.00 |    0.01 |  3.7% |
-#> | confounded | models    |      140 |   0.00 |    0.01 |  9.3% |
-#> | confounded | crude     |      140 |   0.00 |    0.01 |  8.7% |
-#> | confounded | predicted |      140 |   0.00 |    0.01 |  2.8% |
+#> | confounded | models    |      140 |   0.01 |    0.02 |   10% |
+#> | confounded | crude     |      140 |   0.01 |    0.01 |  9.4% |
+#> | confounded | predicted |      140 |   0.00 |    0.00 |  3.0% |
 #> 
 #> Median and Maximum are the seconds of one call. Share is the part of the seconds of all data steps and analyses of the run.
 ```
@@ -1000,8 +1000,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:18.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:18.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -1019,7 +1019,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpdacvDd/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpdacvDd/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpdacvDd/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 The same code gave the real results of this run, so
@@ -1032,7 +1032,7 @@ records each fake scenario with a failed assertion in
 ``` r
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp0xzl4k/pbn_get_started/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/RtmpdacvDd/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/RtmpdacvDd/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpdacvDd/pbn_get_started/project/v01_results/real/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -1041,8 +1041,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:18.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:18.
 ```
 
 ### A cleaning step that drops a row
@@ -1104,8 +1104,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:05.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:05.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 13:18.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 13:18.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -1132,12 +1132,12 @@ log <- readLines(file.path(home, "v01_results", "run.md"))
 cat(log[seq(grep("^## History", log) + 4, length(log))], sep = "\n")
 #> | Started             | Result                   | Scenarios   |  Workers | run_plan() | save_results() | make_outputs() | pbn        |
 #> |---------------------|--------------------------|-------------|---------:|-----------:|---------------:|---------------:|------------|
-#> | 2026-11-19 13:05:26 | All 9 assertions passed  | 4           |        2 |       9.62 |           2.46 |           1.09 | 2026.11.26 |
-#> | 2026-11-19 13:05:40 | 1 of 2 assertions failed | real, known |        2 |       1.26 |           0.03 |                | 2026.11.26 |
-#> | 2026-11-19 13:05:43 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |
-#> | 2026-11-19 13:05:45 | 9 of 9 analyses failed   | real, known |        2 |       1.44 |                |                | 2026.11.26 |
-#> | 2026-11-19 13:05:47 | All 2 assertions passed  | real, known |        2 |       1.29 |           0.03 |           0.93 | 2026.11.26 |
-#> | 2026-11-19 13:05:50 | All 2 assertions passed  | real, known |        2 |       1.45 |           0.03 |           0.93 | 2026.11.26 |
+#> | 2026-11-19 13:18:39 | All 9 assertions passed  | 4           |        2 |      11.65 |           2.93 |           1.03 | 2026.11.26 |
+#> | 2026-11-19 13:18:56 | 1 of 2 assertions failed | real, known |        2 |       1.46 |           0.04 |                | 2026.11.26 |
+#> | 2026-11-19 13:18:59 | All 2 assertions passed  | real, known |        2 |       1.47 |           0.04 |           1.12 | 2026.11.26 |
+#> | 2026-11-19 13:19:02 | 9 of 9 analyses failed   | real, known |        2 |       1.61 |                |                | 2026.11.26 |
+#> | 2026-11-19 13:19:04 | All 2 assertions passed  | real, known |        2 |       1.43 |           0.05 |           1.11 | 2026.11.26 |
+#> | 2026-11-19 13:19:07 | All 2 assertions passed  | real, known |        2 |       1.70 |           0.04 |           1.11 | 2026.11.26 |
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`,
@@ -1179,7 +1179,7 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpdacvDd/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- pbn::get_argset(p, "confounded", 3, "models")
 data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
@@ -1519,7 +1519,7 @@ withr::with_dir(home, pbn::initialize_project(
   one_file_home = "N:/durable/project",
   one_file_folders = c(main = "N:/durable/data")
 ))
-#> Sourcing all code inside /tmp/Rtmp0xzl4k/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpdacvDd/pbn_get_started/project/v01_functions into R_GlobalEnv
 ```
 
 ### The one file
@@ -1537,7 +1537,7 @@ file before the first full run:
 
 ``` r
 withr::with_dir(home, pbn::to_one_file())
-#> pbn: wrote v01_one_file.R in the project folder /tmp/Rtmp0xzl4k/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.
+#> pbn: wrote v01_one_file.R in the project folder /tmp/RtmpdacvDd/pbn_get_started/project: 219 lines, 8544 bytes, the longest line 138 characters.
 ```
 
 The file starts with a header and the call of

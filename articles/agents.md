@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/RtmpIppkPC/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpIppkPC/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpIppkPC/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/RtmpIppkPC/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpIppkPC/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpIppkPC/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpCZXzVz/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpCZXzVz/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -302,12 +302,8 @@ pbn supports two more practices:
 
 The checks find only the mistakes that they name. [What pbn does not do
 yet](https://www.rwhite.no/pbn/articles/pbn.html#what-pbn-does-not-do-yet)
-lists the gaps. Two of them apply to code that an agent writes:
-
-- pbn finds an analysis that adds, removes, renames or replaces a column
-  of the shared data. It does not find a change of values in place, for
-  example `data$d[1, x := 0]`. Copy the data first with
-  [`data.table::copy()`](https://rdrr.io/pkg/data.table/man/copy.html).
-- Of the files of code, the cache key holds the files `data_*.R` and
-  each data step. A helper that a data step calls, in another file, can
-  change, and the run then uses the old data.
+lists the gaps. One of them applies to code that an agent writes. The
+cache key holds the code of each function of `v01_functions/` that the
+data code names, also in a string. A function whose name the code builds
+when it runs, for example `get(paste0("f", 1))`, can change, and the run
+then uses the old data.

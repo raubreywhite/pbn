@@ -11,7 +11,7 @@ and then it prints each failed analysis with its error."><meta property="og:imag
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -181,9 +181,11 @@ no count of the runs, so two runs of one plan can be <code><a href="https://rdrr
 folders of the project again, with their sizes and modification times.
 It reads no content of a file. The value carries this fingerprint in its
 stamp, and <code><a href="save_results.html">save_results()</a></code> writes it to <code>manifest$data_files</code>.</p>
-<p>An analysis that changes the shared data or an object of the functions
-folder in place fails. An analysis that leaves a new object in the global
-environment fails too. <code><a href="add_analyses.html">add_analyses()</a></code> gives the rules.</p>
+<p>An analysis that changes the shared data in place fails, also for a change
+of values such as <code>data$d[1, x := 0]</code>. The error names the data and each
+changed column. An analysis that changes an object of the functions
+folder in place fails too. So does an analysis that leaves a new object in
+the global environment. <code><a href="add_analyses.html">add_analyses()</a></code> gives the rules.</p>
 <p>An error outside the wrappers of pbn ends the run. Examples are a worker
 that stops, and an error of plnr or of the backend of the workers.
 <code>run_plan()</code> then prints the whole error, and writes the run log with it

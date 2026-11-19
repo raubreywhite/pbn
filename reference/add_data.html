@@ -13,7 +13,7 @@ each analysis of that scenario and simulation."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -254,6 +254,13 @@ not seen.</p></li>
 the files.</p></li>
 <li><p>the code of <code>fn</code>, or of each step, deparsed without its source
 references.</p></li>
+<li><p>the code of each function of <code>&lt;version&gt;_functions/</code> that <code>fn</code> or a step
+calls, also through other functions of the folder. pbn deparses each
+without its source references. A function counts when its name is in
+the code. That includes an argument such as <code>lapply(x, f)</code>, a formula,
+and a string such as <code>do.call("f", args)</code>.
+So a helper in <code>utils.R</code> counts. A function that only an analysis calls
+does not change the key.</p></li>
 <li><p><code>CFG$data</code>, when <code>CFG</code> has the element <code>data</code>. Put the config that the
 data code reads there. A change in another element of <code>CFG</code> does not
 change the key.</p></li>
@@ -275,11 +282,12 @@ the file that <code><a href="initialize_project.html">initialize_project()</a></
 removed. The error names the file. Run <code><a href="initialize_project.html">initialize_project()</a></code> again. A
 file with its recorded size and modification time is not hashed again,
 so a change that keeps both is not found.</p>
-<p>Keep the data code in the files <code>data_*.R</code>. The key holds no other file.
-A function of the data code can be in another file. A change in it then
-leaves the key the same, and the run reads the old data. This is the one
-change of the data code that the cache does not find.</p>
-<p>When the key is the same, <code><a href="run_plan.html">run_plan()</a></code> reads the value from the cache and
+<p>The key holds no other part of <code>&lt;version&gt;_functions/</code>. These changes
+leave the key the same, and the run reads the old data:</p><ul><li><p>a function whose name the data code builds when it runs, for example
+<code>get(paste0("f", 1))</code>.</p></li>
+<li><p>an object of the folder that is neither a function nor <code>CFG$data</code>.
+Examples are a lookup vector in <code>utils.R</code> and a function inside a list.</p></li>
+</ul><p>When the key is the same, <code><a href="run_plan.html">run_plan()</a></code> reads the value from the cache and
 does not call <code>fn</code> or a step. Each analysis sets its own seed, so its
 results are the same as with a new value. Otherwise, or when a cache file
 cannot be read, it calls <code>fn</code> or the steps and writes the cache. To compute every value again,
@@ -291,7 +299,8 @@ The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>,
 settings. It names changed raw data with its folders, for example "the
 raw data in the folder lookup". It names a changed <code>fn</code> as "the data function of
 add_data()", and each changed step as, for example, "the function given
-as <code>clean</code>". It can also name the kind of random
+as <code>clean</code>". It names each changed function that the data calls, for
+example "the function <code>lower_names</code>". It can also name the kind of random
 number generator, or each package with another version. With <code>workers = 1</code>, the line comes before the
 data function runs. With more workers, <code><a href="run_plan.html">run_plan()</a></code> prints the lines after
 the run, in the order of the plan.</p>

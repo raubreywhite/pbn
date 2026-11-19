@@ -11,7 +11,7 @@ combination of the extra dimensions in ...."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.26</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.27</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -141,15 +141,36 @@ one simulation with the same seed stop <code>add_analyses()</code> with an error
 that names both kinds.</p>
 <p>While <code><a href="run_plan.html">run_plan()</a></code> runs, an analysis fails when it changes the shared data
 in place. plnr gives every analysis of one scenario and simulation the
-same object. pbn compares the names, the number of rows, the
-data.table key and the address of each column of each data.frame before
-and after the analysis. That finds an added, removed, renamed or replaced
-column, for example <code>data$d[, x := 1]</code>, and a new key from
-<code><a href="https://rdrr.io/pkg/data.table/man/setkey.html" class="external-link">data.table::setkey()</a></code>. It does not find a change of values in place:
-<code>data$d[1, x := 0]</code>, <code>data$d[g == "a", y := 0]</code>, <code><a href="https://rdrr.io/pkg/data.table/man/assign.html" class="external-link">data.table::set()</a></code> on
-some rows, <code><a href="https://rdrr.io/pkg/data.table/man/setorder.html" class="external-link">data.table::setorder()</a></code> and <code><a href="https://rdrr.io/pkg/data.table/man/setattr.html" class="external-link">data.table::setattr()</a></code> on a
-column. Copy the data first with <code><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">data.table::copy()</a></code> when the analysis
-changes it.</p>
+same object, so a later analysis in the same R session would get the
+changed data. pbn compares two things before and after each analysis:</p><ul><li><p>the names, the number of rows, the data.table key and the address of
+each column of each data.frame. This finds an added, removed, renamed or
+replaced column, for example <code>data$d[, x := 1]</code>, and a new key from
+<code><a href="https://rdrr.io/pkg/data.table/man/setkey.html" class="external-link">data.table::setkey()</a></code>.</p></li>
+<li><p>a hash of the values and the attributes of each column of each
+data.frame, and of each data.frame in a list of data.frames. The
+attributes of such a list, such as its names, have a hash too. This finds
+a change of values in place. Examples are <code>data$d[1, x := 0]</code>,
+<code>data$d[g == "a", y := NA]</code> and <code><a href="https://rdrr.io/pkg/data.table/man/assign.html" class="external-link">data.table::set()</a></code> on some rows. It
+also finds <code><a href="https://rdrr.io/pkg/data.table/man/setorder.html" class="external-link">data.table::setorder()</a></code>, and <code><a href="https://rdrr.io/pkg/data.table/man/setattr.html" class="external-link">data.table::setattr()</a></code> on a
+column or on the table. The error names the data and each changed
+column.</p></li>
+</ul><p>The hash leaves out the index that a data.table subset such as
+<code>data$d[g == "a"]</code> adds to the table, because the index changes no value.</p>
+<p>Each other data element, for example a vector or a model, gets one hash of
+its whole value. The error then names the data and says "in its value".
+That hash leaves out each function in the value and the contents of each
+environment in it, such as that of a formula. R changes a function when it
+compiles it, so a read could look like a change. pbn does not check a data
+element that is a function or an environment, also an R6 object. Copy the data first with <code><a href="https://rdrr.io/pkg/data.table/man/copy.html" class="external-link">data.table::copy()</a></code> when the
+analysis changes it, or make the change in a data step.</p>
+<p>pbn hashes each data object before its first analysis in an R session,
+and after each analysis. An analysis that changes the data fails and
+stops the run, so the first hash holds for each later analysis. The time
+grows with the size of the data. On one computer, the hash after an
+analysis took 0.07 s for a data.table with one million rows and 20
+columns of mixed types. It took 0.03 s for ten million rows and 5 numeric
+columns. The same data as a plain data.frame took 0.10 s and 0.23 s. The
+first analysis of each data object costs a second hash.</p>
 <p>While <code><a href="run_plan.html">run_plan()</a></code> runs, an analysis also fails when it changes an object
 of the functions folder, for example <code>CFG</code>. plnr runs many analyses in one
 R session, so the change would reach each later analysis of that session.

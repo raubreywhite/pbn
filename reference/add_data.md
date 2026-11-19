@@ -250,6 +250,14 @@ is the md5 of these parts:
 - the code of `fn`, or of each step, deparsed without its source
   references.
 
+- the code of each function of `<version>_functions/` that `fn` or a
+  step calls, also through other functions of the folder. pbn deparses
+  each without its source references. A function counts when its name is
+  in the code. That includes an argument such as `lapply(x, f)`, a
+  formula, and a string such as `do.call("f", args)`. So a helper in
+  `utils.R` counts. A function that only an analysis calls does not
+  change the key.
+
 - `CFG$data`, when `CFG` has the element `data`. Put the config that the
   data code reads there. A change in another element of `CFG` does not
   change the key.
@@ -279,10 +287,15 @@ Run
 again. A file with its recorded size and modification time is not hashed
 again, so a change that keeps both is not found.
 
-Keep the data code in the files `data_*.R`. The key holds no other file.
-A function of the data code can be in another file. A change in it then
-leaves the key the same, and the run reads the old data. This is the one
-change of the data code that the cache does not find.
+The key holds no other part of `<version>_functions/`. These changes
+leave the key the same, and the run reads the old data:
+
+- a function whose name the data code builds when it runs, for example
+  `get(paste0("f", 1))`.
+
+- an object of the folder that is neither a function nor `CFG$data`.
+  Examples are a lookup vector in `utils.R` and a function inside a
+  list.
 
 When the key is the same,
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) reads
@@ -301,9 +314,10 @@ changed `data_*.R` file, `CFG$data`, or the settings. It names changed
 raw data with its folders, for example "the raw data in the folder
 lookup". It names a changed `fn` as "the data function of add_data()",
 and each changed step as, for example, "the function given as `clean`".
-It can also name the kind of random number generator, or each package
-with another version. With `workers = 1`, the line comes before the data
-function runs. With more workers,
+It names each changed function that the data calls, for example "the
+function `lower_names`". It can also name the kind of random number
+generator, or each package with another version. With `workers = 1`, the
+line comes before the data function runs. With more workers,
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) prints
 the lines after the run, in the order of the plan.
 

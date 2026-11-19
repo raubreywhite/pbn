@@ -184,9 +184,11 @@ The value carries this fingerprint in its stamp, and
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 writes it to `manifest$data_files`.
 
-An analysis that changes the shared data or an object of the functions
-folder in place fails. An analysis that leaves a new object in the
-global environment fails too.
+An analysis that changes the shared data in place fails, also for a
+change of values such as `data$d[1, x := 0]`. The error names the data
+and each changed column. An analysis that changes an object of the
+functions folder in place fails too. So does an analysis that leaves a
+new object in the global environment.
 [`add_analyses()`](https://www.rwhite.no/pbn/reference/add_analyses.md)
 gives the rules.
 

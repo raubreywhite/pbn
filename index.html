@@ -69,14 +69,14 @@
 
 <div class="rw-hero">
   <div class="rw-hero-body">
-    <p class="overline">R package - Project policy</p>
+    <p class="overline">R package - Analysis framework</p>
     <div class="page-header">
-<img src="logo.png" class="logo" alt=""><h1>One layout for every analysis project.</h1>
+<img src="logo.png" class="logo" alt=""><h1>An R analysis framework built for AI agents.</h1>
 </div>
     <div class="rw-rule"></div>
-    <p class="rw-lede">The house layout of a versioned analysis project, the checks of that layout, and one results object with a fixed contract.
+    <p class="rw-lede">One layout, rules that code enforces, and fake data with known answers, so a person can check the code that an agent writes.
 </p>
-    <p class="rw-cta"><a class="rw-btn" href="articles/pbn.html">Get started</a> <a class="rw-btn-link" href="reference/index.html">Browse the reference</a></p>
+    <p class="rw-cta"><a class="rw-btn" href="articles/pbn.html">Get started</a> <a class="rw-btn-link" href="articles/agents.html">pbn with AI agents</a></p>
   </div>
   <div class="rw-hero-art"><img src="logo.png" alt="pbn logo"></div>
 </div>
@@ -86,8 +86,26 @@
 <h1 id="pbn-">pbn 
 <a class="anchor" aria-label="anchor" href="#pbn-"></a>
 </h1>
-<p>pbn (“paint by numbers”) holds the house layout of an analysis project, the checks of that layout, and a few shared helpers. It is the one policy package of the family. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) are mechanism packages without opinions.</p>
+<p><strong>An R analysis framework built for AI agents.</strong></p>
+<p>An AI agent can write most of the code of an analysis. pbn (“paint by numbers”) makes that code checkable. It gives each project one layout, rules that code enforces, and fake data with known answers that runs through the same code as the real data.</p>
 <p>This is a trial version. It holds the smallest set of functions that one real project can use.</p>
+<div class="section level2">
+<h2 id="what-pbn-does">What pbn does<a class="anchor" aria-label="anchor" href="#what-pbn-does"></a>
+</h2>
+<ul>
+<li>
+<strong>One way to do each thing.</strong> One run script, four data steps, and <code><a href="reference/folder.html">pbn::folder()</a></code> for every path to the data. An agent has fewer choices to get wrong.</li>
+<li>
+<strong>Checks that name the fix.</strong> <code><a href="reference/check_project.html">pbn::check_project()</a></code> checks the project folder against the rules in <code>pbn.yml</code>. Checks between the data steps stop a run that breaks a rule. Each error names the rule and the file.</li>
+<li>
+<strong>Verification on fake data.</strong> The real data is one scenario among fake ones with known answers. <code>expect_</code> functions check each fake scenario, and <code><a href="reference/read_results.html">pbn::read_results()</a></code> does not read the results of a scenario with a failed assertion.</li>
+<li>
+<strong>Records to review.</strong> Each run writes <code>check.csv</code> with every assertion, a run log <code>run.md</code>, and a manifest with the md5 of the code. A person reviews these, not only the changed lines.</li>
+<li>
+<strong>The data stays on its server.</strong> An agent works on the code and the fake scenarios, and needs no real data. <code><a href="reference/to_one_file.html">pbn::to_one_file()</a></code> writes the run of the real data as one script for a server without a network.</li>
+</ul>
+<p>pbn is the one policy package of its family. <code>org</code> (paths), <code>cohort</code> (exclusions) and <code>plnr</code> (plans) are mechanism packages without opinions.</p>
+</div>
 <div class="section level2">
 <h2 id="for-an-ai-agent">For an AI agent<a class="anchor" aria-label="anchor" href="#for-an-ai-agent"></a>
 </h2>
@@ -114,10 +132,19 @@
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/save_results.html">save_results</a></span><span class="op">(</span><span class="va">r</span>, <span class="va">p</span>, <span class="va">scenarios</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="reference/make_outputs.html">make_outputs</a></span><span class="op">(</span><span class="va">make_output</span>, <span class="va">scenarios</span><span class="op">)</span></span></code></pre></div>
-<p>The file <code>pbn.yml</code> in the project folder names the rules of <code><a href="reference/check_project.html">pbn::check_project()</a></code>, as one line: <code>extends: house_2026_11_17</code>. From the project folder, run the script with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>. The data code finds the folder <code>main</code> with <code>pbn::folder("main")</code>.</p>
-<p>For a server without a network, give the paths there to <code><a href="reference/initialize_project.html">pbn::initialize_project()</a></code> as <code>one_file_home</code> and <code>one_file_folders</code>. Then <code><a href="reference/to_one_file.html">pbn::to_one_file()</a></code> writes the run of the real data as one file to paste there. <code><a href="reference/show_blocks.html">pbn::show_block()</a></code> shows the numbers of the manuscript there, one page at a time.</p>
-<p>The article <a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a> is the manual. It builds a small fake project file by file, and runs it.</p>
-<p>The <a href="https://www.rwhite.no/pbn/reference/index.html">reference</a> lists every function, and the help page of each function holds its rules.</p>
+<p>The file <code>pbn.yml</code> in the project folder names the rules of <code><a href="reference/check_project.html">pbn::check_project()</a></code>, as one line: <code>extends: house_2026_11_17</code>. From the project folder, run the script with <code>Rscript v01_run.R</code>, and check the layout with <code><a href="reference/check_project.html">pbn::check_project()</a></code>.</p>
+</div>
+<div class="section level2">
+<h2 id="read-next">Read next<a class="anchor" aria-label="anchor" href="#read-next"></a>
+</h2>
+<ul>
+<li>
+<a href="https://www.rwhite.no/pbn/articles/pbn.html">Get started</a>: the manual. It builds a small fake project file by file, and runs it.</li>
+<li>
+<a href="https://www.rwhite.no/pbn/articles/agents.html">pbn with AI agents</a>: the layers of pbn, and three mistakes of an agent that pbn stops.</li>
+<li>
+<a href="https://www.rwhite.no/pbn/reference/index.html">Reference</a>: every function. The help page of each function holds its rules.</li>
+</ul>
 </div>
 </div>
   </main><aside class="rw-home-aside"><div class="links">

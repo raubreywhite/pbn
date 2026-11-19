@@ -2,13 +2,42 @@
 
 # pbn
 
-pbn (“paint by numbers”) holds the house layout of an analysis project,
-the checks of that layout, and a few shared helpers. It is the one
-policy package of the family. `org` (paths), `cohort` (exclusions) and
-`plnr` (plans) are mechanism packages without opinions.
+**An R analysis framework built for AI agents.**
+
+An AI agent can write most of the code of an analysis. pbn (“paint by
+numbers”) makes that code checkable. It gives each project one layout,
+rules that code enforces, and fake data with known answers that runs
+through the same code as the real data.
 
 This is a trial version. It holds the smallest set of functions that one
 real project can use.
+
+## What pbn does
+
+- **One way to do each thing.** One run script, four data steps, and
+  [`pbn::folder()`](https://www.rwhite.no/pbn/reference/folder.md) for
+  every path to the data. An agent has fewer choices to get wrong.
+- **Checks that name the fix.**
+  [`pbn::check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  checks the project folder against the rules in `pbn.yml`. Checks
+  between the data steps stop a run that breaks a rule. Each error names
+  the rule and the file.
+- **Verification on fake data.** The real data is one scenario among
+  fake ones with known answers. `expect_` functions check each fake
+  scenario, and
+  [`pbn::read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  does not read the results of a scenario with a failed assertion.
+- **Records to review.** Each run writes `check.csv` with every
+  assertion, a run log `run.md`, and a manifest with the md5 of the
+  code. A person reviews these, not only the changed lines.
+- **The data stays on its server.** An agent works on the code and the
+  fake scenarios, and needs no real data.
+  [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  writes the run of the real data as one script for a server without a
+  network.
+
+pbn is the one policy package of its family. `org` (paths), `cohort`
+(exclusions) and `plnr` (plans) are mechanism packages without opinions.
 
 ## For an AI agent
 
@@ -49,21 +78,15 @@ The file `pbn.yml` in the project folder names the rules of
 as one line: `extends: house_2026_11_17`. From the project folder, run
 the script with `Rscript v01_run.R`, and check the layout with
 [`pbn::check_project()`](https://www.rwhite.no/pbn/reference/check_project.md).
-The data code finds the folder `main` with `pbn::folder("main")`.
 
-For a server without a network, give the paths there to
-[`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
-as `one_file_home` and `one_file_folders`. Then
-[`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-writes the run of the real data as one file to paste there.
-[`pbn::show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
-shows the numbers of the manuscript there, one page at a time.
+## Read next
 
-The article [Get started](https://www.rwhite.no/pbn/articles/pbn.html)
-is the manual. It builds a small fake project file by file, and runs it.
-
-The [reference](https://www.rwhite.no/pbn/reference/index.html) lists
-every function, and the help page of each function holds its rules.
+- [Get started](https://www.rwhite.no/pbn/articles/pbn.html): the
+  manual. It builds a small fake project file by file, and runs it.
+- [pbn with AI agents](https://www.rwhite.no/pbn/articles/agents.html):
+  the layers of pbn, and three mistakes of an agent that pbn stops.
+- [Reference](https://www.rwhite.no/pbn/reference/index.html): every
+  function. The help page of each function holds its rules.
 
 # Package index
 

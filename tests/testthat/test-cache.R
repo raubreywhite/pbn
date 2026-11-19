@@ -749,6 +749,16 @@ test_that("the key file records the loaded packages after the data function, and
 test_that("on a worker, the record holds the packages that the data function loaded there, and each record holds the packages that qs2 loads", {
   skip_if_not_installed("cohort")
   skip_if_pbn_not_installed()
+  # The packages that qs2 loads, measured, because they change between
+  # versions of qs2.
+  before <- callr::r(function() return(loadedNamespaces()))
+  after <- callr::r(function() {
+    loadNamespace("qs2")
+    return(loadedNamespaces())
+  })
+  base <- rownames(utils::installed.packages(priority = "base"))
+  qs2_deps <- setdiff(after, c(before, base, pbn:::machinery_packages))
+  expect_true(length(qs2_deps) > 0)
   p <- local_cohort_project()
   run <- cohort_run(p, workers = 2)
   for (f in c(
@@ -757,9 +767,9 @@ test_that("on a worker, the record holds the packages that the data function loa
   )) {
     record <- names(qs2::qs_read(f)$packages)
     expect_true("cohort" %in% record, info = f)
-    # qs2 loads them. pbn loads qs2 before the record, so the first record
-    # of a worker holds them too.
-    expect_true(all(c("Rcpp", "stringfish") %in% record), info = f)
+    # pbn loads qs2 before the record, so the first record of a worker holds
+    # the packages that qs2 loads too.
+    expect_true(all(qs2_deps %in% record), info = f)
   }
   expect_identical(cohort_run(p)$out, cache_lines(p, rep(NA, 3)))
 })

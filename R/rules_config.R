@@ -46,6 +46,18 @@ house_sets <- function() {
   return(sort(sub("\\.yml$", "", files), method = "radix"))
 }
 
+# The date of the rule set `set`, house_YYYY_MM_DD, as a Date.
+set_date <- function(set) {
+  return(as.Date(sub("^house_", "", set), format = "%Y_%m_%d"))
+}
+
+# TRUE for each set of `first` when the set `set` is that set or newer. A
+# rule that changes in a new set reads this, so that the projects of an older
+# set see no change.
+set_is_from <- function(set, first) {
+  return(set_date(set) >= set_date(first))
+}
+
 # The one line of a new pbn.yml.
 starter_line <- function() {
   sets <- house_sets()
@@ -163,11 +175,11 @@ parse_rules <- function(x) {
   }
   set <- check_extends(x[["extends"]])
   rules <- read_house_set(set)
-  overrides <- check_map(x[["rules"]], "rules")
+  overrides <- check_map(x[["rules"]], "rules", set, rules)
   for (rule in names(overrides)) {
     rules[[rule]] <- merge_override(rule, overrides[[rule]], rules[[rule]])
   }
-  allow <- parse_allow(check_map(x[["allow"]], "allow"), rules)
+  allow <- parse_allow(check_map(x[["allow"]], "allow", set, rules), rules)
   return(list(
     set = set,
     rules = rules,
@@ -202,8 +214,9 @@ check_extends <- function(extends) {
 }
 
 # The value of the key `key`, a map of rule names. NULL gives an empty map.
-# Stops on an unknown rule name, with the nearest known name.
-check_map <- function(x, key) {
+# Stops on an unknown rule name, with the nearest known name, and on a rule
+# that the set `set`, with the rules `rules`, does not have.
+check_map <- function(x, key, set, rules) {
   if (is.null(x)) {
     return(list())
   }
@@ -219,8 +232,35 @@ check_map <- function(x, key) {
   }
   for (rule in names(x)) {
     check_rule_name(rule, key)
+    check_rule_in_set(rule, key, set, rules)
   }
   return(x)
+}
+
+# Stops when the rule `rule` of check_project() is not in the set `set`,
+# with the rules `rules`. The error names the oldest set that has it.
+check_rule_in_set <- function(rule, key, set, rules) {
+  if (rule %in% names(rules)) {
+    return(invisible(rule))
+  }
+  sets <- house_sets()
+  has <- sets[vapply(
+    sets,
+    function(s) return(rule %in% names(read_house_set(s))),
+    logical(1)
+  )]
+  stop(
+    "pbn.yml: ",
+    key,
+    ": ",
+    rule,
+    " is not a rule of the set ",
+    set,
+    ". The oldest set with it is ",
+    has[1],
+    ". To use it, change extends: to that set or a newer one.",
+    call. = FALSE
+  )
 }
 
 # Stops when `rule` is not a rule of check_project().

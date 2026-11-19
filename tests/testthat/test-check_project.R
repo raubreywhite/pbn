@@ -1033,6 +1033,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     lower_case_names = "rename it in lower case",
     run_script_initialises = "call pbn::initialize_project(version = \"vNN\") in it",
     version_items_complete = "create the missing vNN_run.R or vNN_functions/, or delete the one that is there",
+    frozen_versions_unchanged = "put the files of the version back as they were and make the change in a new version, or run pbn::freeze_version() again to accept the change on purpose",
     results_contract = "delete the file, and write it again with pbn::run_plan() and pbn::save_results()",
     gitexclude_not_tracked = "remove the path from git with git rm --cached, and add the line *gitexclude* to .gitignore",
     scenario_checks = "correct the analysis, and run the scenario again with pbn::run_plan() and pbn::save_results()",
@@ -1043,7 +1044,9 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     loc_per_file = "split the file into smaller files",
     cyclomatic_complexity = "split the function into smaller functions",
     no_environment_variables = "put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project()",
+    no_cross_version_reads = "move the shared code into the functions folder of this version",
     no_local_assign = "return the value from a function, and assign it with <- where it is used",
+    no_escape_hatches = "remove the call and let the warning or the error show, or allow the path in pbn.yml with a reason in a comment",
     no_absolute_paths = "start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs()",
     blocks_list = "keep the list blocks and the functions of the blocks in vNN_functions/blocks.R only, and use none of its names in another file",
     real_results_are_fake = "run the scenario \"real\" again with pbn::initialize_project(fake_real_data = FALSE)",
@@ -1095,8 +1098,8 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
   # each status are those without it.
   found <- attr(out, "findings")
   expect_identical(names(found), c("rule", "status", "path", "detail"))
-  expect_identical(unique(found$rule), c(names(project_rules()), "allow"))
-  expect_identical(unique(clean$rule), names(project_rules()))
+  expect_identical(unique(found$rule), c(project_rule_names, "allow"))
+  expect_identical(unique(clean$rule), project_rule_names)
   expect_identical(
     found$status[found$rule %in% c("no_absolute_paths", "loc_per_file")],
     c("FAIL", "FAIL")

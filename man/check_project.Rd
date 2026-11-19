@@ -37,7 +37,11 @@ the tracked files, and the untracked files that git does not ignore.
 Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules, with their level in the set \code{house_2026_11_17}:
+The rules, with their level in the set \code{house_2026_11_19}, are below.
+The set \code{house_2026_11_17} has the same rules at the same levels, without
+\code{frozen_versions_unchanged}, \code{no_cross_version_reads} and
+\code{no_escape_hatches}. A rule that the set of the project does not have
+prints no line.
 \itemize{
 \item \code{lower_case_names} (FAIL): a file or folder name has a capital letter.
 Everything under \verb{background/} is not checked. These are exempt:
@@ -50,6 +54,21 @@ call \code{pbn::initialize_project()} whose \code{version} argument is the strin
 have does not count, and the detail names that argument.
 \item \code{version_items_complete} (FAIL): a \code{vNN_run.R} has no \verb{vNN_functions/},
 or the reverse.
+\item \code{frozen_versions_unchanged} (FAIL): one of these is true:
+\itemize{
+\item a version older than the newest has no \code{vNN_frozen.md5} of
+\code{\link[=freeze_version]{freeze_version()}}. A version is a \code{vNN_run.R} or a \verb{vNN_functions/}
+at the top level, and the newest is the one with the largest \code{NN}.
+So a deleted \code{vNN_frozen.md5} of an older version fails. The newest
+version needs none. The fix names the call
+\code{pbn::freeze_version("vNN")}.
+\item a file of a version changed, came or went after \code{freeze_version()}
+wrote its \code{vNN_frozen.md5}. The files are \code{vNN_run.R} and each file
+under \verb{vNN_functions/}, as \code{freeze_version()} lists them from the
+disk. The detail names the file, with \code{changed}, \code{added} or
+\code{removed}.
+\item a line of \code{vNN_frozen.md5} is not \verb{<md5>  <path>}.
+}
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
 \verb{vNN_results/<scenario>/sim_NNNN/results.qs2} of pbn 2026.11.22 fails
 \code{\link[=check_results]{check_results()}}, or a \code{results.qs2} is directly in \verb{vNN_results/}.
@@ -86,7 +105,9 @@ another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders
 \verb{vNN_functions/*.R} file defines a function with the name of a pbn
 export. The one exception is \code{get_data}: a project MAY name its data
 function \code{get_data(scenario, sim)}, and a run script calls the export
-as \code{pbn::get_data()}.
+as \code{pbn::get_data()}. The set \code{house_2026_11_17} does not know the
+exports \code{freeze_version} and \code{verify}, so a local function with such a
+name passes there.
 \item \code{loc_per_file} (FAIL): an \code{.R} file has more than \code{limit} code lines, as
 counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}. The house \code{limit} is 1000. The rule
 reads each \code{.R} file of the project but \code{vNN_one_file.R}.
@@ -103,6 +124,32 @@ fails. The detail gives the file, the function and its score. A path
 under \code{allow} allows each function of one file.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
+\item \code{no_cross_version_reads} (FAIL): a string constant of \code{vNN_run.R} or of
+an \code{.R} file at the top of \verb{vNN_functions/} names another version or the
+folder \verb{adhoc/}. The rule splits each string at \code{/} and \verb{\\}. A string
+fails when one of its parts is one of these:
+\itemize{
+\item \code{vMM}, with \code{MM} other than \code{NN}, as in \code{read_results("v01")} in
+\code{v02_run.R}.
+\item \code{vMM_} and an item of the layout: \code{run.R}, \code{functions}, \code{results},
+\code{cache_gitexclude}, \code{test}, \code{check_functions.R}, \code{one_file.R} or
+\code{frozen.md5}. An example is \code{"../v01_functions/get_data.R"}.
+\item \code{adhoc}, as in \code{"adhoc/helpers.R"}.
+}
+
+These pass:
+\itemize{
+\item the version of the file and its items, and a comment.
+\item a column name such as \code{"v01_age"}, and \code{"v1"} and \code{"v100"}.
+\item a part with more words, such as \code{"an adhoc analysis of v01"}.
+\item a string that \code{paste0()} or \code{sprintf()} builds. The rule misses it.
+}
+
+A column or a level with the name \code{v01} fails, so allow its file in
+\code{pbn.yml}. The rule skips a file that R cannot parse, and a string of
+more than 1000 bytes. The detail is
+\verb{<file>:<line>: "<the string, cut at 40 characters>" names vMM}, or
+\verb{names adhoc/}.
 \item \code{no_local_assign} (FAIL): an \code{.R} file uses a construct of \code{forbid} at
 any depth. The house \code{forbid} holds all seven constructs: \code{local()},
 \code{assign()}, \code{delayedAssign()}, \code{assignInNamespace()},
@@ -114,6 +161,16 @@ counts. A call of the same name from another package passes. A variable or an ar
 passes, and so do \verb{<-}, \verb{->}, \code{=} and \verb{:=}. The rule skips a file that R
 cannot parse. The detail gives the file, the line and the construct. A
 path under \code{allow} allows each finding of one file.
+\item \code{no_escape_hatches} (WARN): \code{vNN_run.R} or an \code{.R} file at the top of
+\verb{vNN_functions/} calls \code{suppressWarnings()}, \code{suppressMessages()},
+\code{try()}, \code{tryCatch()} or \code{withCallingHandlers()}, at any depth. Each of
+these can hide a warning or an error of the run. A call with the prefix
+\verb{base::} counts. A call of the same name from another package passes. So
+do a word in a comment or a string, and a variable or an argument named
+\code{try}.
+The rule skips a file that R cannot parse. The detail gives the file,
+the line and the call. A path under \code{allow} allows each finding of one
+file. Give the reason in a comment in \code{pbn.yml}.
 \item \code{no_absolute_paths} (FAIL): a string constant of an \code{.R} file of
 \code{loc_per_file} is an absolute path, or a path starts from a string
 constant. The rule reads the strings from the
@@ -195,7 +252,9 @@ ignores is not in the list, so the rule does not see it.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},
-\code{vNN_one_file.R}, \code{check_project.R} and \code{pbn.yml}, among others. A top-level dotfile and a top-level
+\code{vNN_one_file.R}, \code{check_project.R} and \code{pbn.yml}, among others. From
+the set \code{house_2026_11_19}, it also names \code{vNN_frozen.md5} of
+\code{\link[=freeze_version]{freeze_version()}}. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown. The rule also reads the files
 directly in \verb{vNN_results/}. There it names the run log \code{run.md}, its PDF
 \code{run.pdf} and its errors file \code{run_errors_gitexclude.md}, and no rule
@@ -220,7 +279,7 @@ Each project MUST have the file \code{pbn.yml} in its top folder \code{path}. pb
 reads no other file. A file \code{pbn.yaml} stops \code{check_project()} with the
 advice to rename it. The smallest \code{pbn.yml} is one line:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_17
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_19
 }\if{html}{\out{</div>}}
 
 The key \code{extends} names a house rule set. A set is a dated file in the
@@ -228,7 +287,7 @@ folder \verb{rules/} of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-\code{readLines(system.file("rules", "house_2026_11_17.yml", package = "pbn"))}.
+\code{readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))}.
 
 The set gives each rule one of three levels:
 \itemize{
@@ -262,7 +321,7 @@ path for it. It cannot name a rule of \code{\link[=check_results]{check_results(
 
 This \code{pbn.yml} changes two rules and allows three paths:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_17
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_19
 rules:
   cyclomatic_complexity: \{limit: 25\}
   unknown_path: off
@@ -284,6 +343,8 @@ a tab. The message holds the message of the yaml package.
 \item there is no key \code{extends}, or it names a set that pbn does not have.
 \item a key other than \code{extends}, \code{rules} and \code{allow}.
 \item a name that is not a rule. The message names the nearest rule.
+\item a rule that the set of \code{extends} does not have. The message names the
+oldest set with it.
 \item a parameter that the rule does not have.
 \item a level other than \code{fail}, \code{warn} and \code{off}.
 \item a \code{limit} that is not a whole number of 1 or more.
@@ -299,7 +360,7 @@ quotes.
 \examples{
 home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
@@ -307,5 +368,10 @@ writeLines(
 pbn::check_project(home)
 
 unlink(home, recursive = TRUE)
+}
+\seealso{
+Other checks:
+\code{\link[=freeze_version]{freeze_version()}},
+\code{\link[=verify]{verify()}}
 }
 \concept{checks}

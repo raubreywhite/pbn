@@ -395,7 +395,7 @@ the section Stacking.
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   c(

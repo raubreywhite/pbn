@@ -68,6 +68,8 @@ reference:
 - title: "Checks of the layout"
   contents:
     - check_project
+    - verify
+    - freeze_version
 
 - title: "Shared helpers"
   contents:

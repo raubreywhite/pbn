@@ -245,7 +245,7 @@ file.
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")

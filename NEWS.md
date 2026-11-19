@@ -1,3 +1,14 @@
+# pbn 2026.11.26
+
+- New rule set `house_2026_11_19`: the set `house_2026_11_17` with three new rules. A project on `house_2026_11_17` sees no change. The line for a new `pbn.yml` now names `house_2026_11_19`.
+- New `freeze_version()` writes `vNN_frozen.md5`, the md5 of `vNN_run.R` and of each file under `vNN_functions/`. The new rule `frozen_versions_unchanged` fails when such a file changes, comes or goes, and when a version older than the newest has no `vNN_frozen.md5`.
+- New rule `no_cross_version_reads` fails a string of a run script or a functions folder that names another version, such as `"v01_results"` in `v02_functions/`, or `adhoc/`.
+- New rule `no_escape_hatches` warns on `suppressWarnings()`, `suppressMessages()`, `try()`, `tryCatch()` and `withCallingHandlers()` in a run script or a functions folder.
+- New `verify()` runs `vNN_run.R` in a new R session, checks the project, and prints the exit status, the failed assertions and each FAIL and WARN. Its verdict is FAIL also for a failed assertion when `scenario_checks` is off, and for a run that wrote no `check.csv`. It reads only the `check.csv` files of this run.
+- In `house_2026_11_19`, `unknown_path` names `vNN_frozen.md5`, and `no_local_copy_of_pbn_function` knows the exports `freeze_version` and `verify`.
+- A `pbn.yml` that names a rule that its set does not have stops, and the message names the oldest set with the rule.
+- `callr` moves from Suggests to Imports, because `verify()` uses it.
+
 # pbn 2026.11.25
 
 - Behaviour change: `read_results()` for `"real"` now stops when a fake scenario of the same run has a failed assertion. The fake and the real results come from the same code, so a failed fake check can show a fault in the real results.

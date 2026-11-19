@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.11.25
+Version: 2026.11.26
 Authors@R:
     c(
       person(
@@ -27,6 +27,7 @@ Encoding: UTF-8
 Config/Needs/website: raubreywhite/rwtemplate
 Depends: R (>= 4.1.0)
 Imports:
+    callr,
     cyclocomp,
     data.table,
     ggplot2,
@@ -43,7 +44,6 @@ Imports:
     utils,
     yaml
 Suggests:
-    callr,
     cohort (>= 2026.11.18),
     doFuture,
     foreach,

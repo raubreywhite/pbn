@@ -16,6 +16,7 @@ pbn_exports <- c(
   "expect_biased",
   "expect_recovers",
   "folder",
+  "freeze_version",
   "get_argset",
   "get_data",
   "initialize_project",
@@ -31,8 +32,24 @@ pbn_exports <- c(
   "show_blocks",
   "stamp_fake",
   "table1",
-  "to_one_file"
+  "to_one_file",
+  "verify"
 )
+
+# The exports that came after the set house_2026_11_17, each with the oldest
+# set that knows it. The rule no_local_copy_of_pbn_function of an older set
+# passes a function with such a name, as before.
+new_exports <- c(
+  freeze_version = "house_2026_11_19",
+  verify = "house_2026_11_19"
+)
+
+# The pbn exports that the rule no_local_copy_of_pbn_function of the set
+# `set` knows.
+set_exports <- function(set) {
+  newer <- names(new_exports)[!set_is_from(set, new_exports)]
+  return(setdiff(pbn_exports, newer))
+}
 
 # The pbn exports that a project MAY define in its functions folder. The
 # migration table of NEWS.md names the data function of a project
@@ -480,8 +497,12 @@ rule_manual_manuscript_names <- function(path) {
   ))
 }
 
-rule_no_local_copy_of_pbn_function <- function(path) {
+rule_no_local_copy_of_pbn_function <- function(
+  path,
+  set = "house_2026_11_17"
+) {
   rule <- "no_local_copy_of_pbn_function"
+  exports <- setdiff(set_exports(set), local_copy_allowed)
   out <- list()
   for (f in functions_files(path)) {
     exprs <- parse_or_null(file.path(path, f))
@@ -493,7 +514,7 @@ rule_no_local_copy_of_pbn_function <- function(path) {
     for (e in as.list(exprs)) {
       if (
         is_function_assignment(e) &&
-          as.character(e[[2]]) %in% setdiff(pbn_exports, local_copy_allowed)
+          as.character(e[[2]]) %in% exports
       ) {
         defined <- c(defined, as.character(e[[2]]))
       }
@@ -679,7 +700,9 @@ rule_no_environment_variables <- function(path) {
   return(bind_rows(out))
 }
 
-rule_unknown_path <- function(path) {
+# The rule unknown_path. The set house_2026_11_19 and the newer sets name
+# vNN_frozen.md5 too, the file of freeze_version().
+rule_unknown_path <- function(path, set = "house_2026_11_17") {
   known <- c(
     run_script_pattern,
     functions_pattern,
@@ -698,7 +721,8 @@ rule_unknown_path <- function(path) {
     "^AGENTS\\.md$",
     "^\\.gitignore$",
     "^\\.git$",
-    "^pbn\\.yml$"
+    "^pbn\\.yml$",
+    if (set_is_from(set, "house_2026_11_19")) frozen_pattern
   )
   entries <- project_entries(path)
   top <- top_entries(entries[!is_root_tool_file(path, entries)])
@@ -758,6 +782,14 @@ project_rules <- function() {
         "create the missing vNN_run.R or vNN_functions/, or delete the one",
         "that is there"
       )
+    ),
+    frozen_versions_unchanged = list(
+      rule_frozen_versions_unchanged,
+      paste(
+        "every version but the newest has a vNN_frozen.md5, and no file of a",
+        "frozen version changed after pbn::freeze_version()"
+      ),
+      frozen_fix
     ),
     results_contract = list(
       rule_results_contract,
@@ -845,10 +877,29 @@ project_rules <- function() {
         "folders of pbn::initialize_project()"
       )
     ),
+    no_cross_version_reads = list(
+      rule_no_cross_version_reads,
+      paste(
+        "no string in a run script or a functions folder names another",
+        "version or adhoc/"
+      ),
+      "move the shared code into the functions folder of this version"
+    ),
     no_local_assign = list(
       rule_no_local_assign,
       function(entry) return(local_assign_pass_detail(entry$forbid)),
       "return the value from a function, and assign it with <- where it is used"
+    ),
+    no_escape_hatches = list(
+      rule_no_escape_hatches,
+      paste(
+        "no run script or functions folder calls",
+        or_list(paste0(names(escape_hatch_calls), "()"))
+      ),
+      paste(
+        "remove the call and let the warning or the error show, or allow the",
+        "path in pbn.yml with a reason in a comment"
+      )
     ),
     no_absolute_paths = list(
       rule_no_absolute_paths,

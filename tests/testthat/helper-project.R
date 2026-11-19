@@ -217,6 +217,13 @@ write_data <- function(folder) {
 # The one line of the pbn.yml of a synthetic project.
 house_line <- "extends: house_2026_11_17"
 
+# The rules that the set house_2026_11_19 adds to house_2026_11_17.
+rules_2026_11_19 <- c(
+  "frozen_versions_unchanged",
+  "no_cross_version_reads",
+  "no_escape_hatches"
+)
+
 local_project <- function(env = parent.frame(), counter = NULL) {
   root <- tempfile("pbntest")
   dir.create(root)

@@ -22,7 +22,11 @@
 #' Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 #' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 #'
-#' The rules, with their level in the set `house_2026_11_17`:
+#' The rules, with their level in the set `house_2026_11_19`, are below.
+#' The set `house_2026_11_17` has the same rules at the same levels, without
+#' `frozen_versions_unchanged`, `no_cross_version_reads` and
+#' `no_escape_hatches`. A rule that the set of the project does not have
+#' prints no line.
 #' - `lower_case_names` (FAIL): a file or folder name has a capital letter.
 #'   Everything under `background/` is not checked. These are exempt:
 #'   `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
@@ -34,6 +38,19 @@
 #'   have does not count, and the detail names that argument.
 #' - `version_items_complete` (FAIL): a `vNN_run.R` has no `vNN_functions/`,
 #'   or the reverse.
+#' - `frozen_versions_unchanged` (FAIL): one of these is true:
+#'   - a version older than the newest has no `vNN_frozen.md5` of
+#'     [freeze_version()]. A version is a `vNN_run.R` or a `vNN_functions/`
+#'     at the top level, and the newest is the one with the largest `NN`.
+#'     So a deleted `vNN_frozen.md5` of an older version fails. The newest
+#'     version needs none. The fix names the call
+#'     `pbn::freeze_version("vNN")`.
+#'   - a file of a version changed, came or went after `freeze_version()`
+#'     wrote its `vNN_frozen.md5`. The files are `vNN_run.R` and each file
+#'     under `vNN_functions/`, as `freeze_version()` lists them from the
+#'     disk. The detail names the file, with `changed`, `added` or
+#'     `removed`.
+#'   - a line of `vNN_frozen.md5` is not `<md5>  <path>`.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
 #'   `vNN_results/<scenario>/sim_NNNN/results.qs2` of pbn 2026.11.22 fails
 #'   [check_results()], or a `results.qs2` is directly in `vNN_results/`.
@@ -70,7 +87,9 @@
 #'   `vNN_functions/*.R` file defines a function with the name of a pbn
 #'   export. The one exception is `get_data`: a project MAY name its data
 #'   function `get_data(scenario, sim)`, and a run script calls the export
-#'   as `pbn::get_data()`.
+#'   as `pbn::get_data()`. The set `house_2026_11_17` does not know the
+#'   exports `freeze_version` and `verify`, so a local function with such a
+#'   name passes there.
 #' - `loc_per_file` (FAIL): an `.R` file has more than `limit` code lines, as
 #'   counted by [org::loc_per_file()]. The house `limit` is 1000. The rule
 #'   reads each `.R` file of the project but `vNN_one_file.R`.
@@ -87,6 +106,28 @@
 #'   under `allow` allows each function of one file.
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
+#' - `no_cross_version_reads` (FAIL): a string constant of `vNN_run.R` or of
+#'   an `.R` file at the top of `vNN_functions/` names another version or the
+#'   folder `adhoc/`. The rule splits each string at `/` and `\`. A string
+#'   fails when one of its parts is one of these:
+#'   - `vMM`, with `MM` other than `NN`, as in `read_results("v01")` in
+#'     `v02_run.R`.
+#'   - `vMM_` and an item of the layout: `run.R`, `functions`, `results`,
+#'     `cache_gitexclude`, `test`, `check_functions.R`, `one_file.R` or
+#'     `frozen.md5`. An example is `"../v01_functions/get_data.R"`.
+#'   - `adhoc`, as in `"adhoc/helpers.R"`.
+#'
+#'   These pass:
+#'   - the version of the file and its items, and a comment.
+#'   - a column name such as `"v01_age"`, and `"v1"` and `"v100"`.
+#'   - a part with more words, such as `"an adhoc analysis of v01"`.
+#'   - a string that `paste0()` or `sprintf()` builds. The rule misses it.
+#'
+#'   A column or a level with the name `v01` fails, so allow its file in
+#'   `pbn.yml`. The rule skips a file that R cannot parse, and a string of
+#'   more than 1000 bytes. The detail is
+#'   `<file>:<line>: "<the string, cut at 40 characters>" names vMM`, or
+#'   `names adhoc/`.
 #' - `no_local_assign` (FAIL): an `.R` file uses a construct of `forbid` at
 #'   any depth. The house `forbid` holds all seven constructs: `local()`,
 #'   `assign()`, `delayedAssign()`, `assignInNamespace()`,
@@ -98,6 +139,16 @@
 #'   passes, and so do `<-`, `->`, `=` and `:=`. The rule skips a file that R
 #'   cannot parse. The detail gives the file, the line and the construct. A
 #'   path under `allow` allows each finding of one file.
+#' - `no_escape_hatches` (WARN): `vNN_run.R` or an `.R` file at the top of
+#'   `vNN_functions/` calls `suppressWarnings()`, `suppressMessages()`,
+#'   `try()`, `tryCatch()` or `withCallingHandlers()`, at any depth. Each of
+#'   these can hide a warning or an error of the run. A call with the prefix
+#'   `base::` counts. A call of the same name from another package passes. So
+#'   do a word in a comment or a string, and a variable or an argument named
+#'   `try`.
+#'   The rule skips a file that R cannot parse. The detail gives the file,
+#'   the line and the call. A path under `allow` allows each finding of one
+#'   file. Give the reason in a comment in `pbn.yml`.
 #' - `no_absolute_paths` (FAIL): a string constant of an `.R` file of
 #'   `loc_per_file` is an absolute path, or a path starts from a string
 #'   constant. The rule reads the strings from the
@@ -174,7 +225,9 @@
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R`,
-#'   `vNN_one_file.R`, `check_project.R` and `pbn.yml`, among others. A top-level dotfile and a top-level
+#'   `vNN_one_file.R`, `check_project.R` and `pbn.yml`, among others. From
+#'   the set `house_2026_11_19`, it also names `vNN_frozen.md5` of
+#'   [freeze_version()]. A top-level dotfile and a top-level
 #'   `*.Rproj` file are never unknown. The rule also reads the files
 #'   directly in `vNN_results/`. There it names the run log `run.md`, its PDF
 #'   `run.pdf` and its errors file `run_errors_gitexclude.md`, and no rule
@@ -198,7 +251,7 @@
 #' advice to rename it. The smallest `pbn.yml` is one line:
 #'
 #' ```yaml
-#' extends: house_2026_11_17
+#' extends: house_2026_11_19
 #' ```
 #'
 #' The key `extends` names a house rule set. A set is a dated file in the
@@ -206,7 +259,7 @@
 #' change to the house rules is a new set with a new date. pbn never chooses
 #' a set for a project. So a new version of pbn does not change the rules of
 #' a project. To read the set, run
-#' `readLines(system.file("rules", "house_2026_11_17.yml", package = "pbn"))`.
+#' `readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))`.
 #'
 #' The set gives each rule one of three levels:
 #' - `fail`: a finding is FAIL, and `check_project.R` ends with status 1.
@@ -241,7 +294,7 @@
 #' This `pbn.yml` changes two rules and allows three paths:
 #'
 #' ```yaml
-#' extends: house_2026_11_17
+#' extends: house_2026_11_19
 #' rules:
 #'   cyclomatic_complexity: {limit: 25}
 #'   unknown_path: off
@@ -262,6 +315,8 @@
 #' - there is no key `extends`, or it names a set that pbn does not have.
 #' - a key other than `extends`, `rules` and `allow`.
 #' - a name that is not a rule. The message names the nearest rule.
+#' - a rule that the set of `extends` does not have. The message names the
+#'   oldest set with it.
 #' - a parameter that the rule does not have.
 #' - a level other than `fail`, `warn` and `off`.
 #' - a `limit` that is not a whole number of 1 or more.
@@ -276,7 +331,7 @@
 #' @examples
 #' home <- file.path(tempdir(), "pbn_check_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-#' writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 #' writeLines(
 #'   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
 #'   file.path(home, "v01_run.R")
@@ -328,8 +383,16 @@ project_findings <- function(path, rules = read_rules(path)) {
   }
   defs <- project_rules()
   out <- list()
-  for (rule in names(defs)) {
-    out[[rule]] <- rule_findings(path, rule, defs[[rule]], rules$rules[[rule]])
+  # A rule that the set of the project does not have does not run, and
+  # prints no line.
+  for (rule in intersect(names(defs), names(rules$rules))) {
+    out[[rule]] <- rule_findings(
+      path,
+      rule,
+      defs[[rule]],
+      rules$rules[[rule]],
+      rules$set
+    )
   }
   findings <- apply_allow(bind_rows(out), rules)
   fixes <- c(
@@ -341,12 +404,22 @@ project_findings <- function(path, rules = read_rules(path)) {
 
 # The findings with the fix of their rule at the end of the detail of each
 # WARN and FAIL, as "<detail>. Fix: <fix>.". `fixes` is the fix of each rule,
-# named by the rule. A file that R cannot parse gets the fix of parse_fix.
+# named by the rule. A file that R cannot parse gets the fix of parse_fix. A
+# version that frozen_versions_unchanged needs frozen gets the fix of
+# frozen_missing_fix(), with its version.
 add_fix <- function(findings, fixes) {
   open <- findings$status %in% c("WARN", "FAIL")
   detail <- sub("(?<!\\.)\\.$", "", findings$detail[open], perl = TRUE)
   fix <- unname(fixes[findings$rule[open]])
   fix[grepl(": R cannot parse it( \\(allowed\\))?$", detail)] <- parse_fix
+  unfrozen <- findings$rule[open] == "frozen_versions_unchanged" &
+    grepl(frozen_missing_pattern, detail)
+  fix[unfrozen] <- vapply(
+    detail[unfrozen],
+    frozen_missing_fix,
+    character(1),
+    USE.NAMES = FALSE
+  )
   findings$detail[open] <- paste0(detail, ". Fix: ", fix, ".", recycle0 = TRUE)
   return(findings)
 }
@@ -357,13 +430,17 @@ parse_fix <- "correct the syntax of the file"
 # The findings of the rule `rule` with the definition `def` of
 # project_rules() and the entry `entry` of the rules of the project. A rule
 # that is off gives one OFF row. Each finding of a rule that runs gets the
-# level of the rule as its status.
-rule_findings <- function(path, rule, def, entry) {
+# level of the rule as its status. A rule function with the argument `set`
+# gets the name of the set of the project.
+rule_findings <- function(path, rule, def, entry, set = NULL) {
   if (identical(entry$level, "off")) {
     return(project_row(rule, "OFF", "", "off in pbn.yml"))
   }
-  params <- entry[setdiff(names(entry), c("level", "locked"))]
-  found <- do.call(def[[1]], c(list(path), params))
+  args <- c(list(path), entry[setdiff(names(entry), c("level", "locked"))])
+  if ("set" %in% names(formals(def[[1]]))) {
+    args$set <- set
+  }
+  found <- do.call(def[[1]], args)
   if (nrow(found) == 0) {
     pass <- if (is.function(def[[2]])) def[[2]](entry) else def[[2]]
     return(project_row(rule, "PASS", "", pass))

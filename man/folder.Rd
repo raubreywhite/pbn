@@ -41,7 +41,7 @@ so the same data in another place gives the same results.
 \examples{
 home <- file.path(tempdir(), "pbn_folder_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines("CFG <- list()", file.path(home, "v01_functions", "_cfg.R"))
 pbn::initialize_project(
   "v01",

@@ -29,6 +29,7 @@ v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
 v01_check_functions.R     optional checks of the functions
+v01_frozen.md5            optional md5 of the files of a frozen version
 check_project.R           one line: pbn::check_project()
 pbn.yml                   the rules of check_project()
 manuscript/manual/        manuscripts that a person edits
@@ -53,7 +54,7 @@ dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 Each project MUST have the file `pbn.yml`. It names the set of house rules that `check_project()` and `initialize_project()` use. This project uses the set as it is:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_17
+extends: house_2026_11_19
 ```
 
 The real data of this fake project is a small csv file in the folder `data`, next to the project folder. In a real project, this folder holds the real data, and it is outside the repository. The file has 400 rows, and the column names of a typical export.
@@ -765,7 +766,7 @@ stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "F
 `pbn.yml` MAY change the set. Under `rules`, it changes the level or a parameter of a rule. Under `allow`, it lists the paths that a rule allows. This file raises the limit of `cyclomatic_complexity` to 25, turns `unknown_path` off, and allows one name with a capital letter:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_17
+extends: house_2026_11_19
 rules:
   cyclomatic_complexity: {limit: 25}
   unknown_path: off
@@ -788,9 +789,59 @@ stopifnot(
   identical(found$status[found$rule == "unknown_path"], "OFF"),
   !any(found$status == "FAIL")
 )
-writeLines("extends: house_2026_11_17", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
+
+## Verifying a version
+
+`pbn::verify("v01")` runs `v01_run.R` in a new R session, as `Rscript v01_run.R` does from the project folder. Then it checks the project with the rules of `check_project()`. It prints the output of the run, and then a short verdict. These are the last lines:
+
+```{r}
+out <- utils::capture.output(res <- pbn::verify("v01", home = home))
+cat(utils::tail(out, 5), sep = "\n")
+```
+
+```{r, include = FALSE}
+stopifnot(res$status == 0, nrow(res$assertions) == 0, !any(res$findings$status == "FAIL"), identical(utils::tail(out, 1), "Verdict: PASS"))
+```
+
+The verdict reads only the `check.csv` files of this run, and lists each failed assertion in them. It also lists each FAIL and WARN finding. The verdict is FAIL in each of these cases:
+
+- the run ends with a status other than 0.
+- the run wrote no `check.csv`.
+- an assertion failed, also when `pbn.yml` turns `scenario_checks` off.
+- a rule fails.
+
+In a non-interactive R session, `verify()` then quits R with status 1. Its value holds the exit status, the failed assertions and the findings.
+
+## Freezing a version
+
+Freeze a version when its results go into a manuscript. `pbn::freeze_version("v01")` writes `v01_frozen.md5`, with the md5 of `v01_run.R` and of each file under `v01_functions/`:
+
+```{r}
+pbn::freeze_version("v01", home = home)
+cat(readLines(file.path(home, "v01_frozen.md5"))[1:3], sep = "\n")
+```
+
+The rule `frozen_versions_unchanged` of `check_project()` then fails when one of these files changes, comes or goes. It also fails each version older than the newest without its `vNN_frozen.md5`. So when `v02_run.R` exists, `v01` MUST be frozen. Change a file of the frozen version, and run `check_project.R` in a new R session:
+
+```{r}
+cfg_file <- file.path(home, "v01_functions", "_cfg.R")
+file.copy(cfg_file, file.path(root, "cfg_copy.R"))
+cat("# a late change\n", file = cfg_file, append = TRUE)
+out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+cat(grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
+file.copy(file.path(root, "cfg_copy.R"), cfg_file, overwrite = TRUE)
+```
+
+```{r, include = FALSE}
+stopifnot(out$status == 1, identical(length(grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]])), 1L), any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "FAIL  frozen_versions_unchanged  v01_functions/_cfg.R: changed after")))
+# The sections below change v01 again.
+unlink(file.path(home, "v01_frozen.md5"))
+```
+
+Make a change to a frozen version in a new version, such as `v02`. Run `freeze_version()` again only to accept a change on purpose. It then prints each file whose md5 it changes.
 
 ## Manuscripts
 

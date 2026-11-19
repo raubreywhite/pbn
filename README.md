@@ -43,7 +43,7 @@ pbn::save_results(r, p, scenarios)
 pbn::make_outputs(make_output, scenarios)
 ```
 
-The file `pbn.yml` in the project folder names the rules of `pbn::check_project()`, as one line: `extends: house_2026_11_17`. From the project folder, run the script with `Rscript v01_run.R`, and check the layout with `pbn::check_project()`.
+The file `pbn.yml` in the project folder names the rules of `pbn::check_project()`, as one line: `extends: house_2026_11_19`. From the project folder, run the script with `Rscript v01_run.R`, and check the layout with `pbn::check_project()`. `pbn::verify("v01")` does both, and prints a short verdict.
 
 ## Read next
 

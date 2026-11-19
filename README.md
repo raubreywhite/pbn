@@ -4,8 +4,6 @@
 
 pbn ("paint by numbers") is for analysis projects where an AI agent writes code. The agent checks its own code with `pbn::verify()`, and each problem comes with its fix. pbn gives each project one layout and rules that code enforces. It adds fake data with known answers, which runs through the same code as the real data. A person confirms the expected answers.
 
-This is a trial version. It holds the smallest set of functions that one real project can use.
-
 ## What pbn does
 
 - **One way to do each thing.** One run script, up to four data steps, and `pbn::folder()` for every path to the data. An agent has fewer choices to get wrong.

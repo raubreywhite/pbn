@@ -25,8 +25,8 @@ frozen_missing_fix <- function(detail) {
 # The fix of the other findings of frozen_versions_unchanged.
 frozen_fix <- paste(
   "put the files of the version back as they were and make the change in a",
-  "new version, or run pbn::freeze_version() again to accept the change on",
-  "purpose"
+  "new version, or run pbn::freeze_version() again to record the change as",
+  "intended"
 )
 
 #' Freeze a version of a project
@@ -41,14 +41,21 @@ frozen_fix <- paste(
 #' @details
 #' The file has one line for each file, `<md5>  <path>`, in the format of
 #' the command `md5sum`. Each path is relative to `home`, and the lines are
-#' sorted by path in the C locale. So `md5sum -c v01_frozen.md5`, run in
-#' `home`, also checks the files. The files under `<version>_functions/` are
+#' sorted by path in the C locale. The files under `<version>_functions/` are
 #' all files at any depth, hidden files too.
+#'
+#' The md5 of a file with the extension `.R` or `.r` is the md5 of its text
+#' with LF line ends. Each CR LF counts as LF, because R parses the file the
+#' same either way. So a checkout with CR LF line ends, for example on
+#' Windows with the git setting `core.autocrlf = true`, gives the same md5
+#' for such a file. The md5 of every other file is that of its bytes. When
+#' each `.R` file has LF line ends, `md5sum -c v01_frozen.md5`, run in
+#' `home`, also checks the files.
 #'
 #' Freeze a version when its results go into a manuscript or to a reader.
 #' A change after that goes into a new version. A second call of
-#' `freeze_version()` writes the file again, so it accepts every change
-#' since the first call. It then prints the files whose md5 it changes.
+#' `freeze_version()` writes the file again, so it records every change
+#' since the first call as intended. It then prints the files whose md5 it changes.
 #' @return Invisibly, the path of the file, relative to `home`.
 #' @examples
 #' home <- file.path(tempdir(), "pbn_freeze_example")
@@ -88,7 +95,7 @@ freeze_version <- function(version, home = ".") {
       message(
         "freeze_version(): ",
         file,
-        " now accepts these changes:\n",
+        " now records these changes as intended:\n",
         paste0("  ", changed$path, ": ", changed$what, collapse = "\n")
       )
     }
@@ -99,9 +106,9 @@ freeze_version <- function(version, home = ".") {
   return(invisible(file))
 }
 
-# The md5 of the run script of the version `version` in `home` and of each
-# file under its functions folder, named by the path relative to `home` and
-# sorted by it in the C locale. A file that is missing is left out.
+# The md5 of text_md5() of the run script of the version `version` in `home`
+# and of each file under its functions folder, named by the path relative to
+# `home` and sorted by it in the C locale. A file that is missing is left out.
 frozen_md5 <- function(home, version) {
   run <- paste0(version, "_run.R")
   folder <- paste0(version, "_functions")
@@ -117,9 +124,30 @@ frozen_md5 <- function(home, version) {
   )
   paths <- sort(paths, method = "radix")
   return(stats::setNames(
-    unname(tools::md5sum(file.path(home, paths))),
+    vapply(file.path(home, paths), text_md5, character(1), USE.NAMES = FALSE),
     paths
   ))
+}
+
+# The md5 of the file `file`. A file with the extension .R or .r is hashed
+# with each CR LF as LF, because R parses it the same either way. So a
+# checkout with core.autocrlf = true gives the md5 of the file with LF line
+# ends. Every other file is hashed as its bytes.
+text_md5 <- function(file) {
+  if (!grepl("\\.[Rr]$", file)) {
+    return(unname(tools::md5sum(file)))
+  }
+  bytes <- readBin(file, "raw", file.size(file))
+  cr <- which(bytes == as.raw(13L))
+  cr <- cr[cr < length(bytes)]
+  crlf <- cr[bytes[cr + 1L] == as.raw(10L)]
+  if (length(crlf) == 0) {
+    return(unname(tools::md5sum(file)))
+  }
+  tmp <- tempfile()
+  on.exit(unlink(tmp), add = TRUE)
+  writeBin(bytes[-crlf], tmp)
+  return(unname(tools::md5sum(tmp)))
 }
 
 # The lines of the file `file` of freeze_version(): `md5`, the md5 named by

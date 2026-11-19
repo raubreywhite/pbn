@@ -55,7 +55,11 @@ log_errors <- function(log) {
     key <- c(key, "output")
     about <- c(
       about,
-      paste0("make_outputs() stopped at the scenario ", out$scenario, ".")
+      paste0(
+        "make_outputs() stopped at the scenario ",
+        md_inline(out$scenario),
+        "."
+      )
     )
     text <- c(text, out$message)
   }

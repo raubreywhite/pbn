@@ -139,7 +139,7 @@ computer. It is about the scenario \code{"real"} only:
 \itemize{
 \item The manifest of the real results gets \code{fake_real_data = TRUE}. It is
 \code{FALSE} without the flag. A fake scenario has no such field.
-\item The run log says that the scenario real ran on fake real data, in the
+\item The run log says that the scenario \code{real} ran on fake real data, in the
 sections Run and History. The sections Data and Exclusions name the
 scenario \verb{real (fake real data)}.
 \item \code{\link[=make_outputs]{make_outputs()}} writes the output of \code{"real"} as fake output, into

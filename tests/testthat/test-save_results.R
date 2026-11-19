@@ -138,7 +138,10 @@ test_that("the manifest names the run, the data, the rows of the data and the an
 
   f <- read_results("v01", "null", sim = 3, home = p$home)$manifest
   expect_false("data_files" %in% names(f))
-  expect_identical(f$fake_md5, function_md5(plan_info(run$plan)$data))
+  # The data function calls get_data() of the functions folder.
+  code <- data_code(plan_info(run$plan))
+  expect_identical(names(code), c("d", "get_data"))
+  expect_identical(f$fake_md5, function_md5(code))
   expect_identical(f$n_rows_data, c(d = 40L))
   expect_identical(f$sim, 3L)
   expect_identical(f$sims, 3L)
@@ -303,7 +306,7 @@ test_that("a failed assertion stops after every scenario, and check_project then
   expect_identical(
     conditionMessage(err),
     paste0(
-      "1 of 4 assertions failed, in the scenarios known. pbn printed each ",
+      "1 of 4 assertions failed, in the scenario `known`. pbn printed each ",
       "failed assertion above. Each scenario has its assertions in ",
       file.path(p$home, "v01_results", "<scenario>", "check.csv"),
       "."
@@ -362,7 +365,7 @@ test_that("save_results prints every failed assertion in full, and its error sta
   expect_identical(
     conditionMessage(err),
     paste0(
-      "52 of 52 assertions failed, in the scenarios null, confounded. pbn ",
+      "52 of 52 assertions failed, in the scenarios `null`, `confounded`. pbn ",
       "printed each failed assertion above. Each scenario has its assertions ",
       "in /x/v01_results/<scenario>/check.csv."
     )
@@ -392,7 +395,7 @@ test_that("an expect_ function that errors, returns zero rows or a wrong shape i
     run <- run_project(p, only = c("known", "null"))
     expect_error(
       quiet_save(run),
-      "1 of 3 assertions failed, in the scenarios known.",
+      "1 of 3 assertions failed, in the scenario `known`.",
       fixed = TRUE,
       info = nm
     )
@@ -790,7 +793,7 @@ test_that("read_results stops on results whose check.csv holds a failed assertio
   run <- run_project(p)
   expect_error(
     quiet_save(run),
-    "1 of 4 assertions failed, in the scenarios null.",
+    "1 of 4 assertions failed, in the scenario `null`.",
     fixed = TRUE
   )
   file <- file.path(p$home, "v01_results", "null", "results.qs2")
@@ -868,7 +871,7 @@ test_that("an expect_real() that returns zero assertions is a failed assertion, 
   run <- run_project(p, only = c("real", "known"))
   out <- utils::capture.output(expect_error(
     save_results(run$r, run$plan, run$scenarios),
-    "1 of 3 assertions failed, in the scenarios real.",
+    "1 of 3 assertions failed, in the scenario `real`.",
     fixed = TRUE
   ))
   expect_true(
@@ -909,7 +912,7 @@ test_that("check.csv is written to a temporary file in its folder and renamed in
   run <- run_project(p, only = "known")
   expect_error(
     quiet_save(run),
-    "1 of 2 assertions failed, in the scenarios known.",
+    "1 of 2 assertions failed, in the scenario `known`.",
     fixed = TRUE
   )
   expect_identical(seen$to, csv)

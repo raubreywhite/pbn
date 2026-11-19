@@ -211,9 +211,9 @@ check_setting <- function(x, col, where, scenario) {
       where,
       ": the setting column ",
       col,
-      " has NA for the scenario ",
+      " has NA for the scenario `",
       scenario[fake_na][1],
-      ". Each fake scenario needs a value. Only \"real\" MAY have NA.",
+      "`. Each fake scenario needs a value. Only \"real\" MAY have NA.",
       call. = FALSE
     )
   }

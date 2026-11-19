@@ -260,7 +260,7 @@ test_that("frozen_versions_unchanged fails a changed, an added and a removed fil
   expect_message(
     freeze_version("v01", p$home),
     paste0(
-      "v01_frozen.md5 now accepts these changes:\n",
+      "v01_frozen.md5 now records these changes as intended:\n",
       "  v01_functions/double_it.R: removed\n",
       "  v01_functions/new.R: added\n",
       "  v01_run.R: changed"
@@ -278,6 +278,73 @@ test_that("frozen_versions_unchanged fails a changed, an added and a removed fil
     with_fix(
       "frozen_versions_unchanged",
       "v01_frozen.md5: line 8 is not \"<md5>  <path>\" of pbn::freeze_version()"
+    )
+  )
+})
+
+# Writes the lines of the file `file` again, each with the line end `eol`.
+write_line_ends <- function(file, eol) {
+  lines <- readLines(file)
+  writeBin(charToRaw(paste0(lines, eol, collapse = "")), file)
+  return(invisible(file))
+}
+
+test_that("frozen_versions_unchanged passes a frozen .R file with CR LF line ends and the same text, and fails a change of the text", {
+  p <- local_project_19()
+  files <- file.path(p$home, c("v01_run.R", "v01_functions/_cfg.R"))
+  for (f in files) {
+    write_line_ends(f, "\n")
+  }
+  freeze_version("v01", p$home)
+  frozen <- readLines(file.path(p$home, "v01_frozen.md5"))
+  before <- md5_of(files)
+  for (f in files) {
+    write_line_ends(f, "\r\n")
+  }
+  # The bytes of each file changed.
+  expect_false(any(md5_of(files) == before))
+  expect_identical(
+    rule_rows(p$home, "frozen_versions_unchanged")$status,
+    "PASS"
+  )
+  # The md5 of a file with CR LF line ends is that of the same text with LF.
+  expect_silent(freeze_version("v01", p$home))
+  expect_identical(readLines(file.path(p$home, "v01_frozen.md5")), frozen)
+
+  cat("x <- 2\r\n", file = file.path(p$home, "v01_run.R"), append = TRUE)
+  expect_identical(
+    rule_rows(p$home, "frozen_versions_unchanged")$detail,
+    with_fix(
+      "frozen_versions_unchanged",
+      "v01_run.R: changed after pbn::freeze_version() wrote v01_frozen.md5"
+    )
+  )
+})
+
+test_that("frozen_versions_unchanged hashes each file that is not .R as its bytes, so CR LF line ends in a .csv or a .txt fail", {
+  p <- local_project_19()
+  files <- c("v01_functions/lookup.csv", "v01_functions/notes.txt")
+  write_lines(p$home, files[1], c("code,label", "1,a", "2,b"))
+  write_lines(p$home, files[2], c("first line", "second line"))
+  for (f in file.path(p$home, files)) {
+    write_line_ends(f, "\n")
+  }
+  freeze_version("v01", p$home)
+  expect_identical(
+    rule_rows(p$home, "frozen_versions_unchanged")$status,
+    "PASS"
+  )
+  for (f in file.path(p$home, files)) {
+    write_line_ends(f, "\r\n")
+  }
+  expect_identical(
+    rule_rows(p$home, "frozen_versions_unchanged")$detail,
+    with_fix(
+      "frozen_versions_unchanged",
+      paste0(
+        files,
+        ": changed after pbn::freeze_version() wrote v01_frozen.md5"
+      )
     )
   )
 })
@@ -545,7 +612,10 @@ test_that("verify() under Rscript prints the verdict and ends with status 1 afte
   )
   bad_lines <- strsplit(bad$stdout, "\r?\n")[[1]]
   expect_identical(bad$status, 1L)
-  expect_true(startsWith(bad_lines[length(bad_lines)], "Verdict: FAIL, because "))
+  expect_true(startsWith(
+    bad_lines[length(bad_lines)],
+    "Verdict: FAIL, because "
+  ))
   expect_true("Failed assertions: 1." %in% bad_lines)
 })
 
@@ -566,7 +636,11 @@ write_run <- function(home, lines) {
 # assertion whose pass is `pass`.
 check_csv_lines <- function(scenario, pass) {
   return(c(
-    paste0("dir.create(\"v01_results/", scenario, "\", recursive = TRUE, showWarnings = FALSE)"),
+    paste0(
+      "dir.create(\"v01_results/",
+      scenario,
+      "\", recursive = TRUE, showWarnings = FALSE)"
+    ),
     paste0(
       "utils::write.csv(data.frame(assertion = \"a\", expected = \"1\", ",
       "observed = \"2\", pass = ",
@@ -581,11 +655,15 @@ check_csv_lines <- function(scenario, pass) {
 test_that("verify() gives FAIL for a failed assertion of this run also when scenario_checks is off and the run ends with status 0", {
   skip_if_pbn_not_installed()
   p <- local_project_19()
-  write_lines(p$home, "pbn.yml", c(
-    "extends: house_2026_11_19",
-    "rules:",
-    "  scenario_checks: off"
-  ))
+  write_lines(
+    p$home,
+    "pbn.yml",
+    c(
+      "extends: house_2026_11_19",
+      "rules:",
+      "  scenario_checks: off"
+    )
+  )
   write_run(p$home, check_csv_lines("known", "FALSE"))
   out <- utils::capture.output(res <- verify_result("v01", p$home))
   expect_identical(res$status, 0L)
@@ -601,16 +679,23 @@ test_that("verify() gives FAIL for a failed assertion of this run also when scen
 test_that("verify() reads only the check.csv files of this run, and passes a run whose own files pass", {
   skip_if_pbn_not_installed()
   p <- local_project_19()
-  write_lines(p$home, "pbn.yml", c(
-    "extends: house_2026_11_19",
-    "rules:",
-    "  scenario_checks: warn"
-  ))
+  write_lines(
+    p$home,
+    "pbn.yml",
+    c(
+      "extends: house_2026_11_19",
+      "rules:",
+      "  scenario_checks: warn"
+    )
+  )
   # A failed check.csv of an earlier run.
   old <- write_lines(
     p$home,
     "v01_results/null/check.csv",
-    c("\"assertion\",\"expected\",\"observed\",\"pass\"", "\"b\",\"1\",\"2\",FALSE")
+    c(
+      "\"assertion\",\"expected\",\"observed\",\"pass\"",
+      "\"b\",\"1\",\"2\",FALSE"
+    )
   )
   Sys.setFileTime(old, Sys.time() - 3600)
   write_run(p$home, check_csv_lines("known", "TRUE"))
@@ -663,13 +748,18 @@ test_that("verify() does not count a check.csv of an earlier run in the same sec
   old <- write_lines(
     p$home,
     "v01_results/known/check.csv",
-    c("\"assertion\",\"expected\",\"observed\",\"pass\"", "\"a\",\"1\",\"1\",TRUE")
+    c(
+      "\"assertion\",\"expected\",\"observed\",\"pass\"",
+      "\"a\",\"1\",\"1\",TRUE"
+    )
   )
   Sys.setFileTime(old, as.POSIXct(second, origin = "1970-01-01"))
   # The test proves the same-second case only when the call starts in that
   # second. Otherwise it would pass without the case, so it skips.
   if (floor(as.numeric(Sys.time())) != second) {
-    skip("the setup crossed a second boundary, so the call is not in the same second")
+    skip(
+      "the setup crossed a second boundary, so the call is not in the same second"
+    )
   }
   out <- utils::capture.output(res <- verify_result("v01", p$home))
   expect_identical(res$status, 0L)

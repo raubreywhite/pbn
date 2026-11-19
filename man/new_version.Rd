@@ -49,8 +49,8 @@ names each one.
 newest.
 \item \code{to} is not newer than each version of the project.
 \item \verb{<from>_frozen.md5} exists, and a file of \code{from} changed, came or went
-after it. The error names each file. Put the files back, or accept the
-change on purpose with \code{\link[=freeze_version]{freeze_version()}}.
+after it. The error names each file. Put the files back, or record the
+change as intended with \code{\link[=freeze_version]{freeze_version()}}.
 \item \verb{<from>_run.R} has no call \code{pbn::initialize_project()} whose argument
 \code{version} is the string \code{from}.
 }

@@ -67,7 +67,9 @@ version needs none. The fix names the call
 wrote its \code{vNN_frozen.md5}. The files are \code{vNN_run.R} and each file
 under \verb{vNN_functions/}, as \code{freeze_version()} lists them from the
 disk. The detail names the file, with \code{changed}, \code{added} or
-\code{removed}.
+\code{removed}. A \code{.R} file whose line ends change between LF and CR LF,
+and nothing else, does not count as changed. A change of the line
+ends of any other file counts, see \code{\link[=freeze_version]{freeze_version()}}.
 \item a line of \code{vNN_frozen.md5} is not \verb{<md5>  <path>}.
 }
 \item \code{readme_and_changelog} (FAIL): \code{README.md} or \code{CHANGELOG.md} is not at

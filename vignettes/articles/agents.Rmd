@@ -31,7 +31,7 @@ pbn applies these rules to a statistical analysis project, in four layers. This 
 <text x="320" y="108" font-weight="bold">2.&#160;Checks:&#160;a&#160;correction&#160;that&#160;code&#160;can&#160;check&#160;becomes&#160;a&#160;check</text>
 <text x="320" y="130" font-size="13">check_project(),&#160;the&#160;checks&#160;between&#160;the&#160;data&#160;steps</text>
 <text x="320" y="178" font-weight="bold">3.&#160;Verification&#160;on&#160;fake&#160;data</text>
-<text x="320" y="200" font-size="13">scenarios&#160;with&#160;known&#160;answers,&#160;check.csv,&#160;run.md</text>
+<text x="320" y="200" font-size="13">scenarios&#160;with&#160;expected&#160;values,&#160;check.csv,&#160;run.md</text>
 <text x="320" y="248" font-weight="bold">4.&#160;Prose</text>
 <text x="320" y="270" font-size="13">AGENTS.md,&#160;pbn.md</text>
 </g>
@@ -260,7 +260,7 @@ Some requirements apply to one project only, for example a variable that MUST NO
 
 ## Layer 3: verification on fake data
 
-A review of the code that an agent writes finds some mistakes. A run on fake data with a known answer can find a mistake that looks correct in the code. In pbn, the real data is one scenario among fake ones, and every scenario runs through the same functions. So a fake scenario tests the code that gives the real results.
+A review of the code that an agent writes finds some mistakes. A run on fake data with expected values can find a mistake that looks correct in the code. In pbn, the real data is one scenario among fake ones, and every scenario runs through the same functions. So a fake scenario tests the code that gives the real results.
 
 Here the agent simplifies `fit_models()`. It removes the adjustment for `x`, because it judges that `x` "adds little". The model code has no error:
 
@@ -280,7 +280,7 @@ simplified_real <- qs2::qs_read(file.path(home, "v01_results", "real", "results.
 rbind(correct = correct, simplified = simplified_real)[, c("estimate", "lower", "upper")]
 ```
 
-The scenario `confounded` has a known true log odds ratio, 0.5. Two of its four assertions fail:
+The scenario `confounded` has the true log odds ratio 0.5. Two of its four assertions fail:
 
 ```{r}
 check <- utils::read.csv(file.path(home, "v01_results", "confounded", "check.csv"))

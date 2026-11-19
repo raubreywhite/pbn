@@ -225,8 +225,9 @@ leaves out the packages that run the plan, tests and documents: pbn,
 plnr, foreach, doParallel, doFuture, future, future.apply, globals,
 listenv, parallelly, progressr, iterators, qs2, digest, uuid, progress,
 testthat, pkgload, devtools, callr, processx, ps, knitr, rmarkdown and
-evaluate. A later use
-compares each recorded version with \code{\link[utils:packageVersion]{utils::packageVersion()}} now. A
+evaluate. pbn loads qs2 before the record, so each record holds the
+packages that qs2 loads, such as Rcpp. A later use compares each
+recorded version with \code{\link[utils:packageVersion]{utils::packageVersion()}} now. A
 package with another version, or one that is not installed now, computes
 the value again.
 

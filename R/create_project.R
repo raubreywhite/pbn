@@ -226,8 +226,8 @@ write_text <- function(file, lines) {
 #'   newest.
 #' - `to` is not newer than each version of the project.
 #' - `<from>_frozen.md5` exists, and a file of `from` changed, came or went
-#'   after it. The error names each file. Put the files back, or accept the
-#'   change on purpose with [freeze_version()].
+#'   after it. The error names each file. Put the files back, or record the
+#'   change as intended with [freeze_version()].
 #' - `<from>_run.R` has no call `pbn::initialize_project()` whose argument
 #'   `version` is the string `from`.
 #'
@@ -318,7 +318,11 @@ new_version <- function(from = "v01", to = NULL, home = ".") {
     "_run.R and ",
     to,
     "_functions/. ",
-    if (added) "Added the section ## " else "CHANGELOG.md already has the section ## ",
+    if (added) {
+      "Added the section ## "
+    } else {
+      "CHANGELOG.md already has the section ## "
+    },
     to,
     if (added) " to CHANGELOG.md." else "."
   )

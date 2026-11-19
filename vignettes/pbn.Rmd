@@ -412,7 +412,7 @@ It adds none in the first 60 seconds of the run, so a short run adds none. After
 A line counts the failed analyses too, for example `null 37/1200 analyses, 12 failed`. The time left comes from the analyses without a failure. The first failed analysis stops the run, because pbn saves nothing from a run with a failure. The display says so at once, also in the first 60 seconds of a log:
 
 ```text
-pbn: [3s] an analysis of the scenario real failed, so the run stops early: no new analysis starts.
+pbn: [3s] an analysis of the scenario `real` failed, so the run stops early: no new analysis starts.
 ```
 
 `fit_models()` calls `pbn::progress()` in its loop over the imputations. While the analysis runs, the line of its scenario shows its text, as for `null` above. The text holds the kind, the values of the extra dimensions, the simulation, the step and the percent. Outside `run_plan()`, `pbn::progress()` only checks its arguments, so the function also runs by hand.
@@ -455,7 +455,7 @@ confounded <- pbn::read_results("v01", scenario = "confounded", home = home)
 head(confounded$models, 3)
 ```
 
-The manifest records where the results come from. It holds the versions of R, pbn and the packages of this R session and of the workers, the date, the scenario and the simulation. `source_md5` holds the md5 of `v01_run.R` and of each file in `v01_functions/` but `blocks.R`. The md5 of `v01_run.R` leaves out the paths of the server and the two commented lines. So a run script that gains them keeps its results current. `?initialize_project` gives the rule. For the real data, `data_files` holds the name, the size and the modification time of each data file. The name is `<folder>/<path in the folder>`, for example `main/d.csv`. It never holds the path of a folder. So the same files in another place give the same results, when the copy keeps the modification times. A copy with new times looks like changed data, and the cache computes the data again. For a fake scenario, `fake_md5` holds the md5 of the code of the data steps. `n_rows_data` holds the number of rows of the data after the exclusions.
+The manifest records where the results come from. It holds the versions of R, pbn and the packages of this R session and of the workers, the date, the scenario and the simulation. `source_md5` holds the md5 of `v01_run.R` and of each file in `v01_functions/` but `blocks.R`. The md5 of `v01_run.R` leaves out the paths of the server and the two commented lines. So a run script that gains them keeps its results current. `?initialize_project` gives the rule. For the real data, `data_files` holds the name, the size and the modification time of each data file. The name is `<folder>/<path in the folder>`, for example `main/d.csv`. It never holds the path of a folder. So the same files in another place give the same results, when the copy keeps the modification times. A copy with new times looks like changed data, and the cache computes the data again. For a fake scenario, `fake_md5` holds the md5 of the code of the data steps and of each function of `v01_functions/` that they call. `n_rows_data` holds the number of rows of the data after the exclusions.
 
 ```{r}
 str(res$manifest[c("scenario", "sim", "sims", "data_files", "n_rows_data", "n_rows_before_exclusions", "analyses")])
@@ -593,7 +593,7 @@ cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 stopifnot(identical(utils::read.csv(file.path(home, "v01_results", "known", "check.csv"))$pass, c(TRUE, FALSE)))
 ```
 
-The real data runs through the same functions as the fake data. A fake scenario with a known answer thus tests the analysis that gives the real results. On the real data, the swapped models give plausible odds ratios and no error. Only the planted odds ratio shows the mistake. The results files stay, so that you can find the fault, but `read_results()` stops on them:
+The real data runs through the same functions as the fake data. A fake scenario with expected values thus tests the analysis that gives the real results. On the real data, the swapped models give plausible odds ratios and no error. Only the planted odds ratio shows the mistake. The results files stay, so that you can find the fault, but `read_results()` stops on them:
 
 ```{r, error = TRUE}
 pbn::read_results("v01", scenario = "known", home = home)
@@ -878,7 +878,7 @@ stopifnot(out$status == 1, identical(length(grep("^FAIL", strsplit(out$stdout, "
 unlink(file.path(home, "v01_frozen.md5"))
 ```
 
-Make a change to a frozen version in a new version, such as `v02`. Run `freeze_version()` again only to accept a change on purpose. It then prints each file whose md5 it changes.
+Make a change to a frozen version in a new version, such as `v02`. Run `freeze_version()` again only to record a change as intended. It then prints each file whose md5 it changes.
 
 ## Starting a new version
 
@@ -1058,11 +1058,11 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 - pbn finds an analysis that changes an object of `v01_functions/`, such as `CFG`. It does not find a change of a function inside the object, a change inside an environment of the object, or a change by a data function.
 - With 2 or more workers, each worker has 1 thread. A threaded BLAS MAY then give a matrix product that differs in its last digits from that of `workers = 1`.
 - `workers` limits the R sessions of pbn only. An analysis that starts its own processes in a worker multiplies them, for example with `parallel::mclapply()`. Two workers that each start 4 processes run 8 processes at the same time.
-- `fake_md5` is the md5 of the code of the steps of `add_data()` only. A change in a function that a step calls does not change `fake_md5`. `source_md5` holds the md5 of its file.
 - The checks between the steps compare the number of rows, not which rows. A `data_clean()`, or a `data_cohort()` before `$new()`, that drops one row and repeats another passes. pbn does not check the rows of the step `after_cohort`.
 - The check of the rows of the data compares sizes only. A copy of the data with one row less passes.
 - The cache stores the whole value of one data element for each scenario and simulation. A change of the code of one imputation computes every imputation again.
 - The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string such as `do.call("f", args)`. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, is not in the key. Nor is an object that is neither a function nor `CFG$data`, for example a lookup vector in `utils.R`. A change of either then leaves the old data in use.
+- `fake_md5` holds the code of the same functions as the cache key, and of no other object. A change of `CFG$data` or of a lookup vector in `utils.R` does not change `fake_md5`. `source_md5` holds the md5 of their files.
 - No argument computes the cached data again. Delete `v01_cache_gitexclude/` to do that.
 - A use of the cache stops when a `data_*.R` file changed after `initialize_project()`. Run `initialize_project()` again.
 - Do not run one scenario of one version in two R sessions at the same time. The two runs can mix the files of their results.

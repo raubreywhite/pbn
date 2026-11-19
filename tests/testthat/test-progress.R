@@ -672,7 +672,7 @@ test_that("after the stop of the run, the display says so at once in a log, and 
   # In the first 60 seconds of a log, only the line of the stop.
   expect_identical(
     utils::capture.output(display_update(d, list(pbn_stop = "real"))),
-    "pbn: [3s] an analysis of the scenario real failed, so the run stops early: no new analysis starts."
+    "pbn: [3s] an analysis of the scenario `real` failed, so the run stops early: no new analysis starts."
   )
   expect_identical(
     utils::capture.output(display_update(d, list(pbn_stop = "null"))),

@@ -58,7 +58,7 @@ test_that("run.md says that real ran on fake real data in the sections Run, Data
   expect_true(any(
     md ==
       paste0(
-        "- The scenario real ran on fake real data: the folders of this ",
+        "- The scenario `real` ran on fake real data: the folders of this ",
         "computer hold fake files in the formats of the real data."
       )
   ))

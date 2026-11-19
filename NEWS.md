@@ -1,3 +1,11 @@
+# pbn 2026.11.29
+
+- Fix: a .R file with CR LF line ends no longer counts as changed in `freeze_version()` and the rule `frozen_versions_unchanged` of `house_2026_11_19`, which pbn 2026.11.26 released. pbn hashes a .R file with each CR LF as LF, and each other file as its bytes.
+- Behaviour change: `fake_md5` also holds the code of each function of the functions folder that the data code calls, as the cache key does. Data code that calls no such function keeps its `fake_md5`.
+- Each record of the loaded packages of a cache key now holds the packages that qs2 loads, such as Rcpp. Before, only the records after the first save of the cache in an R session held them.
+- The run log, the progress line of a failed analysis, the error of `save_results()` on failed assertions and the error of `scenarios()` on a missing setting write each scenario name as code, for example "the scenario `real`". The error of `save_results()` says "scenario" for one scenario.
+- The fix of `frozen_versions_unchanged` says to run `pbn::freeze_version()` again "to record the change as intended". The message of `freeze_version()` says "now records these changes as intended:".
+
 # pbn 2026.11.28
 
 - New `create_project()` writes a new project at version v01 that passes `check_project()`. It stops, and writes nothing, when one of its files exists. Its run script runs the fake scenarios only, so `verify("v01")` gives a PASS on the fake scenarios before code reads the real data. It stops before it writes anything when the package cohort is not installed.

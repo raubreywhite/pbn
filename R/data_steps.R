@@ -93,9 +93,14 @@ step_args <- function(steps) {
 }
 
 # The code of the data of a plan, for fake_md5: each function `fn` named by
-# its data, and each step named <data>$<step>.
+# its data, and each step named <data>$<step>. After them comes each function
+# of the functions folder that a data function or a step calls, as in the
+# part helpers of the cache key, named by the function and sorted in the C
+# locale. A plan whose data code calls no such function has the code of
+# pbn 2026.11.28.
 data_code <- function(info) {
   out <- list()
+  helpers <- character(0)
   for (nm in names(info$data)) {
     steps <- info$steps[[nm]]
     if (is.null(steps)) {
@@ -103,8 +108,10 @@ data_code <- function(info) {
     } else {
       out[paste0(nm, "$", names(steps))] <- steps
     }
+    helpers <- union(helpers, helper_names(info, nm))
   }
-  return(out)
+  helpers <- sort(helpers, method = "radix")
+  return(c(out, project_functions()[helpers]))
 }
 
 # The part data_function of the cache key of the data `name`: one md5 of
@@ -130,6 +137,18 @@ data_function_md5 <- function(info, name) {
 # function that only an analysis calls is not in the part.
 helper_md5 <- function(info, name) {
   fns <- project_functions()
+  seen <- helper_names(info, name)
+  return(vapply(
+    seen,
+    function(nm) return(function_md5(fns[nm])),
+    character(1)
+  ))
+}
+
+# The names of the functions of the part helpers of the cache key of the
+# data `name`, see helper_md5(), sorted in the C locale.
+helper_names <- function(info, name) {
+  fns <- project_functions()
   steps <- info$steps[[name]]
   todo <- if (is.null(steps)) info$data[name] else steps
   seen <- character(0)
@@ -139,12 +158,7 @@ helper_md5 <- function(info, name) {
     seen <- c(seen, new)
     todo <- fns[new]
   }
-  seen <- sort(seen, method = "radix")
-  return(vapply(
-    seen,
-    function(nm) return(function_md5(fns[nm])),
-    character(1)
-  ))
+  return(sort(seen, method = "radix"))
 }
 
 # Each name in the code of the function `f`: in its arguments and in its

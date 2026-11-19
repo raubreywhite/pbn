@@ -57,7 +57,7 @@ test_that("two folders: data_files names each file by its folder, a changed file
   log <- readLines(file.path(p$home, "v01_results", "run.md"))
   expect_true(any(
     log ==
-      "The scenario real reads the folders `main` (1 file) and `lookup` (1 file)."
+      "The scenario `real` reads the folders `main` (1 file) and `lookup` (1 file)."
   ))
   expect_false(any(grepl(p$root, log, fixed = TRUE)))
 })
@@ -173,7 +173,9 @@ test_that("run.md holds no absolute path of the computer, also after save_result
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
   log <- readLines(file.path(p$home, "v01_results", "run.md"))
-  expect_true(any(log == "The scenario real reads the folder `main` (1 file)."))
+  expect_true(any(
+    log == "The scenario `real` reads the folder `main` (1 file)."
+  ))
   expect_false(any(grepl(p$root, log, fixed = TRUE)))
 })
 
@@ -192,7 +194,11 @@ test_that("the cache key follows the fingerprint: a changed size, a changed time
     "pbn: data d, real sim_0001: computed, because the raw data in the ",
     "folder lookup changed."
   )
-  expect_match(line(), "computed, because there is no cache file.", fixed = TRUE)
+  expect_match(
+    line(),
+    "computed, because there is no cache file.",
+    fixed = TRUE
+  )
   expect_match(line(), "reused the cache of", fixed = TRUE)
   # A changed size, with the old time.
   old <- file.mtime(deep)
@@ -243,7 +249,10 @@ test_that("a copy that keeps the modification time with less than its fraction o
   csv <- file.path(p$data_default, "d.csv")
   # A time with a fraction, and the copy that Windows makes of it: the same
   # second, without the whole fraction.
-  Sys.setFileTime(csv, as.POSIXct(1.8e9 + 0.75, origin = "1970-01-01", tz = "UTC"))
+  Sys.setFileTime(
+    csv,
+    as.POSIXct(1.8e9 + 0.75, origin = "1970-01-01", tz = "UTC")
+  )
   sourced <- init(p, folders = c(main = p$data_default))
   first <- state$data_files
   run <- real_plan(sourced)

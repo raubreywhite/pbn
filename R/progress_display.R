@@ -232,9 +232,9 @@ display_stop_line <- function(d, s, now) {
     d,
     "pbn: [",
     format_duration(now - d$t_run),
-    "] an analysis of the scenario ",
+    "] an analysis of the scenario `",
     s,
-    " failed, so the run stops early: no new analysis starts.\n"
+    "` failed, so the run stops early: no new analysis starts.\n"
   )
   return(invisible(NULL))
 }

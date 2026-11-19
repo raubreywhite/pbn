@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.11.28
+Version: 2026.11.29
 Authors@R:
     c(
       person(
@@ -15,7 +15,7 @@ Description: Holds the house layout of a versioned analysis project and
     the checks of that layout. It runs the real data and fake scenarios
     as one 'plnr' plan, with a seed for each simulation, writes one
     results object for each scenario and simulation with a fixed
-    contract, checks the fake scenarios against their known answers, and
+    contract, checks the fake scenarios against their expected values, and
     computes the numbers of a descriptive table. It checks the bias, the
     standard error and the coverage of an estimate over the simulations of
     a fake scenario against limits from their Monte Carlo standard errors

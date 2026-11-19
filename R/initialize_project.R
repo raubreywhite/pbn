@@ -102,7 +102,7 @@ state <- new.env(parent = emptyenv())
 #' computer. It is about the scenario `"real"` only:
 #' - The manifest of the real results gets `fake_real_data = TRUE`. It is
 #'   `FALSE` without the flag. A fake scenario has no such field.
-#' - The run log says that the scenario real ran on fake real data, in the
+#' - The run log says that the scenario `real` ran on fake real data, in the
 #'   sections Run and History. The sections Data and Exclusions name the
 #'   scenario `real (fake real data)`.
 #' - [make_outputs()] writes the output of `"real"` as fake output, into

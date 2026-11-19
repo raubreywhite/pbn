@@ -88,7 +88,10 @@ test_that("an analysis that adds an index to a data.table of CFG fails, with 1 a
     )
     failed <- grep("^pbn: the analysis", out, value = TRUE)
     expect_true("pbn: the analysis null__sim_0001__peek__1 failed:" %in% failed)
-    expect_match(failed, "^pbn: the analysis null__sim_000[1-3]__peek__1 failed:$")
+    expect_match(
+      failed,
+      "^pbn: the analysis null__sim_000[1-3]__peek__1 failed:$"
+    )
     text <- paste(out, collapse = "\n")
     expect_match(
       text,
@@ -160,8 +163,18 @@ test_that("a data function that changes CFG fails each analysis that gets its da
     # The analyses of real and known run first, so their fingerprint is the
     # one that the data of null compares with. The data of null 2 and 3
     # MUST compare with the fingerprint after the data of null 1.
-    add_analyses(plan, scenarios(sourced$CFG, only = c("real", "known")), "attrs", fn = sourced$vars_attributes)
-    add_analyses(plan, scenarios(sourced$CFG, only = "null"), "attrs_null", fn = sourced$vars_attributes)
+    add_analyses(
+      plan,
+      scenarios(sourced$CFG, only = c("real", "known")),
+      "attrs",
+      fn = sourced$vars_attributes
+    )
+    add_analyses(
+      plan,
+      scenarios(sourced$CFG, only = "null"),
+      "attrs_null",
+      fn = sourced$vars_attributes
+    )
     out <- utils::capture.output(
       err <- tryCatch(run_plan(plan, workers = workers), error = function(e) e)
     )
@@ -207,14 +220,20 @@ test_that("an analysis that leaves a new object in the global environment fails,
     add_data(plan, "d", fn = data_fn)
     add_analyses(
       plan,
-      scenarios(list(scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3)))),
+      scenarios(list(
+        scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3))
+      )),
       "a",
       fn = leave
     )
     out <- utils::capture.output(
       err <- tryCatch(run_plan(plan, workers = workers), error = function(e) e)
     )
-    expect_match(conditionMessage(err), "^1 of 8 analyses failed", info = paste("workers:", workers))
+    expect_match(
+      conditionMessage(err),
+      "^1 of 8 analyses failed",
+      info = paste("workers:", workers)
+    )
     expect_identical(
       grep("^pbn: the analysis", out, value = TRUE),
       "pbn: the analysis null__sim_0002__a__1 failed:"
@@ -240,7 +259,9 @@ test_that("on a worker, the first seed of a batch makes .Random.seed in the empt
   add_data(plan, "d", fn = data_fn)
   add_analyses(
     plan,
-    scenarios(list(scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3)))),
+    scenarios(list(
+      scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3))
+    )),
     "a",
     fn = action
   )
@@ -265,8 +286,18 @@ test_that("a data function that leaves a new object in the global environment fa
   add_data(plan, "d", fn = data_fn)
   # The analysis of real runs first, so the data of null comes between two
   # analyses of this R session.
-  add_analyses(plan, scenarios(list(scenarios = table), only = "real"), "a", fn = action)
-  add_analyses(plan, scenarios(list(scenarios = table), only = "null"), "b", fn = action)
+  add_analyses(
+    plan,
+    scenarios(list(scenarios = table), only = "real"),
+    "a",
+    fn = action
+  )
+  add_analyses(
+    plan,
+    scenarios(list(scenarios = table), only = "null"),
+    "b",
+    fn = action
+  )
   r <- run_plan(plan)
   expect_identical(r[["null__sim_0001__b__1"]], 1)
   expect_true(exists("pbn_data_leftover", envir = globalenv()))
@@ -281,7 +312,9 @@ test_that("an analysis that changes the kind of random number generator changes 
     # of null comes next, and then each analysis of null.
     action <- function(data, argset) {
       if (argset$scenario == "real" && argset$k == 2) {
-        if (change) RNGkind("L'Ecuyer-CMRG")
+        if (change) {
+          RNGkind("L'Ecuyer-CMRG")
+        }
         return(NULL)
       }
       return(c(data$d$x, stats::runif(1)))
@@ -291,9 +324,23 @@ test_that("an analysis that changes the kind of random number generator changes 
     environment(data_fn) <- globalenv()
     plan <- plnr::Plan$new()
     add_data(plan, "d", fn = data_fn)
-    table <- list(scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3)))
-    add_analyses(plan, scenarios(table, only = "real"), "a", fn = action, k = 1:2)
-    add_analyses(plan, scenarios(table, only = "null"), "b", fn = action, k = 1:2)
+    table <- list(
+      scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 3))
+    )
+    add_analyses(
+      plan,
+      scenarios(table, only = "real"),
+      "a",
+      fn = action,
+      k = 1:2
+    )
+    add_analyses(
+      plan,
+      scenarios(table, only = "null"),
+      "b",
+      fn = action,
+      k = 1:2
+    )
     return(plan)
   }
   RNGkind("Mersenne-Twister", "Inversion", "Rejection")
@@ -400,7 +447,11 @@ test_that("an output function that changes CFG in place fails its scenario throu
     )
   )
   lines <- readLines(file.path(p$home, "v01_results", "run.md"))
-  expect_true(any(grepl("make_outputs() failed for the scenario real.", lines, fixed = TRUE)))
+  expect_true(any(grepl(
+    "make_outputs() failed for the scenario `real`.",
+    lines,
+    fixed = TRUE
+  )))
   # Without the change, the same output passes.
   quiet <- function(results, dir) {
     writeLines("x", file.path(dir, "figure.png"))
@@ -413,19 +464,31 @@ test_that("an output function that changes CFG in place fails its scenario throu
 
 test_that("an expect_ function that changes CFG in place fails one assertion, which names CFG$vars", {
   p <- local_index_project()
-  write_lines(p$home, "v01_functions/expect_known.R", c(
-    expect_known_lines(),
-    "expect_known_plain <- expect_known",
-    "expect_known <- function(results) {",
-    "  CFG$vars[var == \"x\", type]",
-    "  return(expect_known_plain(results))",
-    "}"
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/expect_known.R",
+    c(
+      expect_known_lines(),
+      "expect_known_plain <- expect_known",
+      "expect_known <- function(results) {",
+      "  CFG$vars[var == \"x\", type]",
+      "  return(expect_known_plain(results))",
+      "}"
+    )
+  )
   run <- save_run(p)
   expect_match(conditionMessage(run$err), "assertions failed")
-  check <- utils::read.csv(file.path(p$home, "v01_results", "known", "check.csv"))
+  check <- utils::read.csv(file.path(
+    p$home,
+    "v01_results",
+    "known",
+    "check.csv"
+  ))
   bad <- check[!check$pass, ]
-  expect_identical(bad$assertion, "expect_known() changes no object of the functions folder")
+  expect_identical(
+    bad$assertion,
+    "expect_known() changes no object of the functions folder"
+  )
   expect_identical(
     bad$observed,
     "expect_known() changed CFG$vars in place: a new attribute 'index'"

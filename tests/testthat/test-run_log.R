@@ -236,11 +236,18 @@ test_that("a failure of check_results() writes run.md with the failed rules, and
     "^- Result: [0-9]+ failures of check_results\\(\\), so save_results\\(\\) saved no results\\.$"
   )
   rules <- md_section(lines, "### Failed rules of check_results()")
-  expect_true(any(grepl("^- `real: no_row_per_person`, error [0-9]+\\.$", rules)))
+  expect_true(any(grepl(
+    "^- `real: no_row_per_person`, error [0-9]+\\.$",
+    rules
+  )))
   # The detail names the element rows, which the project named. It is in
   # the errors file, and not in run.md.
   expect_false(any(grepl("rows", rules, fixed = TRUE)))
-  errors <- readLines(file.path(p$home, "v01_results", "run_errors_gitexclude.md"))
+  errors <- readLines(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  ))
   expect_true(any(grepl("real: no_row_per_person: ", errors, fixed = TRUE)))
   expect_identical(
     md_section(lines, "## Assertions")[2],
@@ -278,7 +285,7 @@ test_that("run_plan that stops on failed analyses writes run.md with the numbers
   # seconds in a log.
   expect_match(
     out[1],
-    "^pbn: \\[[0-9]+s\\] an analysis of the scenario null failed, so the run stops early: no new analysis starts\\.$"
+    "^pbn: \\[[0-9]+s\\] an analysis of the scenario `null` failed, so the run stops early: no new analysis starts\\.$"
   )
   expect_identical(out[2], "pbn: wrote the run log v01_results/run.md.")
   expect_identical(results_files(p), log_files)
@@ -296,23 +303,33 @@ test_that("run_plan that stops on failed analyses writes run.md with the numbers
     "^The run had 1 error, error 1\\. The text of the errors is in v01_results/run_errors_gitexclude\\.md\\."
   )
   failed <- md_section(lines, "### Failed analyses")
-  expect_identical(failed[2:5], c(
-    paste0(
-      "2 of 10 analyses failed. The run stopped early at the first failed ",
-      "analysis: 5 analyses did not run."
-    ),
-    "",
-    "- 2 analyses failed with error 1: `null__sim_0002__pbn_n_rows`, `null__sim_0002__a__1`.",
-    ""
+  expect_identical(
+    failed[2:5],
+    c(
+      paste0(
+        "2 of 10 analyses failed. The run stopped early at the first failed ",
+        "analysis: 5 analyses did not run."
+      ),
+      "",
+      "- 2 analyses failed with error 1: `null__sim_0002__pbn_n_rows`, `null__sim_0002__a__1`.",
+      ""
+    )
+  )
+  errors <- readLines(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
   ))
-  errors <- readLines(file.path(p$home, "v01_results", "run_errors_gitexclude.md"))
   expect_identical(grep("^## Error", errors, value = TRUE), "## Error 1")
   # The whole message, with no cut.
-  expect_true(any(errors == paste0(
-    "The data function 'd' failed: bad id 4711 ",
-    strrep("x", 1200),
-    " end"
-  )))
+  expect_true(any(
+    errors ==
+      paste0(
+        "The data function 'd' failed: bad id 4711 ",
+        strrep("x", 1200),
+        " end"
+      )
+  ))
   expect_false(any(grepl("4712", errors, fixed = TRUE)))
   expect_identical(
     md_section(lines, "## Assertions")[2],
@@ -327,10 +344,18 @@ test_that("run_plan that stops on failed analyses writes run.md with the numbers
   # example one of a later failed run of the same plan.
   plan2 <- build_plan(sourced, sc)
   r2 <- run_plan(plan2)
-  expect_false(file.exists(file.path(p$home, "v01_results", "run_errors_gitexclude.md")))
+  expect_false(file.exists(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  )))
   write_lines(p$home, "v01_results/run_errors_gitexclude.md", "old")
   utils::capture.output(save_results(r2, plan2, sc))
-  expect_false(file.exists(file.path(p$home, "v01_results", "run_errors_gitexclude.md")))
+  expect_false(file.exists(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  )))
 })
 
 test_that("in a git repository that does not ignore the errors file, pbn does not write it, run.md says so, and the error of the run stays", {
@@ -368,22 +393,38 @@ test_that("in a git repository that does not ignore the errors file, pbn does no
 
 test_that("an expect_ function that stops: run.md names the error by its number, and the errors file holds its text", {
   p <- local_project()
-  write_lines(p$home, "v01_functions/expect_known.R", c(
-    "expect_known <- function(results) {",
-    "  stop(\"bad id 4711\")",
-    "}"
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/expect_known.R",
+    c(
+      "expect_known <- function(results) {",
+      "  stop(\"bad id 4711\")",
+      "}"
+    )
+  )
   sourced <- init(p)
   sc <- scenarios(sourced$CFG)
   plan <- build_plan(sourced, sc)
-  utils::capture.output(expect_error(save_results(run_plan(plan), plan, sc), "assertions failed"))
+  utils::capture.output(expect_error(
+    save_results(run_plan(plan), plan, sc),
+    "assertions failed"
+  ))
   lines <- run_md(p)
   expect_false(any(grepl("4711", lines, fixed = TRUE)))
   expect_identical(
     md_cells(md_section(lines, "### Failed assertions")[4]),
-    c("known", "expect_known() runs without an error", "see the assertion", "error 1")
+    c(
+      "known",
+      "expect_known() runs without an error",
+      "see the assertion",
+      "error 1"
+    )
   )
-  errors <- readLines(file.path(p$home, "v01_results", "run_errors_gitexclude.md"))
+  errors <- readLines(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  ))
   expect_true(any(errors == "expect_known() stopped with this error."))
   expect_true(any(errors == "bad id 4711"))
 })
@@ -401,14 +442,25 @@ test_that("run_plan replaces run.md at its start with a log that says the run ha
     grep("^## ", lines, value = TRUE),
     c("## When", "## Run", "## History")
   )
-  expect_identical(md_section(lines, "## Run")[2:3], c(
-    "- Result: The run has not finished. run_plan() started it, and no later step wrote this log again.",
-    "- Scenarios of this run: real, known and null."
-  ))
-  expect_false(file.exists(file.path(p$home, "v01_results", "run_errors_gitexclude.md")))
+  expect_identical(
+    md_section(lines, "## Run")[2:3],
+    c(
+      "- Result: The run has not finished. run_plan() started it, and no later step wrote this log again.",
+      "- Scenarios of this run: real, known and null."
+    )
+  )
+  expect_false(file.exists(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  )))
   # The result of the earlier run is in its line of the history only, and
   # this run has the line "did not finish".
-  expect_false(any(grepl("assertions passed", run_log_stable(lines), fixed = TRUE)))
+  expect_false(any(grepl(
+    "assertions passed",
+    run_log_stable(lines),
+    fixed = TRUE
+  )))
   history <- md_section(lines, "## History")
   rows <- history[startsWith(history, "| 20")]
   expect_length(rows, 2)
@@ -438,7 +490,11 @@ test_that("save_results that stops in the checks of its arguments writes run.md 
     md_section(lines, "### Error of save_results()")[2],
     "save_results() stopped with error 1."
   )
-  errors <- readLines(file.path(p$home, "v01_results", "run_errors_gitexclude.md"))
+  errors <- readLines(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  ))
   expect_true(any(grepl("no_such_kind", errors, fixed = TRUE)))
 })
 
@@ -554,9 +610,13 @@ test_that("the run log shows the exclusion table of each scenario, the rows befo
   real <- md_section(lines, "### real")
   expect_identical(md_cells(real[4]), c("d", "age under 18", "8", "2", "6"))
   null <- md_section(lines, "### null")
-  expect_identical(null[2], "The table is per simulation. This is simulation 1 of 2.")
+  expect_identical(
+    null[2],
+    "The table is per simulation. This is simulation 1 of 2."
+  )
   expect_true(any(
-    lines == "pbn: data d, real sim_0001: computed, because there is no cache file."
+    lines ==
+      "pbn: data d, real sim_0001: computed, because there is no cache file."
   ))
   # A second run reads the cache.
   run <- cohort_run(p, steps = cohort_steps)
@@ -567,19 +627,27 @@ test_that("the run log shows the exclusion table of each scenario, the rows befo
 
 test_that("a newline in a project string cannot start a heading or a list item in run.md", {
   p <- local_cohort_project()
-  write_lines(p$home, "v01_functions/data_cohort.R", c(
-    "data_cohort <- function(d) {",
-    "  cp <- cohort::CohortPipeline$new(d)",
-    "  cp$exclude_and_track(\"root\", \"age\\n## Timings\\n- item\", \"age < 18\")",
-    "  cp",
-    "}"
-  ))
-  write_lines(p$home, "v01_functions/expect_null.R", c(
-    "expect_null <- function(results) {",
-    "  data.frame(assertion = \"one\\n## Timings\", expected = \"x\\n- item\",",
-    "    observed = \"x\", pass = TRUE)",
-    "}"
-  ))
+  write_lines(
+    p$home,
+    "v01_functions/data_cohort.R",
+    c(
+      "data_cohort <- function(d) {",
+      "  cp <- cohort::CohortPipeline$new(d)",
+      "  cp$exclude_and_track(\"root\", \"age\\n## Timings\\n- item\", \"age < 18\")",
+      "  cp",
+      "}"
+    )
+  )
+  write_lines(
+    p$home,
+    "v01_functions/expect_null.R",
+    c(
+      "expect_null <- function(results) {",
+      "  data.frame(assertion = \"one\\n## Timings\", expected = \"x\\n- item\",",
+      "    observed = \"x\", pass = TRUE)",
+      "}"
+    )
+  )
   run <- cohort_run(p, steps = cohort_steps)
   utils::capture.output(save_results(run$r, run$plan, run$scenarios))
   fn <- function(results, dir) {
@@ -590,7 +658,10 @@ test_that("a newline in a project string cannot start a heading or a list item i
   lines <- run_md(p)
   expect_identical(sum(lines == "## Timings"), 1L)
   expect_false(any(startsWith(lines, "- item")))
-  expect_identical(md_cells(md_section(lines, "### real")[4])[2], "age ## Timings - item")
+  expect_identical(
+    md_cells(md_section(lines, "### real")[4])[2],
+    "age ## Timings - item"
+  )
   checks <- md_section(md_section(lines, "## Assertions"), "### null")
   expect_identical(md_cells(checks[4])[1:2], c("one ## Timings", "x - item"))
   expect_identical(
@@ -618,14 +689,19 @@ test_that("make_outputs that stops: the result line says so, run.md names the er
   expect_false(any(grepl("4711", lines, fixed = TRUE)))
   expect_identical(
     md_section(lines, "## Run")[2],
-    "- Result: All 4 assertions passed. make_outputs() failed for the scenario real."
+    "- Result: All 4 assertions passed. make_outputs() failed for the scenario `real`."
   )
   expect_identical(
     md_section(lines, "### Error of make_outputs()")[2],
-    "make_outputs() stopped at the scenario real with error 1."
+    "make_outputs() stopped at the scenario `real` with error 1."
   )
-  errors <- readLines(file.path(p$home, "v01_results", "run_errors_gitexclude.md"))
+  errors <- readLines(file.path(
+    p$home,
+    "v01_results",
+    "run_errors_gitexclude.md"
+  ))
   expect_true(any(grepl("bad id 4711", errors, fixed = TRUE)))
+  expect_true("make_outputs() stopped at the scenario `real`." %in% errors)
 })
 
 
@@ -636,7 +712,12 @@ test_that("the Timings section gives clock seconds only: the main session, each 
   timings <- md_section(lines, "## Timings")
   expect_identical(
     grep("^### ", timings, value = TRUE),
-    c("### Main session", "### Scenarios", "### Data steps", "### Analysis kinds")
+    c(
+      "### Main session",
+      "### Scenarios",
+      "### Data steps",
+      "### Analysis kinds"
+    )
   )
   expect_false(any(grepl("computing|Summed|CPU", timings)))
   scen <- md_section(lines, "### Scenarios")
@@ -656,7 +737,10 @@ test_that("the Timings section gives clock seconds only: the main session, each 
     md_cells(steps[2]),
     c("Data", "Scenario", "Step", "Calls", "Median", "Maximum", "Share")
   )
-  rows <- c(kinds[startsWith(kinds, "| ")][-1], steps[startsWith(steps, "| ")][-1])
+  rows <- c(
+    kinds[startsWith(kinds, "| ")][-1],
+    steps[startsWith(steps, "| ")][-1]
+  )
   rows <- rows[!grepl("^\\|-", rows)]
   shares <- vapply(rows, function(x) return(utils::tail(md_cells(x), 1)), "")
   # On a computer whose clock ticks more slowly than this small run takes,
@@ -693,7 +777,11 @@ test_that("share gives one decimal below 10% and whole numbers from 10%, and the
   )
   expect_identical(
     scenario_timings(log),
-    data.frame(Scenario = c("a", "b"), `Wall seconds` = c("12.00", "n/a"), check.names = FALSE)
+    data.frame(
+      Scenario = c("a", "b"),
+      `Wall seconds` = c("12.00", "n/a"),
+      check.names = FALSE
+    )
   )
 })
 
@@ -702,7 +790,10 @@ test_that("the section Run names pbn, plnr and cohort, and the number of the oth
   save_run(p)
   line <- grep("^- Packages: ", run_md(p), value = TRUE)
   manifest <- read_results("v01", home = p$home)$manifest
-  others <- length(setdiff(names(manifest$packages), c("pbn", "plnr", "cohort")))
+  others <- length(setdiff(
+    names(manifest$packages),
+    c("pbn", "plnr", "cohort")
+  ))
   expect_match(
     line,
     paste0(
@@ -725,10 +816,12 @@ test_that("a scenario whose cohort has no exclusion step gets one sentence, and 
   }
   log <- list(
     scenarios = data.frame(scenario = c("real", "null"), sims = c(1, 2)),
-    run = list(exclusions = list(
-      real = list(d = steps(1), e = steps(0)),
-      null = list(d = steps(0), e = steps(0))
-    ))
+    run = list(
+      exclusions = list(
+        real = list(d = steps(1), e = steps(0)),
+        null = list(d = steps(0), e = steps(0))
+      )
+    )
   )
   lines <- md_exclusions(log)
   expect_identical(
@@ -769,7 +862,10 @@ test_that("each row of a Markdown table is as wide as its header row: the row of
   ))
   # The table is wider than 72 characters, so Pass gets at least 6% of the
   # 83 dashes: 5 characters and its 2 spaces.
-  expect_identical(tab[4], paste0("| \\|bias\\| <= 0.08", strrep(" ", 59), " | no    |"))
+  expect_identical(
+    tab[4],
+    paste0("| \\|bias\\| <= 0.08", strrep(" ", 59), " | no    |")
+  )
   expect_identical(tab[2], paste0("|", strrep("-", 77), "|-------|"))
   expect_identical(nchar(tab), rep(nchar(tab[1]), 4))
 })
@@ -820,13 +916,21 @@ test_that("the section History holds one line for each run, oldest first: a full
   add_analyses(bad, sc, "a", fn = function(data, argset) stop("bad id 4711"))
   utils::capture.output(try(run_plan(bad), silent = TRUE))
   # A run in a new R session that R stops while it runs.
-  write_lines(p$home, "v01_slow.R", c(
-    paste0("pbn::initialize_project(version = \"v01\", home = \".\", folders = c(main = \"", p$data_default, "\"))"),
-    "p <- plnr::Plan$new()",
-    "pbn::add_data(p, \"d\", fn = function(scenario, sim) return(data.frame(x = 1)))",
-    "pbn::add_analyses(p, pbn::scenarios(CFG), \"a\", fn = function(data, argset) Sys.sleep(60))",
-    "r <- pbn::run_plan(p)"
-  ))
+  write_lines(
+    p$home,
+    "v01_slow.R",
+    c(
+      paste0(
+        "pbn::initialize_project(version = \"v01\", home = \".\", folders = c(main = \"",
+        p$data_default,
+        "\"))"
+      ),
+      "p <- plnr::Plan$new()",
+      "pbn::add_data(p, \"d\", fn = function(scenario, sim) return(data.frame(x = 1)))",
+      "pbn::add_analyses(p, pbn::scenarios(CFG), \"a\", fn = function(data, argset) Sys.sleep(60))",
+      "r <- pbn::run_plan(p)"
+    )
+  )
   slow <- callr::rscript_process$new(callr::rscript_process_options(
     script = file.path(p$home, "v01_slow.R"),
     wd = p$home
@@ -857,7 +961,10 @@ test_that("the section History holds one line for each run, oldest first: a full
       "All 4 assertions passed"
     )
   )
-  expect_identical(vapply(rows, function(x) return(x[3]), ""), c("3", "null", "3", "3", "3"))
+  expect_identical(
+    vapply(rows, function(x) return(x[3]), ""),
+    c("3", "null", "3", "3", "3")
+  )
   expect_identical(vapply(rows, function(x) return(x[4]), ""), rep("1", 5))
   # The wall seconds of run_plan(), save_results() and make_outputs(), and
   # an empty cell for a step that did not run.
@@ -865,7 +972,10 @@ test_that("the section History holds one line for each run, oldest first: a full
   expect_identical(steps[3:4, 2:3], matrix("", 2, 2))
   expect_identical(steps[4, 1], "")
   expect_identical(steps[1:2, 3], c("", ""))
-  expect_true(all(grepl("^[0-9]+\\.[0-9]{2}$", c(steps[c(1, 2, 3, 5), 1], steps[c(1, 2, 5), 2], steps[5, 3]))))
+  expect_true(all(grepl(
+    "^[0-9]+\\.[0-9]{2}$",
+    c(steps[c(1, 2, 3, 5), 1], steps[c(1, 2, 5), 2], steps[5, 3])
+  )))
   expect_identical(
     unique(vapply(rows, function(x) return(x[8]), "")),
     as.character(utils::packageVersion("pbn"))
@@ -884,7 +994,11 @@ test_that("a damaged section History keeps the lines that pbn can read, says so 
   lines <- readLines(file)
   rows <- which(grepl("^\\| [0-9]{4}-", lines))
   # A hand edit that breaks the cells of a second line of the table.
-  lines <- append(lines, "| 2026-01-01 10:00:00 | All 1 assertions passed | 3 |", after = rows)
+  lines <- append(
+    lines,
+    "| 2026-01-01 10:00:00 | All 1 assertions passed | 3 |",
+    after = rows
+  )
   writeLines(lines, file)
   printed <- utils::capture.output(save_run(p))
   out <- printed[startsWith(printed, "pbn: pbn could not read")]

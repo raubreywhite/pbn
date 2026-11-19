@@ -274,7 +274,11 @@ cache_value <- function(compute, name, where, ctx) {
       )
     }
     # The record of the packages comes after the data function, so it holds
-    # each package that the data function loaded.
+    # each package that the data function loaded. qs2 saves the cache below,
+    # and loading it loads Rcpp, RcppParallel and stringfish. Load it first,
+    # so that the record of each simulation holds them, not only the records
+    # after the first save of the R session.
+    loadNamespace("qs2")
     packages <- loaded_versions(ctx[["skip"]])
     cache_save(list(key = key, value = value), file)
     cache_save(list(key = key, parts = parts, packages = packages), key_file)

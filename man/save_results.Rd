@@ -118,10 +118,11 @@ It is empty when each one passed, or when \code{scenarios} has no fake
 scenario.
 \code{\link[=read_results]{read_results()}} stops on real results where it is not empty.
 \item For a fake scenario only, \code{fake_md5}, one md5 of the code of the data
-functions of \code{\link[=add_data]{add_data()}}, without their source references: each \code{fn},
-and each step of the steps form. A change in a function that \code{fn} or a
-step calls does not change \code{fake_md5}. \code{source_md5} holds the md5 of
-the files of those functions.
+functions of \code{\link[=add_data]{add_data()}}, without their source references. The code
+is each \code{fn}, each step of the steps form, and each function of the
+functions folder that \code{fn} or a step calls. A function counts also when
+another such function calls it. These are the functions of the cache
+key of \code{add_data(cache = TRUE)}.
 \item \code{n_rows_data}, a named integer vector with the number of rows of each
 data element. A list of data.frames with one number of rows, for
 example a list of imputed data sets, has the rows of one of them. Each

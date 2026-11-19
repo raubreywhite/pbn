@@ -204,7 +204,7 @@ test_that("a setting column MAY have NA for real only: real then has no such set
   expect_error(
     scenarios(bad),
     paste0(
-      "CFG$scenarios: the setting column b3 has NA for the scenario null. ",
+      "CFG$scenarios: the setting column b3 has NA for the scenario `null`. ",
       "Each fake scenario needs a value. Only \"real\" MAY have NA."
     ),
     fixed = TRUE

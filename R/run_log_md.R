@@ -80,7 +80,7 @@ md_run <- function(log) {
     ),
     if (isTRUE(log$fake_real_data)) {
       paste0(
-        "- The scenario real ran on fake real data: the folders of this ",
+        "- The scenario `real` ran on fake real data: the folders of this ",
         "computer hold fake files in the formats of the real data."
       )
     }
@@ -292,7 +292,7 @@ md_output_failure <- function(failed, errors) {
     "",
     paste0(
       "make_outputs() stopped at the scenario ",
-      failed$scenario,
+      md_inline(failed$scenario),
       " with ",
       error_ref(errors, "output"),
       "."
@@ -360,7 +360,7 @@ md_data <- function(log) {
   ))
 }
 
-# The folders that the scenario real reads, by name with their number of
+# The folders that the scenario `real` reads, by name with their number of
 # files, when "real" is one of `scenarios`. `folders` is a data.frame with
 # the columns `name`, `files` and `absent`, or NULL. The log never holds the
 # path of a folder.
@@ -382,7 +382,7 @@ md_folders <- function(folders, scenarios) {
   )
   return(c(
     paste0(
-      "The scenario real reads the ",
+      "The scenario `real` reads the ",
       if (nrow(folders) == 1) "folder " else "folders ",
       and_list(cells),
       "."

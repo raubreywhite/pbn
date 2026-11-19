@@ -52,7 +52,7 @@ test_that("read_results refuses the real results of a run whose fake scenario fa
   run <- save_run(p)
   expect_match(
     conditionMessage(run$err),
-    "in the scenarios null.",
+    "in the scenario `null`.",
     fixed = TRUE
   )
   expect_identical(real_manifest(p)$failed_fake_checks, "null")

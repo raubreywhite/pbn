@@ -429,30 +429,33 @@ test_that("no_local_assign fails each construct at top level and inside a functi
   expect_identical(failed_rules(found), "no_local_assign")
   expect_identical(
     found$detail[found$rule == "no_local_assign"],
-    with_fix("no_local_assign", c(
-      "adhoc/early.R:2: assign()",
-      paste0(
-        "v01_functions/zz_bad.R:",
-        c(1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17),
-        ": ",
-        c(
-          "local()",
-          "assign()",
-          "assign()",
-          "local()",
-          "delayedAssign()",
-          "assignInNamespace()",
-          "assignInMyNamespace()",
-          "<<-",
-          "->>",
-          "local()",
-          "assign()",
-          "delayedAssign()",
-          "<<-",
-          "->>"
+    with_fix(
+      "no_local_assign",
+      c(
+        "adhoc/early.R:2: assign()",
+        paste0(
+          "v01_functions/zz_bad.R:",
+          c(1, 4, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 16, 17),
+          ": ",
+          c(
+            "local()",
+            "assign()",
+            "assign()",
+            "local()",
+            "delayedAssign()",
+            "assignInNamespace()",
+            "assignInMyNamespace()",
+            "<<-",
+            "->>",
+            "local()",
+            "assign()",
+            "delayedAssign()",
+            "<<-",
+            "->>"
+          )
         )
       )
-    ))
+    )
   )
   expect_identical(
     unique(found$path[found$rule == "no_local_assign"]),
@@ -838,7 +841,10 @@ test_that("scenario_checks fails on a check.csv with a header and no assertion",
   expect_identical(failed_rules(found), "scenario_checks")
   expect_identical(
     found$detail[found$status == "FAIL"],
-    with_fix("scenario_checks", "v01_results/null/check.csv: it holds no assertion")
+    with_fix(
+      "scenario_checks",
+      "v01_results/null/check.csv: it holds no assertion"
+    )
   )
 })
 
@@ -1033,7 +1039,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     lower_case_names = "rename it in lower case",
     run_script_initialises = "call pbn::initialize_project(version = \"vNN\") in it",
     version_items_complete = "create the missing vNN_run.R or vNN_functions/, or delete the one that is there",
-    frozen_versions_unchanged = "put the files of the version back as they were and make the change in a new version, or run pbn::freeze_version() again to accept the change on purpose",
+    frozen_versions_unchanged = "put the files of the version back as they were and make the change in a new version, or run pbn::freeze_version() again to record the change as intended",
     readme_and_changelog = "create the missing file, or add the missing section ## vNN to CHANGELOG.md",
     changelog_with_code = "add what changed and why to CHANGELOG.md, under the section of the version",
     results_contract = "delete the file, and write it again with pbn::run_plan() and pbn::save_results()",
@@ -1107,5 +1113,8 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     found$status[found$rule %in% c("no_absolute_paths", "loc_per_file")],
     c("FAIL", "FAIL")
   )
-  expect_identical(clean$detail[clean$status == "PASS"][1], "no capital letter in a name")
+  expect_identical(
+    clean$detail[clean$status == "PASS"][1],
+    "no capital letter in a name"
+  )
 })

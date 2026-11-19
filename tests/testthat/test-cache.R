@@ -334,6 +334,55 @@ test_that("the part helpers of the cache key holds each function of the function
   expect_identical(unname(helper_md5(plan_info(run$plan), "d")), character(0))
 })
 
+test_that("fake_md5 holds the code of each function of the functions folder that the data calls, so a change of a helper changes fake_md5", {
+  skip_if_not_installed("cohort")
+  p <- local_cohort_project()
+  write_lines(
+    p$home,
+    "v01_functions/data_clean.R",
+    c(
+      "data_clean <- function(d) {",
+      "  lower_names(data.table::as.data.table(d))",
+      "}"
+    )
+  )
+  helper <- c(
+    "lower_names <- function(d) {",
+    "  data.table::setnames(d, tolower(names(d)))",
+    "  d",
+    "}"
+  )
+  write_lines(p$home, "v01_functions/utils.R", helper)
+  fake_md5 <- function() {
+    run <- cohort_run(p, cache = FALSE)
+    utils::capture.output(save_results(run$r, run$plan, run$scenarios))
+    code <- data_code(plan_info(run$plan))
+    return(list(
+      saved = read_results(
+        "v01",
+        "null",
+        sim = 1,
+        home = p$home
+      )$manifest$fake_md5,
+      code = code
+    ))
+  }
+  first <- fake_md5()
+  expect_identical(
+    names(first$code),
+    c("d", "data_clean", "data_cohort", "data_raw", "lower_names")
+  )
+  expect_identical(first$saved, function_md5(first$code))
+  write_lines(
+    p$home,
+    "v01_functions/utils.R",
+    sub("  d$", "  return(d)", helper)
+  )
+  second <- fake_md5()
+  expect_identical(second$saved, function_md5(second$code))
+  expect_false(identical(second$saved, first$saved))
+})
+
 test_that("an unreadable cache file, a missing or partial key file, and a cache file of another key are computed again with a line that says so", {
   skip_if_not_installed("cohort")
   p <- local_cohort_project()
@@ -697,7 +746,7 @@ test_that("the key file records the loaded packages after the data function, and
   )
 })
 
-test_that("on a worker, the record holds the packages that the data function loaded there", {
+test_that("on a worker, the record holds the packages that the data function loaded there, and each record holds the packages that qs2 loads", {
   skip_if_not_installed("cohort")
   skip_if_pbn_not_installed()
   p <- local_cohort_project()
@@ -706,7 +755,11 @@ test_that("on a worker, the record holds the packages that the data function loa
     cache_file(p, "real", 1, key = TRUE),
     cache_file(p, "null", 1:2, key = TRUE)
   )) {
-    expect_true("cohort" %in% names(qs2::qs_read(f)$packages), info = f)
+    record <- names(qs2::qs_read(f)$packages)
+    expect_true("cohort" %in% record, info = f)
+    # qs2 loads them. pbn loads qs2 before the record, so the first record
+    # of a worker holds them too.
+    expect_true(all(c("Rcpp", "stringfish") %in% record), info = f)
   }
   expect_identical(cohort_run(p)$out, cache_lines(p, rep(NA, 3)))
 })

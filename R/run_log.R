@@ -108,7 +108,7 @@ log_result <- function(log) {
   return(paste0(
     result,
     " make_outputs() failed for the scenario ",
-    out$scenario,
+    md_inline(out$scenario),
     "."
   ))
 }

@@ -97,10 +97,11 @@
 #'   scenario.
 #'   [read_results()] stops on real results where it is not empty.
 #' - For a fake scenario only, `fake_md5`, one md5 of the code of the data
-#'   functions of [add_data()], without their source references: each `fn`,
-#'   and each step of the steps form. A change in a function that `fn` or a
-#'   step calls does not change `fake_md5`. `source_md5` holds the md5 of
-#'   the files of those functions.
+#'   functions of [add_data()], without their source references. The code
+#'   is each `fn`, each step of the steps form, and each function of the
+#'   functions folder that `fn` or a step calls. A function counts also when
+#'   another such function calls it. These are the functions of the cache
+#'   key of `add_data(cache = TRUE)`.
 #' - `n_rows_data`, a named integer vector with the number of rows of each
 #'   data element. A list of data.frames with one number of rows, for
 #'   example a list of imputed data sets, has the rows of one of them. Each
@@ -1143,8 +1144,9 @@ stop_on_failed_checks <- function(checks, root) {
     nrow(failed),
     " of ",
     nrow(checks),
-    " assertions failed, in the scenarios ",
-    paste(scenarios, collapse = ", "),
+    " assertions failed, in the ",
+    if (length(scenarios) == 1) "scenario " else "scenarios ",
+    paste0("`", scenarios, "`", collapse = ", "),
     ". pbn printed each failed assertion above. Each scenario has its ",
     "assertions in ",
     file.path(root, "<scenario>", "check.csv"),

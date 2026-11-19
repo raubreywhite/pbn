@@ -62,6 +62,8 @@ data.table::fwrite(d, file.path(root, "data", "d.csv"))
 writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
 writeLines("*gitexclude*", file.path(home, ".gitignore"))
 writeLines("pbn::check_project()", file.path(home, "check_project.R"))
+writeLines(c("# A fake project", "", "It compares a 0/1 outcome between the groups a and b."), file.path(home, "README.md"))
+writeLines(c("# Changelog", "", "## v01", "", "- Fitted the models of the outcome."), file.path(home, "CHANGELOG.md"))
 ```
 
 ```{cat, include = FALSE, engine.opts = list(file = file.path(home, "v01_run.R"))}
@@ -325,12 +327,13 @@ An assertion on fake data is correct only when its expected value is correct. A 
 
 ## Layer 4: prose last
 
-The layout of pbn has the file `AGENTS.md`, for the rules of the project that no check can state. Keep it short. It points the agent to two pages that pbn writes for agents:
+The layout of pbn has the file `AGENTS.md`, for the rules of the project that no check can state. Keep it short. `pbn::create_project()` writes it from this template of pbn:
 
-- [pbn.md](https://www.rwhite.no/pbn/articles/pbn.md): the manual, in plain Markdown, built to be read in one piece.
-- [llms.txt](https://www.rwhite.no/pbn/llms.txt): the list of every other page.
+```{r, comment = ""}
+cat(readLines(system.file("templates", "AGENTS.md", package = "pbn")), sep = "\n")
+```
 
-The rest of `AGENTS.md` is what only a person knows: the question of the study, and the decisions that are not checks yet. Each such decision is a candidate for a check in layer 2.
+The template points the agent to [pbn.md](https://www.rwhite.no/pbn/articles/pbn.md), the manual in plain Markdown, built to be read in one piece. [llms.txt](https://www.rwhite.no/pbn/llms.txt) lists every other page. The question of the study goes into `README.md`. A project MAY add to `AGENTS.md` a decision of a person that is not a check yet. Each such decision is a candidate for a check in layer 2.
 
 pbn supports two more practices:
 

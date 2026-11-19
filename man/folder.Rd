@@ -58,8 +58,10 @@ unlink(home, recursive = TRUE)
 \code{vignette("pbn")}, which builds and runs a small fake project.
 
 Other project setup:
+\code{\link[=create_project]{create_project()}},
 \code{\link[=end_unless_real]{end_unless_real()}},
 \code{\link[=initialize_project]{initialize_project()}},
+\code{\link[=new_version]{new_version()}},
 \code{\link[=scenarios]{scenarios()}}
 }
 \concept{project setup}

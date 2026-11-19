@@ -26,6 +26,11 @@ articles:
   - articles/agents
 
 reference:
+- title: "Start a project or a version"
+  contents:
+    - create_project
+    - new_version
+
 - title: "Run a project version"
   contents:
     - initialize_project

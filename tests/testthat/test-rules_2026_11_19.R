@@ -1,6 +1,8 @@
 # The set house_2026_11_19: the rules frozen_versions_unchanged,
 # no_cross_version_reads and no_escape_hatches, freeze_version() and
-# verify(). The projects of house_2026_11_17 see none of it.
+# verify(). The rules readme_and_changelog, changelog_with_code and
+# comment_share are in test-rules_changelog.R. The projects of
+# house_2026_11_17 see none of it.
 
 # A synthetic project of local_project() on the set house_2026_11_19.
 local_project_19 <- function(env = parent.frame()) {
@@ -45,10 +47,11 @@ add_v02 <- function(
     )
   )
   write_lines(home, "v02_functions/f.R", fun)
+  cat("\n## v02\n", file = file.path(home, "CHANGELOG.md"), append = TRUE)
   return(invisible(home))
 }
 
-test_that("house_2026_11_19 is house_2026_11_17 with three new rules, at the levels fail, fail and warn", {
+test_that("house_2026_11_19 is house_2026_11_17 with six new rules, at their levels", {
   old <- read_house_set("house_2026_11_17")
   new <- read_house_set("house_2026_11_19")
   expect_identical(new[names(old)], old)
@@ -56,10 +59,14 @@ test_that("house_2026_11_19 is house_2026_11_17 with three new rules, at the lev
     vapply(new[rules_2026_11_19], function(r) return(r$level), character(1)),
     c(
       frozen_versions_unchanged = "fail",
+      readme_and_changelog = "fail",
+      changelog_with_code = "warn",
+      comment_share = "warn",
       no_cross_version_reads = "fail",
       no_escape_hatches = "warn"
     )
   )
+  expect_identical(new$comment_share$limit, 0.25)
   expect_false(any(vapply(
     new[rules_2026_11_19],
     function(r) return(r$locked),
@@ -193,6 +200,7 @@ test_that("frozen_versions_unchanged fails each version but the newest without i
     "pbn::initialize_project(version = \"v03\", home = \".\", folders = c(main = \"x\"))"
   )
   write_lines(p$home, "v03_functions/f.R", "f <- function() return(3)")
+  cat("\n## v03\n", file = file.path(p$home, "CHANGELOG.md"), append = TRUE)
   # An agent deletes the file of v01 to get rid of a FAIL.
   unlink(file.path(p$home, "v01_frozen.md5"))
   found <- project_findings(p$home)
@@ -611,6 +619,11 @@ test_that("verify() reads only the check.csv files of this run, and passes a run
   expect_identical(nrow(res$assertions), 0L)
   expect_identical(attr(res, "verdict"), "PASS")
   expect_identical(attr(res, "lines")[2], "check.csv files of this run: 1.")
+  # The run wrote no real results, so the PASS covers the fake data only.
+  expect_identical(
+    utils::tail(attr(res, "lines"), 1),
+    "Verdict: PASS on the fake scenarios only. The scenario `real` did not run."
+  )
   # The old file is still a finding of check_project().
   expect_identical(
     res$findings$status[res$findings$rule == "scenario_checks"],
@@ -630,7 +643,7 @@ test_that("verify() gives FAIL for a run with status 0 that wrote no check.csv",
     attr(res, "lines"),
     c(
       "verify(v01): v01_run.R ended with status 0.",
-      "check.csv files of this run: 0. The run checked no fake scenario.",
+      "check.csv files of this run: 0. The run wrote no check of a fake scenario.",
       "Failed assertions: 0.",
       "check_project(): 0 FAIL, 0 WARN.",
       "Verdict: FAIL, because the run wrote no check.csv."
@@ -662,7 +675,7 @@ test_that("verify() does not count a check.csv of an earlier run in the same sec
   expect_identical(res$status, 0L)
   expect_identical(
     attr(res, "lines")[2],
-    "check.csv files of this run: 0. The run checked no fake scenario."
+    "check.csv files of this run: 0. The run wrote no check of a fake scenario."
   )
   expect_identical(
     utils::tail(attr(res, "lines"), 1),

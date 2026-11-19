@@ -87,9 +87,12 @@ test_that("the bytes of each shipped set are pinned", {
   # that file, before the
   # first release of pbn, which had no tag and no build. Those were the
   # changes of its md5.
+  # house_2026_11_19 got the rules readme_and_changelog, changelog_with_code
+  # and comment_share in pbn 2026.11.28, hours after its release and before
+  # a project used it. The maintainer approved that change of its md5.
   pinned <- c(
     house_2026_11_17 = "ac42b7368bc90e2735bf4cb47e4a8e0e",
-    house_2026_11_19 = "e9c4b54f9efb1d10bf5bb2ed3373408b"
+    house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097"
   )
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")

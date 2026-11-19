@@ -48,7 +48,11 @@ level of the rule \code{scenario_checks} in \code{pbn.yml}, also \code{off}.
 \item a rule of \code{check_project()} fails.
 }
 
-Else the verdict is PASS. The last line names each reason of a FAIL. In a
+Else the verdict is PASS. The last line names each reason of a FAIL. A
+PASS of a run that did not write \verb{<version>_results/real/results.qs2}
+has the last line
+\verb{Verdict: PASS on the fake scenarios only. The scenario `real` did not run.}
+It covers the fake data only. Its verdict is still PASS. In a
 non-interactive R session, \code{verify()} quits R with status 1 after a
 verdict FAIL, as \code{check_project()} does.
 }

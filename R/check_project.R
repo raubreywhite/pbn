@@ -24,7 +24,8 @@
 #'
 #' The rules, with their level in the set `house_2026_11_19`, are below.
 #' The set `house_2026_11_17` has the same rules at the same levels, without
-#' `frozen_versions_unchanged`, `no_cross_version_reads` and
+#' `frozen_versions_unchanged`, `readme_and_changelog`,
+#' `changelog_with_code`, `comment_share`, `no_cross_version_reads` and
 #' `no_escape_hatches`. A rule that the set of the project does not have
 #' prints no line.
 #' - `lower_case_names` (FAIL): a file or folder name has a capital letter.
@@ -51,6 +52,25 @@
 #'     disk. The detail names the file, with `changed`, `added` or
 #'     `removed`.
 #'   - a line of `vNN_frozen.md5` is not `<md5>  <path>`.
+#' - `readme_and_changelog` (FAIL): `README.md` or `CHANGELOG.md` is not at
+#'   the top level, or `CHANGELOG.md` has no section for a version. A
+#'   section is a line that starts with `## vNN`, with a space or nothing
+#'   after it, for example `## v01` or `## v01 (2026-11-19)`. A version is a
+#'   `vNN_run.R` or a `vNN_functions/` at the top level. `README.md` says
+#'   what the project is, how to run it and why its code is as it is.
+#'   `CHANGELOG.md` says what changed in each version. The detail is
+#'   `README.md: missing`, `CHANGELOG.md: missing` or
+#'   `CHANGELOG.md: no section "## vNN"`.
+#' - `changelog_with_code` (WARN): in a git repository, a `vNN_run.R` or a
+#'   file under `vNN_functions/` differs from the last commit, and
+#'   `CHANGELOG.md` does not. A change is staged or not staged, or the file
+#'   is untracked and git does not ignore it. A deleted file counts too. In
+#'   a repository without a commit, each staged file is a change. The rule
+#'   reads the project folder `path` only, also when it is a folder inside a
+#'   repository. When git is not installed or `path` is not in a git
+#'   repository, the rule has nothing to compare. It then prints one PASS
+#'   line that says so. The detail is
+#'   `<file>: changed since the last commit, and CHANGELOG.md did not change`.
 #' - `results_contract` (FAIL): a `vNN_results/<scenario>/results.qs2` or a
 #'   `vNN_results/<scenario>/sim_NNNN/results.qs2` of pbn 2026.11.22 fails
 #'   [check_results()], or a `results.qs2` is directly in `vNN_results/`.
@@ -88,8 +108,8 @@
 #'   export. The one exception is `get_data`: a project MAY name its data
 #'   function `get_data(scenario, sim)`, and a run script calls the export
 #'   as `pbn::get_data()`. The set `house_2026_11_17` does not know the
-#'   exports `freeze_version` and `verify`, so a local function with such a
-#'   name passes there.
+#'   exports `create_project`, `freeze_version`, `new_version` and `verify`,
+#'   so a local function with such a name passes there.
 #' - `loc_per_file` (FAIL): an `.R` file has more than `limit` code lines, as
 #'   counted by [org::loc_per_file()]. The house `limit` is 1000. The rule
 #'   reads each `.R` file of the project but `vNN_one_file.R`.
@@ -104,6 +124,19 @@
 #'   code of it. It skips a file that R cannot parse, which `loc_per_file`
 #'   fails. The detail gives the file, the function and its score. A path
 #'   under `allow` allows each function of one file.
+#' - `comment_share` (WARN): in `vNN_run.R` or an `.R` file at the top of
+#'   `vNN_functions/`, the share of comment lines is more than `limit`. The
+#'   share is the comment lines divided by the lines that are not blank. The
+#'   house `limit` is 0.25, so a file of 20 such lines MAY have 5 comment
+#'   lines. The parse data decides what is a comment, so a `#` in a string
+#'   does not count. A line with code and a comment after it is a comment
+#'   line. A section marker is not a comment line. A section marker is a
+#'   comment with text and then four or more `=` or `-` at its end, as in
+#'   `# PART 1 ====`. The rule skips a file that R cannot parse. The detail
+#'   is
+#'   `<file>: <n> of <m> lines that are not blank are comments, <share>, above the limit of <limit>`.
+#'   An explanation of why the code is as it is goes into `README.md`, and
+#'   what changed goes into `CHANGELOG.md`.
 #' - `no_environment_variables` (FAIL): a run script or a file in a functions
 #'   folder uses `Sys.getenv` or `Sys.setenv`.
 #' - `no_cross_version_reads` (FAIL): a string constant of `vNN_run.R` or of
@@ -267,8 +300,8 @@
 #' - `off`: the rule does not run, and its one line is OFF.
 #'
 #' The parameters of the rules are `limit` of `loc_per_file`, `limit` of
-#' `cyclomatic_complexity` and `forbid` of `no_local_assign`. The list of
-#' the rules above gives their house values.
+#' `cyclomatic_complexity`, `limit` of `comment_share` and `forbid` of
+#' `no_local_assign`. The list of the rules above gives their house values.
 #'
 #' The key `rules` MAY change the level of a rule, a parameter, or both. A
 #' change merges into the entry of the set. So `cyclomatic_complexity:
@@ -319,7 +352,8 @@
 #'   oldest set with it.
 #' - a parameter that the rule does not have.
 #' - a level other than `fail`, `warn` and `off`.
-#' - a `limit` that is not a whole number of 1 or more.
+#' - a `limit` that is not a whole number of 1 or more. For
+#'   `comment_share`, a `limit` that is not a number from 0 to 1.
 #' - a construct in `forbid` that the rule does not know, or an empty
 #'   `forbid`. To turn the rule off, set its level to `off`.
 #' - a value under `allow` that is not a path, for example `off`. YAML reads
@@ -336,6 +370,8 @@
 #'   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
 #'   file.path(home, "v01_run.R")
 #' )
+#' writeLines("# A fake project", file.path(home, "README.md"))
+#' writeLines(c("# Changelog", "", "## v01"), file.path(home, "CHANGELOG.md"))
 #' pbn::check_project(home)
 #'
 #' unlink(home, recursive = TRUE)

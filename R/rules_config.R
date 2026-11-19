@@ -315,7 +315,7 @@ merge_override <- function(rule, value, house) {
   }
   check_override_keys(value, house, where)
   for (name in names(value)) {
-    value[[name]] <- check_param(name, value[[name]], where)
+    value[[name]] <- check_param(name, value[[name]], where, rule)
   }
   if (
     isTRUE(house$locked) &&
@@ -363,8 +363,9 @@ check_override_keys <- function(value, house, where) {
   return(invisible(NULL))
 }
 
-# The value `value` of the parameter `name`, after its check.
-check_param <- function(name, value, where) {
+# The value `value` of the parameter `name` of the rule `rule`, after its
+# check.
+check_param <- function(name, value, where, rule) {
   if (name == "level") {
     if (!is_one_string(value) || !value %in% rule_levels) {
       stop(
@@ -376,6 +377,9 @@ check_param <- function(name, value, where) {
       )
     }
     return(as.vector(value))
+  }
+  if (name == "limit" && rule %in% share_rules) {
+    return(check_share(value, where))
   }
   if (name == "limit") {
     if (!is_count(value)) {
@@ -390,6 +394,28 @@ check_param <- function(name, value, where) {
     return(as.integer(value))
   }
   return(check_forbid(value, where))
+}
+
+# The rules whose limit is a share from 0 to 1, and not a count.
+share_rules <- "comment_share"
+
+# The value `value` of a limit of share_rules, after its check.
+check_share <- function(value, where) {
+  ok <- is.numeric(value) &&
+    length(value) == 1 &&
+    !is.na(value) &&
+    value >= 0 &&
+    value <= 1
+  if (!ok) {
+    stop(
+      where,
+      ": limit is ",
+      show_value(value),
+      ", and it MUST be a number from 0 to 1, such as 0.25.",
+      call. = FALSE
+    )
+  }
+  return(as.numeric(value))
 }
 
 # The value of the parameter forbid of no_local_assign, after its check.

@@ -29,7 +29,11 @@
 #'   level of the rule `scenario_checks` in `pbn.yml`, also `off`.
 #' - a rule of `check_project()` fails.
 #'
-#' Else the verdict is PASS. The last line names each reason of a FAIL. In a
+#' Else the verdict is PASS. The last line names each reason of a FAIL. A
+#' PASS of a run that did not write `<version>_results/real/results.qs2`
+#' has the last line
+#' ``Verdict: PASS on the fake scenarios only. The scenario `real` did not run.``
+#' It covers the fake data only. Its verdict is still PASS. In a
 #' non-interactive R session, `verify()` quits R with status 1 after a
 #' verdict FAIL, as `check_project()` does.
 #' @return Invisibly, a list with three elements. `status` is the exit
@@ -79,6 +83,7 @@ verify_result <- function(version, home) {
     fail_on_status = FALSE
   )
   files <- run_check_files(home, version, start)
+  real_ran <- real_results_written(home, version, start)
   assertions <- failed_assertions(home, files)
   report <- project_report(home, rules)
   findings <- attr(report, "findings")
@@ -105,7 +110,7 @@ verify_result <- function(version, home) {
       "check.csv files of this run: ",
       length(files),
       if (length(files) == 0) {
-        ". The run checked no fake scenario."
+        ". The run wrote no check of a fake scenario."
       } else {
         "."
       }
@@ -137,16 +142,34 @@ verify_result <- function(version, home) {
       open$detail,
       recycle0 = TRUE
     )),
-    paste0(
-      "Verdict: ",
-      verdict,
-      if (verdict == "FAIL") paste0(", because ", and_list(reasons), ".")
-    )
+    verdict_line(verdict, reasons, real_ran)
   )
   out <- list(status = run$status, assertions = assertions, findings = findings)
   attr(out, "lines") <- lines
   attr(out, "verdict") <- verdict
   return(out)
+}
+
+# The last line of verify(): the verdict, the reasons of a FAIL, and for a
+# PASS whether the scenario real ran in this run.
+verdict_line <- function(verdict, reasons, real_ran) {
+  if (verdict == "FAIL") {
+    return(paste0("Verdict: FAIL, because ", and_list(reasons), "."))
+  }
+  if (!real_ran) {
+    return(paste(
+      "Verdict: PASS on the fake scenarios only. The scenario `real` did",
+      "not run."
+    ))
+  }
+  return("Verdict: PASS")
+}
+
+# TRUE when the run wrote <version>_results/real/results.qs2 in `home` at or
+# after the time `since`, so the scenario real ran in this run.
+real_results_written <- function(home, version, since) {
+  file <- file.path(home, paste0(version, "_results"), "real", "results.qs2")
+  return(file.exists(file) && file.mtime(file) >= since)
 }
 
 # The files <version>_results/<scenario>/check.csv in `home` that changed at
@@ -211,15 +234,6 @@ csv_column <- function(x, name) {
     return(rep(NA_character_, nrow(x)))
   }
   return(as.character(x[[name]]))
-}
-
-# The strings `x` as one list in prose: "a", "a and b", "a, b and c".
-and_list <- function(x) {
-  n <- length(x)
-  if (n == 1) {
-    return(x)
-  }
-  return(paste(paste(x[-n], collapse = ", "), "and", x[n]))
 }
 
 # Waits until the next whole second, plus 10 ms, and returns that second as

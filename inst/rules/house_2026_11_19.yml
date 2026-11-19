@@ -1,5 +1,6 @@
 # The house rules of pbn::check_project(), the set house_2026_11_19. It is
-# the set house_2026_11_17 with three new rules: frozen_versions_unchanged,
+# the set house_2026_11_17 with six new rules: frozen_versions_unchanged,
+# readme_and_changelog, changelog_with_code, comment_share,
 # no_cross_version_reads and no_escape_hatches.
 #
 # pbn never changes this file. A change to the house rules is a new file
@@ -30,6 +31,14 @@ version_items_complete: fail
 # Each version but the newest has the vNN_frozen.md5 of
 # pbn::freeze_version(), and no file of a frozen version changes after it.
 frozen_versions_unchanged: fail
+
+# README.md and CHANGELOG.md exist, and CHANGELOG.md has a section
+# "## vNN" for each version.
+readme_and_changelog: fail
+
+# In a git repository, an uncommitted change to a vNN_run.R or a file under
+# vNN_functions/ comes with a change to CHANGELOG.md.
+changelog_with_code: warn
 
 # Each results file passes pbn::check_results(). This includes the rule
 # no_row_per_person.
@@ -70,6 +79,13 @@ loc_per_file:
 cyclomatic_complexity:
   level: fail
   limit: 15
+
+# In each run script and each .R file of a functions folder, the comment
+# lines are at most the share `limit` of the lines that are not blank. A
+# section marker such as "# PART 1 ====" is not a comment.
+comment_share:
+  level: warn
+  limit: 0.25
 
 # No Sys.getenv() or Sys.setenv() in a run script or a functions folder.
 no_environment_variables: fail

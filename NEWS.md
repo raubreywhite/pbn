@@ -1,3 +1,14 @@
+# pbn 2026.11.28
+
+- New `create_project()` writes a new project at version v01 that passes `check_project()`. It stops, and writes nothing, when one of its files exists. Its run script runs the fake scenarios only, so `verify("v01")` gives a PASS on the fake scenarios before code reads the real data. It stops before it writes anything when the package cohort is not installed.
+- New `new_version()` freezes the newest version and copies its run script and its functions folder to a new version. It changes the version of the call `initialize_project()`, and adds the section of the version to `CHANGELOG.md`. It stops in the cases that `?new_version` lists.
+- `create_project()` and `new_version()` remove each file and folder that they created when they stop part way, so a second call can start again.
+- Behaviour change: after a run without real results, the verdict line of a PASS of `verify()` names the fake scenarios only. The verdict and the exit status stay the same.
+- `verify()` writes "The run wrote no check of a fake scenario." for a run without `check.csv`.
+- New template `inst/templates/AGENTS.md`. `create_project()` copies it into the project.
+- The set `house_2026_11_19` gets three new rules: `readme_and_changelog` (fail), `changelog_with_code` (warn) and `comment_share` (warn, `limit` 0.25). pbn 2026.11.26 released this set, and no project used it yet. The maintainer approved the change. A project on `house_2026_11_17` sees no change.
+- In `house_2026_11_19`, `no_local_copy_of_pbn_function` knows the exports `create_project` and `new_version`.
+
 # pbn 2026.11.27
 
 - Behaviour change: `run_plan()` fails an analysis that changes values of the shared data in place, for example `data$d[1, x := 0]`. The error names each changed column. Before, each later analysis in the same R session got the changed data.
@@ -8,7 +19,7 @@
 
 - New rule set `house_2026_11_19`: the set `house_2026_11_17` with three new rules. A project on `house_2026_11_17` sees no change. The line for a new `pbn.yml` now names `house_2026_11_19`.
 - New `freeze_version()` writes `vNN_frozen.md5`, the md5 of `vNN_run.R` and of each file under `vNN_functions/`. The new rule `frozen_versions_unchanged` fails when such a file changes, comes or goes, and when a version older than the newest has no `vNN_frozen.md5`.
-- New rule `no_cross_version_reads` fails a string of a run script or a functions folder that names another version, such as `"v01_results"` in `v02_functions/`, or `adhoc/`.
+- New rule `no_cross_version_reads` fails a string of a run script or a functions folder that names another version, such as `"v01_results"` in `v02_functions/`, or that names the folder `adhoc/`.
 - New rule `no_escape_hatches` warns on `suppressWarnings()`, `suppressMessages()`, `try()`, `tryCatch()` and `withCallingHandlers()` in a run script or a functions folder.
 - New `verify()` runs `vNN_run.R` in a new R session, checks the project, and prints the exit status, the failed assertions and each FAIL and WARN. Its verdict is FAIL also for a failed assertion when `scenario_checks` is off, and for a run that wrote no `check.csv`. It reads only the `check.csv` files of this run.
 - In `house_2026_11_19`, `unknown_path` names `vNN_frozen.md5`, and `no_local_copy_of_pbn_function` knows the exports `freeze_version` and `verify`.
@@ -19,7 +30,7 @@
 
 - Behaviour change: `read_results()` for `"real"` now stops when a fake scenario of the same run has a failed assertion. The fake and the real results come from the same code, so a failed fake check can show a fault in the real results.
 - `save_results()` writes each fake scenario with a failed assertion to the new `manifest$failed_fake_checks` of the real results. It writes the fake scenarios first. Real results of pbn 2026.11.24 or older have no such element, and read as before.
-- `show_block()` and `show_blocks()` stop on such real results too. `make_outputs()` skips `"real"` then, with one line.
+- `show_block()` and `show_blocks()` stop on such real results too. `make_outputs()` then skips `"real"` and prints one line.
 - The rule `manifest_data` of `check_results()` checks `failed_fake_checks` of `"real"`. It needs it when `manifest$pbn_version` is 2026.11.25 or newer.
 - Each WARN and FAIL of `check_project()` ends with `Fix:` and the change that removes it. The rules, their levels, each status and the columns of the value stay the same.
 

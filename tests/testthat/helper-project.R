@@ -220,6 +220,9 @@ house_line <- "extends: house_2026_11_17"
 # The rules that the set house_2026_11_19 adds to house_2026_11_17.
 rules_2026_11_19 <- c(
   "frozen_versions_unchanged",
+  "readme_and_changelog",
+  "changelog_with_code",
+  "comment_share",
   "no_cross_version_reads",
   "no_escape_hatches"
 )
@@ -261,7 +264,7 @@ local_project <- function(env = parent.frame(), counter = NULL) {
   dir.create(file.path(home, "adhoc"))
   dir.create(file.path(home, "data_describe"))
   write_lines(home, "README.md", "# A synthetic project")
-  write_lines(home, "CHANGELOG.md", "# Changelog")
+  write_lines(home, "CHANGELOG.md", c("# Changelog", "", "## v01", "", "- First version."))
   write_lines(home, "AGENTS.md", "# Agents")
   write_lines(home, ".gitignore", "v01_results/")
   write_lines(home, "pbn.yml", house_line)

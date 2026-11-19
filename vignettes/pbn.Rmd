@@ -57,6 +57,16 @@ Each project MUST have the file `pbn.yml`. It names the set of house rules that 
 extends: house_2026_11_19
 ```
 
+`CHANGELOG.md` has a section `## vNN` for each version, with what changed and why. The rule `readme_and_changelog` of `check_project()` fails a project without `CHANGELOG.md`, without `README.md`, or without the section of a version:
+
+```{cat, engine.opts = list(file = file.path(home, "CHANGELOG.md"), lang = "markdown")}
+# Changelog
+
+## v01
+
+- Compared the outcome between the groups a and b, adjusted for x.
+```
+
 The real data of this fake project is a small csv file in the folder `data`, next to the project folder. In a real project, this folder holds the real data, and it is outside the repository. The file has 400 rows, and the column names of a typical export.
 
 ```{r}
@@ -168,12 +178,6 @@ pbn takes the steps apart to count the rows between them. Each exclusion MUST go
 `data_raw()` reads the real file `d.csv` of the folder `main`, with `pbn::folder("main", "d.csv")`. Project code reaches a folder outside the project only through `pbn::folder()`. A project MAY declare more folders, for example `folders = c(main = "../data", lookup = "../codes")`. pbn records the name, the size and the modification time of each file under each folder. It never reads the content of a data file, so a data file of 60 GB costs no time. A file that changed in place, and kept its size and its modification time, is not seen. pbn sets the seed to `sim` once, before `data_raw()`, so each simulation has its own data, and a second run gives the same data.
 
 ```{cat, engine.opts = list(file = file.path(home, "v01_functions", "data_raw.R"), lang = "r")}
-# known: group a has 11 rows, 2 with the outcome, 8 without, 1 missing.
-# Group b has 11 rows, 6 with the outcome, 4 without, 1 missing.
-# Odds ratio of b against a: (6 / 4) / (2 / 8) = 6.
-# null: the outcome does not depend on the group or on x.
-# confounded: x raises the chance of group b and of the outcome. The log odds
-# ratio of b against a, adjusted for x, is 0.5.
 data_raw <- function(scenario, sim) {
   if (scenario == "real") {
     return(data.table::fread(pbn::folder("main", "d.csv")))
@@ -199,7 +203,19 @@ data_raw <- function(scenario, sim) {
 }
 ```
 
-The comment holds the arithmetic of `known` and the truth of `confounded`, so a reader can check each expected value without R.
+`README.md` holds the arithmetic of `known` and the truth of `confounded`, so a reader can check each expected value without R. The code holds no such explanation. The rule `comment_share` of `check_project()` warns on a file where more than 25% of the lines that are not blank are comments.
+
+```{cat, engine.opts = list(file = file.path(home, "README.md"), lang = "markdown")}
+# A fake project
+
+This project compares a 0/1 outcome between two groups, a and b, adjusted for a covariate x. To run it, run `pbn::verify("v01")` in this folder.
+
+## The fake scenarios
+
+- `known`: group a has 11 rows, 2 with the outcome, 8 without and 1 missing. Group b has 11 rows, 6 with the outcome, 4 without and 1 missing. The odds ratio of b against a is (6 / 4) / (2 / 8) = 6.
+- `null`: the outcome does not depend on the group or on x.
+- `confounded`: x raises the chance of group b and of the outcome. The log odds ratio of b against a, adjusted for x, is 0.5.
+```
 
 ```{cat, engine.opts = list(file = file.path(home, "v01_functions", "data_clean.R"), lang = "r")}
 data_clean <- function(d) {
@@ -815,7 +831,26 @@ The verdict reads only the `check.csv` files of this run, and lists each failed 
 - an assertion failed, also when `pbn.yml` turns `scenario_checks` off.
 - a rule fails.
 
-In a non-interactive R session, `verify()` then quits R with status 1. Its value holds the exit status, the failed assertions and the findings.
+A PASS of a run without the scenario `real` covers the fake data only, and its verdict line says so. In a non-interactive R session, `verify()` quits R with status 1 after a FAIL. Its value holds the exit status, the failed assertions and the findings.
+
+## Creating a project
+
+`pbn::create_project()` writes a new project at version v01 into a folder that exists. It writes no file that is already there. Its run script runs each fake scenario and not `real`. So `verify()` gives a PASS before code reads the real data, and the verdict says that it covers the fake scenarios only:
+
+```{r}
+new_home <- file.path(root, "new_project")
+dir.create(new_home)
+pbn::create_project(home = new_home, folders = c(main = "../data"))
+list.files(new_home, recursive = TRUE, all.files = TRUE)
+out <- utils::capture.output(res <- pbn::verify("v01", home = new_home))
+utils::tail(out, 1)
+```
+
+```{r, include = FALSE}
+stopifnot(res$status == 0, identical(utils::tail(out, 1), "Verdict: PASS on the fake scenarios only. The scenario `real` did not run."), !dir.exists(file.path(new_home, "v01_results", "real")))
+```
+
+`data_raw()` stops for the scenario `real`, with the message to replace the `stop()` with code that reads the real data. When that code is there, remove the argument `only` of `pbn::scenarios()` in `v01_run.R`. `?create_project` lists each file.
 
 ## Freezing a version
 
@@ -844,6 +879,23 @@ unlink(file.path(home, "v01_frozen.md5"))
 ```
 
 Make a change to a frozen version in a new version, such as `v02`. Run `freeze_version()` again only to accept a change on purpose. It then prints each file whose md5 it changes.
+
+## Starting a new version
+
+`pbn::new_version("v01")` freezes v01, and copies `v01_run.R` and `v01_functions/` to v02. It changes the version in the call `pbn::initialize_project()` of `v02_run.R`, and adds the section `## v02` to `CHANGELOG.md`. Here it starts v02 of the project of the section Creating a project:
+
+```{r}
+pbn::new_version("v01", home = new_home)
+readLines(file.path(new_home, "v02_run.R"))[1]
+cat(readLines(file.path(new_home, "CHANGELOG.md")), sep = "\n")
+utils::tail(utils::capture.output(found <- pbn::check_project(new_home)), 1)
+```
+
+```{r, include = FALSE}
+stopifnot(!any(found$status %in% c("WARN", "FAIL")), file.exists(file.path(new_home, "v01_frozen.md5")))
+```
+
+`new_version()` writes no file that is already there, and it stops when a file of the frozen version changed after `freeze_version()`.
 
 ## Manuscripts
 
@@ -999,8 +1051,6 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 ## What pbn does not do yet
 
 - A run always runs every selected scenario and simulation. pbn keeps no results of an earlier run to resume from.
-- No function starts a new version, for example `v02_run.R` and `v02_functions/` from version v01.
-- No function creates the folders and the files of a new project.
 - No tool shows the tracked changes between two Word manuscripts.
 - No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
 - When `run_plan()` stops on a failed analysis, the results files of an earlier run stay as they are. `read_results()` reads them.

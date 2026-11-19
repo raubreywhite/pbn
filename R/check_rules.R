@@ -12,6 +12,7 @@ pbn_exports <- c(
   "check_project",
   "check_results",
   "cohort_data",
+  "create_project",
   "end_unless_real",
   "expect_biased",
   "expect_recovers",
@@ -22,6 +23,7 @@ pbn_exports <- c(
   "initialize_project",
   "keep_exclusions",
   "make_outputs",
+  "new_version",
   "progress",
   "read_results",
   "render_run",
@@ -40,7 +42,9 @@ pbn_exports <- c(
 # set that knows it. The rule no_local_copy_of_pbn_function of an older set
 # passes a function with such a name, as before.
 new_exports <- c(
+  create_project = "house_2026_11_19",
   freeze_version = "house_2026_11_19",
+  new_version = "house_2026_11_19",
   verify = "house_2026_11_19"
 )
 
@@ -791,6 +795,25 @@ project_rules <- function() {
       ),
       frozen_fix
     ),
+    readme_and_changelog = list(
+      rule_readme_and_changelog,
+      paste(
+        "README.md and CHANGELOG.md exist, and CHANGELOG.md has a section",
+        "## vNN for every version"
+      ),
+      "create the missing file, or add the missing section ## vNN to CHANGELOG.md"
+    ),
+    changelog_with_code = list(
+      rule_changelog_with_code,
+      paste(
+        "every uncommitted change to a vNN_run.R or a file under",
+        "vNN_functions/ comes with a change to CHANGELOG.md"
+      ),
+      paste(
+        "add what changed and why to CHANGELOG.md, under the section of the",
+        "version"
+      )
+    ),
     results_contract = list(
       rule_results_contract,
       paste(
@@ -868,6 +891,11 @@ project_rules <- function() {
         ))
       },
       "split the function into smaller functions"
+    ),
+    comment_share = list(
+      rule_comment_share,
+      comment_share_pass_detail,
+      "move the explanation to README.md (why) or CHANGELOG.md (what changed)"
     ),
     no_environment_variables = list(
       rule_no_environment_variables,

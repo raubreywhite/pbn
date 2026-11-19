@@ -39,7 +39,8 @@ files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
 The rules, with their level in the set \code{house_2026_11_19}, are below.
 The set \code{house_2026_11_17} has the same rules at the same levels, without
-\code{frozen_versions_unchanged}, \code{no_cross_version_reads} and
+\code{frozen_versions_unchanged}, \code{readme_and_changelog},
+\code{changelog_with_code}, \code{comment_share}, \code{no_cross_version_reads} and
 \code{no_escape_hatches}. A rule that the set of the project does not have
 prints no line.
 \itemize{
@@ -69,6 +70,25 @@ disk. The detail names the file, with \code{changed}, \code{added} or
 \code{removed}.
 \item a line of \code{vNN_frozen.md5} is not \verb{<md5>  <path>}.
 }
+\item \code{readme_and_changelog} (FAIL): \code{README.md} or \code{CHANGELOG.md} is not at
+the top level, or \code{CHANGELOG.md} has no section for a version. A
+section is a line that starts with \verb{## vNN}, with a space or nothing
+after it, for example \verb{## v01} or \verb{## v01 (2026-11-19)}. A version is a
+\code{vNN_run.R} or a \verb{vNN_functions/} at the top level. \code{README.md} says
+what the project is, how to run it and why its code is as it is.
+\code{CHANGELOG.md} says what changed in each version. The detail is
+\code{README.md: missing}, \code{CHANGELOG.md: missing} or
+\verb{CHANGELOG.md: no section "## vNN"}.
+\item \code{changelog_with_code} (WARN): in a git repository, a \code{vNN_run.R} or a
+file under \verb{vNN_functions/} differs from the last commit, and
+\code{CHANGELOG.md} does not. A change is staged or not staged, or the file
+is untracked and git does not ignore it. A deleted file counts too. In
+a repository without a commit, each staged file is a change. The rule
+reads the project folder \code{path} only, also when it is a folder inside a
+repository. When git is not installed or \code{path} is not in a git
+repository, the rule has nothing to compare. It then prints one PASS
+line that says so. The detail is
+\verb{<file>: changed since the last commit, and CHANGELOG.md did not change}.
 \item \code{results_contract} (FAIL): a \verb{vNN_results/<scenario>/results.qs2} or a
 \verb{vNN_results/<scenario>/sim_NNNN/results.qs2} of pbn 2026.11.22 fails
 \code{\link[=check_results]{check_results()}}, or a \code{results.qs2} is directly in \verb{vNN_results/}.
@@ -106,8 +126,8 @@ another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders
 export. The one exception is \code{get_data}: a project MAY name its data
 function \code{get_data(scenario, sim)}, and a run script calls the export
 as \code{pbn::get_data()}. The set \code{house_2026_11_17} does not know the
-exports \code{freeze_version} and \code{verify}, so a local function with such a
-name passes there.
+exports \code{create_project}, \code{freeze_version}, \code{new_version} and \code{verify},
+so a local function with such a name passes there.
 \item \code{loc_per_file} (FAIL): an \code{.R} file has more than \code{limit} code lines, as
 counted by \code{\link[org:loc_per_file]{org::loc_per_file()}}. The house \code{limit} is 1000. The rule
 reads each \code{.R} file of the project but \code{vNN_one_file.R}.
@@ -122,6 +142,19 @@ is not a function gets no score. The rule parses each file and runs no
 code of it. It skips a file that R cannot parse, which \code{loc_per_file}
 fails. The detail gives the file, the function and its score. A path
 under \code{allow} allows each function of one file.
+\item \code{comment_share} (WARN): in \code{vNN_run.R} or an \code{.R} file at the top of
+\verb{vNN_functions/}, the share of comment lines is more than \code{limit}. The
+share is the comment lines divided by the lines that are not blank. The
+house \code{limit} is 0.25, so a file of 20 such lines MAY have 5 comment
+lines. The parse data decides what is a comment, so a \verb{#} in a string
+does not count. A line with code and a comment after it is a comment
+line. A section marker is not a comment line. A section marker is a
+comment with text and then four or more \code{=} or \code{-} at its end, as in
+\verb{# PART 1 ====}. The rule skips a file that R cannot parse. The detail
+is
+\verb{<file>: <n> of <m> lines that are not blank are comments, <share>, above the limit of <limit>}.
+An explanation of why the code is as it is goes into \code{README.md}, and
+what changed goes into \code{CHANGELOG.md}.
 \item \code{no_environment_variables} (FAIL): a run script or a file in a functions
 folder uses \code{Sys.getenv} or \code{Sys.setenv}.
 \item \code{no_cross_version_reads} (FAIL): a string constant of \code{vNN_run.R} or of
@@ -297,8 +330,8 @@ The set gives each rule one of three levels:
 }
 
 The parameters of the rules are \code{limit} of \code{loc_per_file}, \code{limit} of
-\code{cyclomatic_complexity} and \code{forbid} of \code{no_local_assign}. The list of
-the rules above gives their house values.
+\code{cyclomatic_complexity}, \code{limit} of \code{comment_share} and \code{forbid} of
+\code{no_local_assign}. The list of the rules above gives their house values.
 
 The key \code{rules} MAY change the level of a rule, a parameter, or both. A
 change merges into the entry of the set. So \code{cyclomatic_complexity: {limit: 25}} keeps the level \code{fail}. The short form \code{lower_case_names: warn} changes the level only. \code{forbid} MAY list fewer constructs than the
@@ -347,7 +380,8 @@ a tab. The message holds the message of the yaml package.
 oldest set with it.
 \item a parameter that the rule does not have.
 \item a level other than \code{fail}, \code{warn} and \code{off}.
-\item a \code{limit} that is not a whole number of 1 or more.
+\item a \code{limit} that is not a whole number of 1 or more. For
+\code{comment_share}, a \code{limit} that is not a number from 0 to 1.
 \item a construct in \code{forbid} that the rule does not know, or an empty
 \code{forbid}. To turn the rule off, set its level to \code{off}.
 \item a value under \code{allow} that is not a path, for example \code{off}. YAML reads
@@ -365,6 +399,8 @@ writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
 )
+writeLines("# A fake project", file.path(home, "README.md"))
+writeLines(c("# Changelog", "", "## v01"), file.path(home, "CHANGELOG.md"))
 pbn::check_project(home)
 
 unlink(home, recursive = TRUE)

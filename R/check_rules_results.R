@@ -608,26 +608,9 @@ manifest_data_failure <- function(m) {
 failed_fake_checks_failure <- function(m) {
   x <- m[["failed_fake_checks"]]
   if (is.null(x)) {
-    v <- tryCatch(
-      package_version(m[["pbn_version"]]),
-      error = function(e) return(NULL)
-    )
-    new <- length(v) == 1 && v >= package_version("2026.11.25")
-    if (new) {
-      return(paste(
-        "manifest has no failed_fake_checks. pbn 2026.11.25 and newer write",
-        "it for \"real\""
-      ))
-    }
-    return(character(0))
+    return(missing_failed_fake_checks(m))
   }
-  ok <- is.character(x) &&
-    is.null(attributes(x)) &&
-    !anyNA(x) &&
-    all(grepl("^[a-z0-9_]+$", x)) &&
-    !"real" %in% x &&
-    !anyDuplicated(x)
-  if (!ok) {
+  if (!is_fake_scenario_names(x)) {
     return(paste(
       "manifest$failed_fake_checks is not a character vector of names of",
       "fake scenarios. Each name has lower-case letters, digits and",
@@ -635,6 +618,36 @@ failed_fake_checks_failure <- function(m) {
     ))
   }
   return(character(0))
+}
+
+# The failure of a real manifest `m` without failed_fake_checks: one when
+# pbn_version is 2026.11.25 or newer, and character(0) otherwise.
+missing_failed_fake_checks <- function(m) {
+  v <- tryCatch(
+    package_version(m[["pbn_version"]]),
+    error = function(e) return(NULL)
+  )
+  if (length(v) == 1 && v >= package_version("2026.11.25")) {
+    return(paste(
+      "manifest has no failed_fake_checks. pbn 2026.11.25 and newer write",
+      "it for \"real\""
+    ))
+  }
+  return(character(0))
+}
+
+# TRUE when `x` is a character vector without attributes of distinct names of
+# fake scenarios: lower-case letters, digits and underscores, and not "real".
+is_fake_scenario_names <- function(x) {
+  if (!is.character(x) || !is.null(attributes(x))) {
+    return(FALSE)
+  }
+  return(all(
+    !anyNA(x),
+    grepl("^[a-z0-9_]+$", x),
+    !"real" %in% x,
+    !anyDuplicated(x)
+  ))
 }
 
 # The failure of manifest_data on the elements data_files and fake_md5 of

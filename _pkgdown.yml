@@ -4,18 +4,18 @@ template:
   package: rwtemplate
   params:
     hero:
-      overline: "R package - Project policy"
-      title: "One layout for every analysis project."
+      overline: "R package - Analysis framework"
+      title: "An R analysis framework built for AI agents."
       lede: >
-        The house layout of a versioned analysis project, the checks of that
-        layout, and one results object with a fixed contract.
+        One layout, rules that code enforces, and fake data with known
+        answers, so a person can check the code that an agent writes.
       cta:
         primary:
           text: "Get started"
           href: "articles/pbn.html"
         secondary:
-          text: "Browse the reference"
-          href: "reference/index.html"
+          text: "pbn with AI agents"
+          href: "articles/agents.html"
 
 articles:
 - title: "Articles"

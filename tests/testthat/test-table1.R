@@ -17,7 +17,22 @@ test_that("table1 has one row per variable and group, All first", {
   t1 <- table1(d40, by = "g", vars = vars40)
   expect_identical(
     names(t1),
-    c("var", "grp", "n", "missing", "mean", "sd", "events", "pct", "p", "test")
+    c(
+      "var",
+      "grp",
+      "n",
+      "missing",
+      "mean",
+      "sd",
+      "events",
+      "pct",
+      "p",
+      "test",
+      "level",
+      "median",
+      "q1",
+      "q3"
+    )
   )
   expect_identical(t1$var, rep(c("x1", "x2", "z"), each = 3))
   expect_identical(t1$grp, rep(c("All", "a", "b"), 3))

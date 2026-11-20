@@ -1,0 +1,75 @@
+# The Table 1 style of test-table1_stats.R, with every field of the schema.
+# Every value is a test choice. The file name has no date, so
+# table1_styles() does not list this file.
+bin:
+  template:
+    value: "{events} ({pct})"
+    source: editorial choice
+  pct_digits:
+    value: 1
+    source: editorial choice
+cont:
+  template:
+    value: "{median} ({q1}-{q3})"
+    source: editorial choice
+  mean_digits:
+    value: 1
+    source: editorial choice
+  sd_digits:
+    value: 2
+    source: editorial choice
+  median_digits:
+    value: 1
+    source: editorial choice
+cat:
+  template:
+    value: "{events}/{n} ({pct}%)"
+    source: editorial choice
+  pct_digits:
+    value: 1
+    source: editorial choice
+  heading_template:
+    value: "by level"
+    source: editorial choice
+p:
+  digits:
+    value: 3
+    source: editorial choice
+  template:
+    value: "P ={p}"
+    source: editorial choice
+  lower:
+    value: 0.001
+    source: editorial choice
+  below_template:
+    value: "P <{lower}"
+    source: editorial choice
+  upper:
+    value: 0.999
+    source: editorial choice
+  above_template:
+    value: "P >{upper}"
+    source: editorial choice
+thousands:
+  mark:
+    value: ","
+    source: editorial choice
+  from:
+    value: 10000
+    source: editorial choice
+missing:
+  show:
+    value: row_if_any
+    source: editorial choice
+  template:
+    value: "; {missing} missing"
+    source: editorial choice
+  row_template:
+    value: "{missing} ({pct}%)"
+    source: editorial choice
+  row_pct_digits:
+    value: 1
+    source: editorial choice
+footnotes:
+  - value: "Values are n (%) or median (quartiles)."
+    source: editorial choice

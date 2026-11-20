@@ -12,8 +12,8 @@ table1(d, by, vars, style = NULL)
 \item{by}{The name of the grouping column in \code{d}.}
 
 \item{vars}{A data.table with the columns \code{var} and \code{type}. \code{var} names a
-column in \code{d}. \code{type} is \code{"bin"} for a 0/1 variable, or \code{"cont"} for a
-numeric variable.}
+column in \code{d}. \code{type} is \code{"bin"} for a 0/1 variable, \code{"cont"} for a
+numeric variable, or \code{"cat"} for a categorical variable.}
 
 \item{style}{\code{NULL}, the name of an installed style, or the path to a style
 file that ends in \code{.yml}. \code{\link[=table1_styles]{table1_styles()}} gives the names of the
@@ -22,12 +22,15 @@ Styles below describes a style file.}
 }
 \value{
 A data.table with one row per variable and group, in the order of
-\code{vars}, and \code{"All"} first. The columns are \code{var}, \code{grp}, \code{n}, \code{missing},
-\code{mean}, \code{sd}, \code{events}, \code{pct}, \code{p} and \code{test}. \code{n} counts the non-missing
-values. With a style, the columns \code{value_pretty} (the cell text) and
-\code{p_pretty} (the text of \code{p}) follow. The attribute \code{footnotes} then
-holds the footnotes of the style as a character vector. The other
-columns are the same as with \code{style = NULL}.
+\code{vars}, and \code{"All"} first. A \code{"cat"} variable has one row per level and
+group. The columns are \code{var}, \code{grp}, \code{n}, \code{missing}, \code{mean}, \code{sd},
+\code{events}, \code{pct}, \code{p}, \code{test}, \code{level}, \code{median}, \code{q1} and \code{q3}. \code{n}
+counts the non-missing values. pbn 2026.12.3 added the last four
+columns. With a style, the columns \code{row}, \code{value_pretty} (the cell text)
+and \code{p_pretty} (the text of \code{p}) follow. The attribute \code{footnotes} then
+holds the footnotes of the style as a character vector. A style can add
+rows, as the section Styles says. The other columns of each row of the
+output without a style stay the same.
 }
 \description{
 \code{table1()} computes the numbers of a descriptive table, per group and for
@@ -51,16 +54,37 @@ variable. When fewer than two levels have a non-missing value, \code{p} and
 \item A value other than 0, 1 or \code{NA} is an error.
 }
 
-For a \code{"cont"} variable, \code{mean} and \code{sd} hold the numbers. \code{p} and \code{test}
-are \code{NA} in this version.
+For a \code{"cont"} variable, \code{mean}, \code{sd}, \code{median}, \code{q1} and \code{q3} hold the
+numbers of the non-missing values. \code{q1} and \code{q3} are the first and the
+third quartile. The median and the quartiles are \code{stats::quantile()} with
+\code{type = 7}, the default of R. \code{p} and \code{test} are \code{NA} in this version.
+
+A \code{"cat"} variable has one row for each level and group. The rows of a
+level are together, in the order of the groups.
+\itemize{
+\item The levels are the factor levels when the variable is a factor.
+Otherwise they are the sorted unique values that are not \code{NA}, so a
+number sorts as a number. \code{level} holds each level as text.
+\item \code{events} is the count of the level, and \code{n} is the count of the
+non-missing values of the group. So \code{pct} is \code{100 * events / n}, and the
+percentages of a group with \code{n} above 0 add up to 100.
+\item \code{p} and \code{test} follow the rule of a \code{"bin"} variable, with the levels in
+place of 0 and 1. A level with a count of 0 in each group is not part of
+the test. When fewer than two levels or fewer than two groups remain,
+\code{p} and \code{test} are \code{NA}.
+\item A variable that has no level, because each value is \code{NA} and it is not
+a factor, has one row per group. Its \code{level}, \code{events} and \code{pct} are
+\code{NA}. With a style it gets no level row, only its heading row and the
+Missing row that \code{missing.show} asks for.
+}
 
 A column that does not apply to the type holds \code{NA}.
 }
 \section{Styles}{
 
 A style formats the numbers of \code{table1()} for a journal or a report. A
-style can only format what \code{table1()} computes. It cannot add a median, an
-IQR or a test of a \code{"cont"} variable.
+style can only format what \code{table1()} computes. It cannot add a test of a
+\code{"cont"} variable.
 
 An installed style is the file \verb{inst/table1/<name>_<YYYY_MM_DD>.yml} of
 pbn. Its name is the file name without \code{.yml}. pbn never edits a released
@@ -72,7 +96,11 @@ the value comes from. Examples are the guide and its count of papers
 (\verb{k/N papers}), the guideline and its page, and \verb{editorial choice}.
 \code{table1()} checks every field when it reads the file. An unknown field, a
 missing field, a missing \code{source} or a value that the field does not allow
-stops it. The error names the field and the file.
+stops it. The error names the field and the file. The fields that pbn
+2026.12.3 added are optional, so a style file of an earlier pbn stays
+valid. They are \code{cont.median_digits}, the section \code{cat}, and the fields
+\code{missing.row_template} and \code{missing.row_pct_digits}. An optional field that
+is present gets the same checks as the other fields.
 
 A template is text with placeholders in braces, such as \code{{events}}. A
 template can hold only the placeholders of its field, in any order, and
@@ -81,9 +109,23 @@ it can hold none. These are the fields:
 \item \code{bin.template}: the cell of a \code{"bin"} row, over \code{{events}}, \code{{n}} and
 \code{{pct}}. An example is \code{"{events} ({pct})"}.
 \item \code{bin.pct_digits}: the decimals of \code{pct}, a whole number from 0 to 10.
-\item \code{cont.template}: the cell of a \code{"cont"} row, over \code{{mean}} and \code{{sd}}.
+\item \code{cont.template}: the cell of a \code{"cont"} row, over \code{{mean}}, \code{{sd}},
+\code{{median}}, \code{{q1}} and \code{{q3}}. An example is \code{"{median} ({q1}-{q3})"}.
+A template that holds \code{{median}}, \code{{q1}} or \code{{q3}} needs
+\code{cont.median_digits}.
 \item \code{cont.mean_digits} and \code{cont.sd_digits}: the decimals of \code{mean} and of
 \code{sd}, each a whole number from 0 to 10.
+\item \code{cont.median_digits} (optional): the decimals of \code{median}, \code{q1} and
+\code{q3}, a whole number from 0 to 10.
+\item \code{cat} (an optional section): it MUST be present when \code{vars} has a
+\code{"cat"} variable. When it is present, it MUST hold all three fields
+below.
+\item \code{cat.template}: the cell of a level row of a \code{"cat"} variable, over
+\code{{events}}, \code{{n}} and \code{{pct}}, as \code{bin.template}.
+\item \code{cat.pct_digits}: the decimals of \code{pct} in a level row, a whole number
+from 0 to 10.
+\item \code{cat.heading_template}: the cell of the heading row of a \code{"cat"}
+variable. It holds no placeholder. \code{""} gives an empty cell.
 \item \code{p.digits}: the decimals of \code{p}, a whole number from 0 to 10.
 \item \code{p.template}: the text of \code{p}, over \code{{p}}. \code{"P ={p}"} gives \code{P =0.005},
 and \code{"{p}"} gives the number only.
@@ -100,10 +142,20 @@ string \code{""} gives no separator.
 \item \code{thousands.from}: a number above 0. A number gets the separator when its
 rounded absolute value is \code{thousands.from} or more. With 10000, 12347
 prints as \verb{12,347} and 9999 prints as \code{9999}.
-\item \code{missing.show}: \code{never}, \code{if_any} or \code{always}. With \code{if_any}, a cell gets
-\code{missing.template} when \code{missing} is above 0.
+\item \code{missing.show}: \code{never}, \code{if_any}, \code{always}, \code{row_if_any} or
+\code{row_always}. With \code{if_any}, a cell gets \code{missing.template} when
+\code{missing} is above 0. With \code{always}, each cell that is not \code{NA} gets
+it. With \code{row_if_any}, a variable gets a Missing row when its \code{"All"}
+group has a missing value. With \code{row_always}, each variable gets a
+Missing row. The two row choices need \code{missing.row_template} and
+\code{missing.row_pct_digits}.
 \item \code{missing.template}: the text that \code{table1()} adds to the end of a cell,
-over \code{{missing}}. An example is \code{"; {missing} missing"}.
+over \code{{missing}}. An example is \code{"; {missing} missing"}. Only \code{if_any}
+and \code{always} use it.
+\item \code{missing.row_template} (optional): the cell of a Missing row, over
+\code{{missing}} and \code{{pct}}. An example is \code{"{missing} ({pct}\%)"}.
+\item \code{missing.row_pct_digits} (optional): the decimals of \code{pct} in a Missing
+row, a whole number from 0 to 10.
 \item \code{footnotes}: a list, which can be empty. Each item is a map with the keys
 \code{value} and \code{source}, and \code{value} is the text of one footnote.
 }
@@ -112,6 +164,26 @@ over \code{{missing}}. An example is \code{"; {missing} missing"}.
 no more decimals than \code{p.digits}. \code{p.lower} MUST be below \code{p.upper}.
 \code{table1()} compares \code{p} with the thresholds before it rounds \code{p}, so 0.9994
 is above 0.999. A \code{p} equal to a threshold gets \code{p.template}.
+
+A style can add rows, and the column \code{row} names the kind of each row:
+\itemize{
+\item \code{"value"}: a row of the output without a style. A level row of a
+\code{"cat"} variable has \code{p_pretty} \code{NA}.
+\item \code{"heading"}: one row for each group before the level rows of a \code{"cat"}
+variable. Its cell is \code{cat.heading_template}, and its \code{p_pretty} is the
+P of the variable.
+\item \code{"missing"}: one row for each group after the other rows of a variable,
+when \code{missing.show} asks for it. Its cell gives \code{missing} and its
+percent, and its column \code{pct} holds that percent,
+\code{100 * missing / (n + missing)}. The denominator counts every row of the
+group, missing ones included. Its \code{p_pretty} is \code{NA}.
+}
+
+A heading row and a Missing row keep \code{var}, \code{grp}, \code{n}, \code{missing}, \code{p} and
+\code{test} of the group. Their \code{level} and their other numbers are \code{NA}, except
+\code{pct} of a Missing row. A table
+with no \code{"cat"} variable and no Missing row keeps the rows of the output
+without a style.
 
 \code{table1()} rounds each number with \code{formatC()}, which rounds as the C
 function \code{sprintf()} does. \code{events}, \code{n} and \code{missing} print with no

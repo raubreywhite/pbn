@@ -25,10 +25,14 @@ varsbig <- data.table::data.table(var = "y", type = "bin")
 
 fixture_style <- test_path("fixtures", "fixture_2026_12_01.yml")
 
-# The fixture style with `change` applied, written to a temporary file that
+# fixtures/fixture_full.yml has every field of the schema, the new fields of
+# pbn 2026.12.3 too.
+full_style <- test_path("fixtures", "fixture_full.yml")
+
+# The style `base` with `change` applied, written to a temporary file that
 # lives as long as the calling test.
-style_with <- function(change, env = parent.frame()) {
-  s <- yaml::read_yaml(fixture_style)
+style_with <- function(change, env = parent.frame(), base = fixture_style) {
+  s <- yaml::read_yaml(base)
   s <- change(s)
   f <- withr::local_tempfile(fileext = ".yml", .local_envir = env)
   yaml::write_yaml(s, f)
@@ -158,22 +162,64 @@ test_that("missing.show never adds no count, and always adds a count of 0 too", 
   )
 })
 
-test_that("with style = NULL, table1 is identical to pbn 2026.11.30", {
+test_that("with style = NULL, each column of pbn 2026.11.30 is identical", {
   # fixtures/table1_2026_11_30.qs2 holds the output of the installed pbn
-  # 2026.11.30 for d20f and dbig. qs2 drops the self-reference of a
-  # data.table, and setalloccol() restores it.
+  # 2026.11.30 for d20f and dbig. pbn 2026.12.3 adds the columns level,
+  # median, q1 and q3 after them.
   frozen <- qs2::qs_read(test_path("fixtures", "table1_2026_11_30.qs2"))
-  small <- data.table::setalloccol(frozen$small)
-  big <- data.table::setalloccol(frozen$big)
-  expect_identical(table1(d20f, by = "g", vars = vars20), small)
-  expect_identical(table1(d20f, by = "g", vars = vars20, style = NULL), small)
-  expect_identical(table1(dbig, by = "g", vars = varsbig, style = NULL), big)
+  small <- as.list(frozen$small)
+  big <- as.list(frozen$big)
+  t1 <- table1(d20f, by = "g", vars = vars20)
+  expect_identical(names(t1), c(names(small), "level", "median", "q1", "q3"))
+  expect_identical(as.list(t1)[names(small)], small)
+  t1 <- table1(d20f, by = "g", vars = vars20, style = NULL)
+  expect_identical(as.list(t1)[names(small)], small)
+  t1 <- table1(dbig, by = "g", vars = varsbig, style = NULL)
+  expect_identical(as.list(t1)[names(big)], big)
+})
+
+test_that("for bin and cont, each column of pbn 2026.12.2 is identical, with style = NULL and with the fixture style", {
+  # fixtures/table1_2026_12_02.qs2 holds the output of pbn 2026.12.2, built
+  # from git d5fc5ae into a throwaway library, for d20f and dbig, with
+  # style = NULL and with fixtures/fixture_2026_12_01.yml.
+  frozen <- qs2::qs_read(test_path("fixtures", "table1_2026_12_02.qs2"))
+  now <- list(
+    small = table1(d20f, by = "g", vars = vars20),
+    small_styled = table1(d20f, by = "g", vars = vars20, style = fixture_style),
+    big = table1(dbig, by = "g", vars = varsbig),
+    big_styled = table1(dbig, by = "g", vars = varsbig, style = fixture_style)
+  )
+  # The columns of `x` named `j`, as a list without the attributes of `x`.
+  columns <- function(x, j) {
+    return(lapply(stats::setNames(j, j), function(k) return(x[[k]])))
+  }
+  expect_identical(names(now), names(frozen))
+  for (k in names(frozen)) {
+    old <- frozen[[k]]
+    expect_identical(
+      columns(now[[k]], names(old)),
+      columns(old, names(old)),
+      label = k
+    )
+    expect_identical(attr(now[[k]], "footnotes"), attr(old, "footnotes"))
+  }
+  # The new columns hold NA where they do not apply. z of d20f is cont:
+  # a is (1:10) / 3, so its median is 5.5 / 3; b is 11:20, so 15.5. All
+  # has 20 values, and its median is (10 / 3 + 11) / 2.
+  t1 <- now$small_styled
+  expect_identical(t1$level, rep(NA_character_, 8))
+  expect_identical(t1$row, rep("value", 8))
+  expect_identical(t1$median[1:4], rep(NA_real_, 4))
+  expect_equal(t1$median[5:8], c((10 / 3 + 11) / 2, 15.5, 5.5 / 3, NA))
 })
 
 test_that("a style adds value_pretty and p_pretty and changes no other column", {
   plain <- table1(d20f, by = "g", vars = vars20)
   styled <- table1(d20f, by = "g", vars = vars20, style = fixture_style)
-  expect_identical(names(styled), c(names(plain), "value_pretty", "p_pretty"))
+  expect_identical(
+    names(styled),
+    c(names(plain), "row", "value_pretty", "p_pretty")
+  )
   expect_identical(as.list(styled)[names(plain)], as.list(plain))
   expect_identical(
     styled$value_pretty,
@@ -292,7 +338,8 @@ test_that("an unknown field is an error that names the field and the file", {
 })
 
 test_that("every field of the schema is checked: an ill-typed value, a missing field and a missing source are errors that name it", {
-  # The message for a YAML list as the value, for each of the 15 fields.
+  # The style is fixtures/fixture_full.yml, which has every field. The
+  # message for a YAML list as the value, for each of the 21 fields.
   string <- "must be one quoted string."
   digits <- "must be a whole number from 0 to 10."
   threshold <- "must be null, or a number above 0 and below 1."
@@ -302,6 +349,10 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
     cont.template = string,
     cont.mean_digits = digits,
     cont.sd_digits = digits,
+    cont.median_digits = digits,
+    cat.template = string,
+    cat.pct_digits = digits,
+    cat.heading_template = string,
     p.digits = digits,
     p.template = string,
     p.lower = threshold,
@@ -310,8 +361,19 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
     p.above_template = string,
     thousands.mark = string,
     thousands.from = "must be a number above 0.",
-    missing.show = "must be one of: never, if_any, always.",
-    missing.template = string
+    missing.show = paste0(
+      "must be one of: never, if_any, always, row_if_any, row_always."
+    ),
+    missing.template = string,
+    missing.row_template = string,
+    missing.row_pct_digits = digits
+  )
+  # A new field of pbn 2026.12.3 is optional. Without it, the error names
+  # the field that needs it.
+  needs <- c(
+    cont.median_digits = "The field cont.template of the style file %s holds {median}, so the style needs the field cont.median_digits.",
+    missing.row_template = "The field missing.show of the style file %s is row_if_any, so the style needs the field missing.row_template.",
+    missing.row_pct_digits = "The field missing.show of the style file %s is row_if_any, so the style needs the field missing.row_pct_digits."
   )
   fields <- unlist(lapply(names(style_schema), function(section) {
     return(paste0(section, ".", names(style_schema[[section]])))
@@ -320,26 +382,37 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
   for (section in names(style_schema)) {
     for (name in names(style_schema[[section]])) {
       field <- paste0(section, ".", name)
-      f <- style_with(function(s) {
-        s[[section]][[name]]$value <- list("a", "b")
-        return(s)
-      })
+      f <- style_with(
+        function(s) {
+          s[[section]][[name]]$value <- list("a", "b")
+          return(s)
+        },
+        base = full_style
+      )
       expect_identical(
         error_message(read_table1_style(f)),
         paste0("The field ", field, " of the style file ", f, " ", ill[[field]])
       )
-      f <- style_with(function(s) {
-        s[[section]][[name]] <- NULL
-        return(s)
-      })
-      expect_identical(
-        error_message(read_table1_style(f)),
-        paste0("The style file ", f, " lacks the field ", field, ".")
+      f <- style_with(
+        function(s) {
+          s[[section]][[name]] <- NULL
+          return(s)
+        },
+        base = full_style
       )
-      f <- style_with(function(s) {
-        s[[section]][[name]]$source <- NULL
-        return(s)
-      })
+      absent <- if (field %in% names(needs)) {
+        sprintf(needs[[field]], f)
+      } else {
+        paste0("The style file ", f, " lacks the field ", field, ".")
+      }
+      expect_identical(error_message(read_table1_style(f)), absent)
+      f <- style_with(
+        function(s) {
+          s[[section]][[name]]$source <- NULL
+          return(s)
+        },
+        base = full_style
+      )
       expect_identical(
         error_message(read_table1_style(f)),
         paste0("The style file ", f, " lacks the field ", field, ".source.")
@@ -373,7 +446,7 @@ test_that("each check of a value gives its own message", {
       "missing",
       "show",
       "sometimes",
-      "must be one of: never, if_any, always."
+      "must be one of: never, if_any, always, row_if_any, row_always."
     )
   )
   for (case in cases) {

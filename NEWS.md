@@ -1,3 +1,7 @@
+# pbn 2026.12.5
+
+- `table1()` no longer stops when Fisher's exact test needs more than the default workspace. It tries again with a workspace of `2e7`. When that also fails, `p` is `NA`, `test` is `"fisher_failed"`, and a warning names the variable.
+
 # pbn 2026.12.4
 
 - Behaviour change: pbn withdraws the style `ijoa_brief_report_2026_11_20`, because no real published table proves it. `table1()` stops on its name with the version and the reason, `table1_styles()` does not list it, and pbn installs no style.

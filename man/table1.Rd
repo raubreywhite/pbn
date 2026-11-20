@@ -52,9 +52,14 @@ For a \code{"bin"} variable:
 \item \code{p} compares the levels of \code{by} that have a non-missing value. It comes
 from the Pearson chi-square test without continuity correction. When
 any expected count is below 5, it comes from Fisher's exact test.
-\item \code{test} is \code{"chisq"} or \code{"fisher"}, and it is the same on every row of the
-variable. When fewer than two levels have a non-missing value, \code{p} and
-\code{test} are \code{NA}.
+\item Fisher's exact test first uses the default workspace of
+\code{\link[stats:fisher.test]{stats::fisher.test()}}. When the test stops with that workspace, it runs
+again with a workspace of \code{2e7}. When it also stops then, \code{p}
+is \code{NA}, \code{test} is \code{"fisher_failed"}, and a warning names the variable.
+A p of Fisher's exact test is exact, never simulated.
+\item \code{test} is \code{"chisq"}, \code{"fisher"} or \code{"fisher_failed"}, and it is the same
+on every row of the variable. When fewer than two levels have a
+non-missing value, \code{p} and \code{test} are \code{NA}.
 \item A value other than 0, 1 or \code{NA} is an error.
 }
 

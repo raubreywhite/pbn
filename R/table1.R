@@ -26,9 +26,14 @@
 #' - `p` compares the levels of `by` that have a non-missing value. It comes
 #'   from the Pearson chi-square test without continuity correction. When
 #'   any expected count is below 5, it comes from Fisher's exact test.
-#' - `test` is `"chisq"` or `"fisher"`, and it is the same on every row of the
-#'   variable. When fewer than two levels have a non-missing value, `p` and
-#'   `test` are `NA`.
+#' - Fisher's exact test first uses the default workspace of
+#'   [stats::fisher.test()]. When the test stops with that workspace, it runs
+#'   again with a workspace of `2e7`. When it also stops then, `p`
+#'   is `NA`, `test` is `"fisher_failed"`, and a warning names the variable.
+#'   A p of Fisher's exact test is exact, never simulated.
+#' - `test` is `"chisq"`, `"fisher"` or `"fisher_failed"`, and it is the same
+#'   on every row of the variable. When fewer than two levels have a
+#'   non-missing value, `p` and `test` are `NA`.
 #' - A value other than 0, 1 or `NA` is an error.
 #'
 #' For a `"cont"` variable, `mean`, `sd`, `median`, `q1` and `q3` hold the
@@ -461,7 +466,7 @@ table1_one_var <- function(x, var, type, grp, levels_by) {
         call. = FALSE
       )
     }
-    tested <- bin_test(x, grp, levels_by)
+    tested <- bin_test(x, grp, levels_by, var)
   } else {
     tested <- list(p = NA_real_, test = NA_character_)
   }
@@ -505,7 +510,7 @@ cat_levels <- function(x) {
 table1_cat_var <- function(x, var, grp, levels_by) {
   levels_x <- cat_levels(x)
   x <- as.character(x)
-  tested <- cat_test(x, grp, levels_by, levels_x)
+  tested <- cat_test(x, grp, levels_by, levels_x, var)
   groups <- c("All", levels_by)
   counts <- lapply(groups, function(g) {
     xi <- group_values(x, grp, g)
@@ -589,43 +594,77 @@ summarise_one <- function(x, type) {
 # when any expected count is below 5. This is the rule SPSS uses. A level
 # with no row in the table is not a group of the test, so an unused factor
 # level does not change the test.
-bin_test <- function(x, grp, levels_by) {
+bin_test <- function(x, grp, levels_by, var) {
   keep <- !is.na(grp)
   tab <- table(
     factor(grp[keep], levels = levels_by),
     factor(x[keep], levels = c(0, 1))
   )
-  return(contingency_test(tab[rowSums(tab) > 0, , drop = FALSE]))
+  return(contingency_test(tab[rowSums(tab) > 0, , drop = FALSE], var))
 }
 
 # The test of a "cat" variable over its levels by the groups. A level with no
 # row is not a column of the test, as a group with no row is not a row of it.
-cat_test <- function(x, grp, levels_by, levels_x) {
+cat_test <- function(x, grp, levels_by, levels_x, var) {
   keep <- !is.na(grp)
   tab <- table(
     factor(grp[keep], levels = levels_by),
     factor(x[keep], levels = levels_x)
   )
-  return(contingency_test(tab[
-    rowSums(tab) > 0,
-    colSums(tab) > 0,
-    drop = FALSE
-  ]))
+  return(contingency_test(
+    tab[rowSums(tab) > 0, colSums(tab) > 0, drop = FALSE],
+    var
+  ))
 }
 
 # The rule of bin_test() for a table of groups by values. With fewer than two
-# rows or two columns there is no test.
-contingency_test <- function(tab) {
+# rows or two columns there is no test. `var` is the name of the variable.
+contingency_test <- function(tab, var) {
   if (nrow(tab) < 2 || ncol(tab) < 2) {
     return(list(p = NA_real_, test = NA_character_))
   }
   expected <- outer(rowSums(tab), colSums(tab)) / sum(tab)
   if (any(expected < 5)) {
-    return(list(p = stats::fisher.test(tab)$p.value, test = "fisher"))
+    return(fisher_test(tab, var))
   }
   return(list(
     p = stats::chisq.test(tab, correct = FALSE)$p.value,
     test = "chisq"
+  ))
+}
+
+# The workspace of the second try of Fisher's exact test. The race of Liao
+# 2026 Table 1, 3 groups by 7 levels of 530 women, needs it.
+fisher_workspace <- 2e7
+
+# Fisher's exact test of `tab`. The first try uses the default workspace of
+# stats::fisher.test(), so a p that it gives stays the same. When that try
+# stops, the second try uses fisher_workspace. When that try also stops, the
+# p is NA, the test is "fisher_failed", and a warning names `var`.
+fisher_test <- function(tab, var) {
+  p <- fisher_p(tab)
+  if (is.null(p)) {
+    p <- fisher_p(tab, workspace = fisher_workspace)
+  }
+  if (!is.null(p)) {
+    return(list(p = p, test = "fisher"))
+  }
+  warning(
+    "Fisher's exact test of variable '",
+    var,
+    "' stops with a workspace of ",
+    format(fisher_workspace, scientific = TRUE),
+    ", so its p is NA and its test is \"fisher_failed\".",
+    call. = FALSE
+  )
+  return(list(p = NA_real_, test = "fisher_failed"))
+}
+
+# The p of stats::fisher.test(tab, ...), or NULL when the test stops.
+fisher_p <- function(tab, ...) {
+  return(tryCatch(
+    stats::fisher.test(tab, ...)$p.value,
+    error = function(e) return(NULL)
   ))
 }
 

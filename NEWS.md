@@ -1,3 +1,9 @@
+# pbn 2026.12.1
+
+- New argument `style` of `table1()`. With a style, `table1()` adds the columns `value_pretty` and `p_pretty` and the attribute `footnotes`. With `style = NULL`, the output is the same as in pbn 2026.11.30.
+- New `table1_styles()` gives the names of the installed styles. pbn 2026.12.1 installs no style. `?table1` describes a style file, and the article Table 1 styles shows each installed style.
+- In `house_2026_11_20`, `no_local_copy_of_pbn_function` knows the export `table1_styles`.
+
 # pbn 2026.11.30
 
 - New rule set `house_2026_11_20`: the set `house_2026_11_19` with three new rules at `fail`, for one version counter of the run scripts and the manuscripts. A project on `house_2026_11_17` or `house_2026_11_19` sees no change. The line for a new `pbn.yml` and `create_project()` now name `house_2026_11_20`.

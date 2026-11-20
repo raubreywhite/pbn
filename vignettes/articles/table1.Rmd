@@ -1,0 +1,97 @@
+---
+title: "Table 1 styles"
+author: "[Richard Aubrey White](https://www.rwhite.no)"
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+options(knitr.kable.NA = "")
+```
+
+`pbn::table1()` computes the numbers of a descriptive table. A style formats these numbers as the text that a journal or a report needs. With a style, the output gets the columns `value_pretty` and `p_pretty`, and the other columns stay the same.
+
+## What a style is
+
+A style is a YAML file of pbn, `inst/table1/<name>_<YYYY_MM_DD>.yml`. Give its name, the file name without `.yml`, to the argument `style` of `table1()`. pbn never edits a released style. A changed style gets a new file with a new date, so a project that names a style gets the same text at each run.
+
+Each field of a style holds a `value` and a `source`. The source says where the value comes from. It is the guide of a journal and its count of papers, the guideline and its page, or `editorial choice`.
+
+## The schema
+
+This style file has every field. The section Styles of `?table1` gives the type and the check of each field.
+
+```{cat, engine.opts = list(file = file.path(tempdir(), "example_2026_12_01.yml"), lang = "yaml")}
+bin:
+  template: {value: "{events} ({pct})", source: editorial choice}
+  pct_digits: {value: 1, source: editorial choice}
+cont:
+  template: {value: "{mean} ({sd})", source: editorial choice}
+  mean_digits: {value: 1, source: editorial choice}
+  sd_digits: {value: 1, source: editorial choice}
+p:
+  digits: {value: 3, source: editorial choice}
+  template: {value: "P ={p}", source: editorial choice}
+  lower: {value: 0.001, source: editorial choice}
+  below_template: {value: "P <{lower}", source: editorial choice}
+  upper: {value: 0.999, source: editorial choice}
+  above_template: {value: "P >{upper}", source: editorial choice}
+thousands:
+  mark: {value: ",", source: editorial choice}
+  from: {value: 10000, source: editorial choice}
+missing:
+  show: {value: if_any, source: editorial choice}
+  template: {value: "; {missing} missing", source: editorial choice}
+footnotes:
+  - {value: "Values are n (percent) or mean (SD).", source: editorial choice}
+```
+
+The fake data below have 12,000 rows in two groups. `wide()` puts one variable on each row and one group in each column.
+
+```{r}
+set.seed(1)
+n <- 12000
+d <- data.table::data.table(
+  group = rep(c("Control", "Exposed"), times = c(9000, 3000)),
+  smoker = stats::rbinom(n, 1, 0.15),
+  age = round(stats::rnorm(n, mean = 31, sd = 5), 1)
+)
+d$smoker[sample(n, 40)] <- NA
+vars <- data.table::data.table(
+  var = c("smoker", "age"),
+  type = c("bin", "cont")
+)
+
+wide <- function(t1) {
+  groups <- unique(t1$grp)
+  out <- data.frame(var = unique(t1$var))
+  for (g in groups) {
+    out[[g]] <- t1$value_pretty[t1$grp == g]
+  }
+  out$p <- t1$p_pretty[t1$grp == "All"]
+  return(out)
+}
+
+t1 <- pbn::table1(
+  d,
+  by = "group",
+  vars = vars,
+  style = file.path(tempdir(), "example_2026_12_01.yml")
+)
+knitr::kable(wide(t1))
+attr(t1, "footnotes")
+```
+
+## The installed styles
+
+```{r, results = "asis", echo = FALSE}
+styles <- pbn::table1_styles()
+if (length(styles) == 0) {
+  cat("pbn", format(utils::packageVersion("pbn")), "installs no style.\n")
+}
+for (s in styles) {
+  t1 <- pbn::table1(d, by = "group", vars = vars, style = s)
+  cat("\n### ", s, "\n\n", sep = "")
+  print(knitr::kable(wide(t1)))
+  cat("\n", paste0(attr(t1, "footnotes"), "\n\n"), sep = "")
+}
+```

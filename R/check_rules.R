@@ -34,6 +34,7 @@ pbn_exports <- c(
   "show_blocks",
   "stamp_fake",
   "table1",
+  "table1_styles",
   "to_one_file",
   "verify"
 )
@@ -45,6 +46,7 @@ new_exports <- c(
   create_project = "house_2026_11_19",
   freeze_version = "house_2026_11_19",
   new_version = "house_2026_11_19",
+  table1_styles = "house_2026_11_20",
   verify = "house_2026_11_19"
 )
 

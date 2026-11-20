@@ -4,7 +4,7 @@
 \alias{table1}
 \title{Compute the numbers of a descriptive table}
 \usage{
-table1(d, by, vars)
+table1(d, by, vars, style = NULL)
 }
 \arguments{
 \item{d}{A data.table, or a data.frame.}
@@ -14,16 +14,24 @@ table1(d, by, vars)
 \item{vars}{A data.table with the columns \code{var} and \code{type}. \code{var} names a
 column in \code{d}. \code{type} is \code{"bin"} for a 0/1 variable, or \code{"cont"} for a
 numeric variable.}
+
+\item{style}{\code{NULL}, the name of an installed style, or the path to a style
+file that ends in \code{.yml}. \code{\link[=table1_styles]{table1_styles()}} gives the names of the
+installed styles. With \code{NULL}, \code{table1()} does no formatting. The section
+Styles below describes a style file.}
 }
 \value{
 A data.table with one row per variable and group, in the order of
 \code{vars}, and \code{"All"} first. The columns are \code{var}, \code{grp}, \code{n}, \code{missing},
 \code{mean}, \code{sd}, \code{events}, \code{pct}, \code{p} and \code{test}. \code{n} counts the non-missing
-values.
+values. With a style, the columns \code{value_pretty} (the cell text) and
+\code{p_pretty} (the text of \code{p}) follow. The attribute \code{footnotes} then
+holds the footnotes of the style as a character vector. The other
+columns are the same as with \code{style = NULL}.
 }
 \description{
 \code{table1()} computes the numbers of a descriptive table, per group and for
-all rows. It does no formatting.
+all rows. With a style, it also formats these numbers as text.
 }
 \details{
 The groups are the levels of \code{by}, plus \code{"All"}. The levels are the factor
@@ -48,6 +56,70 @@ are \code{NA} in this version.
 
 A column that does not apply to the type holds \code{NA}.
 }
+\section{Styles}{
+
+A style formats the numbers of \code{table1()} for a journal or a report. A
+style can only format what \code{table1()} computes. It cannot add a median, an
+IQR or a test of a \code{"cont"} variable.
+
+An installed style is the file \verb{inst/table1/<name>_<YYYY_MM_DD>.yml} of
+pbn. Its name is the file name without \code{.yml}. pbn never edits a released
+style, so a changed style gets a new date.
+
+A style file is a YAML map of sections. Each field of a section is a map
+with the keys \code{value} and \code{source}. \code{source} is one string that says where
+the value comes from. Examples are the guide and its count of papers
+(\verb{k/N papers}), the guideline and its page, and \verb{editorial choice}.
+\code{table1()} checks every field when it reads the file. An unknown field, a
+missing field, a missing \code{source} or a value that the field does not allow
+stops it. The error names the field and the file.
+
+A template is text with placeholders in braces, such as \code{{events}}. A
+template can hold only the placeholders of its field, in any order, and
+it can hold none. These are the fields:
+\itemize{
+\item \code{bin.template}: the cell of a \code{"bin"} row, over \code{{events}}, \code{{n}} and
+\code{{pct}}. An example is \code{"{events} ({pct})"}.
+\item \code{bin.pct_digits}: the decimals of \code{pct}, a whole number from 0 to 10.
+\item \code{cont.template}: the cell of a \code{"cont"} row, over \code{{mean}} and \code{{sd}}.
+\item \code{cont.mean_digits} and \code{cont.sd_digits}: the decimals of \code{mean} and of
+\code{sd}, each a whole number from 0 to 10.
+\item \code{p.digits}: the decimals of \code{p}, a whole number from 0 to 10.
+\item \code{p.template}: the text of \code{p}, over \code{{p}}. \code{"P ={p}"} gives \code{P =0.005},
+and \code{"{p}"} gives the number only.
+\item \code{p.lower}: \code{null}, or a number above 0 and below 1. A \code{p} below it gets
+\code{p.below_template} in place of \code{p.template}.
+\item \code{p.below_template}: the text of such a \code{p}, over \code{{lower}}. With
+\code{p.lower} 0.001, \code{"P <{lower}"} gives \code{P <0.001}.
+\item \code{p.upper}: \code{null}, or a number above 0 and below 1. A \code{p} above it gets
+\code{p.above_template}.
+\item \code{p.above_template}: the text of such a \code{p}, over \code{{upper}}. With
+\code{p.upper} 0.999, \code{"P >{upper}"} gives \code{P >0.999}.
+\item \code{thousands.mark}: the thousands separator, such as \code{","}. The empty
+string \code{""} gives no separator.
+\item \code{thousands.from}: a number above 0. A number gets the separator when its
+rounded absolute value is \code{thousands.from} or more. With 10000, 12347
+prints as \verb{12,347} and 9999 prints as \code{9999}.
+\item \code{missing.show}: \code{never}, \code{if_any} or \code{always}. With \code{if_any}, a cell gets
+\code{missing.template} when \code{missing} is above 0.
+\item \code{missing.template}: the text that \code{table1()} adds to the end of a cell,
+over \code{{missing}}. An example is \code{"; {missing} missing"}.
+\item \code{footnotes}: a list, which can be empty. Each item is a map with the keys
+\code{value} and \code{source}, and \code{value} is the text of one footnote.
+}
+
+\code{p.lower} and \code{p.upper} print with \code{p.digits} decimals, so each MUST have
+no more decimals than \code{p.digits}. \code{p.lower} MUST be below \code{p.upper}.
+\code{table1()} compares \code{p} with the thresholds before it rounds \code{p}, so 0.9994
+is above 0.999. A \code{p} equal to a threshold gets \code{p.template}.
+
+\code{table1()} rounds each number with \code{formatC()}, which rounds as the C
+function \code{sprintf()} does. \code{events}, \code{n} and \code{missing} print with no
+decimals. The thousands separator applies to every number of a cell. A
+cell is \code{NA} when a number of its template is \code{NA}, as for a group with
+\code{n = 0}. \code{p_pretty} is \code{NA} where \code{p} is \code{NA}.
+}
+
 \examples{
 d <- data.table::data.table(
   g = rep(c("a", "b"), each = 10),
@@ -59,5 +131,39 @@ vars <- data.table::data.table(
   type = c("bin", "cont")
 )
 pbn::table1(d, by = "g", vars = vars)
+
+# A style file, written to tempdir()
+style <- file.path(tempdir(), "example_2026_12_01.yml")
+writeLines(c(
+  "bin:",
+  "  template: {value: '{events} ({pct})', source: editorial choice}",
+  "  pct_digits: {value: 1, source: editorial choice}",
+  "cont:",
+  "  template: {value: '{mean} ({sd})', source: editorial choice}",
+  "  mean_digits: {value: 1, source: editorial choice}",
+  "  sd_digits: {value: 1, source: editorial choice}",
+  "p:",
+  "  digits: {value: 3, source: editorial choice}",
+  "  template: {value: 'P ={p}', source: editorial choice}",
+  "  lower: {value: 0.001, source: editorial choice}",
+  "  below_template: {value: 'P <{lower}', source: editorial choice}",
+  "  upper: {value: 0.999, source: editorial choice}",
+  "  above_template: {value: 'P >{upper}', source: editorial choice}",
+  "thousands:",
+  "  mark: {value: ',', source: editorial choice}",
+  "  from: {value: 10000, source: editorial choice}",
+  "missing:",
+  "  show: {value: if_any, source: editorial choice}",
+  "  template: {value: '; {missing} missing', source: editorial choice}",
+  "footnotes:",
+  "  - {value: 'Values are n (percent) or mean (SD).', source: editorial choice}"
+), style)
+t1 <- pbn::table1(d, by = "g", vars = vars, style = style)
+t1[, c("var", "grp", "value_pretty", "p_pretty")]
+attr(t1, "footnotes")
+}
+\seealso{
+Other shared helpers:
+\code{\link[=table1_styles]{table1_styles()}}
 }
 \concept{shared helpers}

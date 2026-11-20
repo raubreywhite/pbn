@@ -1073,7 +1073,7 @@ A page has 35 rows. `pbn::show_block()` reads the real results from the disk at 
 
 - A run always runs every selected scenario and simulation. pbn keeps no results of an earlier run to resume from.
 - No tool shows the tracked changes between two Word manuscripts.
-- No function formats a table for a journal. `table1()` computes the numbers only, and it gives no p-value for a continuous variable.
+- `table1()` formats a table only through a style, as the article [Table 1 styles](table1.html) shows. It gives no p-value for a continuous variable.
 - When `run_plan()` stops on a failed analysis, the results files of an earlier run stay as they are. `read_results()` reads them.
 - pbn does not check a data element that is a function or an environment, for example an R6 object, for a change in place. In an element that is not a data.frame, the check leaves out each function and each environment, such as that of a formula.
 - pbn finds an analysis that changes an object of `v01_functions/`, such as `CFG`. It does not find a change of a function inside the object, a change inside an environment of the object, or a change by a data function.

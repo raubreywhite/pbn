@@ -24,6 +24,7 @@ articles:
   contents:
   - pbn
   - articles/agents
+  - articles/table1
 
 reference:
 - title: "Start a project or a version"
@@ -79,6 +80,7 @@ reference:
 - title: "Shared helpers"
   contents:
     - table1
+    - table1_styles
 
 authors:
   footer:

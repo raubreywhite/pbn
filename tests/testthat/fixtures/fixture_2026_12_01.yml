@@ -1,0 +1,54 @@
+# The Table 1 style of test-table1_style.R. Every value is a test choice.
+bin:
+  template:
+    value: "{events} ({pct})"
+    source: editorial choice
+  pct_digits:
+    value: 1
+    source: editorial choice
+cont:
+  template:
+    value: "{mean} ({sd})"
+    source: editorial choice
+  mean_digits:
+    value: 1
+    source: editorial choice
+  sd_digits:
+    value: 2
+    source: editorial choice
+p:
+  digits:
+    value: 3
+    source: editorial choice
+  template:
+    value: "P ={p}"
+    source: editorial choice
+  lower:
+    value: 0.001
+    source: editorial choice
+  below_template:
+    value: "P <{lower}"
+    source: editorial choice
+  upper:
+    value: 0.999
+    source: editorial choice
+  above_template:
+    value: "P >{upper}"
+    source: editorial choice
+thousands:
+  mark:
+    value: ","
+    source: editorial choice
+  from:
+    value: 10000
+    source: editorial choice
+missing:
+  show:
+    value: if_any
+    source: editorial choice
+  template:
+    value: "; {missing} missing"
+    source: editorial choice
+footnotes:
+  - value: "Values are n (percent) or mean (SD)."
+    source: editorial choice

@@ -25,5 +25,5 @@ Other shared helpers:
 
 ``` r
 pbn::table1_styles()
-#> character(0)
+#> [1] "ijoa_brief_report_2026_11_21"
 ```

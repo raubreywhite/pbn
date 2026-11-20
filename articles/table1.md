@@ -213,4 +213,16 @@ does not list it. These are the withdrawn styles:
 The tables below show `smoker` and `age` only. A style without the
 section `cat` cannot format a `"cat"` variable.
 
-pbn 2026.12.8 installs no style.
+### ijoa_brief_report_2026_11_21
+
+| row          | All          | Control      | Exposed      | p     |
+|:-------------|:-------------|:-------------|:-------------|:------|
+| smoker       | 1874 (15.7%) | 1409 (15.7%) | 465 (15.6%)  | 0.839 |
+| Not recorded | 40           | 30           | 10           |       |
+| age          | 31 \[28–34\] | 31 \[28–34\] | 31 \[28–34\] |       |
+
+Data are presented as number (percentage) or median \[first–third
+quartile\].
+
+P values from Pearson’s chi-squared test without continuity correction,
+or from Fisher’s exact test when an expected count is below 5.

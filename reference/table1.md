@@ -199,18 +199,19 @@ it can hold none. These are the fields:
   `missing` is above 0. With `always`, each cell that is not `NA` gets
   it. With `row_if_any`, a variable gets a Missing row when its `"All"`
   group has a missing value. With `row_always`, each variable gets a
-  Missing row. The two row choices need `missing.row_template` and
-  `missing.row_pct_digits`.
+  Missing row. The two row choices need `missing.row_template`.
 
 - `missing.template`: the text that `table1()` adds to the end of a
   cell, over `{missing}`. An example is `"; {missing} missing"`. Only
   `if_any` and `always` use it.
 
 - `missing.row_template` (optional): the cell of a Missing row, over
-  `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`.
+  `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`. The
+  template `"{missing}"` gives the missing count only, such as `"2"`.
 
 - `missing.row_pct_digits` (optional): the decimals of `pct` in a
-  Missing row, a whole number from 0 to 10.
+  Missing row, a whole number from 0 to 10. A Missing row needs it only
+  when `missing.row_template` holds `{pct}`.
 
 - `missing.row_label` (optional): the column `label` of a Missing row,
   such as `"Missing"`. Without it, the label is `NA`.

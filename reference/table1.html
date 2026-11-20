@@ -9,7 +9,7 @@ all rows. With a style, it also formats these numbers as text."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -209,15 +209,16 @@ prints as <code>12,347</code> and 9999 prints as <code>9999</code>.</p></li>
 <code>missing</code> is above 0. With <code>always</code>, each cell that is not <code>NA</code> gets
 it. With <code>row_if_any</code>, a variable gets a Missing row when its <code>"All"</code>
 group has a missing value. With <code>row_always</code>, each variable gets a
-Missing row. The two row choices need <code>missing.row_template</code> and
-<code>missing.row_pct_digits</code>.</p></li>
+Missing row. The two row choices need <code>missing.row_template</code>.</p></li>
 <li><p><code>missing.template</code>: the text that <code>table1()</code> adds to the end of a cell,
 over <code>{missing}</code>. An example is <code>"; {missing} missing"</code>. Only <code>if_any</code>
 and <code>always</code> use it.</p></li>
 <li><p><code>missing.row_template</code> (optional): the cell of a Missing row, over
-<code>{missing}</code> and <code>{pct}</code>. An example is <code>"{missing} ({pct}%)"</code>.</p></li>
+<code>{missing}</code> and <code>{pct}</code>. An example is <code>"{missing} ({pct}%)"</code>. The
+template <code>"{missing}"</code> gives the missing count only, such as <code>"2"</code>.</p></li>
 <li><p><code>missing.row_pct_digits</code> (optional): the decimals of <code>pct</code> in a Missing
-row, a whole number from 0 to 10.</p></li>
+row, a whole number from 0 to 10. A Missing row needs it only when
+<code>missing.row_template</code> holds <code>{pct}</code>.</p></li>
 <li><p><code>missing.row_label</code> (optional): the column <code>label</code> of a Missing row,
 such as <code>"Missing"</code>. Without it, the label is <code>NA</code>.</p></li>
 <li><p><code>footnotes</code>: a list, which can be empty. Each item is a map with the keys

@@ -189,4 +189,4 @@ does not list it. These are the withdrawn styles:
 The tables below show `smoker` and `age` only. A style without the
 section `cat` cannot format a `"cat"` variable.
 
-pbn 2026.12.5 installs no style.
+pbn 2026.12.6 installs no style.

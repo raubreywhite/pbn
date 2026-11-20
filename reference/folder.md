@@ -77,11 +77,11 @@ pbn::initialize_project(
   env = new.env()
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmpr8qhGR/pbn_folder_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpSLSG68/pbn_folder_example/v01_functions into 
 pbn::folder("lookup")
-#> [1] "/tmp/Rtmpr8qhGR/pbn_folder_example/codes"
+#> [1] "/tmp/RtmpSLSG68/pbn_folder_example/codes"
 pbn::folder("main", "sub", "d.csv")
-#> [1] "/tmp/Rtmpr8qhGR/pbn_folder_example/data/sub/d.csv"
+#> [1] "/tmp/RtmpSLSG68/pbn_folder_example/data/sub/d.csv"
 
 unlink(home, recursive = TRUE)
 ```

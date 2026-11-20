@@ -97,4 +97,16 @@ attr(t1, "footnotes")
 
 ## The installed styles
 
-pbn 2026.12.1 installs no style.
+### ijoa_brief_report_2026_11_20
+
+| var | All | Control | Exposed | p |
+|:---|:---|:---|:---|:---|
+| smoker | 1873 (15.7%); 40 missing | 1410 (15.7%); 31 missing | 463 (15.5%); 9 missing | P =0.753 |
+| age | 31.0 (5.0) | 30.9 (5.0) | 31.1 (5.0) |  |
+
+Values are n (%) or mean (SD).
+
+SD, standard deviation.
+
+P values compare the groups with Pearson’s chi-square test, or with
+Fisher’s exact test when an expected count is below 5.

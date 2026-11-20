@@ -1,5 +1,14 @@
 # Changelog
 
+## pbn 2026.12.2
+
+- New style `ijoa_brief_report_2026_11_20` of
+  [`table1()`](https://www.rwhite.no/pbn/reference/table1.md), for a
+  Brief Report in the International Journal of Obstetric Anesthesia. It
+  is the file `TABLE1.yml` of the methods guide
+  `observational/ijoa-brief-report/v003`, which cites the IJOA Guide for
+  Authors saved on 2026-11-20. pbn never edits it.
+
 ## pbn 2026.12.1
 
 - New argument `style` of

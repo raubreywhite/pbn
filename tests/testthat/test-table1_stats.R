@@ -110,7 +110,8 @@ test_that("a cat variable has one row per level and group, in the factor order",
       "level",
       "median",
       "q1",
-      "q3"
+      "q3",
+      "label"
     )
   )
 })
@@ -362,8 +363,14 @@ test_that("the type of a variable must be bin, cont or cat", {
 })
 
 test_that("a style file of pbn 2026.12.2 stays valid, without the new fields", {
+  # fixtures/released/ holds the file of the style that pbn 2026.12.2
+  # released and pbn 2026.12.4 withdrew, byte for byte.
   expect_identical(
-    error_text(read_table1_style("ijoa_brief_report_2026_11_20")),
+    error_text(read_table1_style(test_path(
+      "fixtures",
+      "released",
+      "ijoa_brief_report_2026_11_20.yml"
+    ))),
     "no error"
   )
   expect_identical(

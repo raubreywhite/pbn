@@ -1,0 +1,18 @@
+# TEST FIXTURE of pbn. How the output of table1() maps onto reference_1.csv.
+# The layout holds no label: each label comes from vars_1.csv, the fake data
+# or the style.
+columns:
+  - {column: 'All (n = 20)', cell: value, grp: All}
+  - {column: 'Group A (n = 10)', cell: value, grp: a}
+  - {column: 'Group B (n = 10)', cell: value, grp: b}
+  - {column: 'P', cell: p}
+rows:
+  - {row: section}
+  - {var: smoker, row: value}
+  - {var: epidural, row: value}
+  - {var: age, row: value}
+  - {var: parity, row: heading}
+  - {var: parity, row: value, level: '0'}
+  - {var: parity, row: value, level: '1'}
+  - {var: parity, row: value, level: '2 or more'}
+  - {var: parity, row: missing}

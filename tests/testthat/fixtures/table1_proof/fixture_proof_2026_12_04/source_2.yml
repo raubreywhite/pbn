@@ -1,0 +1,16 @@
+# TEST FIXTURE of pbn. This is not a real paper. The DOI prefix 10.0000 is
+# not a registered prefix.
+authors:
+  - {family: Testberg, given: Bo}
+  - {family: Example, given: Cy}
+title: 'TEST FIXTURE B: a made-up Table 1 for the tests of pbn'
+journal: 'Journal of Test Fixtures'
+year: 2026
+volume: 1
+pages: 'e2'
+doi: '10.0000/pbn.fixture.b'
+table: 2
+transcribed:
+  file: 'made up by hand for the tests of pbn 2026.12.4, so there is no source file'
+  by: 'the pbn tests'
+  date: '2026-11-20'

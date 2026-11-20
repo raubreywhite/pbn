@@ -1,0 +1,5 @@
+var,type,label,levels,section
+group,by,,case|control,
+smoker,bin,Smoker,,
+epidural,bin,Epidural,,
+age,cont,"Age, years",,

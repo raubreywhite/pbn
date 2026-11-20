@@ -31,6 +31,9 @@ cat:
   heading_template:
     value: "by level"
     source: editorial choice
+  level_prefix:
+    value: "- "
+    source: editorial choice
 p:
   digits:
     value: 3
@@ -69,6 +72,9 @@ missing:
     source: editorial choice
   row_pct_digits:
     value: 1
+    source: editorial choice
+  row_label:
+    value: "Missing"
     source: editorial choice
 footnotes:
   - value: "Values are n (%) or median (quartiles)."

@@ -31,7 +31,8 @@ test_that("table1 has one row per variable and group, All first", {
       "level",
       "median",
       "q1",
-      "q3"
+      "q3",
+      "label"
     )
   )
   expect_identical(t1$var, rep(c("x1", "x2", "z"), each = 3))

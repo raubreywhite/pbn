@@ -9,6 +9,7 @@ table1_styles()
 \value{
 A character vector of style names, such as \code{"name_2026_12_01"},
 sorted in the C locale. It is \code{character(0)} when pbn installs no style.
+It never holds a withdrawn style.
 }
 \description{
 \code{table1_styles()} gives the names of the Table 1 styles that pbn installs.

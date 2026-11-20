@@ -1,3 +1,11 @@
+# pbn 2026.12.4
+
+- Behaviour change: pbn withdraws the style `ijoa_brief_report_2026_11_20`, because no real published table proves it. `table1()` stops on its name with the version and the reason, `table1_styles()` does not list it, and pbn installs no style.
+- Each installed style MUST have the folder `inst/table1/<name>/` of the real Table 1s that it reproduces from fake data. A test of pbn compares every printed cell, and each cell that differs MUST be a listed exception with a rule. `?table1`, section Styles, gives the files.
+- That test also fails a field whose `source` says "editorial", or cites neither a reference table nor a guideline page.
+- Behaviour change: the output of `table1()` gets the column `label` after the old ones, and each old column and row keeps its values. `vars` can have the columns `label` and `section`.
+- With a style and the column `section`, the output gets a section row for each group before the first variable of each section. The new optional style fields `cat.level_prefix` and `missing.row_label` give the labels of a level row and a Missing row.
+
 # pbn 2026.12.3
 
 - New type `"cat"` of `table1()`: one row per level and group, with the new column `level`. Its `pct` divides by the non-missing count, and its P comes from the chi-square or Fisher test over the levels.

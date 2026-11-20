@@ -1,0 +1,34 @@
+# TEST FIXTURE of pbn. One exception of each of the four rules.
+exceptions:
+  - reference: reference_1
+    row: 2
+    column: 'Group B (n = 10)'
+    printed: '4 (45.0%)'
+    style: '4 (40.0%)'
+    rule: published_error
+    source: 'The cell prints 4 events of the 10 of Group B, and 4 / 10 is 40.0%, not 45.0%.'
+    justification: 'The printed percent does not follow from the printed count, so the style gives the percent of the count.'
+  - reference: reference_1
+    row: 4
+    column: 'P'
+    printed: '0.512'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA, so its P cell is empty.'
+    justification: 'The reference prints a P for age, and table1() has no test of a "cont" variable.'
+  - reference: reference_1
+    row: 5
+    column: 'P'
+    printed: '0.62'
+    style: '0.621'
+    rule: guideline
+    source: 'Fixture guide for authors, p. 4: a P value has three decimals.'
+    justification: 'The reference prints two decimals, and the guideline asks for three.'
+  - reference: reference_2
+    row: 2
+    column: 'P value'
+    printed: '<.001'
+    style: '<0.001'
+    rule: other_reference
+    source: 'reference_1, row 3, column "P" prints "<0.001", with the zero before the decimal point.'
+    justification: 'The two references write a small P in two ways, and the style follows reference_1.'

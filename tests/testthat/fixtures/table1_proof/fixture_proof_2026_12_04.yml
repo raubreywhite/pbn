@@ -1,0 +1,81 @@
+# TEST FIXTURE of pbn. A made-up style for the tests of the proof of a Table 1
+# style. Its two reference tables are made up too, and they are not real papers.
+# "Fixture guide for authors" is a made-up guideline.
+bin:
+  template:
+    value: '{events} ({pct}%)'
+    source: 'reference_1, row 2, column "All (n = 20)": a count, then its percent with the % sign in parentheses.'
+  pct_digits:
+    value: 1
+    source: 'reference_1, row 2, column "All (n = 20)": one decimal.'
+cont:
+  template:
+    value: '{median} ({q1}-{q3})'
+    source: 'reference_1, row 4, column "All (n = 20)": the median, then the quartiles in parentheses with a hyphen.'
+  mean_digits:
+    value: 1
+    source: 'Fixture guide for authors, p. 2: a mean has one decimal.'
+  sd_digits:
+    value: 1
+    source: 'Fixture guide for authors, p. 2: an SD has one decimal.'
+  median_digits:
+    value: 1
+    source: 'reference_1, row 4, column "All (n = 20)": one decimal.'
+cat:
+  template:
+    value: '{events} ({pct}%)'
+    source: 'reference_1, row 6, column "Group A (n = 10)": a count, then its percent with the % sign in parentheses.'
+  pct_digits:
+    value: 1
+    source: 'reference_1, row 6, column "Group A (n = 10)": one decimal.'
+  heading_template:
+    value: ''
+    source: 'reference_1, row 5, column "All (n = 20)": the heading row is empty.'
+  level_prefix:
+    value: '- '
+    source: 'reference_1, row 6, column "": a hyphen and a space before the level.'
+p:
+  digits:
+    value: 3
+    source: 'Fixture guide for authors, p. 4: a P value has three decimals.'
+  template:
+    value: '{p}'
+    source: 'reference_1, row 2, column "P": the number only.'
+  lower:
+    value: 0.001
+    source: 'reference_1, row 3, column "P": "<0.001".'
+  below_template:
+    value: '<{lower}'
+    source: 'reference_1, row 3, column "P": "<0.001".'
+  upper:
+    value: null
+    source: 'Fixture guide for authors, p. 4: a P value has no upper threshold.'
+  above_template:
+    value: '>{upper}'
+    source: 'Fixture guide for authors, p. 4: a P value has no upper threshold, so this text is not used.'
+thousands:
+  mark:
+    value: ','
+    source: 'Fixture guide for authors, p. 3: a comma marks the thousands.'
+  from:
+    value: 10000
+    source: 'Fixture guide for authors, p. 3: a comma from 10,000.'
+missing:
+  show:
+    value: row_if_any
+    source: 'reference_1, row 9, column "All (n = 20)": a Missing row for parity, which has a missing value. Smoker has none, and no Missing row.'
+  template:
+    value: '; {missing} missing'
+    source: 'Fixture guide for authors, p. 3: a missing count is a row, so this text is not used.'
+  row_template:
+    value: '{missing} ({pct}%)'
+    source: 'reference_1, row 9, column "Group B (n = 10)": a count, then its percent with the % sign in parentheses.'
+  row_pct_digits:
+    value: 1
+    source: 'reference_1, row 9, column "Group B (n = 10)": one decimal.'
+  row_label:
+    value: '- Missing'
+    source: 'reference_1, row 9, column "": "- Missing".'
+footnotes:
+  - value: 'Values are n (%) or median (quartiles).'
+    source: 'Fixturesen 2026, Table 1, the note below the table.'

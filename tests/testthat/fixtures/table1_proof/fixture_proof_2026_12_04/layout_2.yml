@@ -1,0 +1,9 @@
+# TEST FIXTURE of pbn. How the output of table1() maps onto reference_2.csv.
+columns:
+  - {column: 'Cases (n = 8)', cell: value, grp: case}
+  - {column: 'Controls (n = 12)', cell: value, grp: control}
+  - {column: 'P value', cell: p}
+rows:
+  - {var: smoker, row: value}
+  - {var: epidural, row: value}
+  - {var: age, row: value}

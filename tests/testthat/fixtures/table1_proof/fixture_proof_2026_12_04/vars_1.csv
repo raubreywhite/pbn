@@ -1,0 +1,6 @@
+var,type,label,levels,section
+group,by,,a|b,
+smoker,bin,Smoker,,Characteristics of the mother
+epidural,bin,Epidural,,Characteristics of the mother
+age,cont,"Age, years",,Characteristics of the mother
+parity,cat,Parity,0|1|2 or more,

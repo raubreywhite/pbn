@@ -13,7 +13,10 @@ table1(d, by, vars, style = NULL)
 
 \item{vars}{A data.table with the columns \code{var} and \code{type}. \code{var} names a
 column in \code{d}. \code{type} is \code{"bin"} for a 0/1 variable, \code{"cont"} for a
-numeric variable, or \code{"cat"} for a categorical variable.}
+numeric variable, or \code{"cat"} for a categorical variable. Two text
+columns are optional. \code{label} is the printed label of the variable, and
+\code{NA} gives its name. \code{section} names the section that the variable
+belongs to, and \code{NA} or \code{""} gives none.}
 
 \item{style}{\code{NULL}, the name of an installed style, or the path to a style
 file that ends in \code{.yml}. \code{\link[=table1_styles]{table1_styles()}} gives the names of the
@@ -26,7 +29,8 @@ A data.table with one row per variable and group, in the order of
 group. The columns are \code{var}, \code{grp}, \code{n}, \code{missing}, \code{mean}, \code{sd},
 \code{events}, \code{pct}, \code{p}, \code{test}, \code{level}, \code{median}, \code{q1} and \code{q3}. \code{n}
 counts the non-missing values. pbn 2026.12.3 added the last four
-columns. With a style, the columns \code{row}, \code{value_pretty} (the cell text)
+columns. The column \code{label} follows, which pbn 2026.12.4 added: the
+label of the variable, or the level of a level row. With a style, the columns \code{row}, \code{value_pretty} (the cell text)
 and \code{p_pretty} (the text of \code{p}) follow. The attribute \code{footnotes} then
 holds the footnotes of the style as a character vector. A style can add
 rows, as the section Styles says. The other columns of each row of the
@@ -92,15 +96,17 @@ style, so a changed style gets a new date.
 
 A style file is a YAML map of sections. Each field of a section is a map
 with the keys \code{value} and \code{source}. \code{source} is one string that says where
-the value comes from. Examples are the guide and its count of papers
-(\verb{k/N papers}), the guideline and its page, and \verb{editorial choice}.
+the value comes from. \code{table1()} takes any \code{source} that is not empty. The
+source of an installed style MUST cite a reference table or a guideline
+page, as the subsection on the proof of a style says.
 \code{table1()} checks every field when it reads the file. An unknown field, a
 missing field, a missing \code{source} or a value that the field does not allow
 stops it. The error names the field and the file. The fields that pbn
 2026.12.3 added are optional, so a style file of an earlier pbn stays
 valid. They are \code{cont.median_digits}, the section \code{cat}, and the fields
-\code{missing.row_template} and \code{missing.row_pct_digits}. An optional field that
-is present gets the same checks as the other fields.
+\code{missing.row_template} and \code{missing.row_pct_digits}. pbn 2026.12.4 added
+the optional fields \code{cat.level_prefix} and \code{missing.row_label}. An
+optional field that is present gets the same checks as the other fields.
 
 A template is text with placeholders in braces, such as \code{{events}}. A
 template can hold only the placeholders of its field, in any order, and
@@ -118,14 +124,16 @@ A template that holds \code{{median}}, \code{{q1}} or \code{{q3}} needs
 \item \code{cont.median_digits} (optional): the decimals of \code{median}, \code{q1} and
 \code{q3}, a whole number from 0 to 10.
 \item \code{cat} (an optional section): it MUST be present when \code{vars} has a
-\code{"cat"} variable. When it is present, it MUST hold all three fields
-below.
+\code{"cat"} variable. When it is present, it MUST hold the three fields
+below that are not optional.
 \item \code{cat.template}: the cell of a level row of a \code{"cat"} variable, over
 \code{{events}}, \code{{n}} and \code{{pct}}, as \code{bin.template}.
 \item \code{cat.pct_digits}: the decimals of \code{pct} in a level row, a whole number
 from 0 to 10.
 \item \code{cat.heading_template}: the cell of the heading row of a \code{"cat"}
 variable. It holds no placeholder. \code{""} gives an empty cell.
+\item \code{cat.level_prefix} (optional): the text before the level in the column
+\code{label} of a level row, such as \code{"- "}.
 \item \code{p.digits}: the decimals of \code{p}, a whole number from 0 to 10.
 \item \code{p.template}: the text of \code{p}, over \code{{p}}. \code{"P ={p}"} gives \code{P =0.005},
 and \code{"{p}"} gives the number only.
@@ -156,6 +164,8 @@ and \code{always} use it.
 \code{{missing}} and \code{{pct}}. An example is \code{"{missing} ({pct}\%)"}.
 \item \code{missing.row_pct_digits} (optional): the decimals of \code{pct} in a Missing
 row, a whole number from 0 to 10.
+\item \code{missing.row_label} (optional): the column \code{label} of a Missing row,
+such as \code{"Missing"}. Without it, the label is \code{NA}.
 \item \code{footnotes}: a list, which can be empty. Each item is a map with the keys
 \code{value} and \code{source}, and \code{value} is the text of one footnote.
 }
@@ -177,19 +187,121 @@ when \code{missing.show} asks for it. Its cell gives \code{missing} and its
 percent, and its column \code{pct} holds that percent,
 \code{100 * missing / (n + missing)}. The denominator counts every row of the
 group, missing ones included. Its \code{p_pretty} is \code{NA}.
+\item \code{"section"}: one row for each group before the rows of the first
+variable of each section, when \code{vars} has the column \code{section}. Its
+\code{grp} is the group and its \code{label} is the section. Each other column is
+\code{NA}.
 }
+
+The column \code{label} of a heading row is the label of the variable. A level
+row has \code{cat.level_prefix} and the level, and a Missing row has
+\code{missing.row_label}.
 
 A heading row and a Missing row keep \code{var}, \code{grp}, \code{n}, \code{missing}, \code{p} and
 \code{test} of the group. Their \code{level} and their other numbers are \code{NA}, except
-\code{pct} of a Missing row. A table
-with no \code{"cat"} variable and no Missing row keeps the rows of the output
-without a style.
+\code{pct} of a Missing row. A table with no \code{"cat"} variable, no Missing row
+and no section keeps the rows of the output without a style.
 
 \code{table1()} rounds each number with \code{formatC()}, which rounds as the C
 function \code{sprintf()} does. \code{events}, \code{n} and \code{missing} print with no
 decimals. The thousands separator applies to every number of a cell. A
 cell is \code{NA} when a number of its template is \code{NA}, as for a group with
 \code{n = 0}. \code{p_pretty} is \code{NA} where \code{p} is \code{NA}.
+\subsection{The proof of a style}{
+
+pbn installs a style only with the real published Table 1s that prove it.
+Beside the file \verb{inst/table1/<name>.yml} is the folder
+\verb{inst/table1/<name>/}. For each reference table k, it holds five files:
+\itemize{
+\item \verb{reference_<k>.csv}: the table as printed. It has one row per printed
+row and one column per printed column. The header holds the printed
+column headers, and the first column holds the printed row labels. Each
+cell is the printed string, and an empty cell is \code{""}.
+\item \verb{source_<k>.yml}: the fields \code{authors}, \code{title}, \code{journal}, \code{year},
+\code{volume}, \code{pages}, \code{doi}, \code{table} and \code{transcribed}. \code{authors} is a list
+of maps with the keys \code{family} and \code{given}. \code{pages} is the article
+number or the pages, and \code{table} is the number of the table.
+\code{transcribed} is a map with the keys \code{file}, \code{by} and \code{date}.
+\item \verb{fake_<k>.csv}: the fake data, one row per fake person. An empty cell or
+\code{NA} is a missing value.
+\item \verb{vars_<k>.csv}: the columns \code{var}, \code{type}, \code{label}, \code{levels} and
+\code{section}. The one row of type \code{by} names the column of the groups. The
+other rows, with \code{var}, \code{type}, \code{label} and \code{section}, are the argument
+\code{vars}. \code{levels} gives the order of the groups, or of the levels of a
+\code{"cat"} variable, separated by \code{|}. \code{levels} and \code{section} can be
+empty.
+\item \verb{layout_<k>.yml}: the map of the output onto the printed table. Each
+item of \code{columns} names a printed column, except the first, in order. It
+has \code{cell: value} and a \code{grp}, or \code{cell: p}. Each item of \code{rows} names a
+printed row, in order. It has the key \code{row} and, where it applies, \code{var}
+and \code{level}, and no other key. \code{row} is \code{value}, \code{heading} or \code{missing}
+as in the column \code{row} of the output. It is \code{section} for a section
+heading, and \code{none} for a printed row with no computed counterpart.
+}
+
+The test of pbn runs \code{table1(fake, by, vars, style)} for each reference
+table. It compares each printed cell with the cell of the style, the row
+labels of the first column included. The headers are not cells. The cell
+of the style is \code{value_pretty} of the group, or \code{p_pretty} for \code{cell: p},
+and \code{NA} is \code{""}. The label of the style is the column \code{label} of the
+same row of the output. No label comes from the layout or the reference.
+A printed row of \code{section} takes the label of the section row of the
+output. That row MUST come right before the first row of the next
+variable of the layout, and the label is \code{""} without it. A row of
+\code{section} has \code{""} in each cell after the label. A row of \code{none} has \code{""}
+in each cell. So each printed cell of it that is not empty MUST be an
+exception with the rule \code{not_computable}.
+
+A cell passes when the two strings are identical. A cell that
+differs passes only when the file \code{exceptions.yml} of the folder lists it
+with the same two strings.
+
+\code{exceptions.yml} is a map with the one key \code{exceptions}, a list. Each item
+has these fields:
+\itemize{
+\item \code{reference}, \code{row} and \code{column}: the cell, as \code{reference_1}, the number
+of the printed row after the header, and the printed header.
+\item \code{printed} and \code{style}: the printed string and the string of the style.
+\item \code{rule}, \code{source} and \code{justification}: why the two differ. \code{source} and
+\code{justification} MUST NOT be empty.
+}
+
+\code{rule} is one of these:
+\itemize{
+\item \code{guideline}: the reference departs from the author guidelines, and the
+style follows them. \code{source} names the guideline and its page.
+\item \code{other_reference}: two references disagree, and the style follows the
+other one. \code{source} cites a cell of the other reference.
+\item \code{not_computable}: \code{table1()} cannot compute the cell, such as a P of a
+\code{"cont"} variable.
+\item \code{published_error}: the printed cell is wrong. \code{source} gives the
+computation that shows it.
+}
+
+The test fails a style in each of these cases:
+\itemize{
+\item A cell differs, and \code{exceptions.yml} does not list it.
+\item An exception has strings other than those of its cell. A cell that
+matches MUST NOT have an exception.
+\item An exception names no cell, or a cell twice.
+\item The style has no folder. The folder lacks a file, or it holds a file of
+another name.
+\item The \code{source} of a field holds "editorial", in any case.
+\item The \code{source} of a field cites none of the three forms of a citation:
+\enumerate{
+\item a cell, as \verb{reference_1, row 2, column "P"}.
+\item the family name of the first author of a reference, with
+\verb{Table <n>} of its source.
+\item a guide or a guideline with its page, as \verb{p. 4} or \verb{page 4}.
+}
+}
+
+A style that pbn cannot prove is withdrawn. pbn removes its file and keeps
+its name, so \code{table1()} stops with the version that withdrew it and the
+reason. \code{table1_styles()} does not list it. pbn 2026.12.4 withdrew
+\code{ijoa_brief_report_2026_11_20}, because it was not proven against real
+published tables.
+}
 }
 
 \examples{
@@ -208,27 +320,27 @@ pbn::table1(d, by = "g", vars = vars)
 style <- file.path(tempdir(), "example_2026_12_01.yml")
 writeLines(c(
   "bin:",
-  "  template: {value: '{events} ({pct})', source: editorial choice}",
-  "  pct_digits: {value: 1, source: editorial choice}",
+  "  template: {value: '{events} ({pct})', source: example only}",
+  "  pct_digits: {value: 1, source: example only}",
   "cont:",
-  "  template: {value: '{mean} ({sd})', source: editorial choice}",
-  "  mean_digits: {value: 1, source: editorial choice}",
-  "  sd_digits: {value: 1, source: editorial choice}",
+  "  template: {value: '{mean} ({sd})', source: example only}",
+  "  mean_digits: {value: 1, source: example only}",
+  "  sd_digits: {value: 1, source: example only}",
   "p:",
-  "  digits: {value: 3, source: editorial choice}",
-  "  template: {value: 'P ={p}', source: editorial choice}",
-  "  lower: {value: 0.001, source: editorial choice}",
-  "  below_template: {value: 'P <{lower}', source: editorial choice}",
-  "  upper: {value: 0.999, source: editorial choice}",
-  "  above_template: {value: 'P >{upper}', source: editorial choice}",
+  "  digits: {value: 3, source: example only}",
+  "  template: {value: 'P ={p}', source: example only}",
+  "  lower: {value: 0.001, source: example only}",
+  "  below_template: {value: 'P <{lower}', source: example only}",
+  "  upper: {value: 0.999, source: example only}",
+  "  above_template: {value: 'P >{upper}', source: example only}",
   "thousands:",
-  "  mark: {value: ',', source: editorial choice}",
-  "  from: {value: 10000, source: editorial choice}",
+  "  mark: {value: ',', source: example only}",
+  "  from: {value: 10000, source: example only}",
   "missing:",
-  "  show: {value: if_any, source: editorial choice}",
-  "  template: {value: '; {missing} missing', source: editorial choice}",
+  "  show: {value: if_any, source: example only}",
+  "  template: {value: '; {missing} missing', source: example only}",
   "footnotes:",
-  "  - {value: 'Values are n (percent) or mean (SD).', source: editorial choice}"
+  "  - {value: 'Values are n (percent) or mean (SD).', source: example only}"
 ), style)
 t1 <- pbn::table1(d, by = "g", vars = vars, style = style)
 t1[, c("var", "grp", "value_pretty", "p_pretty")]

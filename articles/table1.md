@@ -178,14 +178,21 @@ justification. The rule is one of these:
 - `published_error`: the format of the printed cell is wrong, such as a
   median printed without its value. A wrong number in the right format
   has the shape of the style, so it needs no exception.
+- `author_decision`: a named person decided the format, and the style
+  follows the decision. The source MUST be a decision, as below.
 
 The test fails a difference that `exceptions.yml` does not list. It
 fails an exception whose strings no longer match those of its cell by
 the same rule. It fails an exception of a cell that now passes, such as
 one whose two shapes are now equal. It also fails a style without its
-folder or with a missing file. A field whose `source` says “editorial”,
-or cites neither a reference table nor a guideline page, fails too. The
-section Styles of
+folder or with a missing file. A field or an exception whose `source`
+says “editorial” fails too. So does a field whose `source` cites no
+reference table, no guideline page and no decision.
+
+A decision is a reasoned choice of a named person, in the form
+`decision: <Name>, <YYYY-MM-DD>: <reason>`. It MUST have a name, a real
+date, and a reason of three words or more. Use it only where no
+reference table and no guideline give the format. The section Styles of
 [`?table1`](https://www.rwhite.no/pbn/reference/table1.md) gives every
 field of every file.
 
@@ -206,4 +213,4 @@ does not list it. These are the withdrawn styles:
 The tables below show `smoker` and `age` only. A style without the
 section `cat` cannot format a `"cat"` variable.
 
-pbn 2026.12.7 installs no style.
+pbn 2026.12.8 installs no style.

@@ -131,8 +131,10 @@ pbn 2026.12.3 added are optional, so a style file of an earlier pbn
 stays valid. They are `cont.median_digits`, the section `cat`, and the
 fields `missing.row_template` and `missing.row_pct_digits`. pbn
 2026.12.4 added the optional fields `cat.level_prefix` and
-`missing.row_label`. An optional field that is present gets the same
-checks as the other fields.
+`missing.row_label`. In pbn 2026.12.8, `cont.mean_digits`,
+`cont.sd_digits` and `missing.template` became optional. A style needs
+each of them only when it uses it, as the list of fields says. An
+optional field that is present gets the same checks as the other fields.
 
 A template is text with placeholders in braces, such as `{events}`. A
 template can hold only the placeholders of its field, in any order, and
@@ -148,8 +150,10 @@ it can hold none. These are the fields:
   A template that holds `{median}`, `{q1}` or `{q3}` needs
   `cont.median_digits`.
 
-- `cont.mean_digits` and `cont.sd_digits`: the decimals of `mean` and of
-  `sd`, each a whole number from 0 to 10.
+- `cont.mean_digits` and `cont.sd_digits` (optional): the decimals of
+  `mean` and of `sd`, each a whole number from 0 to 10. A template that
+  holds `{mean}` needs `cont.mean_digits`, and one that holds `{sd}`
+  needs `cont.sd_digits`.
 
 - `cont.median_digits` (optional): the decimals of `median`, `q1` and
   `q3`, a whole number from 0 to 10.
@@ -201,9 +205,10 @@ it can hold none. These are the fields:
   group has a missing value. With `row_always`, each variable gets a
   Missing row. The two row choices need `missing.row_template`.
 
-- `missing.template`: the text that `table1()` adds to the end of a
-  cell, over `{missing}`. An example is `"; {missing} missing"`. Only
-  `if_any` and `always` use it.
+- `missing.template` (optional): the text that `table1()` adds to the
+  end of a cell, over `{missing}`. An example is
+  `"; {missing} missing"`. Only `if_any` and `always` use it, and they
+  need it.
 
 - `missing.row_template` (optional): the cell of a Missing row, over
   `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`. The
@@ -362,6 +367,10 @@ item has these fields:
   number in the right format has the shape of the style, so it needs no
   exception.
 
+- `author_decision`: a named person decided the format of the cell, and
+  the style follows the decision. `source` MUST be a decision, the
+  fourth form of a citation below.
+
 The test fails a style in each of these cases:
 
 - A cell differs, and `exceptions.yml` does not list it.
@@ -376,9 +385,10 @@ The test fails a style in each of these cases:
 - The style has no folder. The folder lacks a file, or it holds a file
   of another name.
 
-- The `source` of a field holds "editorial", in any case.
+- The `source` of a field or of an exception holds "editorial", in any
+  case.
 
-- The `source` of a field cites none of the three forms of a citation:
+- The `source` of a field cites none of the four forms of a citation:
 
   1.  a cell, as `reference_1, row 2, column "P"`.
 
@@ -386,6 +396,13 @@ The test fails a style in each of these cases:
       `Table <n>` of its source.
 
   3.  a guide or a guideline with its page, as `p. 4` or `page 4`.
+
+  4.  a decision of a named person, as
+      `decision: <Name>, <YYYY-MM-DD>: <reason>`.
+
+- A `source` starts with `decision:`, and it does not have the form of a
+  decision. A decision MUST have a name with a letter, a real date, and
+  a reason of three words or more.
 
 A style that pbn cannot prove is withdrawn. pbn removes its file and
 keeps its name, so `table1()` stops with the version that withdrew it

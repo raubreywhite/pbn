@@ -9,7 +9,7 @@ all rows. With a style, it also formats these numbers as text."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.7</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.8</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -162,8 +162,11 @@ stops it. The error names the field and the file. The fields that pbn
 2026.12.3 added are optional, so a style file of an earlier pbn stays
 valid. They are <code>cont.median_digits</code>, the section <code>cat</code>, and the fields
 <code>missing.row_template</code> and <code>missing.row_pct_digits</code>. pbn 2026.12.4 added
-the optional fields <code>cat.level_prefix</code> and <code>missing.row_label</code>. An
-optional field that is present gets the same checks as the other fields.</p>
+the optional fields <code>cat.level_prefix</code> and <code>missing.row_label</code>. In pbn
+2026.12.8, <code>cont.mean_digits</code>, <code>cont.sd_digits</code> and <code>missing.template</code>
+became optional. A style needs each of them only when it uses it, as the
+list of fields says. An optional field that is present gets the same
+checks as the other fields.</p>
 <p>A template is text with placeholders in braces, such as <code>{events}</code>. A
 template can hold only the placeholders of its field, in any order, and
 it can hold none. These are the fields:</p><ul><li><p><code>bin.template</code>: the cell of a <code>"bin"</code> row, over <code>{events}</code>, <code>{n}</code> and
@@ -173,8 +176,10 @@ it can hold none. These are the fields:</p><ul><li><p><code>bin.template</code>:
 <code>{median}</code>, <code>{q1}</code> and <code>{q3}</code>. An example is <code>"{median} ({q1}-{q3})"</code>.
 A template that holds <code>{median}</code>, <code>{q1}</code> or <code>{q3}</code> needs
 <code>cont.median_digits</code>.</p></li>
-<li><p><code>cont.mean_digits</code> and <code>cont.sd_digits</code>: the decimals of <code>mean</code> and of
-<code>sd</code>, each a whole number from 0 to 10.</p></li>
+<li><p><code>cont.mean_digits</code> and <code>cont.sd_digits</code> (optional): the decimals of
+<code>mean</code> and of <code>sd</code>, each a whole number from 0 to 10. A template that
+holds <code>{mean}</code> needs <code>cont.mean_digits</code>, and one that holds <code>{sd}</code>
+needs <code>cont.sd_digits</code>.</p></li>
 <li><p><code>cont.median_digits</code> (optional): the decimals of <code>median</code>, <code>q1</code> and
 <code>q3</code>, a whole number from 0 to 10.</p></li>
 <li><p><code>cat</code> (an optional section): it MUST be present when <code>vars</code> has a
@@ -210,9 +215,9 @@ prints as <code>12,347</code> and 9999 prints as <code>9999</code>.</p></li>
 it. With <code>row_if_any</code>, a variable gets a Missing row when its <code>"All"</code>
 group has a missing value. With <code>row_always</code>, each variable gets a
 Missing row. The two row choices need <code>missing.row_template</code>.</p></li>
-<li><p><code>missing.template</code>: the text that <code>table1()</code> adds to the end of a cell,
-over <code>{missing}</code>. An example is <code>"; {missing} missing"</code>. Only <code>if_any</code>
-and <code>always</code> use it.</p></li>
+<li><p><code>missing.template</code> (optional): the text that <code>table1()</code> adds to the end
+of a cell, over <code>{missing}</code>. An example is <code>"; {missing} missing"</code>.
+Only <code>if_any</code> and <code>always</code> use it, and they need it.</p></li>
 <li><p><code>missing.row_template</code> (optional): the cell of a Missing row, over
 <code>{missing}</code> and <code>{pct}</code>. An example is <code>"{missing} ({pct}%)"</code>. The
 template <code>"{missing}"</code> gives the missing count only, such as <code>"2"</code>.</p></li>
@@ -327,6 +332,9 @@ other one. <code>source</code> cites a cell of the other reference.</p></li>
 median printed without its value. <code>source</code> gives the evidence. A wrong
 number in the right format has the shape of the style, so it needs no
 exception.</p></li>
+<li><p><code>author_decision</code>: a named person decided the format of the cell, and
+the style follows the decision. <code>source</code> MUST be a decision, the
+fourth form of a citation below.</p></li>
 </ul><p>The test fails a style in each of these cases:</p><ul><li><p>A cell differs, and <code>exceptions.yml</code> does not list it.</p></li>
 <li><p>The strings of an exception do not match those of its cell, as above.</p></li>
 <li><p>A cell matches, and <code>exceptions.yml</code> lists it. For a value cell, the
@@ -334,12 +342,18 @@ two shapes are equal.</p></li>
 <li><p>An exception names no cell, or a cell twice.</p></li>
 <li><p>The style has no folder. The folder lacks a file, or it holds a file of
 another name.</p></li>
-<li><p>The <code>source</code> of a field holds "editorial", in any case.</p></li>
-<li><p>The <code>source</code> of a field cites none of the three forms of a citation:</p><ol><li><p>a cell, as <code>reference_1, row 2, column "P"</code>.</p></li>
+<li><p>The <code>source</code> of a field or of an exception holds "editorial", in any
+case.</p></li>
+<li><p>The <code>source</code> of a field cites none of the four forms of a citation:</p><ol><li><p>a cell, as <code>reference_1, row 2, column "P"</code>.</p></li>
 <li><p>the family name of the first author of a reference, with
 <code>Table &lt;n&gt;</code> of its source.</p></li>
 <li><p>a guide or a guideline with its page, as <code>p. 4</code> or <code>page 4</code>.</p></li>
+<li><p>a decision of a named person, as
+<code>decision: &lt;Name&gt;, &lt;YYYY-MM-DD&gt;: &lt;reason&gt;</code>.</p></li>
 </ol></li>
+<li><p>A <code>source</code> starts with <code>decision:</code>, and it does not have the form of
+a decision. A decision MUST have a name with a letter, a real date, and
+a reason of three words or more.</p></li>
 </ul><p>A style that pbn cannot prove is withdrawn. pbn removes its file and keeps
 its name, so <code>table1()</code> stops with the version that withdrew it and the
 reason. <code><a href="table1_styles.html">table1_styles()</a></code> does not list it. pbn 2026.12.4 withdrew

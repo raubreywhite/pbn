@@ -1,5 +1,23 @@
 # Changelog
 
+## pbn 2026.12.3
+
+- New type `"cat"` of
+  [`table1()`](https://www.rwhite.no/pbn/reference/table1.md): one row
+  per level and group, with the new column `level`. Its `pct` divides by
+  the non-missing count, and its P comes from the chi-square or Fisher
+  test over the levels.
+- Behaviour change: the output of
+  [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) gets the
+  columns `level`, `median`, `q1` and `q3` after the old ones. A
+  `"cont"` row holds the median and quartiles,
+  [`stats::quantile()`](https://rdrr.io/r/stats/quantile.html) with
+  `type = 7`. Each old column keeps its values.
+- New optional fields of a style: `cont.median_digits` for `{median}`,
+  `{q1}` and `{q3}`, the section `cat`, and a Missing row through
+  `missing.show` `row_if_any` or `row_always`. A styled output gets the
+  column `row`. A style file of pbn 2026.12.2 stays valid.
+
 ## pbn 2026.12.2
 
 - New style `ijoa_brief_report_2026_11_20` of

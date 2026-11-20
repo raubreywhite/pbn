@@ -9,7 +9,7 @@ all rows. With a style, it also formats these numbers as text."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,8 +73,8 @@ all rows. With a style, it also formats these numbers as text.</p>
 
 <dt id="arg-vars">vars<a class="anchor" aria-label="anchor" href="#arg-vars"></a></dt>
 <dd><p>A data.table with the columns <code>var</code> and <code>type</code>. <code>var</code> names a
-column in <code>d</code>. <code>type</code> is <code>"bin"</code> for a 0/1 variable, or <code>"cont"</code> for a
-numeric variable.</p></dd>
+column in <code>d</code>. <code>type</code> is <code>"bin"</code> for a 0/1 variable, <code>"cont"</code> for a
+numeric variable, or <code>"cat"</code> for a categorical variable.</p></dd>
 
 
 <dt id="arg-style">style<a class="anchor" aria-label="anchor" href="#arg-style"></a></dt>
@@ -87,12 +87,15 @@ Styles below describes a style file.</p></dd>
     <div class="section level2">
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p>A data.table with one row per variable and group, in the order of
-<code>vars</code>, and <code>"All"</code> first. The columns are <code>var</code>, <code>grp</code>, <code>n</code>, <code>missing</code>,
-<code>mean</code>, <code>sd</code>, <code>events</code>, <code>pct</code>, <code>p</code> and <code>test</code>. <code>n</code> counts the non-missing
-values. With a style, the columns <code>value_pretty</code> (the cell text) and
-<code>p_pretty</code> (the text of <code>p</code>) follow. The attribute <code>footnotes</code> then
-holds the footnotes of the style as a character vector. The other
-columns are the same as with <code>style = NULL</code>.</p>
+<code>vars</code>, and <code>"All"</code> first. A <code>"cat"</code> variable has one row per level and
+group. The columns are <code>var</code>, <code>grp</code>, <code>n</code>, <code>missing</code>, <code>mean</code>, <code>sd</code>,
+<code>events</code>, <code>pct</code>, <code>p</code>, <code>test</code>, <code>level</code>, <code>median</code>, <code>q1</code> and <code>q3</code>. <code>n</code>
+counts the non-missing values. pbn 2026.12.3 added the last four
+columns. With a style, the columns <code>row</code>, <code>value_pretty</code> (the cell text)
+and <code>p_pretty</code> (the text of <code>p</code>) follow. The attribute <code>footnotes</code> then
+holds the footnotes of the style as a character vector. A style can add
+rows, as the section Styles says. The other columns of each row of the
+output without a style stay the same.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
@@ -108,17 +111,34 @@ any expected count is below 5, it comes from Fisher's exact test.</p></li>
 variable. When fewer than two levels have a non-missing value, <code>p</code> and
 <code>test</code> are <code>NA</code>.</p></li>
 <li><p>A value other than 0, 1 or <code>NA</code> is an error.</p></li>
-</ul><p>For a <code>"cont"</code> variable, <code>mean</code> and <code>sd</code> hold the numbers. <code>p</code> and <code>test</code>
-are <code>NA</code> in this version.</p>
-<p>A column that does not apply to the type holds <code>NA</code>.</p>
+</ul><p>For a <code>"cont"</code> variable, <code>mean</code>, <code>sd</code>, <code>median</code>, <code>q1</code> and <code>q3</code> hold the
+numbers of the non-missing values. <code>q1</code> and <code>q3</code> are the first and the
+third quartile. The median and the quartiles are <code><a href="https://rdrr.io/r/stats/quantile.html" class="external-link">stats::quantile()</a></code> with
+<code>type = 7</code>, the default of R. <code>p</code> and <code>test</code> are <code>NA</code> in this version.</p>
+<p>A <code>"cat"</code> variable has one row for each level and group. The rows of a
+level are together, in the order of the groups.</p><ul><li><p>The levels are the factor levels when the variable is a factor.
+Otherwise they are the sorted unique values that are not <code>NA</code>, so a
+number sorts as a number. <code>level</code> holds each level as text.</p></li>
+<li><p><code>events</code> is the count of the level, and <code>n</code> is the count of the
+non-missing values of the group. So <code>pct</code> is <code>100 * events / n</code>, and the
+percentages of a group with <code>n</code> above 0 add up to 100.</p></li>
+<li><p><code>p</code> and <code>test</code> follow the rule of a <code>"bin"</code> variable, with the levels in
+place of 0 and 1. A level with a count of 0 in each group is not part of
+the test. When fewer than two levels or fewer than two groups remain,
+<code>p</code> and <code>test</code> are <code>NA</code>.</p></li>
+<li><p>A variable that has no level, because each value is <code>NA</code> and it is not
+a factor, has one row per group. Its <code>level</code>, <code>events</code> and <code>pct</code> are
+<code>NA</code>. With a style it gets no level row, only its heading row and the
+Missing row that <code>missing.show</code> asks for.</p></li>
+</ul><p>A column that does not apply to the type holds <code>NA</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="styles">Styles<a class="anchor" aria-label="anchor" href="#styles"></a></h2>
 
 
 <p>A style formats the numbers of <code>table1()</code> for a journal or a report. A
-style can only format what <code>table1()</code> computes. It cannot add a median, an
-IQR or a test of a <code>"cont"</code> variable.</p>
+style can only format what <code>table1()</code> computes. It cannot add a test of a
+<code>"cont"</code> variable.</p>
 <p>An installed style is the file <code>inst/table1/&lt;name&gt;_&lt;YYYY_MM_DD&gt;.yml</code> of
 pbn. Its name is the file name without <code>.yml</code>. pbn never edits a released
 style, so a changed style gets a new date.</p>
@@ -128,15 +148,33 @@ the value comes from. Examples are the guide and its count of papers
 (<code>k/N papers</code>), the guideline and its page, and <code>editorial choice</code>.
 <code>table1()</code> checks every field when it reads the file. An unknown field, a
 missing field, a missing <code>source</code> or a value that the field does not allow
-stops it. The error names the field and the file.</p>
+stops it. The error names the field and the file. The fields that pbn
+2026.12.3 added are optional, so a style file of an earlier pbn stays
+valid. They are <code>cont.median_digits</code>, the section <code>cat</code>, and the fields
+<code>missing.row_template</code> and <code>missing.row_pct_digits</code>. An optional field that
+is present gets the same checks as the other fields.</p>
 <p>A template is text with placeholders in braces, such as <code>{events}</code>. A
 template can hold only the placeholders of its field, in any order, and
 it can hold none. These are the fields:</p><ul><li><p><code>bin.template</code>: the cell of a <code>"bin"</code> row, over <code>{events}</code>, <code>{n}</code> and
 <code>{pct}</code>. An example is <code>"{events} ({pct})"</code>.</p></li>
 <li><p><code>bin.pct_digits</code>: the decimals of <code>pct</code>, a whole number from 0 to 10.</p></li>
-<li><p><code>cont.template</code>: the cell of a <code>"cont"</code> row, over <code>{mean}</code> and <code>{sd}</code>.</p></li>
+<li><p><code>cont.template</code>: the cell of a <code>"cont"</code> row, over <code>{mean}</code>, <code>{sd}</code>,
+<code>{median}</code>, <code>{q1}</code> and <code>{q3}</code>. An example is <code>"{median} ({q1}-{q3})"</code>.
+A template that holds <code>{median}</code>, <code>{q1}</code> or <code>{q3}</code> needs
+<code>cont.median_digits</code>.</p></li>
 <li><p><code>cont.mean_digits</code> and <code>cont.sd_digits</code>: the decimals of <code>mean</code> and of
 <code>sd</code>, each a whole number from 0 to 10.</p></li>
+<li><p><code>cont.median_digits</code> (optional): the decimals of <code>median</code>, <code>q1</code> and
+<code>q3</code>, a whole number from 0 to 10.</p></li>
+<li><p><code>cat</code> (an optional section): it MUST be present when <code>vars</code> has a
+<code>"cat"</code> variable. When it is present, it MUST hold all three fields
+below.</p></li>
+<li><p><code>cat.template</code>: the cell of a level row of a <code>"cat"</code> variable, over
+<code>{events}</code>, <code>{n}</code> and <code>{pct}</code>, as <code>bin.template</code>.</p></li>
+<li><p><code>cat.pct_digits</code>: the decimals of <code>pct</code> in a level row, a whole number
+from 0 to 10.</p></li>
+<li><p><code>cat.heading_template</code>: the cell of the heading row of a <code>"cat"</code>
+variable. It holds no placeholder. <code>""</code> gives an empty cell.</p></li>
 <li><p><code>p.digits</code>: the decimals of <code>p</code>, a whole number from 0 to 10.</p></li>
 <li><p><code>p.template</code>: the text of <code>p</code>, over <code>{p}</code>. <code>"P ={p}"</code> gives <code>P =0.005</code>,
 and <code>"{p}"</code> gives the number only.</p></li>
@@ -153,16 +191,41 @@ string <code>""</code> gives no separator.</p></li>
 <li><p><code>thousands.from</code>: a number above 0. A number gets the separator when its
 rounded absolute value is <code>thousands.from</code> or more. With 10000, 12347
 prints as <code>12,347</code> and 9999 prints as <code>9999</code>.</p></li>
-<li><p><code>missing.show</code>: <code>never</code>, <code>if_any</code> or <code>always</code>. With <code>if_any</code>, a cell gets
-<code>missing.template</code> when <code>missing</code> is above 0.</p></li>
+<li><p><code>missing.show</code>: <code>never</code>, <code>if_any</code>, <code>always</code>, <code>row_if_any</code> or
+<code>row_always</code>. With <code>if_any</code>, a cell gets <code>missing.template</code> when
+<code>missing</code> is above 0. With <code>always</code>, each cell that is not <code>NA</code> gets
+it. With <code>row_if_any</code>, a variable gets a Missing row when its <code>"All"</code>
+group has a missing value. With <code>row_always</code>, each variable gets a
+Missing row. The two row choices need <code>missing.row_template</code> and
+<code>missing.row_pct_digits</code>.</p></li>
 <li><p><code>missing.template</code>: the text that <code>table1()</code> adds to the end of a cell,
-over <code>{missing}</code>. An example is <code>"; {missing} missing"</code>.</p></li>
+over <code>{missing}</code>. An example is <code>"; {missing} missing"</code>. Only <code>if_any</code>
+and <code>always</code> use it.</p></li>
+<li><p><code>missing.row_template</code> (optional): the cell of a Missing row, over
+<code>{missing}</code> and <code>{pct}</code>. An example is <code>"{missing} ({pct}%)"</code>.</p></li>
+<li><p><code>missing.row_pct_digits</code> (optional): the decimals of <code>pct</code> in a Missing
+row, a whole number from 0 to 10.</p></li>
 <li><p><code>footnotes</code>: a list, which can be empty. Each item is a map with the keys
 <code>value</code> and <code>source</code>, and <code>value</code> is the text of one footnote.</p></li>
 </ul><p><code>p.lower</code> and <code>p.upper</code> print with <code>p.digits</code> decimals, so each MUST have
 no more decimals than <code>p.digits</code>. <code>p.lower</code> MUST be below <code>p.upper</code>.
 <code>table1()</code> compares <code>p</code> with the thresholds before it rounds <code>p</code>, so 0.9994
 is above 0.999. A <code>p</code> equal to a threshold gets <code>p.template</code>.</p>
+<p>A style can add rows, and the column <code>row</code> names the kind of each row:</p><ul><li><p><code>"value"</code>: a row of the output without a style. A level row of a
+<code>"cat"</code> variable has <code>p_pretty</code> <code>NA</code>.</p></li>
+<li><p><code>"heading"</code>: one row for each group before the level rows of a <code>"cat"</code>
+variable. Its cell is <code>cat.heading_template</code>, and its <code>p_pretty</code> is the
+P of the variable.</p></li>
+<li><p><code>"missing"</code>: one row for each group after the other rows of a variable,
+when <code>missing.show</code> asks for it. Its cell gives <code>missing</code> and its
+percent, and its column <code>pct</code> holds that percent,
+<code>100 * missing / (n + missing)</code>. The denominator counts every row of the
+group, missing ones included. Its <code>p_pretty</code> is <code>NA</code>.</p></li>
+</ul><p>A heading row and a Missing row keep <code>var</code>, <code>grp</code>, <code>n</code>, <code>missing</code>, <code>p</code> and
+<code>test</code> of the group. Their <code>level</code> and their other numbers are <code>NA</code>, except
+<code>pct</code> of a Missing row. A table
+with no <code>"cat"</code> variable and no Missing row keeps the rows of the output
+without a style.</p>
 <p><code>table1()</code> rounds each number with <code><a href="https://rdrr.io/r/base/formatc.html" class="external-link">formatC()</a></code>, which rounds as the C
 function <code><a href="https://rdrr.io/r/base/sprintf.html" class="external-link">sprintf()</a></code> does. <code>events</code>, <code>n</code> and <code>missing</code> print with no
 decimals. The thousands separator applies to every number of a cell. A
@@ -187,14 +250,22 @@ cell is <code>NA</code> when a number of its template is <code>NA</code>, as for
 <span class="r-in"><span>  type <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"bin"</span>, <span class="st">"cont"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">table1</span><span class="op">(</span><span class="va">d</span>, by <span class="op">=</span> <span class="st">"g"</span>, vars <span class="op">=</span> <span class="va">vars</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>       var    grp     n missing  mean      sd events   pct     p   test</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;char&gt; &lt;int&gt;   &lt;int&gt; &lt;num&gt;   &lt;num&gt;  &lt;int&gt; &lt;num&gt; &lt;num&gt; &lt;char&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 1: smoker    All    20       0    NA      NA     10    50     1  chisq</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 2: smoker      a    10       0    NA      NA      5    50     1  chisq</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 3: smoker      b    10       0    NA      NA      5    50     1  chisq</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    age    All    20       0  30.5 5.91608     NA    NA    NA   &lt;NA&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    age      a    10       0  25.5 3.02765     NA    NA    NA   &lt;NA&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    age      b    10       0  35.5 3.02765     NA    NA    NA   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>       var    grp     n missing  mean      sd events   pct     p   test  level</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    &lt;char&gt; &lt;char&gt; &lt;int&gt;   &lt;int&gt; &lt;num&gt;   &lt;num&gt;  &lt;int&gt; &lt;num&gt; &lt;num&gt; &lt;char&gt; &lt;char&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1: smoker    All    20       0    NA      NA     10    50     1  chisq   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2: smoker      a    10       0    NA      NA      5    50     1  chisq   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3: smoker      b    10       0    NA      NA      5    50     1  chisq   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:    age    All    20       0  30.5 5.91608     NA    NA    NA   &lt;NA&gt;   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:    age      a    10       0  25.5 3.02765     NA    NA    NA   &lt;NA&gt;   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:    age      b    10       0  35.5 3.02765     NA    NA    NA   &lt;NA&gt;   &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    median    q1    q3</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     &lt;num&gt; &lt;num&gt; &lt;num&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 1:     NA    NA    NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 2:     NA    NA    NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 3:     NA    NA    NA</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 4:   30.5 25.75 35.25</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 5:   25.5 23.25 27.75</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 6:   35.5 33.25 37.75</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># A style file, written to tempdir()</span></span></span>
 <span class="r-in"><span><span class="va">style</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"example_2026_12_01.yml"</span><span class="op">)</span></span></span>

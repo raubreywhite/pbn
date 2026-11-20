@@ -11,7 +11,7 @@ verify() gives a PASS on the fake scenarios without the real data."><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -131,7 +131,7 @@ folder that the call created. So a second call can start again.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_create_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">create_project</span><span class="op">(</span>home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/Rtmp9Ef4aF/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/RtmpcGZJkt/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>

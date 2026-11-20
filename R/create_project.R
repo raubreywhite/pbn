@@ -4,7 +4,7 @@
 
 # The rule set that the pbn.yml of create_project() names. The files of
 # inst/templates/project/ pass each rule of this set.
-create_project_set <- "house_2026_11_19"
+create_project_set <- "house_2026_11_20"
 
 #' Create a new project
 #'
@@ -17,7 +17,7 @@ create_project_set <- "house_2026_11_19"
 #'   for [initialize_project()]. The run script gets them as they are given.
 #' @details
 #' `create_project()` writes these files:
-#' - `pbn.yml`, with the line `extends: house_2026_11_19`.
+#' - `pbn.yml`, with the line `extends: house_2026_11_20`.
 #' - `v01_run.R`, the run script. Its data steps are `raw`, `clean` and
 #'   `cohort`, and it has one analysis kind, `risk_difference`.
 #' - `v01_functions/`, with `_cfg.R`, the data steps `data_raw.R`,
@@ -201,7 +201,9 @@ write_text <- function(file, lines) {
 #' @param from The version to copy, `"v"` and two digits, for example
 #'   `"v01"`.
 #' @param to The new version, or `NULL`, the default, for the version after
-#'   `from`. For `"v01"` that is `"v02"`.
+#'   `from`. For `"v01"` that is `"v02"`. After a manual manuscript
+#'   `manuscript/manual/vNN_<INITIALS>.docx`, `to` is `v(NN+1)`, as the rule
+#'   `manual_not_ahead` of [check_project()] says.
 #' @param home The project folder.
 #' @details
 #' `new_version()` does these steps in this order:

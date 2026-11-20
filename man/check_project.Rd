@@ -37,12 +37,13 @@ the tracked files, and the untracked files that git does not ignore.
 Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules, with their level in the set \code{house_2026_11_19}, are below.
-The set \code{house_2026_11_17} has the same rules at the same levels, without
-\code{frozen_versions_unchanged}, \code{readme_and_changelog},
-\code{changelog_with_code}, \code{comment_share}, \code{no_cross_version_reads} and
-\code{no_escape_hatches}. A rule that the set of the project does not have
-prints no line.
+The rules, with their level in the set \code{house_2026_11_20}, are below.
+The set \code{house_2026_11_19} has the same rules at the same levels, without
+\code{built_reads_own_version}, \code{built_has_run} and \code{manual_not_ahead}. The
+set \code{house_2026_11_17} also does not have \code{frozen_versions_unchanged},
+\code{readme_and_changelog}, \code{changelog_with_code}, \code{comment_share},
+\code{no_cross_version_reads} and \code{no_escape_hatches}. A rule that the set of
+the project does not have prints no line.
 \itemize{
 \item \code{lower_case_names} (FAIL): a file or folder name has a capital letter.
 Everything under \verb{background/} is not checked. These are exempt:
@@ -76,7 +77,10 @@ ends of any other file counts, see \code{\link[=freeze_version]{freeze_version()
 the top level, or \code{CHANGELOG.md} has no section for a version. A
 section is a line that starts with \verb{## vNN}, with a space or nothing
 after it, for example \verb{## v01} or \verb{## v01 (2026-11-19)}. A version is a
-\code{vNN_run.R} or a \verb{vNN_functions/} at the top level. \code{README.md} says
+\code{vNN_run.R} or a \verb{vNN_functions/} at the top level. From the set
+\code{house_2026_11_20}, a version is also the \code{vNN} of a file
+\verb{manuscript/manual/vNN_<INITIALS>.docx} with a name that
+\code{manual_manuscript_names} passes. \code{README.md} says
 what the project is, how to run it and why its code is as it is.
 \code{CHANGELOG.md} says what changed in each version. The detail is
 \code{README.md: missing}, \code{CHANGELOG.md: missing} or
@@ -120,6 +124,28 @@ match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?\\.docx$}.
 a \code{scenario} argument that is not the string \code{"real"}. A call without
 \code{scenario} passes. In \code{.qmd} and \code{.Rmd} files, the rule reads the R
 chunks that \code{\link[knitr:purl]{knitr::purl()}} extracts and the inline R code.
+\item \code{built_reads_own_version} (FAIL): an \code{.R}, \code{.qmd} or \code{.Rmd} file in
+\verb{manuscript/built/vNN/} calls \code{read_results()} or \code{pbn::read_results()}
+with a \code{version} argument that is not the string \code{"vNN"}. A variable
+and a call without \code{version} fail too. The rule reads the code as
+\code{manuscript_reads_real} does, and it fails a file that R cannot parse.
+It does not read a file in \verb{manuscript/built/} outside a folder \verb{vNN/},
+or a file of another language, such as \code{.py}. The detail lists each
+call that fails.
+\item \code{built_has_run} (FAIL): a folder \verb{manuscript/built/vNN/} has no
+\code{vNN_run.R} at the top level. In a git repository, an empty folder is
+not in the list of files, so the rule does not see it. The detail is
+\verb{manuscript/built/vNN: there is no vNN_run.R}.
+\item \code{manual_not_ahead} (FAIL): a file
+\verb{manuscript/manual/vNN_<INITIALS>.docx} has \code{NN} at or above \code{MM}, the
+largest version of a \code{vMM_run.R}. The run scripts and the manuscripts
+share one version counter. So a hand edit of version \code{vMM} is
+\verb{v(MM+1)_<INITIALS>.docx}, and the next run version is \code{v(MM+2)}. The
+detail is
+\verb{manual vNN is ahead of the newest run vMM: freeze vMM and start vPP with pbn::new_version("vMM", to = "vPP")},
+with \code{PP} = \code{NN} + 1. The rule does not read a name that
+\code{manual_manuscript_names} fails. Without a \code{vNN_run.R}, the rule has
+nothing to compare. It then prints one PASS line that says so.
 \item \code{fake_data_names} (FAIL): a file in a folder \verb{output_fake_data/} has a
 name without the prefix \code{fake_data_}, or a file with the prefix is in
 another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders.
@@ -314,7 +340,7 @@ Each project MUST have the file \code{pbn.yml} in its top folder \code{path}. pb
 reads no other file. A file \code{pbn.yaml} stops \code{check_project()} with the
 advice to rename it. The smallest \code{pbn.yml} is one line:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_19
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_20
 }\if{html}{\out{</div>}}
 
 The key \code{extends} names a house rule set. A set is a dated file in the
@@ -322,7 +348,7 @@ folder \verb{rules/} of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-\code{readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))}.
+\code{readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))}.
 
 The set gives each rule one of three levels:
 \itemize{
@@ -356,7 +382,7 @@ path for it. It cannot name a rule of \code{\link[=check_results]{check_results(
 
 This \code{pbn.yml} changes two rules and allows three paths:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_19
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_20
 rules:
   cyclomatic_complexity: \{limit: 25\}
   unknown_path: off
@@ -396,7 +422,7 @@ quotes.
 \examples{
 home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
 writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")

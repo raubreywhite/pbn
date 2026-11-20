@@ -54,7 +54,7 @@ dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 Each project MUST have the file `pbn.yml`. It names the set of house rules that `check_project()` and `initialize_project()` use. This project uses the set as it is:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_19
+extends: house_2026_11_20
 ```
 
 `CHANGELOG.md` has a section `## vNN` for each version, with what changed and why. The rule `readme_and_changelog` of `check_project()` fails a project without `CHANGELOG.md`, without `README.md`, or without the section of a version:
@@ -784,7 +784,7 @@ stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "F
 `pbn.yml` MAY change the set. Under `rules`, it changes the level or a parameter of a rule. Under `allow`, it lists the paths that a rule allows. This file raises the limit of `cyclomatic_complexity` to 25, turns `unknown_path` off, and allows one name with a capital letter:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_19
+extends: house_2026_11_20
 rules:
   cyclomatic_complexity: {limit: 25}
   unknown_path: off
@@ -807,7 +807,7 @@ stopifnot(
   identical(found$status[found$rule == "unknown_path"], "OFF"),
   !any(found$status == "FAIL")
 )
-writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
@@ -899,7 +899,7 @@ stopifnot(!any(found$status %in% c("WARN", "FAIL")), file.exists(file.path(new_h
 
 ## Manuscripts
 
-`manuscript/manual/` holds the Word files that a person edits. Each name MUST match `vNN_<INITIALS>.docx`, for example `v01_AB.docx`, with the initials in upper case. `manuscript/built/vNN/` holds the manuscripts that code builds from the results. A built manuscript MUST read the real results only, and `check_project()` fails a `read_results()` call there with another scenario. A call without `scenario` reads the real results:
+`manuscript/built/vNN/` holds the manuscripts that code builds from the results of version vNN. A built manuscript MUST read the real results of its own version only. `check_project()` fails a `read_results()` call there with another scenario or another version. A call without `scenario` reads the real results:
 
 ```{r, include = FALSE}
 dir.create(file.path(home, "manuscript", "built", "v01"), recursive = TRUE)
@@ -909,7 +909,28 @@ dir.create(file.path(home, "manuscript", "built", "v01"), recursive = TRUE)
 r <- pbn::read_results("v01")
 ```
 
-The default `home = "."` is the working directory, so this file MUST run with the project folder as the working directory.
+The default `home = "."` is the working directory, so this file MUST run with the project folder as the working directory. `check_project()` also fails a folder `manuscript/built/vNN/` without its run script `vNN_run.R`.
+
+`manuscript/manual/` holds the Word files that a person edits. Each name MUST match `vNN_<INITIALS>.docx`, with the initials in upper case. The run scripts and the manuscripts share one version counter. So a hand edit of the built v01 is the version v02, and the next run version is v03. `CHANGELOG.md` needs a section for the manual version too. Here an empty file stands in for the Word file `v02_AB.docx`:
+
+```{r}
+changelog <- readLines(file.path(home, "CHANGELOG.md"))
+dir.create(file.path(home, "manuscript", "manual"))
+file.create(file.path(home, "manuscript", "manual", "v02_AB.docx"))
+writeLines(c(changelog, "", "## v02", "", "- v02_AB.docx: AB edited the text of v01."), file.path(home, "CHANGELOG.md"))
+out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+cat(grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
+```
+
+The rule `manual_not_ahead` fails each manual version at or above the newest run version. Its message names the call of `pbn::new_version()` that freezes the newest run version and starts the next one. A person decides when to make that call.
+
+```{r, include = FALSE}
+fails <- grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE)
+stopifnot(out$status == 1, identical(length(fails), 1L), startsWith(fails, "FAIL  manual_not_ahead  manual v02 is ahead of the newest run v01: freeze v01 and start v03 with pbn::new_version(\"v01\", to = \"v03\")"))
+# The sections below need the project without the manual version.
+unlink(file.path(home, "manuscript", "manual"), recursive = TRUE)
+writeLines(changelog, file.path(home, "CHANGELOG.md"))
+```
 
 ## Running on an air-gapped server
 

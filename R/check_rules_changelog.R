@@ -13,9 +13,21 @@ project_versions <- function(path) {
   return(sort(versions, method = "radix"))
 }
 
+# The versions that need a section "## vNN" in CHANGELOG.md under the set
+# `set`: those of project_versions(). From the set house_2026_11_20, the
+# versions of manuscript/manual/vNN_<INITIALS>.docx too.
+changelog_versions <- function(path, set) {
+  versions <- project_versions(path)
+  if (set_is_from(set, "house_2026_11_20")) {
+    versions <- c(versions, manual_versions(path))
+  }
+  return(sort(unique(versions), method = "radix"))
+}
+
 # The rule readme_and_changelog: README.md and CHANGELOG.md are at the top
-# level, and CHANGELOG.md has a line "## vNN" for each version.
-rule_readme_and_changelog <- function(path) {
+# level, and CHANGELOG.md has a line "## vNN" for each version of
+# changelog_versions().
+rule_readme_and_changelog <- function(path, set = "house_2026_11_17") {
   rule <- "readme_and_changelog"
   entries <- project_entries(path)
   files <- c("README.md", "CHANGELOG.md")
@@ -32,7 +44,7 @@ rule_readme_and_changelog <- function(path) {
       warn = FALSE,
       encoding = "UTF-8"
     )
-    versions <- project_versions(path)
+    versions <- changelog_versions(path, set)
     has <- vapply(
       versions,
       function(v) {

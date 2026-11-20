@@ -11,7 +11,9 @@ new_version(from = "v01", to = NULL, home = ".")
 \code{"v01"}.}
 
 \item{to}{The new version, or \code{NULL}, the default, for the version after
-\code{from}. For \code{"v01"} that is \code{"v02"}.}
+\code{from}. For \code{"v01"} that is \code{"v02"}. After a manual manuscript
+\verb{manuscript/manual/vNN_<INITIALS>.docx}, \code{to} is \code{v(NN+1)}, as the rule
+\code{manual_not_ahead} of \code{\link[=check_project]{check_project()}} says.}
 
 \item{home}{The project folder.}
 }

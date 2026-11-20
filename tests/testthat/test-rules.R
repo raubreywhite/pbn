@@ -13,7 +13,10 @@ rules_error <- function(lines) {
 }
 
 test_that("each shipped set names every rule of check_project() in its order, and house_2026_11_17 holds the levels and the parameters of pbn 2026.11.23", {
-  expect_identical(house_sets(), c("house_2026_11_17", "house_2026_11_19"))
+  expect_identical(
+    house_sets(),
+    c("house_2026_11_17", "house_2026_11_19", "house_2026_11_20")
+  )
   for (set in house_sets()) {
     rules <- read_house_set(set)
     expect_identical(
@@ -25,12 +28,20 @@ test_that("each shipped set names every rule of check_project() in its order, an
     expect_true(all(levels %in% rule_levels), info = set)
   }
   expect_identical(
-    names(read_house_set("house_2026_11_19")),
+    names(read_house_set("house_2026_11_20")),
     names(project_rules())
   )
   expect_identical(
     names(read_house_set("house_2026_11_17")),
-    setdiff(names(project_rules()), rules_2026_11_19)
+    setdiff(
+      names(project_rules()),
+      c(
+        rules_2026_11_19,
+        "built_reads_own_version",
+        "built_has_run",
+        "manual_not_ahead"
+      )
+    )
   )
   rules <- read_house_set("house_2026_11_17")
   levels <- vapply(rules, function(r) return(r$level), character(1))
@@ -92,7 +103,8 @@ test_that("the bytes of each shipped set are pinned", {
   # a project used it. The maintainer approved that change of its md5.
   pinned <- c(
     house_2026_11_17 = "ac42b7368bc90e2735bf4cb47e4a8e0e",
-    house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097"
+    house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097",
+    house_2026_11_20 = "66615d03431f9ae95a8102a200d81831"
   )
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")
@@ -127,7 +139,7 @@ test_that("a project without pbn.yml stops check_project() and initialize_projec
     "There is no pbn.yml in ",
     p$home,
     ". Create it with this one line:\n\n",
-    "extends: house_2026_11_19\n\n",
+    "extends: house_2026_11_20\n\n",
     "The line names the house rules of check_project(). ",
     "?check_project tells how pbn.yml changes them."
   )
@@ -144,7 +156,7 @@ test_that("a project without pbn.yml stops check_project() and initialize_projec
     paste0(
       "There is no pbn.yml in ",
       normalizePath(p$home, winslash = "/"),
-      ". Create it with this one line:\n\nextends: house_2026_11_19\n\n"
+      ". Create it with this one line:\n\nextends: house_2026_11_20\n\n"
     ),
     fixed = TRUE
   )
@@ -204,7 +216,7 @@ test_that("a file pbn_allow.txt stops with its lines as the YAML of the section 
     paste0(
       "pbn reads no pbn_allow.txt. Move its lines into the section allow: ",
       "of a new file pbn.yml, and delete pbn_allow.txt. This is the file:\n\n",
-      paste(c("extends: house_2026_11_19", section), collapse = "\n")
+      paste(c("extends: house_2026_11_20", section), collapse = "\n")
     )
   )
 
@@ -214,6 +226,9 @@ test_that("a file pbn_allow.txt stops with its lines as the YAML of the section 
     file.path(p$home, "pbn.yml")
   )
   unlink(file.path(p$home, "pbn_allow.txt"))
+  # In the newest set, manual_not_ahead fails the manual v01_AB.docx of
+  # local_project(), which is at the newest run v01.
+  unlink(file.path(p$home, "manuscript", "manual", "v01_AB.docx"))
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
   expect_identical(
@@ -239,7 +254,7 @@ test_that("extends MUST name a set of pbn, and is never the newest set by defaul
   sets <- paste0(
     " is not a rule set of pbn ",
     utils::packageVersion("pbn"),
-    ". The sets are: house_2026_11_17, house_2026_11_19."
+    ". The sets are: house_2026_11_17, house_2026_11_19, house_2026_11_20."
   )
   expect_identical(
     rules_error("extends: house_2026.11.17"),
@@ -251,7 +266,7 @@ test_that("extends MUST name a set of pbn, and is never the newest set by defaul
   )
   no_extends <- paste0(
     "pbn.yml has no key extends. Add this line:\n\n",
-    "extends: house_2026_11_19"
+    "extends: house_2026_11_20"
   )
   expect_identical(rules_error("rules:\n  loc_per_file: off"), no_extends)
   expect_identical(rules_error(""), no_extends)

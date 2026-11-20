@@ -59,7 +59,7 @@ d <- data.frame(Group = rep(c("a", "b"), 200), X = round(rnorm(400, 50, 10)))
 d$Outcome <- rbinom(400, 1, ifelse(d$Group == "b", 0.4, 0.25))
 d$Outcome[sample(400, 12)] <- NA
 data.table::fwrite(d, file.path(root, "data", "d.csv"))
-writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
 writeLines("*gitexclude*", file.path(home, ".gitignore"))
 writeLines("pbn::check_project()", file.path(home, "check_project.R"))
 writeLines(c("# A fake project", "", "It compares a 0/1 outcome between the groups a and b."), file.path(home, "README.md"))

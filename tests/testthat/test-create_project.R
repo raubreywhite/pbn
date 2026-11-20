@@ -31,7 +31,7 @@ new_project_files <- c(
   "v01_run.R"
 )
 
-test_that("create_project writes the files of a project that passes every rule of house_2026_11_19 without a WARN", {
+test_that("create_project writes the files of a project that passes every rule of house_2026_11_20 without a WARN", {
   home <- local_empty_home()
   written <- suppressMessages(create_project(
     home = home,
@@ -49,11 +49,11 @@ test_that("create_project writes the files of a project that passes every rule o
   expect_identical(unique(found$status), "PASS")
   expect_identical(
     unique(found$rule),
-    names(read_house_set("house_2026_11_19"))
+    names(read_house_set("house_2026_11_20"))
   )
   expect_identical(
     readLines(file.path(home, "pbn.yml")),
-    "extends: house_2026_11_19"
+    "extends: house_2026_11_20"
   )
   expect_identical(readLines(file.path(home, ".gitignore")), "*gitexclude*")
   expect_identical(
@@ -119,7 +119,28 @@ test_that("the AGENTS.md template holds the rules for an agent", {
         "scenario, without asking."
       ),
       "- Do not change `pbn.yml`. Ask.",
-      "- Do not freeze a version or start a new one. Ask."
+      "- Do not freeze a version or start a new one. Ask.",
+      "",
+      "## Manuscripts",
+      "",
+      paste(
+        "- A hand edit, by a person or by an agent for a person, is saved as",
+        "`manuscript/manual/v(NN+1)_<INITIALS>.docx`. NN is the version it",
+        "starts from. INITIALS are those of the person responsible."
+      ),
+      paste(
+        "- Never edit or overwrite a file that is already in",
+        "`manuscript/manual/` or `manuscript/built/`. Save a new file."
+      ),
+      paste(
+        "- Add a `## v(NN+1)` section to `CHANGELOG.md` with the file name,",
+        "who edited it, the version it starts from, and what changed."
+      ),
+      paste(
+        "- `verify()` then fails on `manual_not_ahead` until a person starts",
+        "the next run version. Do not start it; ask."
+      ),
+      "- A built manuscript reads `read_results()` of its own version only."
     )
   )
 })
@@ -471,7 +492,10 @@ test_that("create_project stops before it writes anything when the package cohor
     ),
     fixed = TRUE
   )
-  expect_identical(list.files(home, all.files = TRUE, no.. = TRUE), character(0))
+  expect_identical(
+    list.files(home, all.files = TRUE, no.. = TRUE),
+    character(0)
+  )
 })
 
 test_that("create_project removes each file and folder that it created when a write stops, and a second call works", {
@@ -497,7 +521,12 @@ test_that("create_project removes each file and folder that it created when a wr
   ))
   # It removed them, and kept the file and the folder that were there.
   expect_identical(
-    sort(list.files(home, recursive = TRUE, all.files = TRUE, include.dirs = TRUE)),
+    sort(list.files(
+      home,
+      recursive = TRUE,
+      all.files = TRUE,
+      include.dirs = TRUE
+    )),
     c("adhoc", "adhoc/notes.txt", "v01_functions")
   )
   suppressMessages(create_project(home = home))
@@ -514,7 +543,11 @@ test_that("new_version removes each file and folder that it created, also the vN
     stop("the disk is full")
   }
   with_mocked_bindings(
-    expect_error(new_version("v01", home = home), "the disk is full", fixed = TRUE),
+    expect_error(
+      new_version("v01", home = home),
+      "the disk is full",
+      fixed = TRUE
+    ),
     copy_folder = half_copy
   )
   expect_identical(file_states(home)[, c("file", "md5")], before)
@@ -524,7 +557,11 @@ test_that("new_version removes each file and folder that it created, also the vN
     stop("the disk is full")
   }
   with_mocked_bindings(
-    expect_error(new_version("v01", home = home), "the disk is full", fixed = TRUE),
+    expect_error(
+      new_version("v01", home = home),
+      "the disk is full",
+      fixed = TRUE
+    ),
     add_changelog_section = half_changelog
   )
   expect_identical(file_states(home)[, c("file", "md5")], before)
@@ -533,7 +570,11 @@ test_that("new_version removes each file and folder that it created, also the vN
   freeze_version("v01", home)
   frozen <- file_states(home)[, c("file", "md5")]
   with_mocked_bindings(
-    expect_error(new_version("v01", home = home), "the disk is full", fixed = TRUE),
+    expect_error(
+      new_version("v01", home = home),
+      "the disk is full",
+      fixed = TRUE
+    ),
     copy_folder = half_copy
   )
   expect_identical(file_states(home)[, c("file", "md5")], frozen)

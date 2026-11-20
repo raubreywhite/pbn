@@ -1,6 +1,8 @@
 # The project rules about scenarios: the assertions that save_results()
 # writes, the manuscript that MUST read the real results only, and the names
-# of the output of fake data.
+# of the output of fake data. The rules of the one version counter of the
+# manuscripts are here too: built_reads_own_version, built_has_run and
+# manual_not_ahead. The set house_2026_11_20 brought them.
 
 rule_scenario_checks <- function(path) {
   rule <- "scenario_checks"
@@ -88,6 +90,149 @@ rule_manuscript_reads_real <- function(path) {
     }
   }
   return(bind_rows(out))
+}
+
+# A file or a folder under manuscript/built/vNN/, or that folder itself.
+built_version_pattern <- "^manuscript/built/(v[0-9]{2})(/.*)?$"
+
+# The number NN of each version vNN at the start of `x`, such as 17 for
+# "v17_run.R" or "v17_AB.docx".
+version_number <- function(x) {
+  return(as.integer(substr(x, 2, 3)))
+}
+
+# The rule built_reads_own_version: each read_results() call of a file in
+# manuscript/built/vNN/ has the version argument "vNN", the string. A
+# variable, another string and a call without the version fail.
+rule_built_reads_own_version <- function(path) {
+  rule <- "built_reads_own_version"
+  files <- manuscript_files(path)
+  files <- files[grepl(built_version_pattern, files)]
+  out <- list()
+  for (f in files) {
+    exprs <- manuscript_code(file.path(path, f))
+    if (is.null(exprs)) {
+      out[[f]] <- project_row(rule, "FAIL", f, paste0(f, ": R cannot parse it"))
+      next
+    }
+    own <- sub(built_version_pattern, "\\1", f)
+    calls <- find_calls(exprs, is_read_results_call)
+    reads_own <- vapply(
+      calls,
+      function(cl) return(identical(read_version(cl), own)),
+      logical(1)
+    )
+    bad <- vapply(
+      calls[!reads_own],
+      function(cl) return(paste(deparse(cl), collapse = " ")),
+      character(1)
+    )
+    if (length(bad) > 0) {
+      out[[f]] <- project_row(
+        rule,
+        "FAIL",
+        f,
+        paste0(
+          f,
+          ": a manuscript in manuscript/built/",
+          own,
+          "/ reads only the version \"",
+          own,
+          "\", and these calls do not: ",
+          paste(unique(bad), collapse = "; ")
+        )
+      )
+    }
+  }
+  return(bind_rows(out))
+}
+
+# The version argument of one read_results() call, or NULL when the call has
+# none or R cannot match it to read_results().
+read_version <- function(cl) {
+  matched <- tryCatch(
+    match.call(read_results, cl),
+    error = function(e) return(NULL)
+  )
+  return(matched[["version"]])
+}
+
+# The rule built_has_run: each folder manuscript/built/vNN/ has the run
+# script vNN_run.R at the top level.
+rule_built_has_run <- function(path) {
+  rule <- "built_has_run"
+  entries <- project_entries(path)
+  folders <- unique(sub(
+    built_version_pattern,
+    "manuscript/built/\\1",
+    entries[grepl(built_version_pattern, entries)]
+  ))
+  folders <- folders[dir.exists(file.path(path, folders))]
+  run <- paste0(basename(folders), "_run.R", recycle0 = TRUE)
+  missing <- folders[!run %in% run_scripts(path)]
+  run <- run[!run %in% run_scripts(path)]
+  return(project_row(
+    rule,
+    "FAIL",
+    missing,
+    paste0(missing, ": there is no ", run, recycle0 = TRUE)
+  ))
+}
+
+# The files manuscript/manual/vNN_<INITIALS>.docx of the project in `path`
+# whose names match manual_pattern. manual_manuscript_names fails the other
+# names.
+manual_files <- function(path) {
+  entries <- project_entries(path)
+  return(entries[
+    dirname(entries) == "manuscript/manual" &
+      grepl(manual_pattern, basename(entries)) &
+      !dir.exists(file.path(path, entries))
+  ])
+}
+
+# The versions vNN of the files of manual_files(), sorted.
+manual_versions <- function(path) {
+  versions <- unique(substr(basename(manual_files(path)), 1, 3))
+  return(sort(versions, method = "radix"))
+}
+
+# The rule manual_not_ahead: each manual version NN is below the newest run
+# version MM, the largest MM of a vMM_run.R. The versions of manual and built
+# manuscripts use one counter, so a hand edit of vMM is v(MM+1). Without a
+# run script there is nothing to compare.
+rule_manual_not_ahead <- function(path) {
+  rule <- "manual_not_ahead"
+  runs <- run_scripts(path)
+  if (length(runs) == 0) {
+    return(project_row(
+      rule,
+      "PASS",
+      "",
+      "there is no vNN_run.R, so nothing to compare"
+    ))
+  }
+  newest <- max(version_number(runs))
+  files <- manual_files(path)
+  n <- version_number(basename(files))
+  ahead <- n >= newest
+  return(project_row(
+    rule,
+    "FAIL",
+    files[ahead],
+    sprintf(
+      paste0(
+        "manual v%02d is ahead of the newest run v%02d: freeze v%02d and ",
+        "start v%02d with pbn::new_version(\"v%02d\", to = \"v%02d\")"
+      ),
+      n[ahead],
+      newest,
+      newest,
+      n[ahead] + 1L,
+      newest,
+      n[ahead] + 1L
+    )
+  ))
 }
 
 # The R code of one manuscript file as an expression, or NULL when R cannot

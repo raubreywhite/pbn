@@ -24,7 +24,7 @@ the folder \code{home}. The project passes \code{\link[=check_project]{check_pro
 \details{
 \code{create_project()} writes these files:
 \itemize{
-\item \code{pbn.yml}, with the line \code{extends: house_2026_11_19}.
+\item \code{pbn.yml}, with the line \code{extends: house_2026_11_20}.
 \item \code{v01_run.R}, the run script. Its data steps are \code{raw}, \code{clean} and
 \code{cohort}, and it has one analysis kind, \code{risk_difference}.
 \item \verb{v01_functions/}, with \verb{_cfg.R}, the data steps \code{data_raw.R},

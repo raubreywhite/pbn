@@ -1,3 +1,12 @@
+# pbn 2026.11.30
+
+- New rule set `house_2026_11_20`: the set `house_2026_11_19` with three new rules at `fail`, for one version counter of the run scripts and the manuscripts. A project on `house_2026_11_17` or `house_2026_11_19` sees no change. The line for a new `pbn.yml` and `create_project()` now name `house_2026_11_20`.
+- New rule `built_reads_own_version` fails a `read_results()` call in `manuscript/built/vNN/` that does not read the version `"vNN"`.
+- New rule `built_has_run` fails a folder `manuscript/built/vNN/` without `vNN_run.R`.
+- New rule `manual_not_ahead` fails a manual manuscript `vNN_<INITIALS>.docx` at or above the newest run version. Its message names the call `pbn::new_version("vMM", to = "vPP")` that starts the next run version.
+- In `house_2026_11_20`, `readme_and_changelog` also needs a section `## vNN` in `CHANGELOG.md` for each manual manuscript.
+- The template `AGENTS.md` gets the section Manuscripts, and the `README.md` of `create_project()` states the one version counter.
+
 # pbn 2026.11.29
 
 - Fix: a .R file with CR LF line ends no longer counts as changed in `freeze_version()` and the rule `frozen_versions_unchanged` of `house_2026_11_19`, which pbn 2026.11.26 released. pbn hashes a .R file with each CR LF as LF, and each other file as its bytes.

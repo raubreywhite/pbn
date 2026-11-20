@@ -852,6 +852,33 @@ project_rules <- function() {
       "manuscript/built/ reads only the real results",
       "remove the argument scenario from the call"
     ),
+    built_reads_own_version = list(
+      rule_built_reads_own_version,
+      "every read_results() call in manuscript/built/vNN/ reads the version vNN",
+      paste(
+        "read the version of the folder, as in read_results(\"vNN\"), or move",
+        "the file to the folder of the version that it reads"
+      )
+    ),
+    built_has_run = list(
+      rule_built_has_run,
+      "every folder manuscript/built/vNN/ has a vNN_run.R",
+      paste(
+        "move the folder to the version of the run that it reads, or create",
+        "the run script of the version"
+      )
+    ),
+    manual_not_ahead = list(
+      rule_manual_not_ahead,
+      paste(
+        "every manuscript/manual/vNN_<INITIALS>.docx is older than the newest",
+        "run version"
+      ),
+      paste(
+        "start the next run version with the call of pbn::new_version() in",
+        "the detail"
+      )
+    ),
     fake_data_names = list(
       rule_fake_data_names,
       paste(

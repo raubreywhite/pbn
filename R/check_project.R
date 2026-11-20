@@ -22,12 +22,13 @@
 #' Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 #' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 #'
-#' The rules, with their level in the set `house_2026_11_19`, are below.
-#' The set `house_2026_11_17` has the same rules at the same levels, without
-#' `frozen_versions_unchanged`, `readme_and_changelog`,
-#' `changelog_with_code`, `comment_share`, `no_cross_version_reads` and
-#' `no_escape_hatches`. A rule that the set of the project does not have
-#' prints no line.
+#' The rules, with their level in the set `house_2026_11_20`, are below.
+#' The set `house_2026_11_19` has the same rules at the same levels, without
+#' `built_reads_own_version`, `built_has_run` and `manual_not_ahead`. The
+#' set `house_2026_11_17` also does not have `frozen_versions_unchanged`,
+#' `readme_and_changelog`, `changelog_with_code`, `comment_share`,
+#' `no_cross_version_reads` and `no_escape_hatches`. A rule that the set of
+#' the project does not have prints no line.
 #' - `lower_case_names` (FAIL): a file or folder name has a capital letter.
 #'   Everything under `background/` is not checked. These are exempt:
 #'   `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
@@ -58,7 +59,10 @@
 #'   the top level, or `CHANGELOG.md` has no section for a version. A
 #'   section is a line that starts with `## vNN`, with a space or nothing
 #'   after it, for example `## v01` or `## v01 (2026-11-19)`. A version is a
-#'   `vNN_run.R` or a `vNN_functions/` at the top level. `README.md` says
+#'   `vNN_run.R` or a `vNN_functions/` at the top level. From the set
+#'   `house_2026_11_20`, a version is also the `vNN` of a file
+#'   `manuscript/manual/vNN_<INITIALS>.docx` with a name that
+#'   `manual_manuscript_names` passes. `README.md` says
 #'   what the project is, how to run it and why its code is as it is.
 #'   `CHANGELOG.md` says what changed in each version. The detail is
 #'   `README.md: missing`, `CHANGELOG.md: missing` or
@@ -102,6 +106,28 @@
 #'   a `scenario` argument that is not the string `"real"`. A call without
 #'   `scenario` passes. In `.qmd` and `.Rmd` files, the rule reads the R
 #'   chunks that [knitr::purl()] extracts and the inline R code.
+#' - `built_reads_own_version` (FAIL): an `.R`, `.qmd` or `.Rmd` file in
+#'   `manuscript/built/vNN/` calls `read_results()` or `pbn::read_results()`
+#'   with a `version` argument that is not the string `"vNN"`. A variable
+#'   and a call without `version` fail too. The rule reads the code as
+#'   `manuscript_reads_real` does, and it fails a file that R cannot parse.
+#'   It does not read a file in `manuscript/built/` outside a folder `vNN/`,
+#'   or a file of another language, such as `.py`. The detail lists each
+#'   call that fails.
+#' - `built_has_run` (FAIL): a folder `manuscript/built/vNN/` has no
+#'   `vNN_run.R` at the top level. In a git repository, an empty folder is
+#'   not in the list of files, so the rule does not see it. The detail is
+#'   `manuscript/built/vNN: there is no vNN_run.R`.
+#' - `manual_not_ahead` (FAIL): a file
+#'   `manuscript/manual/vNN_<INITIALS>.docx` has `NN` at or above `MM`, the
+#'   largest version of a `vMM_run.R`. The run scripts and the manuscripts
+#'   share one version counter. So a hand edit of version `vMM` is
+#'   `v(MM+1)_<INITIALS>.docx`, and the next run version is `v(MM+2)`. The
+#'   detail is
+#'   `manual vNN is ahead of the newest run vMM: freeze vMM and start vPP with pbn::new_version("vMM", to = "vPP")`,
+#'   with `PP` = `NN` + 1. The rule does not read a name that
+#'   `manual_manuscript_names` fails. Without a `vNN_run.R`, the rule has
+#'   nothing to compare. It then prints one PASS line that says so.
 #' - `fake_data_names` (FAIL): a file in a folder `output_fake_data/` has a
 #'   name without the prefix `fake_data_`, or a file with the prefix is in
 #'   another folder. [make_outputs()] writes these folders.
@@ -286,7 +312,7 @@
 #' advice to rename it. The smallest `pbn.yml` is one line:
 #'
 #' ```yaml
-#' extends: house_2026_11_19
+#' extends: house_2026_11_20
 #' ```
 #'
 #' The key `extends` names a house rule set. A set is a dated file in the
@@ -294,7 +320,7 @@
 #' change to the house rules is a new set with a new date. pbn never chooses
 #' a set for a project. So a new version of pbn does not change the rules of
 #' a project. To read the set, run
-#' `readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))`.
+#' `readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))`.
 #'
 #' The set gives each rule one of three levels:
 #' - `fail`: a finding is FAIL, and `check_project.R` ends with status 1.
@@ -329,7 +355,7 @@
 #' This `pbn.yml` changes two rules and allows three paths:
 #'
 #' ```yaml
-#' extends: house_2026_11_19
+#' extends: house_2026_11_20
 #' rules:
 #'   cyclomatic_complexity: {limit: 25}
 #'   unknown_path: off
@@ -367,7 +393,7 @@
 #' @examples
 #' home <- file.path(tempdir(), "pbn_check_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-#' writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
 #' writeLines(
 #'   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
 #'   file.path(home, "v01_run.R")

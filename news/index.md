@@ -1,5 +1,22 @@
 # Changelog
 
+## pbn 2026.12.1
+
+- New argument `style` of
+  [`table1()`](https://www.rwhite.no/pbn/reference/table1.md). With a
+  style, [`table1()`](https://www.rwhite.no/pbn/reference/table1.md)
+  adds the columns `value_pretty` and `p_pretty` and the attribute
+  `footnotes`. With `style = NULL`, the output is the same as in pbn
+  2026.11.30.
+- New
+  [`table1_styles()`](https://www.rwhite.no/pbn/reference/table1_styles.md)
+  gives the names of the installed styles. pbn 2026.12.1 installs no
+  style. [`?table1`](https://www.rwhite.no/pbn/reference/table1.md)
+  describes a style file, and the article Table 1 styles shows each
+  installed style.
+- In `house_2026_11_20`, `no_local_copy_of_pbn_function` knows the
+  export `table1_styles`.
+
 ## pbn 2026.11.30
 
 - New rule set `house_2026_11_20`: the set `house_2026_11_19` with three

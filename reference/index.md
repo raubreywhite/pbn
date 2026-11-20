@@ -83,3 +83,5 @@
 
 - [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) : Compute
   the numbers of a descriptive table
+- [`table1_styles()`](https://www.rwhite.no/pbn/reference/table1_styles.md)
+  : List the installed Table 1 styles

@@ -186,6 +186,8 @@ Set up a new R analysis project with the R package pbn, in this folder.
 
 - [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) : Compute
   the numbers of a descriptive table
+- [`table1_styles()`](https://www.rwhite.no/pbn/reference/table1_styles.md)
+  : List the installed Table 1 styles
 
 # Articles
 
@@ -193,3 +195,4 @@ Set up a new R analysis project with the R package pbn, in this folder.
 
 - [Get started with pbn](https://www.rwhite.no/pbn/articles/pbn.md):
 - [pbn with AI agents](https://www.rwhite.no/pbn/articles/agents.md):
+- [Table 1 styles](https://www.rwhite.no/pbn/articles/table1.md):

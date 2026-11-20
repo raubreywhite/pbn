@@ -96,7 +96,7 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_new_version_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/Rtmp8iEUDv/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/RtmpgQ61Cx/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::new_version("v01", home = home)
 #> new_version(): v01 is now frozen in v01_frozen.md5. Wrote v02_run.R and v02_functions/. Added the section ## v02 to CHANGELOG.md.
 pbn::check_project(home)

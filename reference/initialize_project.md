@@ -331,11 +331,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmpcGZJkt/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/RtmpjsbP5b/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmpcGZJkt/pbn_initialize_example/v01_results"
+#> [1] "/tmp/RtmpjsbP5b/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmpcGZJkt/pbn_initialize_example/data"
+#> [1] "/tmp/RtmpjsbP5b/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

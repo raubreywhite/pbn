@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -46,6 +46,14 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.12.4" id="pbn-2026124">pbn 2026.12.4<a class="anchor" aria-label="anchor" href="#pbn-2026124"></a></h2>
+<ul><li>Behaviour change: pbn withdraws the style <code>ijoa_brief_report_2026_11_20</code>, because no real published table proves it. <code><a href="../reference/table1.html">table1()</a></code> stops on its name with the version and the reason, <code><a href="../reference/table1_styles.html">table1_styles()</a></code> does not list it, and pbn installs no style.</li>
+<li>Each installed style MUST have the folder <code>inst/table1/&lt;name&gt;/</code> of the real Table 1s that it reproduces from fake data. A test of pbn compares every printed cell, and each cell that differs MUST be a listed exception with a rule. <code><a href="../reference/table1.html">?table1</a></code>, section Styles, gives the files.</li>
+<li>That test also fails a field whose <code>source</code> says “editorial”, or cites neither a reference table nor a guideline page.</li>
+<li>Behaviour change: the output of <code><a href="../reference/table1.html">table1()</a></code> gets the column <code>label</code> after the old ones, and each old column and row keeps its values. <code>vars</code> can have the columns <code>label</code> and <code>section</code>.</li>
+<li>With a style and the column <code>section</code>, the output gets a section row for each group before the first variable of each section. The new optional style fields <code>cat.level_prefix</code> and <code>missing.row_label</code> give the labels of a level row and a Missing row.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.12.3" id="pbn-2026123">pbn 2026.12.3<a class="anchor" aria-label="anchor" href="#pbn-2026123"></a></h2>
 <ul><li>New type <code>"cat"</code> of <code><a href="../reference/table1.html">table1()</a></code>: one row per level and group, with the new column <code>level</code>. Its <code>pct</code> divides by the non-missing count, and its P comes from the chi-square or Fisher test over the levels.</li>

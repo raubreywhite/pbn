@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/RtmpYlur3K/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpYlur3K/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpYlur3K/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/RtmpZrSP8E/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpZrSP8E/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpZrSP8E/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/RtmpYlur3K/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpYlur3K/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpYlur3K/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/RtmpZrSP8E/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpZrSP8E/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpZrSP8E/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)

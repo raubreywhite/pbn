@@ -13,7 +13,8 @@ table1_styles()
 ## Value
 
 A character vector of style names, such as `"name_2026_12_01"`, sorted
-in the C locale. It is `character(0)` when pbn installs no style.
+in the C locale. It is `character(0)` when pbn installs no style. It
+never holds a withdrawn style.
 
 ## See also
 
@@ -24,5 +25,5 @@ Other shared helpers:
 
 ``` r
 pbn::table1_styles()
-#> [1] "ijoa_brief_report_2026_11_20"
+#> character(0)
 ```

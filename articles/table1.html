@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,52 +95,55 @@ name, the file name without <code>.yml</code>, to the argument
 style. A changed style gets a new file with a new date, so a project
 that names a style gets the same text at each run.</p>
 <p>Each field of a style holds a <code>value</code> and a
-<code>source</code>. The source says where the value comes from. It is
-the guide of a journal and its count of papers, the guideline and its
-page, or <code>editorial choice</code>.</p>
+<code>source</code>. The source says where the value comes from. In an
+installed style, it cites a cell of a real published table or a page of
+the author guidelines. The section below says how pbn checks this.</p>
 </div>
 <div class="section level2">
 <h2 id="the-schema">The schema<a class="anchor" aria-label="anchor" href="#the-schema"></a>
 </h2>
 <p>This style file has every field. The section Styles of
-<code><a href="../reference/table1.html">?table1</a></code> gives the type and the check of each field. The
-fields <code>cont.median_digits</code>,
-<code>missing.row_template</code> and
-<code>missing.row_pct_digits</code>, and the section <code>cat</code>,
-are optional.</p>
+<code><a href="../reference/table1.html">?table1</a></code> gives the type and the check of each field. These
+are optional: the section <code>cat</code>, and the fields
+<code>cont.median_digits</code>, <code>cat.level_prefix</code>,
+<code>missing.row_template</code>, <code>missing.row_pct_digits</code>
+and <code>missing.row_label</code>.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode yaml"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">bin</span><span class="kw">:</span></span>
-<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{events} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
+<span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{events} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="fu">cont</span><span class="kw">:</span></span>
-<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{median} ({q1}-{q3})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="at">  </span><span class="fu">mean_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="at">  </span><span class="fu">sd_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="at">  </span><span class="fu">median_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
+<span id="cb1-5"><a href="#cb1-5" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{median} ({q1}-{q3})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-6"><a href="#cb1-6" tabindex="-1"></a><span class="at">  </span><span class="fu">mean_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-7"><a href="#cb1-7" tabindex="-1"></a><span class="at">  </span><span class="fu">sd_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-8"><a href="#cb1-8" tabindex="-1"></a><span class="at">  </span><span class="fu">median_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
 <span id="cb1-9"><a href="#cb1-9" tabindex="-1"></a><span class="fu">cat</span><span class="kw">:</span></span>
-<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{events} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="at">  </span><span class="fu">pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="at">  </span><span class="fu">heading_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">""</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="fu">p</span><span class="kw">:</span></span>
-<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="at">  </span><span class="fu">digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P ={p}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="at">  </span><span class="fu">lower</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.001</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="at">  </span><span class="fu">below_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P &lt;{lower}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="at">  </span><span class="fu">upper</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.999</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="at">  </span><span class="fu">above_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P &gt;{upper}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="fu">thousands</span><span class="kw">:</span></span>
-<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="at">  </span><span class="fu">mark</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">","</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="at">  </span><span class="fu">from</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10000</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="fu">missing</span><span class="kw">:</span></span>
-<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="at">  </span><span class="fu">show</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> row_if_any</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"; {missing} missing"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="at">  </span><span class="fu">row_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{missing} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="at">  </span><span class="fu">row_pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span>
-<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="fu">footnotes</span><span class="kw">:</span></span>
-<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"Values are n (percent) or median (quartiles)."</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> editorial choice</span><span class="kw">}</span></span></code></pre></div>
+<span id="cb1-10"><a href="#cb1-10" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{events} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-11"><a href="#cb1-11" tabindex="-1"></a><span class="at">  </span><span class="fu">pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-12"><a href="#cb1-12" tabindex="-1"></a><span class="at">  </span><span class="fu">heading_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">""</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-13"><a href="#cb1-13" tabindex="-1"></a><span class="at">  </span><span class="fu">level_prefix</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"- "</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-14"><a href="#cb1-14" tabindex="-1"></a><span class="fu">p</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" tabindex="-1"></a><span class="at">  </span><span class="fu">digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">3</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-16"><a href="#cb1-16" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P ={p}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-17"><a href="#cb1-17" tabindex="-1"></a><span class="at">  </span><span class="fu">lower</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.001</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-18"><a href="#cb1-18" tabindex="-1"></a><span class="at">  </span><span class="fu">below_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P &lt;{lower}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-19"><a href="#cb1-19" tabindex="-1"></a><span class="at">  </span><span class="fu">upper</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="fl">0.999</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-20"><a href="#cb1-20" tabindex="-1"></a><span class="at">  </span><span class="fu">above_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"P &gt;{upper}"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-21"><a href="#cb1-21" tabindex="-1"></a><span class="fu">thousands</span><span class="kw">:</span></span>
+<span id="cb1-22"><a href="#cb1-22" tabindex="-1"></a><span class="at">  </span><span class="fu">mark</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">","</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-23"><a href="#cb1-23" tabindex="-1"></a><span class="at">  </span><span class="fu">from</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">10000</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-24"><a href="#cb1-24" tabindex="-1"></a><span class="fu">missing</span><span class="kw">:</span></span>
+<span id="cb1-25"><a href="#cb1-25" tabindex="-1"></a><span class="at">  </span><span class="fu">show</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> row_if_any</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-26"><a href="#cb1-26" tabindex="-1"></a><span class="at">  </span><span class="fu">template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"; {missing} missing"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-27"><a href="#cb1-27" tabindex="-1"></a><span class="at">  </span><span class="fu">row_template</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"{missing} ({pct})"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-28"><a href="#cb1-28" tabindex="-1"></a><span class="at">  </span><span class="fu">row_pct_digits</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-29"><a href="#cb1-29" tabindex="-1"></a><span class="at">  </span><span class="fu">row_label</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"Missing"</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span>
+<span id="cb1-30"><a href="#cb1-30" tabindex="-1"></a><span class="fu">footnotes</span><span class="kw">:</span></span>
+<span id="cb1-31"><a href="#cb1-31" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="kw">{</span><span class="fu">value</span><span class="kw">:</span><span class="at"> </span><span class="st">"Values are n (percent) or median (quartiles)."</span><span class="kw">,</span><span class="at"> </span><span class="fu">source</span><span class="kw">:</span><span class="at"> example only</span><span class="kw">}</span></span></code></pre></div>
 <p>The fake data below have 12,000 rows in two groups.
 <code>education</code> is a <code>"cat"</code> variable with three
 levels and 60 missing values. <code>wide()</code> puts one printed row
-on each row and one group in each column.</p>
+on each row, with the column <code>label</code> of the output, and one
+group in each column.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">12000</span></span>
@@ -165,10 +168,7 @@ on each row and one group in each column.</p>
 <span><span class="co"># group, and the groups in the order of t1.</span></span>
 <span><span class="va">wide</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">t1</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">all</span> <span class="op">&lt;-</span> <span class="va">t1</span><span class="op">$</span><span class="va">grp</span> <span class="op">==</span> <span class="st">"All"</span></span>
-<span>  <span class="va">label</span> <span class="op">&lt;-</span> <span class="va">t1</span><span class="op">$</span><span class="va">var</span></span>
-<span>  <span class="va">label</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">t1</span><span class="op">$</span><span class="va">level</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/paste.html" class="external-link">paste</a></span><span class="op">(</span><span class="st">"-"</span>, <span class="va">t1</span><span class="op">$</span><span class="va">level</span><span class="op">[</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html" class="external-link">is.na</a></span><span class="op">(</span><span class="va">t1</span><span class="op">$</span><span class="va">level</span><span class="op">)</span><span class="op">]</span><span class="op">)</span></span>
-<span>  <span class="va">label</span><span class="op">[</span><span class="va">t1</span><span class="op">$</span><span class="va">row</span> <span class="op">==</span> <span class="st">"missing"</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="st">"- Missing"</span></span>
-<span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>row <span class="op">=</span> <span class="va">label</span><span class="op">[</span><span class="va">all</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="va">out</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>row <span class="op">=</span> <span class="va">t1</span><span class="op">$</span><span class="va">label</span><span class="op">[</span><span class="va">all</span><span class="op">]</span><span class="op">)</span></span>
 <span>  <span class="kw">for</span> <span class="op">(</span><span class="va">g</span> <span class="kw">in</span> <span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">t1</span><span class="op">$</span><span class="va">grp</span><span class="op">)</span><span class="op">)</span> <span class="op">{</span></span>
 <span>    <span class="va">out</span><span class="op">[[</span><span class="va">g</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="va">t1</span><span class="op">$</span><span class="va">value_pretty</span><span class="op">[</span><span class="va">t1</span><span class="op">$</span><span class="va">grp</span> <span class="op">==</span> <span class="va">g</span><span class="op">]</span></span>
 <span>  <span class="op">}</span></span>
@@ -207,7 +207,7 @@ on each row and one group in each column.</p>
 <td align="left">P =0.839</td>
 </tr>
 <tr class="even">
-<td align="left">- Missing</td>
+<td align="left">Missing</td>
 <td align="left">40 (0.3)</td>
 <td align="left">30 (0.3)</td>
 <td align="left">10 (0.3)</td>
@@ -249,7 +249,7 @@ on each row and one group in each column.</p>
 <td align="left"></td>
 </tr>
 <tr class="even">
-<td align="left">- Missing</td>
+<td align="left">Missing</td>
 <td align="left">60 (0.5)</td>
 <td align="left">48 (0.5)</td>
 <td align="left">12 (0.4)</td>
@@ -265,51 +265,96 @@ count of the group. Its Missing row divides by every row of the
 group.</p>
 </div>
 <div class="section level2">
+<h2 id="how-a-style-is-proven">How a style is proven<a class="anchor" aria-label="anchor" href="#how-a-style-is-proven"></a>
+</h2>
+<p>pbn installs a style only with the real published Table 1s that it
+reproduces. Beside each style file
+<code>inst/table1/&lt;name&gt;.yml</code> is the folder
+<code>inst/table1/&lt;name&gt;/</code>. For each reference table k, the
+folder holds five files:</p>
+<ul>
+<li>
+<code>reference_&lt;k&gt;.csv</code>: the real table as printed, one
+string per cell.</li>
+<li>
+<code>source_&lt;k&gt;.yml</code>: the authors, the journal, the
+DOI, the table number, and who transcribed the table from which
+file.</li>
+<li>
+<code>fake_&lt;k&gt;.csv</code>: fake data, one row per fake
+person.</li>
+<li>
+<code>vars_&lt;k&gt;.csv</code>: the arguments <code>by</code> and
+<code>vars</code> of <code><a href="../reference/table1.html">table1()</a></code>, with the columns
+<code>label</code> and <code>section</code> of <code>vars</code>.</li>
+<li>
+<code>layout_&lt;k&gt;.yml</code>: the printed row and column of
+each cell of the output. It holds no label.</li>
+</ul>
+<p>A test of pbn runs <code>table1(fake, by, vars, style)</code> for
+each reference table. It compares every printed cell with the cell of
+the style, the row labels included. Each label is the column
+<code>label</code> of the output of <code><a href="../reference/table1.html">table1()</a></code>, and never
+comes from the layout or the reference. A printed row with no computed
+counterpart MUST be an exception with the rule
+<code>not_computable</code>. A cell that differs MUST have an entry in
+the file <code>exceptions.yml</code> of the folder. The entry gives the
+two strings, a rule, a source and a justification. The rule is one of
+these:</p>
+<ul>
+<li>
+<code>guideline</code>: the reference departs from the author
+guidelines, and the style follows them. The source gives the page.</li>
+<li>
+<code>other_reference</code>: two references disagree, and the style
+follows the other one. The source cites its cell.</li>
+<li>
+<code>not_computable</code>: <code><a href="../reference/table1.html">table1()</a></code> cannot compute
+the cell.</li>
+<li>
+<code>published_error</code>: the printed cell is wrong. The source
+gives the computation that shows it.</li>
+</ul>
+<p>The test fails a difference that <code>exceptions.yml</code> does not
+list, and an exception whose strings no longer match. It also fails a
+style without its folder or with a missing file. A field whose
+<code>source</code> says “editorial”, or cites neither a reference table
+nor a guideline page, fails too. The section Styles of
+<code><a href="../reference/table1.html">?table1</a></code> gives every field of every file.</p>
+<div class="section level3">
+<h3 id="withdrawn-styles">Withdrawn styles<a class="anchor" aria-label="anchor" href="#withdrawn-styles"></a>
+</h3>
+<p>pbn withdraws a style that it cannot prove. pbn removes its file, and
+<code><a href="../reference/table1.html">table1()</a></code> stops on its name with the version that withdrew
+it and the reason. <code><a href="../reference/table1_styles.html">table1_styles()</a></code> does not list it. These
+are the withdrawn styles:</p>
+<table class="table">
+<colgroup>
+<col width="23%">
+<col width="10%">
+<col width="66%">
+</colgroup>
+<thead><tr class="header">
+<th align="left">style</th>
+<th align="left">withdrawn_in</th>
+<th align="left">reason</th>
+</tr></thead>
+<tbody><tr class="odd">
+<td align="left">ijoa_brief_report_2026_11_20</td>
+<td align="left">2026.12.4</td>
+<td align="left">it has no reference tables, and 7 of its 18 field
+sources are an editorial choice</td>
+</tr></tbody>
+</table>
+</div>
+</div>
+<div class="section level2">
 <h2 id="the-installed-styles">The installed styles<a class="anchor" aria-label="anchor" href="#the-installed-styles"></a>
 </h2>
 <p>The tables below show <code>smoker</code> and <code>age</code> only.
 A style without the section <code>cat</code> cannot format a
 <code>"cat"</code> variable.</p>
-<div class="section level3">
-<h3 id="ijoa_brief_report_2026_11_20">ijoa_brief_report_2026_11_20<a class="anchor" aria-label="anchor" href="#ijoa_brief_report_2026_11_20"></a>
-</h3>
-<table style="width:100%;" class="table">
-<colgroup>
-<col width="7%">
-<col width="27%">
-<col width="27%">
-<col width="26%">
-<col width="10%">
-</colgroup>
-<thead><tr class="header">
-<th align="left">row</th>
-<th align="left">All</th>
-<th align="left">Control</th>
-<th align="left">Exposed</th>
-<th align="left">p</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td align="left">smoker</td>
-<td align="left">1874 (15.7%); 40 missing</td>
-<td align="left">1409 (15.7%); 30 missing</td>
-<td align="left">465 (15.6%); 10 missing</td>
-<td align="left">P =0.839</td>
-</tr>
-<tr class="even">
-<td align="left">age</td>
-<td align="left">31.0 (5.0)</td>
-<td align="left">30.9 (5.0)</td>
-<td align="left">31.1 (5.0)</td>
-<td align="left"></td>
-</tr>
-</tbody>
-</table>
-<p>Values are n (%) or mean (SD).</p>
-<p>SD, standard deviation.</p>
-<p>P values compare the groups with Pearson’s chi-square test, or with
-Fisher’s exact test when an expected count is below 5.</p>
-</div>
+<p>pbn 2026.12.4 installs no style.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

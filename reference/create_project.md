@@ -99,7 +99,7 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_create_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/RtmpcGZJkt/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/RtmpjsbP5b/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::check_project(home)
 #> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name

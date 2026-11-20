@@ -23,7 +23,10 @@ table1(d, by, vars, style = NULL)
 
   A data.table with the columns `var` and `type`. `var` names a column
   in `d`. `type` is `"bin"` for a 0/1 variable, `"cont"` for a numeric
-  variable, or `"cat"` for a categorical variable.
+  variable, or `"cat"` for a categorical variable. Two text columns are
+  optional. `label` is the printed label of the variable, and `NA` gives
+  its name. `section` names the section that the variable belongs to,
+  and `NA` or `""` gives none.
 
 - style:
 
@@ -40,11 +43,13 @@ A data.table with one row per variable and group, in the order of
 group. The columns are `var`, `grp`, `n`, `missing`, `mean`, `sd`,
 `events`, `pct`, `p`, `test`, `level`, `median`, `q1` and `q3`. `n`
 counts the non-missing values. pbn 2026.12.3 added the last four
-columns. With a style, the columns `row`, `value_pretty` (the cell text)
-and `p_pretty` (the text of `p`) follow. The attribute `footnotes` then
-holds the footnotes of the style as a character vector. A style can add
-rows, as the section Styles says. The other columns of each row of the
-output without a style stay the same.
+columns. The column `label` follows, which pbn 2026.12.4 added: the
+label of the variable, or the level of a level row. With a style, the
+columns `row`, `value_pretty` (the cell text) and `p_pretty` (the text
+of `p`) follow. The attribute `footnotes` then holds the footnotes of
+the style as a character vector. A style can add rows, as the section
+Styles says. The other columns of each row of the output without a style
+stay the same.
 
 ## Details
 
@@ -109,16 +114,18 @@ released style, so a changed style gets a new date.
 
 A style file is a YAML map of sections. Each field of a section is a map
 with the keys `value` and `source`. `source` is one string that says
-where the value comes from. Examples are the guide and its count of
-papers (`k/N papers`), the guideline and its page, and
-`editorial choice`. `table1()` checks every field when it reads the
-file. An unknown field, a missing field, a missing `source` or a value
-that the field does not allow stops it. The error names the field and
-the file. The fields that pbn 2026.12.3 added are optional, so a style
-file of an earlier pbn stays valid. They are `cont.median_digits`, the
-section `cat`, and the fields `missing.row_template` and
-`missing.row_pct_digits`. An optional field that is present gets the
-same checks as the other fields.
+where the value comes from. `table1()` takes any `source` that is not
+empty. The source of an installed style MUST cite a reference table or a
+guideline page, as the subsection on the proof of a style says.
+`table1()` checks every field when it reads the file. An unknown field,
+a missing field, a missing `source` or a value that the field does not
+allow stops it. The error names the field and the file. The fields that
+pbn 2026.12.3 added are optional, so a style file of an earlier pbn
+stays valid. They are `cont.median_digits`, the section `cat`, and the
+fields `missing.row_template` and `missing.row_pct_digits`. pbn
+2026.12.4 added the optional fields `cat.level_prefix` and
+`missing.row_label`. An optional field that is present gets the same
+checks as the other fields.
 
 A template is text with placeholders in braces, such as `{events}`. A
 template can hold only the placeholders of its field, in any order, and
@@ -141,8 +148,8 @@ it can hold none. These are the fields:
   `q3`, a whole number from 0 to 10.
 
 - `cat` (an optional section): it MUST be present when `vars` has a
-  `"cat"` variable. When it is present, it MUST hold all three fields
-  below.
+  `"cat"` variable. When it is present, it MUST hold the three fields
+  below that are not optional.
 
 - `cat.template`: the cell of a level row of a `"cat"` variable, over
   `{events}`, `{n}` and `{pct}`, as `bin.template`.
@@ -152,6 +159,9 @@ it can hold none. These are the fields:
 
 - `cat.heading_template`: the cell of the heading row of a `"cat"`
   variable. It holds no placeholder. `""` gives an empty cell.
+
+- `cat.level_prefix` (optional): the text before the level in the column
+  `label` of a level row, such as `"- "`.
 
 - `p.digits`: the decimals of `p`, a whole number from 0 to 10.
 
@@ -195,6 +205,9 @@ it can hold none. These are the fields:
 - `missing.row_pct_digits` (optional): the decimals of `pct` in a
   Missing row, a whole number from 0 to 10.
 
+- `missing.row_label` (optional): the column `label` of a Missing row,
+  such as `"Missing"`. Without it, the label is `NA`.
+
 - `footnotes`: a list, which can be empty. Each item is a map with the
   keys `value` and `source`, and `value` is the text of one footnote.
 
@@ -219,10 +232,19 @@ A style can add rows, and the column `row` names the kind of each row:
   `100 * missing / (n + missing)`. The denominator counts every row of
   the group, missing ones included. Its `p_pretty` is `NA`.
 
+- `"section"`: one row for each group before the rows of the first
+  variable of each section, when `vars` has the column `section`. Its
+  `grp` is the group and its `label` is the section. Each other column
+  is `NA`.
+
+The column `label` of a heading row is the label of the variable. A
+level row has `cat.level_prefix` and the level, and a Missing row has
+`missing.row_label`.
+
 A heading row and a Missing row keep `var`, `grp`, `n`, `missing`, `p`
 and `test` of the group. Their `level` and their other numbers are `NA`,
-except `pct` of a Missing row. A table with no `"cat"` variable and no
-Missing row keeps the rows of the output without a style.
+except `pct` of a Missing row. A table with no `"cat"` variable, no
+Missing row and no section keeps the rows of the output without a style.
 
 `table1()` rounds each number with
 [`formatC()`](https://rdrr.io/r/base/formatc.html), which rounds as the
@@ -231,6 +253,114 @@ C function [`sprintf()`](https://rdrr.io/r/base/sprintf.html) does.
 separator applies to every number of a cell. A cell is `NA` when a
 number of its template is `NA`, as for a group with `n = 0`. `p_pretty`
 is `NA` where `p` is `NA`.
+
+### The proof of a style
+
+pbn installs a style only with the real published Table 1s that prove
+it. Beside the file `inst/table1/<name>.yml` is the folder
+`inst/table1/<name>/`. For each reference table k, it holds five files:
+
+- `reference_<k>.csv`: the table as printed. It has one row per printed
+  row and one column per printed column. The header holds the printed
+  column headers, and the first column holds the printed row labels.
+  Each cell is the printed string, and an empty cell is `""`.
+
+- `source_<k>.yml`: the fields `authors`, `title`, `journal`, `year`,
+  `volume`, `pages`, `doi`, `table` and `transcribed`. `authors` is a
+  list of maps with the keys `family` and `given`. `pages` is the
+  article number or the pages, and `table` is the number of the table.
+  `transcribed` is a map with the keys `file`, `by` and `date`.
+
+- `fake_<k>.csv`: the fake data, one row per fake person. An empty cell
+  or `NA` is a missing value.
+
+- `vars_<k>.csv`: the columns `var`, `type`, `label`, `levels` and
+  `section`. The one row of type `by` names the column of the groups.
+  The other rows, with `var`, `type`, `label` and `section`, are the
+  argument `vars`. `levels` gives the order of the groups, or of the
+  levels of a `"cat"` variable, separated by `|`. `levels` and `section`
+  can be empty.
+
+- `layout_<k>.yml`: the map of the output onto the printed table. Each
+  item of `columns` names a printed column, except the first, in order.
+  It has `cell: value` and a `grp`, or `cell: p`. Each item of `rows`
+  names a printed row, in order. It has the key `row` and, where it
+  applies, `var` and `level`, and no other key. `row` is `value`,
+  `heading` or `missing` as in the column `row` of the output. It is
+  `section` for a section heading, and `none` for a printed row with no
+  computed counterpart.
+
+The test of pbn runs `table1(fake, by, vars, style)` for each reference
+table. It compares each printed cell with the cell of the style, the row
+labels of the first column included. The headers are not cells. The cell
+of the style is `value_pretty` of the group, or `p_pretty` for
+`cell: p`, and `NA` is `""`. The label of the style is the column
+`label` of the same row of the output. No label comes from the layout or
+the reference. A printed row of `section` takes the label of the section
+row of the output. That row MUST come right before the first row of the
+next variable of the layout, and the label is `""` without it. A row of
+`section` has `""` in each cell after the label. A row of `none` has
+`""` in each cell. So each printed cell of it that is not empty MUST be
+an exception with the rule `not_computable`.
+
+A cell passes when the two strings are identical. A cell that differs
+passes only when the file `exceptions.yml` of the folder lists it with
+the same two strings.
+
+`exceptions.yml` is a map with the one key `exceptions`, a list. Each
+item has these fields:
+
+- `reference`, `row` and `column`: the cell, as `reference_1`, the
+  number of the printed row after the header, and the printed header.
+
+- `printed` and `style`: the printed string and the string of the style.
+
+- `rule`, `source` and `justification`: why the two differ. `source` and
+  `justification` MUST NOT be empty.
+
+`rule` is one of these:
+
+- `guideline`: the reference departs from the author guidelines, and the
+  style follows them. `source` names the guideline and its page.
+
+- `other_reference`: two references disagree, and the style follows the
+  other one. `source` cites a cell of the other reference.
+
+- `not_computable`: `table1()` cannot compute the cell, such as a P of a
+  `"cont"` variable.
+
+- `published_error`: the printed cell is wrong. `source` gives the
+  computation that shows it.
+
+The test fails a style in each of these cases:
+
+- A cell differs, and `exceptions.yml` does not list it.
+
+- An exception has strings other than those of its cell. A cell that
+  matches MUST NOT have an exception.
+
+- An exception names no cell, or a cell twice.
+
+- The style has no folder. The folder lacks a file, or it holds a file
+  of another name.
+
+- The `source` of a field holds "editorial", in any case.
+
+- The `source` of a field cites none of the three forms of a citation:
+
+  1.  a cell, as `reference_1, row 2, column "P"`.
+
+  2.  the family name of the first author of a reference, with
+      `Table <n>` of its source.
+
+  3.  a guide or a guideline with its page, as `p. 4` or `page 4`.
+
+A style that pbn cannot prove is withdrawn. pbn removes its file and
+keeps its name, so `table1()` stops with the version that withdrew it
+and the reason.
+[`table1_styles()`](https://www.rwhite.no/pbn/reference/table1_styles.md)
+does not list it. pbn 2026.12.4 withdrew `ijoa_brief_report_2026_11_20`,
+because it was not proven against real published tables.
 
 ## See also
 
@@ -258,40 +388,40 @@ pbn::table1(d, by = "g", vars = vars)
 #> 4:    age    All    20       0  30.5 5.91608     NA    NA    NA   <NA>   <NA>
 #> 5:    age      a    10       0  25.5 3.02765     NA    NA    NA   <NA>   <NA>
 #> 6:    age      b    10       0  35.5 3.02765     NA    NA    NA   <NA>   <NA>
-#>    median    q1    q3
-#>     <num> <num> <num>
-#> 1:     NA    NA    NA
-#> 2:     NA    NA    NA
-#> 3:     NA    NA    NA
-#> 4:   30.5 25.75 35.25
-#> 5:   25.5 23.25 27.75
-#> 6:   35.5 33.25 37.75
+#>    median    q1    q3  label
+#>     <num> <num> <num> <char>
+#> 1:     NA    NA    NA smoker
+#> 2:     NA    NA    NA smoker
+#> 3:     NA    NA    NA smoker
+#> 4:   30.5 25.75 35.25    age
+#> 5:   25.5 23.25 27.75    age
+#> 6:   35.5 33.25 37.75    age
 
 # A style file, written to tempdir()
 style <- file.path(tempdir(), "example_2026_12_01.yml")
 writeLines(c(
   "bin:",
-  "  template: {value: '{events} ({pct})', source: editorial choice}",
-  "  pct_digits: {value: 1, source: editorial choice}",
+  "  template: {value: '{events} ({pct})', source: example only}",
+  "  pct_digits: {value: 1, source: example only}",
   "cont:",
-  "  template: {value: '{mean} ({sd})', source: editorial choice}",
-  "  mean_digits: {value: 1, source: editorial choice}",
-  "  sd_digits: {value: 1, source: editorial choice}",
+  "  template: {value: '{mean} ({sd})', source: example only}",
+  "  mean_digits: {value: 1, source: example only}",
+  "  sd_digits: {value: 1, source: example only}",
   "p:",
-  "  digits: {value: 3, source: editorial choice}",
-  "  template: {value: 'P ={p}', source: editorial choice}",
-  "  lower: {value: 0.001, source: editorial choice}",
-  "  below_template: {value: 'P <{lower}', source: editorial choice}",
-  "  upper: {value: 0.999, source: editorial choice}",
-  "  above_template: {value: 'P >{upper}', source: editorial choice}",
+  "  digits: {value: 3, source: example only}",
+  "  template: {value: 'P ={p}', source: example only}",
+  "  lower: {value: 0.001, source: example only}",
+  "  below_template: {value: 'P <{lower}', source: example only}",
+  "  upper: {value: 0.999, source: example only}",
+  "  above_template: {value: 'P >{upper}', source: example only}",
   "thousands:",
-  "  mark: {value: ',', source: editorial choice}",
-  "  from: {value: 10000, source: editorial choice}",
+  "  mark: {value: ',', source: example only}",
+  "  from: {value: 10000, source: example only}",
   "missing:",
-  "  show: {value: if_any, source: editorial choice}",
-  "  template: {value: '; {missing} missing', source: editorial choice}",
+  "  show: {value: if_any, source: example only}",
+  "  template: {value: '; {missing} missing', source: example only}",
   "footnotes:",
-  "  - {value: 'Values are n (percent) or mean (SD).', source: editorial choice}"
+  "  - {value: 'Values are n (percent) or mean (SD).', source: example only}"
 ), style)
 t1 <- pbn::table1(d, by = "g", vars = vars, style = style)
 t1[, c("var", "grp", "value_pretty", "p_pretty")]

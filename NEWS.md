@@ -1,3 +1,7 @@
+# pbn 2026.12.7
+
+- Behaviour change: the proof of a style compares each value cell by its shape, the string with each number masked. Labels stay exact. An exception lists only a cell whose two shapes differ, as `?table1`, section Styles, says.
+
 # pbn 2026.12.6
 
 - A style needs `missing.row_pct_digits` only when `missing.row_template` holds `{pct}`. The template `"{missing}"` gives a Missing row with the count only, because the level percentages and the test use the non-missing rows.

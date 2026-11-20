@@ -229,7 +229,8 @@ of maps with the keys \code{family} and \code{given}. \code{pages} is the articl
 number or the pages, and \code{table} is the number of the table.
 \code{transcribed} is a map with the keys \code{file}, \code{by} and \code{date}.
 \item \verb{fake_<k>.csv}: the fake data, one row per fake person. An empty cell or
-\code{NA} is a missing value.
+\code{NA} is a missing value. The fake data MUST give every printed row and
+column. They need not give the printed numbers.
 \item \verb{vars_<k>.csv}: the columns \code{var}, \code{type}, \code{label}, \code{levels} and
 \code{section}. The one row of type \code{by} names the column of the groups. The
 other rows, with \code{var}, \code{type}, \code{label} and \code{section}, are the argument
@@ -258,9 +259,27 @@ variable of the layout, and the label is \code{""} without it. A row of
 in each cell. So each printed cell of it that is not empty MUST be an
 exception with the rule \code{not_computable}.
 
-A cell passes when the two strings are identical. A cell that
-differs passes only when the file \code{exceptions.yml} of the folder lists it
-with the same two strings.
+A label cell, in the first column, passes when the two strings are
+identical. A value cell passes when the two strings have the same shape.
+The shape is the string with each number masked:
+\itemize{
+\item The digits before a decimal point \code{.} collapse to one \code{N}. A thousands
+separator between them stays as printed, so \verb{12,347} gives \verb{N,N} and
+\code{1234} gives \code{N}.
+\item Each digit after a decimal point becomes its own \code{N}, so the shape keeps
+the number of decimals.
+\item Every other character stays as printed, and an empty cell stays empty.
+}
+
+So \verb{397 (27.0\%)} and \verb{5 (2.8\%)} share the shape \verb{N (N.N\%)}, and
+\verb{57 (76\%)} gives \verb{N (N\%)}. \verb{<0.001} gives \verb{<N.NNN}, and \code{P =0.010} gives
+\code{P =N.NNN}. A style controls the format of a cell, and the numbers come
+from the data.
+
+A cell that differs passes only when the file \code{exceptions.yml} of the
+folder lists it. For a value cell, the two strings of the exception MUST
+have the shapes of the two strings of the cell. For a label cell, they
+MUST be the same strings.
 
 \code{exceptions.yml} is a map with the one key \code{exceptions}, a list. Each item
 has these fields:
@@ -280,15 +299,18 @@ style follows them. \code{source} names the guideline and its page.
 other one. \code{source} cites a cell of the other reference.
 \item \code{not_computable}: \code{table1()} cannot compute the cell, such as a P of a
 \code{"cont"} variable.
-\item \code{published_error}: the printed cell is wrong. \code{source} gives the
-computation that shows it.
+\item \code{published_error}: the format of the printed cell is wrong, such as a
+median printed without its value. \code{source} gives the evidence. A wrong
+number in the right format has the shape of the style, so it needs no
+exception.
 }
 
 The test fails a style in each of these cases:
 \itemize{
 \item A cell differs, and \code{exceptions.yml} does not list it.
-\item An exception has strings other than those of its cell. A cell that
-matches MUST NOT have an exception.
+\item The strings of an exception do not match those of its cell, as above.
+\item A cell matches, and \code{exceptions.yml} lists it. For a value cell, the
+two shapes are equal.
 \item An exception names no cell, or a cell twice.
 \item The style has no folder. The folder lacks a file, or it holds a file of
 another name.

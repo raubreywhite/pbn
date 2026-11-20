@@ -1,7 +1,8 @@
 # The proof of a Table 1 style. A style is proven when table1() reproduces
-# each real published table of its reference folder, cell by cell, from fake
-# data, and every cell that differs is a listed exception. ?table1, section
-# Styles, describes the folder and its files.
+# the format of each real published table of its reference folder, cell by
+# cell, from fake data. A label cell matches its string, a value cell matches
+# its shape, and every cell that differs is a listed exception. ?table1,
+# section Styles, describes the folder and its files.
 
 # The files of one reference table k, and the extension of each.
 proof_kinds <- c(
@@ -489,6 +490,7 @@ proof_cells <- function(x, file) {
     row = cells$row,
     label = ref[[1]][cells$row],
     column = names(ref)[cells$j + 1],
+    is_label = cells$j == 0,
     kind = vapply(
       cells$row,
       function(i) return(x$layout$rows[[i]]$row),
@@ -511,6 +513,7 @@ empty_cells <- function() {
     row = integer(0),
     label = character(0),
     column = character(0),
+    is_label = logical(0),
     kind = character(0),
     printed = character(0),
     style = character(0),
@@ -905,41 +908,80 @@ match_exceptions <- function(cells, entries, compared, known) {
   return(out)
 }
 
-# The failure of one cell, or NULL. `x` is its exception, or NULL.
+#' The shape of a cell string
+#'
+#' The shape is the string with each number masked. The digits before a
+#' decimal point `.` collapse to one `N`, and a thousands separator between
+#' them stays as printed. Each digit after a decimal point becomes its own
+#' `N`, so the shape keeps the number of decimals. Every other character stays
+#' as printed, and the empty string stays empty.
+#'
+#' So `"397 (27.0%)"` and `"5 (2.8%)"` share the shape `"N (N.N%)"`.
+#' `"57 (76%)"` gives `"N (N%)"`, `"<0.0001"` gives `"<N.NNNN"`, and
+#' `"12,347 (61.7%)"` gives `"N,N (N.N%)"`.
+#'
+#' @param x A character vector of cell strings.
+#' @return A character vector of the shapes, of the length of `x`.
+#' @noRd
+cell_shape <- function(x) {
+  x <- gsub("(?:\\.|\\G(?!^))\\K[0-9]", "N", enc2utf8(x), perl = TRUE)
+  return(gsub("[0-9]+", "N", x))
+}
+
+# The failure of one cell, or NULL. `x` is its exception, or NULL. A label
+# cell compares the two strings, and a value cell compares their shapes. A
+# cell that matches MUST NOT have an exception. An exception holds when its
+# two strings match those of its cell in the same way.
 cell_problem <- function(cell, x) {
   printed <- enc2utf8(cell$printed)
   styled <- enc2utf8(cell$style)
+  key <- if (cell$is_label) identity else cell_shape
+  shown <- function(s) {
+    if (cell$is_label) {
+      return(quoted_list(s))
+    }
+    return(paste0(quoted_list(s), " of the shape ", quoted_list(cell_shape(s))))
+  }
   name <- cell_name(cell$reference, cell$row, cell$label, cell$column)
-  if (is.null(x)) {
-    if (printed == styled) {
+  if (key(printed) == key(styled)) {
+    if (is.null(x)) {
       return(NULL)
     }
     return(paste0(
       name,
+      ": exceptions.yml lists the cell, but it is printed ",
+      shown(printed),
+      " and the style gives ",
+      shown(styled),
+      ", so the cell MUST NOT have an exception."
+    ))
+  }
+  if (is.null(x)) {
+    return(paste0(
+      name,
       ": printed ",
-      quoted_list(printed),
+      shown(printed),
       ", the style gives ",
-      quoted_list(styled),
+      shown(styled),
       ", and exceptions.yml does not list the cell."
     ))
   }
   if (
-    printed != styled &&
-      enc2utf8(x$printed) == printed &&
-      enc2utf8(x$style) == styled
+    key(enc2utf8(x$printed)) == key(printed) &&
+      key(enc2utf8(x$style)) == key(styled)
   ) {
     return(none_rule_problem(cell, x, name))
   }
   return(paste0(
     name,
     ": exceptions.yml lists printed ",
-    quoted_list(x$printed),
+    shown(x$printed),
     " and style ",
-    quoted_list(x$style),
+    shown(x$style),
     ", but the cell is printed ",
-    quoted_list(printed),
+    shown(printed),
     " and the style gives ",
-    quoted_list(styled),
+    shown(styled),
     "."
   ))
 }

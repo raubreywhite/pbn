@@ -195,7 +195,8 @@
 #'   number or the pages, and `table` is the number of the table.
 #'   `transcribed` is a map with the keys `file`, `by` and `date`.
 #' - `fake_<k>.csv`: the fake data, one row per fake person. An empty cell or
-#'   `NA` is a missing value.
+#'   `NA` is a missing value. The fake data MUST give every printed row and
+#'   column. They need not give the printed numbers.
 #' - `vars_<k>.csv`: the columns `var`, `type`, `label`, `levels` and
 #'   `section`. The one row of type `by` names the column of the groups. The
 #'   other rows, with `var`, `type`, `label` and `section`, are the argument
@@ -223,9 +224,25 @@
 #' in each cell. So each printed cell of it that is not empty MUST be an
 #' exception with the rule `not_computable`.
 #'
-#' A cell passes when the two strings are identical. A cell that
-#' differs passes only when the file `exceptions.yml` of the folder lists it
-#' with the same two strings.
+#' A label cell, in the first column, passes when the two strings are
+#' identical. A value cell passes when the two strings have the same shape.
+#' The shape is the string with each number masked:
+#' - The digits before a decimal point `.` collapse to one `N`. A thousands
+#'   separator between them stays as printed, so `12,347` gives `N,N` and
+#'   `1234` gives `N`.
+#' - Each digit after a decimal point becomes its own `N`, so the shape keeps
+#'   the number of decimals.
+#' - Every other character stays as printed, and an empty cell stays empty.
+#'
+#' So `397 (27.0%)` and `5 (2.8%)` share the shape `N (N.N%)`, and
+#' `57 (76%)` gives `N (N%)`. `<0.001` gives `<N.NNN`, and `P =0.010` gives
+#' `P =N.NNN`. A style controls the format of a cell, and the numbers come
+#' from the data.
+#'
+#' A cell that differs passes only when the file `exceptions.yml` of the
+#' folder lists it. For a value cell, the two strings of the exception MUST
+#' have the shapes of the two strings of the cell. For a label cell, they
+#' MUST be the same strings.
 #'
 #' `exceptions.yml` is a map with the one key `exceptions`, a list. Each item
 #' has these fields:
@@ -242,13 +259,16 @@
 #'   other one. `source` cites a cell of the other reference.
 #' - `not_computable`: `table1()` cannot compute the cell, such as a P of a
 #'   `"cont"` variable.
-#' - `published_error`: the printed cell is wrong. `source` gives the
-#'   computation that shows it.
+#' - `published_error`: the format of the printed cell is wrong, such as a
+#'   median printed without its value. `source` gives the evidence. A wrong
+#'   number in the right format has the shape of the style, so it needs no
+#'   exception.
 #'
 #' The test fails a style in each of these cases:
 #' - A cell differs, and `exceptions.yml` does not list it.
-#' - An exception has strings other than those of its cell. A cell that
-#'   matches MUST NOT have an exception.
+#' - The strings of an exception do not match those of its cell, as above.
+#' - A cell matches, and `exceptions.yml` lists it. For a value cell, the
+#'   two shapes are equal.
 #' - An exception names no cell, or a cell twice.
 #' - The style has no folder. The folder lacks a file, or it holds a file of
 #'   another name.

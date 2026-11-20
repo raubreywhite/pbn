@@ -1,7 +1,8 @@
-# The proof of a Table 1 style: each installed style reproduces the real
-# published tables of its reference folder, and every cell that differs is a
-# listed exception. The fixture style fixtures/table1_proof/ is made up, and
-# so are its two reference tables. It has one exception of each rule.
+# The proof of a Table 1 style: each installed style reproduces the format
+# of the real published tables of its reference folder, and every cell that
+# differs is a listed exception. A label cell matches its string, and a value
+# cell matches its shape. The fixture style fixtures/table1_proof/ is made up,
+# and so are its two reference tables. It has one exception of each rule.
 
 proof_dir <- test_path("fixtures", "table1_proof")
 proof_name <- "fixture_proof_2026_12_04"
@@ -56,27 +57,82 @@ with_name <- function(x) {
   return(paste0(proof_name, ": ", x))
 }
 
-# The failure of each of the four cells of the fixture that differ, when no
-# exception lists it.
+# The failure of each of the four cells of the fixture whose shapes differ,
+# when no exception lists it.
 unlisted <- c(
   paste0(
-    "reference_1, row 2 (Smoker), column \"Group B (n = 10)\": printed ",
-    "\"4 (45.0%)\", the style gives \"4 (40.0%)\", and exceptions.yml does ",
-    "not list the cell."
+    "reference_1, row 4 (Age, years), column \"P\": printed \"0.512\" of ",
+    "the shape \"N.NNN\", the style gives \"\" of the shape \"\", and ",
+    "exceptions.yml does not list the cell."
   ),
   paste0(
-    "reference_1, row 4 (Age, years), column \"P\": printed \"0.512\", the ",
-    "style gives \"\", and exceptions.yml does not list the cell."
+    "reference_1, row 5 (Parity), column \"P\": printed \"0.62\" of the ",
+    "shape \"N.NN\", the style gives \"0.621\" of the shape \"N.NNN\", and ",
+    "exceptions.yml does not list the cell."
   ),
   paste0(
-    "reference_1, row 5 (Parity), column \"P\": printed \"0.62\", the style ",
-    "gives \"0.621\", and exceptions.yml does not list the cell."
+    "reference_2, row 3 (Age, years), column \"Cases (n = 8)\": printed ",
+    "\"(29.5-34.2)\" of the shape \"(N.N-N.N)\", the style gives ",
+    "\"31.5 (29.5-34.2)\" of the shape \"N.N (N.N-N.N)\", and ",
+    "exceptions.yml does not list the cell."
   ),
   paste0(
-    "reference_2, row 2 (Epidural), column \"P value\": printed \"<.001\", ",
-    "the style gives \"<0.001\", and exceptions.yml does not list the cell."
+    "reference_2, row 2 (Epidural), column \"P value\": printed \"<.001\" ",
+    "of the shape \"<.NNN\", the style gives \"<0.001\" of the shape ",
+    "\"<N.NNN\", and exceptions.yml does not list the cell."
   )
 )
+
+ref1_smoker <- "\"Smoker\",\"6 (30.0%)\",\"2 (20.0%)\",\"4 (45.0%)\",\"0.628\""
+ref2_age <- "\"Age, years\",\"(29.5-34.2)\",\"30.5 (27.8-34.5)\",\"\""
+
+# The shape of a cell ---------------------------------------------------------
+
+test_that("the shape of a cell: 397 (27.0%) and 5 (2.8%) share N (N.N%)", {
+  expect_identical(
+    cell_shape(c("397 (27.0%)", "5 (2.8%)")),
+    c("N (N.N%)", "N (N.N%)")
+  )
+})
+
+test_that("the shape of a cell: 57 (76%) gives N (N%) and 57 (76.0%) gives N (N.N%)", {
+  expect_identical(
+    cell_shape(c("57 (76%)", "57 (76.0%)")),
+    c("N (N%)", "N (N.N%)")
+  )
+})
+
+test_that("the shape of a cell: 0.272 and 0.310 share N.NNN", {
+  expect_identical(cell_shape(c("0.272", "0.310")), c("N.NNN", "N.NNN"))
+})
+
+test_that("the shape of a cell: <0.0001 gives <N.NNNN and <0.001 gives <N.NNN", {
+  expect_identical(cell_shape(c("<0.0001", "<0.001")), c("<N.NNNN", "<N.NNN"))
+})
+
+test_that("the shape of a cell: 12,347 (61.7%) gives N,N (N.N%) and 1234 (24.7%) gives N (N.N%)", {
+  expect_identical(
+    cell_shape(c("12,347 (61.7%)", "1234 (24.7%)")),
+    c("N,N (N.N%)", "N (N.N%)")
+  )
+})
+
+test_that("the shape of a cell: 34 [31-38] gives N [N-N] and 38.0 [36.0-39.4] gives N.N [N.N-N.N], with an en dash", {
+  expect_identical(
+    cell_shape(c("34 [31\u201338]", "38.0 [36.0\u201339.4]")),
+    c("N [N\u2013N]", "N.N [N.N\u2013N.N]")
+  )
+})
+
+test_that("the shape of a cell: P =0.010 gives P =N.NNN and 0.010 gives N.NNN", {
+  expect_identical(cell_shape(c("P =0.010", "0.010")), c("P =N.NNN", "N.NNN"))
+})
+
+test_that("the shape of a cell: an empty cell stays empty", {
+  expect_identical(cell_shape(""), "")
+})
+
+# The proof of the fixture style -----------------------------------------------
 
 test_that("every installed style reproduces its reference tables, or lists each differing cell as an exception", {
   expect_identical(style_proofs(), character(0))
@@ -98,11 +154,24 @@ test_that("the fixture style is proven: each cell of its two reference tables ma
   expect_identical(n, c(45L, 12L))
 })
 
-test_that("a changed reference cell that no exception lists fails, and names the style, reference, row, column and both strings", {
+test_that("a value cell with other numbers in the same shape passes with no exception", {
+  # The style gives 6 (30.0%), 2 (20.0%) and 4 (40.0%) for this row.
   f <- proof_copy(function(dir) {
     change_line(
       file.path(dir, "reference_1.csv"),
-      "\"Smoker\",\"6 (30.0%)\",\"2 (20.0%)\",\"4 (45.0%)\",\"0.628\"",
+      ref1_smoker,
+      "\"Smoker\",\"7 (35.0%)\",\"3 (99.9%)\",\"4 (45.0%)\",\"0.999\""
+    )
+    return(NULL)
+  })
+  expect_identical(style_proof(f), character(0))
+})
+
+test_that("a changed reference cell of another shape that no exception lists fails, and names the style, reference, row, column, both strings and both shapes", {
+  f <- proof_copy(function(dir) {
+    change_line(
+      file.path(dir, "reference_1.csv"),
+      ref1_smoker,
       "\"Smoker\",\"6 (30%)\",\"2 (20.0%)\",\"4 (45.0%)\",\"0.628\""
     )
     return(NULL)
@@ -111,42 +180,55 @@ test_that("a changed reference cell that no exception lists fails, and names the
     style_proof(f),
     with_name(paste0(
       "reference_1, row 2 (Smoker), column \"All (n = 20)\": printed ",
-      "\"6 (30%)\", the style gives \"6 (30.0%)\", and exceptions.yml does ",
-      "not list the cell."
+      "\"6 (30%)\" of the shape \"N (N%)\", the style gives \"6 (30.0%)\" ",
+      "of the shape \"N (N.N%)\", and exceptions.yml does not list the cell."
     ))
   )
 })
 
-test_that("a listed exception whose strings no longer match the cell is stale and fails", {
+test_that("a listed exception whose strings have other shapes than the cell fails, and one with other numbers in the same shapes holds", {
   f <- exceptions_copy(function(x) {
-    x[[1]]$style <- "4 (41.0%)"
+    x[[1]]$style <- "31.5 (29.5-34.20)"
     return(x)
   })
   expect_identical(
     style_proof(f),
     with_name(paste0(
-      "reference_1, row 2 (Smoker), column \"Group B (n = 10)\": ",
-      "exceptions.yml lists printed \"4 (45.0%)\" and style \"4 (41.0%)\", ",
-      "but the cell is printed \"4 (45.0%)\" and the style gives ",
-      "\"4 (40.0%)\"."
+      "reference_2, row 3 (Age, years), column \"Cases (n = 8)\": ",
+      "exceptions.yml lists printed \"(29.5-34.2)\" of the shape ",
+      "\"(N.N-N.N)\" and style \"31.5 (29.5-34.20)\" of the shape ",
+      "\"N.N (N.N-N.NN)\", but the cell is printed \"(29.5-34.2)\" of the ",
+      "shape \"(N.N-N.N)\" and the style gives \"31.5 (29.5-34.2)\" of the ",
+      "shape \"N.N (N.N-N.N)\"."
     ))
   )
-  # A cell that now matches keeps no exception.
+  f <- exceptions_copy(function(x) {
+    x[[1]]$printed <- "(20.0-30.0)"
+    x[[1]]$style <- "25.0 (20.0-30.0)"
+    return(x)
+  })
+  expect_identical(style_proof(f), character(0))
+})
+
+test_that("a listed exception whose cell now has two equal shapes is stale and fails", {
+  # The style gives 31.5 (29.5-34.2). The printed cell gets other numbers in
+  # the same shape, so the cell needs no exception.
   f <- proof_copy(function(dir) {
     change_line(
-      file.path(dir, "reference_1.csv"),
-      "\"Smoker\",\"6 (30.0%)\",\"2 (20.0%)\",\"4 (45.0%)\",\"0.628\"",
-      "\"Smoker\",\"6 (30.0%)\",\"2 (20.0%)\",\"4 (40.0%)\",\"0.628\""
+      file.path(dir, "reference_2.csv"),
+      ref2_age,
+      "\"Age, years\",\"30.0 (29.5-34.2)\",\"30.5 (27.8-34.5)\",\"\""
     )
     return(NULL)
   })
   expect_identical(
     style_proof(f),
     with_name(paste0(
-      "reference_1, row 2 (Smoker), column \"Group B (n = 10)\": ",
-      "exceptions.yml lists printed \"4 (45.0%)\" and style \"4 (40.0%)\", ",
-      "but the cell is printed \"4 (40.0%)\" and the style gives ",
-      "\"4 (40.0%)\"."
+      "reference_2, row 3 (Age, years), column \"Cases (n = 8)\": ",
+      "exceptions.yml lists the cell, but it is printed \"30.0 (29.5-34.2)\" ",
+      "of the shape \"N.N (N.N-N.N)\" and the style gives ",
+      "\"31.5 (29.5-34.2)\" of the shape \"N.N (N.N-N.N)\", so the cell ",
+      "MUST NOT have an exception."
     ))
   )
 })
@@ -159,14 +241,10 @@ test_that("an exception that names no cell, or one cell twice, fails", {
   expect_identical(
     style_proof(f),
     with_name(c(
+      unlisted[3],
       paste0(
-        "reference_1, row 2 (Smoker), column \"Group B (n = 10)\": printed ",
-        "\"4 (45.0%)\", the style gives \"4 (40.0%)\", and exceptions.yml ",
-        "does not list the cell."
-      ),
-      paste0(
-        "exceptions.yml names reference_1, row 30, column \"Group B (n = ",
-        "10)\", which is not a cell of reference_1.csv."
+        "exceptions.yml names reference_2, row 30, column \"Cases (n = 8)\", ",
+        "which is not a cell of reference_2.csv."
       )
     ))
   )
@@ -178,7 +256,7 @@ test_that("an exception that names no cell, or one cell twice, fails", {
   expect_identical(
     style_proof(f),
     with_name(paste0(
-      "exceptions.yml names reference_9, row 2, column \"Group B (n = 10)\", ",
+      "exceptions.yml names reference_9, row 3, column \"Cases (n = 8)\", ",
       "which is not a cell of reference_9.csv."
     ))
   )
@@ -186,8 +264,8 @@ test_that("an exception that names no cell, or one cell twice, fails", {
   expect_identical(
     style_proof(f),
     with_name(paste0(
-      "exceptions.yml lists the cell reference_1, row 2, column ",
-      "\"Group B (n = 10)\" more than once."
+      "exceptions.yml lists the cell reference_2, row 3, column ",
+      "\"Cases (n = 8)\" more than once."
     ))
   )
 })
@@ -211,7 +289,8 @@ test_that("a style with no reference folder, or a folder that lacks a file, fail
       with_name(paste0("the reference folder lacks the file ", file, "."))
     )
   }
-  # Without exceptions.yml, each of the four cells that differ is unlisted.
+  # Without exceptions.yml, each of the four cells whose shapes differ is
+  # unlisted.
   f <- proof_copy(function(dir) {
     return(file.remove(file.path(dir, "exceptions.yml")))
   })
@@ -529,6 +608,21 @@ test_that("a changed printed label of a variable row fails, and an exception can
   }
 })
 
+test_that("a printed label that differs from the label of the style only in a digit fails, because a label cell compares its strings", {
+  f <- proof_copy(function(dir) {
+    change_line(
+      file.path(dir, "reference_1.csv"),
+      ref1_level_1,
+      sub("^\"- 1\"", "\"- 3\"", ref1_level_1)
+    )
+    return(NULL)
+  })
+  expect_identical(
+    style_proof(f),
+    label_failure("reference_1", 7, "- 3", "- 1")
+  )
+})
+
 test_that("a changed printed level label fails, and so does a prefix that the style does not declare", {
   f <- proof_copy(function(dir) {
     change_line(
@@ -645,20 +739,25 @@ test_that("a printed row of none with cells is an exception with the rule not_co
     )
     return(NULL)
   }
+  # The label cell shows its strings, and a value cell shows their shapes too.
   total <- function(column, printed) {
     return(with_name(paste0(
       "reference_2, row 4 (Total), column \"",
       column,
       "\": printed \"",
       printed,
-      "\", the style gives \"\", and exceptions.yml does not list the cell."
+      "\" of the shape \"N\", the style gives \"\" of the shape \"\", and ",
+      "exceptions.yml does not list the cell."
     )))
   }
   f <- proof_copy(add_total)
   expect_identical(
     style_proof(f),
     c(
-      total("", "Total"),
+      with_name(paste0(
+        "reference_2, row 4 (Total), column \"\": printed \"Total\", the ",
+        "style gives \"\", and exceptions.yml does not list the cell."
+      )),
       total("Cases (n = 8)", "8"),
       total("Controls (n = 12)", "12")
     )

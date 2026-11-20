@@ -1,13 +1,16 @@
-# TEST FIXTURE of pbn. One exception of each of the four rules.
+# TEST FIXTURE of pbn. One exception of each of the four rules. Each one is a
+# cell whose two shapes differ. reference_1, row 2, column "Group B (n = 10)"
+# prints 4 (45.0%), where 4 / 10 is 40.0%. That arithmetic error has the
+# shape of the style, so it is no exception.
 exceptions:
-  - reference: reference_1
-    row: 2
-    column: 'Group B (n = 10)'
-    printed: '4 (45.0%)'
-    style: '4 (40.0%)'
+  - reference: reference_2
+    row: 3
+    column: 'Cases (n = 8)'
+    printed: '(29.5-34.2)'
+    style: '31.5 (29.5-34.2)'
     rule: published_error
-    source: 'The cell prints 4 events of the 10 of Group B, and 4 / 10 is 40.0%, not 45.0%.'
-    justification: 'The printed percent does not follow from the printed count, so the style gives the percent of the count.'
+    source: 'The cell prints two numbers, 29.5 and 34.2, and no median. The cell of the controls in the same row prints 30.5 (27.8-34.5), a median and then its quartiles.'
+    justification: 'The printed cell lacks its median, so the style gives the median and the quartiles.'
   - reference: reference_1
     row: 4
     column: 'P'

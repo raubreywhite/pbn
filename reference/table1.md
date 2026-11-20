@@ -67,9 +67,16 @@ For a `"bin"` variable:
   comes from the Pearson chi-square test without continuity correction.
   When any expected count is below 5, it comes from Fisher's exact test.
 
-- `test` is `"chisq"` or `"fisher"`, and it is the same on every row of
-  the variable. When fewer than two levels have a non-missing value, `p`
-  and `test` are `NA`.
+- Fisher's exact test first uses the default workspace of
+  [`stats::fisher.test()`](https://rdrr.io/r/stats/fisher.test.html).
+  When the test stops with that workspace, it runs again with a
+  workspace of `2e7`. When it also stops then, `p` is `NA`, `test` is
+  `"fisher_failed"`, and a warning names the variable. A p of Fisher's
+  exact test is exact, never simulated.
+
+- `test` is `"chisq"`, `"fisher"` or `"fisher_failed"`, and it is the
+  same on every row of the variable. When fewer than two levels have a
+  non-missing value, `p` and `test` are `NA`.
 
 - A value other than 0, 1 or `NA` is an error.
 

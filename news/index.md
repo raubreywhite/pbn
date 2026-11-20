@@ -1,5 +1,12 @@
 # Changelog
 
+## pbn 2026.12.5
+
+- [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) no longer
+  stops when Fisher’s exact test needs more than the default workspace.
+  It tries again with a workspace of `2e7`. When that also fails, `p` is
+  `NA`, `test` is `"fisher_failed"`, and a warning names the variable.
+
 ## pbn 2026.12.4
 
 - Behaviour change: pbn withdraws the style

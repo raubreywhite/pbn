@@ -9,7 +9,7 @@ all rows. With a style, it also formats these numbers as text."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,9 +111,14 @@ is an error. A level with no rows has a row in the output with <code>n = 0</code
 <li><p><code>p</code> compares the levels of <code>by</code> that have a non-missing value. It comes
 from the Pearson chi-square test without continuity correction. When
 any expected count is below 5, it comes from Fisher's exact test.</p></li>
-<li><p><code>test</code> is <code>"chisq"</code> or <code>"fisher"</code>, and it is the same on every row of the
-variable. When fewer than two levels have a non-missing value, <code>p</code> and
-<code>test</code> are <code>NA</code>.</p></li>
+<li><p>Fisher's exact test first uses the default workspace of
+<code><a href="https://rdrr.io/r/stats/fisher.test.html" class="external-link">stats::fisher.test()</a></code>. When the test stops with that workspace, it runs
+again with a workspace of <code>2e7</code>. When it also stops then, <code>p</code>
+is <code>NA</code>, <code>test</code> is <code>"fisher_failed"</code>, and a warning names the variable.
+A p of Fisher's exact test is exact, never simulated.</p></li>
+<li><p><code>test</code> is <code>"chisq"</code>, <code>"fisher"</code> or <code>"fisher_failed"</code>, and it is the same
+on every row of the variable. When fewer than two levels have a
+non-missing value, <code>p</code> and <code>test</code> are <code>NA</code>.</p></li>
 <li><p>A value other than 0, 1 or <code>NA</code> is an error.</p></li>
 </ul><p>For a <code>"cont"</code> variable, <code>mean</code>, <code>sd</code>, <code>median</code>, <code>q1</code> and <code>q3</code> hold the
 numbers of the non-missing values. <code>q1</code> and <code>q3</code> are the first and the

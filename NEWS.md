@@ -1,3 +1,8 @@
+# pbn 2026.12.8
+
+- A style needs `cont.mean_digits` only when `cont.template` holds `{mean}`, `cont.sd_digits` only when it holds `{sd}`, and `missing.template` only when `missing.show` is `if_any` or `always`.
+- The proof of a style accepts a decision of a named person as a source, in the form `decision: <Name>, <YYYY-MM-DD>: <reason>`. `exceptions.yml` gains the rule `author_decision`, whose source MUST be a decision. A field or an exception whose source says "editorial" fails.
+
 # pbn 2026.12.7
 
 - Behaviour change: the proof of a style compares each value cell by its shape, the string with each number masked. Labels stay exact. An exception lists only a cell whose two shapes differ, as `?table1`, section Styles, says.

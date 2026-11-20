@@ -19,7 +19,8 @@ exception_rules <- c(
   "guideline",
   "other_reference",
   "not_computable",
-  "published_error"
+  "published_error",
+  "author_decision"
 )
 
 exception_fields <- c(
@@ -47,6 +48,10 @@ source_fields <- c(
 
 # A citation of one cell: reference_<k>, row <i>, column "<printed header>".
 cell_citation <- "reference_([0-9]+),? row ([0-9]+),? column \"([^\"]*)\""
+
+# A decision of a named person: decision: <Name>, <YYYY-MM-DD>: <reason>.
+decision_citation <- "^decision: ([^,:]*[[:alpha:]][^,:]*), ([0-9-]+):(.*)$"
+decision_form <- "decision: <Name>, <YYYY-MM-DD>: <reason>"
 
 # The failures of the proofs of the installed styles `styles`. Each failure
 # starts with the name of its style. character(0) means every style is
@@ -662,10 +667,37 @@ cites_guideline_page <- function(src) {
   )
 }
 
+# TRUE when `src` is a decision in the form decision_form: a name with a
+# letter, a real date, and a reason of three words or more. The word count
+# alone rejects an empty reason.
+is_decision <- function(src) {
+  src <- trimws(src)
+  if (!grepl(decision_citation, src)) {
+    return(FALSE)
+  }
+  date <- sub(decision_citation, "\\2", src)
+  reason <- trimws(sub(decision_citation, "\\3", src))
+  real <- grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", date) &&
+    identical(format(as.Date(date, optional = TRUE)), date)
+  return(real && length(strsplit(reason, "\\s+")[[1]]) >= 3)
+}
+
 # The failure of the source `src` of the field `field`, or NULL.
 source_problem <- function(src, field, inputs) {
+  head <- paste0("the source of the field ", field)
   if (grepl("editorial", src, ignore.case = TRUE)) {
-    return(paste0("the source of the field ", field, " says editorial."))
+    return(paste0(head, " says editorial."))
+  }
+  if (grepl("^decision:", trimws(src))) {
+    if (is_decision(src)) {
+      return(NULL)
+    }
+    return(paste0(
+      head,
+      " is a decision that is not in the form ",
+      decision_form,
+      "."
+    ))
   }
   if (
     cites_reference_cell(src, inputs) ||
@@ -675,9 +707,9 @@ source_problem <- function(src, field, inputs) {
     return(NULL)
   }
   return(paste0(
-    "the source of the field ",
-    field,
-    " cites no reference cell, no author and table, and no guideline page."
+    head,
+    " cites no reference cell, no author and table, no guideline page, and ",
+    "no decision."
   ))
 }
 
@@ -797,9 +829,14 @@ exception_rule_problem <- function(x, i, inputs) {
   return(exception_citation_problem(x, head, inputs))
 }
 
-# A guideline exception cites a page, and an other_reference exception cites
-# a cell of another reference.
+# The source of an exception of any rule MUST NOT say editorial. A guideline
+# exception cites a page, an other_reference exception cites a cell of
+# another reference, and the source of an author_decision exception is a
+# decision.
 exception_citation_problem <- function(x, head, inputs) {
+  if (grepl("editorial", x$source, ignore.case = TRUE)) {
+    return(paste0(head, "has a source that says editorial."))
+  }
   if (x$rule == "guideline" && !cites_guideline_page(x$source)) {
     return(paste0(
       head,
@@ -814,6 +851,14 @@ exception_citation_problem <- function(x, head, inputs) {
       head,
       "has the rule other_reference, and its source cites no cell of another ",
       "reference."
+    ))
+  }
+  if (x$rule == "author_decision" && !is_decision(x$source)) {
+    return(paste0(
+      head,
+      "has the rule author_decision, and its source is not in the form ",
+      decision_form,
+      "."
     ))
   }
   return(NULL)

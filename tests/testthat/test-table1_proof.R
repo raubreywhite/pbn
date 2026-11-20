@@ -335,7 +335,7 @@ test_that("a style field whose source says editorial fails", {
   )
 })
 
-test_that("a style field whose source cites no reference cell, no author and table and no guideline page fails", {
+test_that("a style field whose source cites no reference cell, no author and table, no guideline page and no decision fails", {
   nothing <- c(
     "2/2 papers give one decimal.",
     "reference_3, row 2, column \"P\".",
@@ -356,7 +356,7 @@ test_that("a style field whose source cites no reference cell, no author and tab
       style_proof(f),
       with_name(paste0(
         "the source of the field bin.pct_digits cites no reference cell, no ",
-        "author and table, and no guideline page."
+        "author and table, no guideline page, and no decision."
       )),
       label = src
     )
@@ -376,6 +376,128 @@ test_that("a style field whose source cites no reference cell, no author and tab
   }
 })
 
+test_that("a decision of a named person is a source, and a malformed decision fails", {
+  good <- c(
+    "decision: A. Fixture, 2026-11-20: no reference prints this row.",
+    "  decision: Fixture Person, 2024-02-29: the count only is enough."
+  )
+  for (src in good) {
+    f <- style_copy(function(s) {
+      s$bin$pct_digits$source <- src
+      return(s)
+    })
+    expect_identical(style_proof(f), character(0), label = src)
+  }
+  bad <- c(
+    "decision: , 2026-11-20: no reference prints this row.",
+    "decision: 2026-11-20: no reference prints this row.",
+    "decision: A. Fixture, 2026-02-30: no reference prints this row.",
+    "decision: A. Fixture, 2026-11-2: no reference prints this row.",
+    "decision: A. Fixture, 20 November 2026: no reference prints this row.",
+    "decision: A. Fixture, 2026-11-20:",
+    "decision: A. Fixture, 2026-11-20: ",
+    "decision: A. Fixture, 2026-11-20: too short",
+    "decision: A. Fixture, 2026-11-20, reference_1, row 2, column \"P\"."
+  )
+  for (src in bad) {
+    f <- style_copy(function(s) {
+      s$bin$pct_digits$source <- src
+      return(s)
+    })
+    expect_identical(
+      style_proof(f),
+      with_name(paste0(
+        "the source of the field bin.pct_digits is a decision that is not in ",
+        "the form decision: <Name>, <YYYY-MM-DD>: <reason>."
+      )),
+      label = src
+    )
+  }
+  # A decision that says editorial still fails.
+  f <- style_copy(function(s) {
+    s$bin$pct_digits$source <- paste0(
+      "decision: A. Fixture, 2026-11-20: an editorial choice of one decimal."
+    )
+    return(s)
+  })
+  expect_identical(
+    style_proof(f),
+    with_name("the source of the field bin.pct_digits says editorial.")
+  )
+})
+
+test_that("an exception whose source says editorial fails, for every rule", {
+  f <- exceptions_copy(function(x) {
+    x[[3]]$rule <- "author_decision"
+    x[[3]]$source <- paste0(
+      "decision: A. Fixture, 2026-11-20: an editorial choice of three decimals."
+    )
+    return(x)
+  })
+  expect_identical(
+    style_proof(f),
+    with_name("exceptions.yml entry 3 has a source that says editorial.")
+  )
+  # Entry 1 is published_error, entry 2 not_computable, entry 3 guideline
+  # and entry 4 other_reference.
+  f <- exceptions_copy(function(x) {
+    for (i in 1:4) {
+      x[[i]]$source <- paste0(x[[i]]$source, " Editorial.")
+    }
+    return(x)
+  })
+  expect_identical(
+    style_proof(f),
+    with_name(paste0(
+      "exceptions.yml entry ",
+      1:4,
+      " has a source that says editorial."
+    ))
+  )
+})
+
+test_that("a style without the fields it does not use is proven", {
+  # The fixture style prints no mean, no SD and no in-cell missing count.
+  f <- style_copy(function(s) {
+    s$cont$mean_digits <- NULL
+    s$cont$sd_digits <- NULL
+    s$missing$template <- NULL
+    return(s)
+  })
+  expect_identical(style_proof(f), character(0))
+})
+
+test_that("an exception by author_decision has a decision as its source", {
+  f <- exceptions_copy(function(x) {
+    x[[3]]$rule <- "author_decision"
+    x[[3]]$source <- paste0(
+      "decision: A. Fixture, 2026-11-20: a P value has three decimals."
+    )
+    return(x)
+  })
+  expect_identical(style_proof(f), character(0))
+  others <- c(
+    "Fixture guide for authors, p. 4: a P value has three decimals.",
+    "reference_1, row 3, column \"P\" prints \"<0.001\".",
+    "decision: A. Fixture, 2026-13-20: a P value has three decimals."
+  )
+  for (src in others) {
+    f <- exceptions_copy(function(x) {
+      x[[3]]$rule <- "author_decision"
+      x[[3]]$source <- src
+      return(x)
+    })
+    expect_identical(
+      style_proof(f),
+      with_name(paste0(
+        "exceptions.yml entry 3 has the rule author_decision, and its source ",
+        "is not in the form decision: <Name>, <YYYY-MM-DD>: <reason>."
+      )),
+      label = src
+    )
+  }
+})
+
 test_that("an exception with an empty source or justification fails", {
   f <- exceptions_copy(function(x) {
     x[[1]]$justification <- ""
@@ -391,7 +513,7 @@ test_that("an exception with an empty source or justification fails", {
   )
 })
 
-test_that("an exception with a rule outside the four fails", {
+test_that("an exception with a rule outside the five fails", {
   f <- exceptions_copy(function(x) {
     x[[1]]$rule <- "editorial"
     return(x)
@@ -400,7 +522,7 @@ test_that("an exception with a rule outside the four fails", {
     style_proof(f),
     with_name(paste0(
       "exceptions.yml entry 1 has a rule that is not one of guideline, ",
-      "other_reference, not_computable, published_error."
+      "other_reference, not_computable, published_error, author_decision."
     ))
   )
 })

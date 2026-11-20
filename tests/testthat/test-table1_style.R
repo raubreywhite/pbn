@@ -403,8 +403,16 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
         base = full_style
       )
       # The fields of pbn 2026.12.4 are optional, and no other field needs
-      # them.
-      absent <- if (field %in% c("cat.level_prefix", "missing.row_label")) {
+      # them. The full style does not use cont.mean_digits, cont.sd_digits
+      # and missing.template, so since pbn 2026.12.8 it needs none of them.
+      unused <- c(
+        "cat.level_prefix",
+        "missing.row_label",
+        "cont.mean_digits",
+        "cont.sd_digits",
+        "missing.template"
+      )
+      absent <- if (field %in% unused) {
         "no error"
       } else if (field %in% names(needs)) {
         sprintf(needs[[field]], f)
@@ -433,6 +441,109 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
     error_message(read_table1_style(f)),
     paste0("The style file ", f, " lacks the field footnotes.")
   )
+})
+
+test_that("a style needs cont.mean_digits and cont.sd_digits only when cont.template holds {mean} or {sd}", {
+  # The fixture style has the template "{mean} ({sd})".
+  for (name in c("mean_digits", "sd_digits")) {
+    f <- style_with(function(s) {
+      s$cont[[name]] <- NULL
+      return(s)
+    })
+    key <- sub("_digits", "", name)
+    expect_identical(
+      error_message(read_table1_style(f)),
+      paste0(
+        "The field cont.template of the style file ",
+        f,
+        " holds {",
+        key,
+        "}, so the style needs the field cont.",
+        name,
+        "."
+      )
+    )
+  }
+  # A template of the median and the quartiles uses neither field.
+  median <- function(s) {
+    s$cont$template$value <- "{median} ({q1}-{q3})"
+    s$cont$median_digits <- list(value = 1, source = "test")
+    return(s)
+  }
+  with_both <- style_with(median)
+  without <- style_with(function(s) {
+    s <- median(s)
+    s$cont$mean_digits <- NULL
+    s$cont$sd_digits <- NULL
+    return(s)
+  })
+  expect_identical(error_message(read_table1_style(without)), "no error")
+  expect_identical(
+    table1(d20, by = "g", vars = vars20, style = without),
+    table1(d20, by = "g", vars = vars20, style = with_both)
+  )
+  # A template that holds {mean} only needs no cont.sd_digits, and a
+  # template with no placeholder needs no digits.
+  f <- style_with(function(s) {
+    s$cont$template$value <- "{mean}"
+    s$cont$sd_digits <- NULL
+    return(s)
+  })
+  t1 <- table1(d20, by = "g", vars = vars20, style = f)
+  expect_identical(t1$value_pretty[t1$var == "z"], c("8.7", "1.8", "15.5"))
+  f <- style_with(function(s) {
+    s$cont$template$value <- "see text"
+    s$cont$mean_digits <- NULL
+    s$cont$sd_digits <- NULL
+    return(s)
+  })
+  t1 <- table1(d20, by = "g", vars = vars20, style = f)
+  expect_identical(t1$value_pretty[t1$var == "z"], rep("see text", 3))
+})
+
+test_that("a style needs missing.template only when missing.show is if_any or always", {
+  for (show in c("if_any", "always")) {
+    f <- style_with(function(s) {
+      s$missing$show$value <- show
+      s$missing$template <- NULL
+      return(s)
+    })
+    expect_identical(
+      error_message(read_table1_style(f)),
+      paste0(
+        "The field missing.show of the style file ",
+        f,
+        " is ",
+        show,
+        ", so the style needs the field missing.template."
+      )
+    )
+  }
+  # missing.show never and the two row choices do not use it.
+  rows <- list(value = "{missing}", source = "test")
+  for (show in c("never", "row_if_any", "row_always")) {
+    change <- function(s) {
+      s$missing$show$value <- show
+      s$missing$row_template <- rows
+      return(s)
+    }
+    with_it <- style_with(change)
+    without <- style_with(function(s) {
+      s <- change(s)
+      s$missing$template <- NULL
+      return(s)
+    })
+    expect_identical(
+      error_message(read_table1_style(without)),
+      "no error",
+      label = show
+    )
+    expect_identical(
+      table1(d20, by = "g", vars = vars20, style = without),
+      table1(d20, by = "g", vars = vars20, style = with_it),
+      label = show
+    )
+  }
 })
 
 test_that("each check of a value gives its own message", {

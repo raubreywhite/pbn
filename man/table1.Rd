@@ -110,8 +110,11 @@ stops it. The error names the field and the file. The fields that pbn
 2026.12.3 added are optional, so a style file of an earlier pbn stays
 valid. They are \code{cont.median_digits}, the section \code{cat}, and the fields
 \code{missing.row_template} and \code{missing.row_pct_digits}. pbn 2026.12.4 added
-the optional fields \code{cat.level_prefix} and \code{missing.row_label}. An
-optional field that is present gets the same checks as the other fields.
+the optional fields \code{cat.level_prefix} and \code{missing.row_label}. In pbn
+2026.12.8, \code{cont.mean_digits}, \code{cont.sd_digits} and \code{missing.template}
+became optional. A style needs each of them only when it uses it, as the
+list of fields says. An optional field that is present gets the same
+checks as the other fields.
 
 A template is text with placeholders in braces, such as \code{{events}}. A
 template can hold only the placeholders of its field, in any order, and
@@ -124,8 +127,10 @@ it can hold none. These are the fields:
 \code{{median}}, \code{{q1}} and \code{{q3}}. An example is \code{"{median} ({q1}-{q3})"}.
 A template that holds \code{{median}}, \code{{q1}} or \code{{q3}} needs
 \code{cont.median_digits}.
-\item \code{cont.mean_digits} and \code{cont.sd_digits}: the decimals of \code{mean} and of
-\code{sd}, each a whole number from 0 to 10.
+\item \code{cont.mean_digits} and \code{cont.sd_digits} (optional): the decimals of
+\code{mean} and of \code{sd}, each a whole number from 0 to 10. A template that
+holds \code{{mean}} needs \code{cont.mean_digits}, and one that holds \code{{sd}}
+needs \code{cont.sd_digits}.
 \item \code{cont.median_digits} (optional): the decimals of \code{median}, \code{q1} and
 \code{q3}, a whole number from 0 to 10.
 \item \code{cat} (an optional section): it MUST be present when \code{vars} has a
@@ -161,9 +166,9 @@ prints as \verb{12,347} and 9999 prints as \code{9999}.
 it. With \code{row_if_any}, a variable gets a Missing row when its \code{"All"}
 group has a missing value. With \code{row_always}, each variable gets a
 Missing row. The two row choices need \code{missing.row_template}.
-\item \code{missing.template}: the text that \code{table1()} adds to the end of a cell,
-over \code{{missing}}. An example is \code{"; {missing} missing"}. Only \code{if_any}
-and \code{always} use it.
+\item \code{missing.template} (optional): the text that \code{table1()} adds to the end
+of a cell, over \code{{missing}}. An example is \code{"; {missing} missing"}.
+Only \code{if_any} and \code{always} use it, and they need it.
 \item \code{missing.row_template} (optional): the cell of a Missing row, over
 \code{{missing}} and \code{{pct}}. An example is \code{"{missing} ({pct}\%)"}. The
 template \code{"{missing}"} gives the missing count only, such as \code{"2"}.
@@ -303,6 +308,9 @@ other one. \code{source} cites a cell of the other reference.
 median printed without its value. \code{source} gives the evidence. A wrong
 number in the right format has the shape of the style, so it needs no
 exception.
+\item \code{author_decision}: a named person decided the format of the cell, and
+the style follows the decision. \code{source} MUST be a decision, the
+fourth form of a citation below.
 }
 
 The test fails a style in each of these cases:
@@ -314,14 +322,20 @@ two shapes are equal.
 \item An exception names no cell, or a cell twice.
 \item The style has no folder. The folder lacks a file, or it holds a file of
 another name.
-\item The \code{source} of a field holds "editorial", in any case.
-\item The \code{source} of a field cites none of the three forms of a citation:
+\item The \code{source} of a field or of an exception holds "editorial", in any
+case.
+\item The \code{source} of a field cites none of the four forms of a citation:
 \enumerate{
 \item a cell, as \verb{reference_1, row 2, column "P"}.
 \item the family name of the first author of a reference, with
 \verb{Table <n>} of its source.
 \item a guide or a guideline with its page, as \verb{p. 4} or \verb{page 4}.
+\item a decision of a named person, as
+\verb{decision: <Name>, <YYYY-MM-DD>: <reason>}.
 }
+\item A \code{source} starts with \verb{decision:}, and it does not have the form of
+a decision. A decision MUST have a name with a letter, a real date, and
+a reason of three words or more.
 }
 
 A style that pbn cannot prove is withdrawn. pbn removes its file and keeps

@@ -79,8 +79,11 @@
 #' 2026.12.3 added are optional, so a style file of an earlier pbn stays
 #' valid. They are `cont.median_digits`, the section `cat`, and the fields
 #' `missing.row_template` and `missing.row_pct_digits`. pbn 2026.12.4 added
-#' the optional fields `cat.level_prefix` and `missing.row_label`. An
-#' optional field that is present gets the same checks as the other fields.
+#' the optional fields `cat.level_prefix` and `missing.row_label`. In pbn
+#' 2026.12.8, `cont.mean_digits`, `cont.sd_digits` and `missing.template`
+#' became optional. A style needs each of them only when it uses it, as the
+#' list of fields says. An optional field that is present gets the same
+#' checks as the other fields.
 #'
 #' A template is text with placeholders in braces, such as `{events}`. A
 #' template can hold only the placeholders of its field, in any order, and
@@ -93,8 +96,10 @@
 #'   `{median}`, `{q1}` and `{q3}`. An example is `"{median} ({q1}-{q3})"`.
 #'   A template that holds `{median}`, `{q1}` or `{q3}` needs
 #'   `cont.median_digits`.
-#' - `cont.mean_digits` and `cont.sd_digits`: the decimals of `mean` and of
-#'   `sd`, each a whole number from 0 to 10.
+#' - `cont.mean_digits` and `cont.sd_digits` (optional): the decimals of
+#'   `mean` and of `sd`, each a whole number from 0 to 10. A template that
+#'   holds `{mean}` needs `cont.mean_digits`, and one that holds `{sd}`
+#'   needs `cont.sd_digits`.
 #' - `cont.median_digits` (optional): the decimals of `median`, `q1` and
 #'   `q3`, a whole number from 0 to 10.
 #' - `cat` (an optional section): it MUST be present when `vars` has a
@@ -130,9 +135,9 @@
 #'   it. With `row_if_any`, a variable gets a Missing row when its `"All"`
 #'   group has a missing value. With `row_always`, each variable gets a
 #'   Missing row. The two row choices need `missing.row_template`.
-#' - `missing.template`: the text that `table1()` adds to the end of a cell,
-#'   over `{missing}`. An example is `"; {missing} missing"`. Only `if_any`
-#'   and `always` use it.
+#' - `missing.template` (optional): the text that `table1()` adds to the end
+#'   of a cell, over `{missing}`. An example is `"; {missing} missing"`.
+#'   Only `if_any` and `always` use it, and they need it.
 #' - `missing.row_template` (optional): the cell of a Missing row, over
 #'   `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`. The
 #'   template `"{missing}"` gives the missing count only, such as `"2"`.
@@ -263,6 +268,9 @@
 #'   median printed without its value. `source` gives the evidence. A wrong
 #'   number in the right format has the shape of the style, so it needs no
 #'   exception.
+#' - `author_decision`: a named person decided the format of the cell, and
+#'   the style follows the decision. `source` MUST be a decision, the
+#'   fourth form of a citation below.
 #'
 #' The test fails a style in each of these cases:
 #' - A cell differs, and `exceptions.yml` does not list it.
@@ -272,12 +280,18 @@
 #' - An exception names no cell, or a cell twice.
 #' - The style has no folder. The folder lacks a file, or it holds a file of
 #'   another name.
-#' - The `source` of a field holds "editorial", in any case.
-#' - The `source` of a field cites none of the three forms of a citation:
+#' - The `source` of a field or of an exception holds "editorial", in any
+#'   case.
+#' - The `source` of a field cites none of the four forms of a citation:
 #'   1. a cell, as `reference_1, row 2, column "P"`.
 #'   2. the family name of the first author of a reference, with
 #'      `Table <n>` of its source.
 #'   3. a guide or a guideline with its page, as `p. 4` or `page 4`.
+#'   4. a decision of a named person, as
+#'      `decision: <Name>, <YYYY-MM-DD>: <reason>`.
+#' - A `source` starts with `decision:`, and it does not have the form of
+#'   a decision. A decision MUST have a name with a letter, a real date, and
+#'   a reason of three words or more.
 #'
 #' A style that pbn cannot prove is withdrawn. pbn removes its file and keeps
 #' its name, so `table1()` stops with the version that withdrew it and the
@@ -812,7 +826,8 @@ style_file <- function(style) {
 # value and source. `type` names the check of the value in style_checks.
 # `keys` are the placeholders that a template can hold. A field with
 # `optional = TRUE`, and a section of optional_sections, can be absent. These
-# came in pbn 2026.12.3, so a style file of an earlier pbn stays valid.
+# came in pbn 2026.12.3 or later, so a style file of an earlier pbn stays
+# valid. check_needs() says when another field needs an optional field.
 style_schema <- list(
   bin = list(
     template = list(type = "template", keys = c("events", "n", "pct")),
@@ -823,8 +838,8 @@ style_schema <- list(
       type = "template",
       keys = c("mean", "sd", "median", "q1", "q3")
     ),
-    mean_digits = list(type = "digits"),
-    sd_digits = list(type = "digits"),
+    mean_digits = list(type = "digits", optional = TRUE),
+    sd_digits = list(type = "digits", optional = TRUE),
     median_digits = list(type = "digits", optional = TRUE)
   ),
   cat = list(
@@ -850,7 +865,7 @@ style_schema <- list(
       type = "choice",
       choices = c("never", "if_any", "always", "row_if_any", "row_always")
     ),
-    template = list(type = "template", keys = "missing"),
+    template = list(type = "template", keys = "missing", optional = TRUE),
     row_template = list(
       type = "template",
       keys = c("missing", "pct"),
@@ -1036,48 +1051,67 @@ check_section <- function(x, section, file) {
   return(invisible(NULL))
 }
 
-# An optional field is needed where another field uses it: cont.median_digits
-# by a template that holds {median}, {q1} or {q3}, missing.row_template by a
-# missing.show that adds a Missing row, and missing.row_pct_digits by such a
-# missing.row_template that holds {pct}.
+# An optional field is needed where another field uses it. cont.template
+# needs the digits of each number that it holds, as check_cont_needs() says.
+# missing.show if_any or always needs missing.template, and a missing.show
+# that adds a Missing row needs missing.row_template. A missing.row_template
+# that holds {pct} needs missing.row_pct_digits.
 check_needs <- function(fields, file) {
-  used <- intersect(
-    template_keys(fields$cont$template$value),
-    c("median", "q1", "q3")
-  )
-  if (length(used) > 0 && is.null(fields$cont[["median_digits"]])) {
-    field_error(
-      "cont.template",
-      file,
-      paste0(
-        "holds {",
-        used[1],
-        "}, so the style needs the field cont.median_digits."
-      )
-    )
-  }
+  check_cont_needs(fields$cont, file)
   show <- fields$missing$show$value
-  if (!show %in% c("row_if_any", "row_always")) {
+  need <- c(
+    if_any = "template",
+    always = "template",
+    row_if_any = "row_template",
+    row_always = "row_template"
+  )[show]
+  if (is.na(need)) {
     return(invisible(NULL))
   }
-  if (is.null(fields$missing[["row_template"]])) {
+  if (is.null(fields$missing[[need]])) {
     field_error(
       "missing.show",
       file,
-      paste0(
-        "is ",
-        show,
-        ", so the style needs the field missing.row_template."
-      )
+      paste0("is ", show, ", so the style needs the field missing.", need, ".")
     )
   }
-  pct <- "pct" %in% template_keys(fields$missing$row_template$value)
+  pct <- need == "row_template" &&
+    "pct" %in% template_keys(fields$missing$row_template$value)
   if (pct && is.null(fields$missing[["row_pct_digits"]])) {
     field_error(
       "missing.row_template",
       file,
       "holds {pct}, so the style needs the field missing.row_pct_digits."
     )
+  }
+  return(invisible(NULL))
+}
+
+# cont.template needs cont.mean_digits when it holds {mean}, cont.sd_digits
+# when it holds {sd}, and cont.median_digits when it holds {median}, {q1} or
+# {q3}.
+check_cont_needs <- function(cont, file) {
+  digits <- c(
+    mean = "mean_digits",
+    sd = "sd_digits",
+    median = "median_digits",
+    q1 = "median_digits",
+    q3 = "median_digits"
+  )
+  for (key in intersect(template_keys(cont$template$value), names(digits))) {
+    if (is.null(cont[[digits[[key]]]])) {
+      field_error(
+        "cont.template",
+        file,
+        paste0(
+          "holds {",
+          key,
+          "}, so the style needs the field cont.",
+          digits[[key]],
+          "."
+        )
+      )
+    }
   }
   return(invisible(NULL))
 }
@@ -1185,20 +1219,24 @@ format_count <- function(rows, fields, thousands) {
   ))
 }
 
-# The cell of a "cont" row. The median and the quartiles are placeholders
-# only when the style has cont.median_digits.
+# The cell of a "cont" row. A number is a placeholder only when the style
+# has its digits: the mean, the SD, and the median and the quartiles.
 format_cont <- function(rows, style) {
   th <- style$thousands
   s <- style$cont
-  values <- list(
-    mean = format_number(rows$mean, s$mean_digits$value, th),
-    sd = format_number(rows$sd, s$sd_digits$value, th)
+  digits <- list(
+    mean = s[["mean_digits"]]$value,
+    sd = s[["sd_digits"]]$value,
+    median = s[["median_digits"]]$value,
+    q1 = s[["median_digits"]]$value,
+    q3 = s[["median_digits"]]$value
   )
-  digits <- s[["median_digits"]]$value
-  if (!is.null(digits)) {
-    for (key in c("median", "q1", "q3")) {
-      values[[key]] <- format_number(rows[[key]], digits, th)
-    }
+  values <- list()
+  for (key in names(Filter(Negate(is.null), digits))) {
+    values[[key]] <- format_number(rows[[key]], digits[[key]], th)
+  }
+  if (length(values) == 0) {
+    return(rep(s$template$value, length(rows$mean)))
   }
   return(fill_template(s$template$value, values))
 }

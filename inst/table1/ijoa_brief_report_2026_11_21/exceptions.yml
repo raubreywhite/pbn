@@ -1,0 +1,493 @@
+# The cells of TABLE1/reference_<k>.csv that differ from the style TABLE1.yml.
+# Made by TABLE1-build/gen_exceptions.R of IJOA guide v004 from the output of
+# pbn:::style_proof(); rule, source and justification follow ?pbn::table1,
+# section Styles, subsection The proof of a style.
+exceptions:
+  - reference: reference_1
+    row: 26
+    column: 'P value'
+    printed: '>0.999'
+    style: '0.976'
+    rule: other_reference
+    source: 'reference_2, row 30, column "p-value*": "0.112" is Pearson''s chi-squared test without continuity correction of 72 of 309 against 31 of 180. With the correction it is 0.140.'
+    justification: 'Maciejewska used R (Statistical analysis, p. 2). Its chisq.test() applies a continuity correction to a 2 by 2 table by default, and gives 1.0000 here, printed ">0.999". Liao and table1() use no correction, which gives 0.9756.'
+  - reference: reference_2
+    row: 22
+    column: 'Total (N = 530)'
+    printed: '38.0 [36.0–39.4]'
+    style: '38 [36–39]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Gestational age (wk). So "38.0 [36.0–39.4]" becomes "38 [36–39]".'
+  - reference: reference_2
+    row: 36
+    column: 'Total (N = 530)'
+    printed: '11.4 [10.3–12.3]'
+    style: '11 [10–12]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Baseline Hgb. So "11.4 [10.3–12.3]" becomes "11 [10–12]".'
+  - reference: reference_2
+    row: 37
+    column: 'Total (N = 530)'
+    printed: '[1.0–1.1]'
+    style: '1 [1–1]'
+    rule: published_error
+    source: 'The cell prints the quartiles 1.0 and 1.1 and no median. Liao Table 1, note: "Data presented as median [1st-3rd quartile] or n (%)". reference_2, row 37, column "INR ≤1.5 (N = 489), No FFP Administered (N = 309)" prints the median: "1.0 [1.0–1.1]".'
+    justification: 'The median is missing from the printed cell. The fake data take the median 1.0, the one printed in this row. The style prints it with no decimals (cont.median_digits), so it gives "1 [1–1]".'
+  - reference: reference_2
+    row: 5
+    column: 'INR >1.5 (N = 41)'
+    printed: '0 (0%)'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0 (0%)" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 13
+    column: 'INR >1.5 (N = 41)'
+    printed: '0'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 22
+    column: 'INR >1.5 (N = 41)'
+    printed: '39.0 [36.7–39.4]'
+    style: '39 [37–39]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Gestational age (wk). So "39.0 [36.7–39.4]" becomes "39 [37–39]".'
+  - reference: reference_2
+    row: 24
+    column: 'INR >1.5 (N = 41)'
+    printed: '0'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 29
+    column: 'INR >1.5 (N = 41)'
+    printed: '0'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 32
+    column: 'INR >1.5 (N = 41)'
+    printed: '0'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 36
+    column: 'INR >1.5 (N = 41)'
+    printed: '12.2 [10.9–12.9]'
+    style: '12 [11–13]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Baseline Hgb. So "12.2 [10.9–12.9]" becomes "12 [11–13]".'
+  - reference: reference_2
+    row: 37
+    column: 'INR >1.5 (N = 41)'
+    printed: '[1.0–1.1]'
+    style: '1 [1–1]'
+    rule: published_error
+    source: 'The cell prints the quartiles 1.0 and 1.1 and no median. Liao Table 1, note: "Data presented as median [1st-3rd quartile] or n (%)". reference_2, row 37, column "INR ≤1.5 (N = 489), No FFP Administered (N = 309)" prints the median: "1.0 [1.0–1.1]".'
+    justification: 'The median is missing from the printed cell. The fake data take the median 1.0, the one printed in this row. The style prints it with no decimals (cont.median_digits), so it gives "1 [1–1]".'
+  - reference: reference_2
+    row: 13
+    column: 'INR ≤1.5 (N = 489), No FFP Administered (N = 309)'
+    printed: '0'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 22
+    column: 'INR ≤1.5 (N = 489), No FFP Administered (N = 309)'
+    printed: '38.1 [36.1–39.6]'
+    style: '38 [36–40]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Gestational age (wk). So "38.1 [36.1–39.6]" becomes "38 [36–40]".'
+  - reference: reference_2
+    row: 36
+    column: 'INR ≤1.5 (N = 489), No FFP Administered (N = 309)'
+    printed: '11.3 [10.3–12.1]'
+    style: '11 [10–12]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Baseline Hgb. So "11.3 [10.3–12.1]" becomes "11 [10–12]".'
+  - reference: reference_2
+    row: 37
+    column: 'INR ≤1.5 (N = 489), No FFP Administered (N = 309)'
+    printed: '1.0 [1.0–1.1]'
+    style: '1 [1–1]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Baseline INR. So "1.0 [1.0–1.1]" becomes "1 [1–1]".'
+  - reference: reference_2
+    row: 5
+    column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)'
+    printed: '0 (0%)'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0 (0%)" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 22
+    column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)'
+    printed: '37.4 [35.6–39.2]'
+    style: '37 [36–39]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Gestational age (wk). So "37.4 [35.6–39.2]" becomes "37 [36–39]".'
+  - reference: reference_2
+    row: 29
+    column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)'
+    printed: '0 (0%)'
+    style: '0 (0.0%)'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Cesarean delivery (n = 230)": "0 (0.0%)", a zero count with its percentage.'
+    justification: 'Liao writes a zero count as "0" or "0 (0%)", and Maciejewska as "0 (0.0%)", in the format of every other count. The style follows Maciejewska, so "0 (0%)" becomes "0 (0.0%)".'
+  - reference: reference_2
+    row: 36
+    column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)'
+    printed: '11.5 [10.2–12.3]'
+    style: '12 [10–12]'
+    rule: not_computable
+    source: '?pbn::table1, Styles: cont.median_digits gives the decimals of the median and the quartiles of every "cont" variable.'
+    justification: 'table1() prints every numeric variable with the same decimals. The style takes none, as Liao prints age (reference_2, row 1), and Liao prints one decimal for Baseline Hgb. So "11.5 [10.2–12.3]" becomes "12 [10–12]".'
+  - reference: reference_2
+    row: 37
+    column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)'
+    printed: '[1.0–1.1]'
+    style: '1 [1–1]'
+    rule: published_error
+    source: 'The cell prints the quartiles 1.0 and 1.1 and no median. Liao Table 1, note: "Data presented as median [1st-3rd quartile] or n (%)". reference_2, row 37, column "INR ≤1.5 (N = 489), No FFP Administered (N = 309)" prints the median: "1.0 [1.0–1.1]".'
+    justification: 'The median is missing from the printed cell. The fake data take the median 1.0, the one printed in this row. The style prints it with no decimals (cont.median_digits), so it gives "1 [1–1]".'
+  - reference: reference_2
+    row: 1
+    column: 'p-value*'
+    printed: '0.160'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Age (y), and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 15
+    column: 'p-value*'
+    printed: '0.202'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for BMI (kg/m2), and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 16
+    column: 'p-value*'
+    printed: '0.027'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Gravidity, and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 17
+    column: 'p-value*'
+    printed: '0.147'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Parity, and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 22
+    column: 'p-value*'
+    printed: '0.019'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Gestational age (wk), and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 24
+    column: 'p-value*'
+    printed: '1.000'
+    style: '>0.999'
+    rule: guideline
+    source: 'Guide p. 28: P values are reported to three decimals "unless P <0.001 or P >0.999".'
+    justification: 'Liao prints 1.000. Fisher''s exact test of the two compared groups gives 1.0000. table1() compares the three groups and also gives a P above 0.999, so the style writes >0.999.'
+  - reference: reference_2
+    row: 29
+    column: 'p-value*'
+    printed: '1.000'
+    style: '>0.999'
+    rule: guideline
+    source: 'Guide p. 28: P values are reported to three decimals "unless P <0.001 or P >0.999".'
+    justification: 'Liao prints 1.000. Fisher''s exact test of the two compared groups gives 1.0000. table1() compares the three groups and also gives a P above 0.999, so the style writes >0.999.'
+  - reference: reference_2
+    row: 36
+    column: 'p-value*'
+    printed: '0.640'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Baseline Hgb, and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_2
+    row: 37
+    column: 'p-value*'
+    printed: '0.010'
+    style: ''
+    rule: not_computable
+    source: '?pbn::table1, Details: p of a "cont" variable is NA in this version.'
+    justification: 'Liao prints a P for Baseline INR, and table1() has no test of a numeric variable, so the cell is empty.'
+  - reference: reference_3
+    row: 3
+    column: 'Characteristic'
+    printed: '- Antenatal'
+    style: 'Antenatal'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 4
+    column: 'Characteristic'
+    printed: '- Postnatal'
+    style: 'Postnatal'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 6
+    column: 'Characteristic'
+    printed: '- 1 (most deprived)'
+    style: '1 (most deprived)'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 7
+    column: 'Characteristic'
+    printed: '- 2'
+    style: '2'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 8
+    column: 'Characteristic'
+    printed: '- 3'
+    style: '3'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 9
+    column: 'Characteristic'
+    printed: '- 4'
+    style: '4'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 10
+    column: 'Characteristic'
+    printed: '- 5 (least deprived)'
+    style: '5 (least deprived)'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 12
+    column: 'Characteristic'
+    printed: '- One dose'
+    style: 'One dose'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 13
+    column: 'Characteristic'
+    printed: '- Two or more doses'
+    style: 'Two or more doses'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 14
+    column: 'Characteristic'
+    printed: '- Unvaccinated'
+    style: 'Unvaccinated'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 16
+    column: 'Characteristic'
+    printed: '- COVID-19 confirmed chest infection/viral chest infection'
+    style: 'COVID-19 confirmed chest infection/viral chest infection'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 17
+    column: 'Characteristic'
+    printed: '- Other'
+    style: 'Other'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 19
+    column: 'Characteristic'
+    printed: '- White'
+    style: 'White'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 20
+    column: 'Characteristic'
+    printed: '- Black/Caribbean/African'
+    style: 'Black/Caribbean/African'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 21
+    column: 'Characteristic'
+    printed: '- Asian'
+    style: 'Asian'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 22
+    column: 'Characteristic'
+    printed: '- Other'
+    style: 'Other'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 23
+    column: 'Characteristic'
+    printed: '- Missing'
+    style: 'Not recorded'
+    rule: other_reference
+    source: 'reference_1, row 11, column "Variable": "Not recorded".'
+    justification: 'McPeake labels the row of missing values "- Missing", and Maciejewska "Not recorded". The style follows Maciejewska (missing.row_label).'
+  - reference: reference_3
+    row: 25
+    column: 'Characteristic'
+    printed: '- 0'
+    style: '0'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 26
+    column: 'Characteristic'
+    printed: '- 1 or more'
+    style: '1 or more'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 28
+    column: 'Characteristic'
+    printed: '- Wave 1'
+    style: 'Wave 1'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 29
+    column: 'Characteristic'
+    printed: '- Wave 2'
+    style: 'Wave 2'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 30
+    column: 'Characteristic'
+    printed: '- Wave 3'
+    style: 'Wave 3'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Variable": "< 30 years", a level with no text before it.'
+    justification: 'McPeake puts "- " before each level. Maciejewska and Liao put nothing before a level, and the style follows them (cat.level_prefix).'
+  - reference: reference_3
+    row: 1
+    column: 'n=75'
+    printed: '31 (27.5–35)'
+    style: '31 [28–35]'
+    rule: other_reference
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the quartiles in square brackets with no decimals.'
+    justification: 'McPeake puts the quartiles in parentheses, with a decimal only where a quartile has one. The style follows Liao, so "31 (27.5–35)" becomes "31 [28–35]".'
+  - reference: reference_3
+    row: 16
+    column: 'n=75'
+    printed: '57 (76%)'
+    style: '57 (76.0%)'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": "45 (25.0%)", a percentage with one decimal.'
+    justification: 'McPeake prints this percentage with no decimal and the others with one. The style gives one decimal (cat.pct_digits), so "57 (76%)" becomes "57 (76.0%)".'
+  - reference: reference_3
+    row: 17
+    column: 'n=75'
+    printed: '18 (24%)'
+    style: '18 (24.0%)'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": "45 (25.0%)", a percentage with one decimal.'
+    justification: 'McPeake prints this percentage with no decimal and the others with one. The style gives one decimal (cat.pct_digits), so "18 (24%)" becomes "18 (24.0%)".'
+  - reference: reference_3
+    row: 23
+    column: 'n=75'
+    printed: '2 (2.7%)'
+    style: '2'
+    rule: author_decision
+    source: 'decision: Richard Aubrey White, 2026-11-20: level percentages and the test use the women with a value, so a Missing percentage over all women would put two bases in one column'
+    justification: 'McPeake gives the missing count with its percentage of all 75 women. The style prints the count alone, because its level percentages and its test use the women with a value (73 here).'
+  - reference: reference_3
+    row: 31
+    column: 'n=75'
+    printed: '4 (1.5–9)'
+    style: '4 [2–9]'
+    rule: other_reference
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the quartiles in square brackets with no decimals.'
+    justification: 'McPeake puts the quartiles in parentheses, with a decimal only where a quartile has one. The style follows Liao, so "4 (1.5–9)" becomes "4 [2–9]".'
+  - reference: reference_3
+    row: 32
+    column: 'n=75'
+    printed: '10 (6–17)'
+    style: '10 [6–17]'
+    rule: other_reference
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the quartiles in square brackets with no decimals.'
+    justification: 'McPeake puts the quartiles in parentheses, with a decimal only where a quartile has one. The style follows Liao, so "10 (6–17)" becomes "10 [6–17]".'
+  - reference: reference_3
+    row: 36
+    column: 'n=75'
+    printed: '5 (2–10)'
+    style: '5 [2–10]'
+    rule: other_reference
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the quartiles in square brackets with no decimals.'
+    justification: 'McPeake puts the quartiles in parentheses, with a decimal only where a quartile has one. The style follows Liao, so "5 (2–10)" becomes "5 [2–10]".'
+  - reference: reference_3
+    row: 38
+    column: 'n=75'
+    printed: '2.5 (2.8–5)'
+    style: '2 [2–5]'
+    rule: other_reference
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the quartiles in square brackets with no decimals.'
+    justification: 'McPeake puts the quartiles in parentheses, with a decimal only where a quartile has one. The style follows Liao, so "2.5 (2.8–5)" becomes "2 [2–5]".'
+  - reference: reference_3
+    row: 43
+    column: 'n=75'
+    printed: '8 (10.8)'
+    style: '8 (10.8%)'
+    rule: other_reference
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": "45 (25.0%)", with the % sign after the percentage.'
+    justification: 'McPeake drops the % sign in this one cell. 8 / 74 = 10.8%, so the style gives "8 (10.8%)".'

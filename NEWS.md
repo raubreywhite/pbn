@@ -1,3 +1,7 @@
+# pbn 2026.12.9
+
+- pbn installs the Table 1 style `ijoa_brief_report_2026_11_21`. It comes from methods `observational/ijoa-brief-report/v004`, commit 1051a10. Three published IJOA Table 1s prove it, with 61 listed format exceptions. pbn never edits it.
+
 # pbn 2026.12.8
 
 - A style needs `cont.mean_digits` only when `cont.template` holds `{mean}`, `cont.sd_digits` only when it holds `{sd}`, and `missing.template` only when `missing.show` is `if_any` or `always`.

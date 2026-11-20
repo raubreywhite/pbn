@@ -1,0 +1,28 @@
+# Maciejewska 2026 Table 1, the primary reference of the style. Open access
+# under CC BY 4.0. Each cell is the text of page 4 of the PDF, read from a
+# 300 dpi image of the page, fulltext-page4-300dpi.png beside the PDF. The text layer of page 4 in fulltext.txt holds
+# 21 of the 155 cells not as one string, because it wraps them over two
+# lines. A wrapped cell is joined with one space. Each word of a cell is a
+# word of the text layer, so the superscript 2 of "kg/m2" is the digit 2. The
+# one exception is "pathologiesᶜ", which the text layer gives as
+# "pathologiesᶜᶜ" and the image with one footnote mark.
+authors:
+  - {family: Maciejewska, given: Katarzyna}
+  - {family: Lonc, given: Tomasz}
+  - {family: Krzywoń-Somionka, given: Julia}
+  - {family: Jurga, given: Julia}
+  - {family: Kołak, given: Magdalena}
+  - {family: Jaworowski, given: Andrzej}
+  - {family: Huras, given: Hubert}
+  - {family: Krawczyk, given: Paweł}
+title: 'Development and validation of a Polish version of Obstetric Quality of Recovery-10 (ObsQoR-10-Polish)'
+journal: 'International Journal of Obstetric Anesthesia'
+year: 2026
+volume: 68
+pages: '105313'
+doi: '10.1016/j.ijoa.2026.105313'
+table: 1
+transcribed:
+  file: 'reference/papers/maciejewska-obsqor10-polish_j.ijoa.2026.105313/fulltext.pdf, page 4, read from the page image, with fulltext.txt (pdftools::pdf_text()) for the characters'
+  by: 'Claude (Anthropic), for the IJOA guide v004'
+  date: '2026-11-20'

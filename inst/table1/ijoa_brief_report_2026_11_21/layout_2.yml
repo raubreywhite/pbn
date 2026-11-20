@@ -1,0 +1,51 @@
+# How the output of table1() maps onto reference_2.csv, Liao 2026 Table 1.
+# The header has two rows. Each printed column is named by its header cells,
+# top to bottom: the cell "INR ≤1.5 (N = 489)" spans the two FFP columns, so
+# each of them is "INR ≤1.5 (N = 489), " and its own header cell.
+# The level "Not printed" of mode is the one woman of the FFP group whom the
+# paper counts in the denominator (46 of 180 is 25.6%) and prints in no row.
+# table1() gives her level a row, which the paper does not print.
+columns:
+  - {column: 'Total (N = 530)', cell: value, grp: 'All'}
+  - {column: 'INR >1.5 (N = 41)', cell: value, grp: 'inr_high'}
+  - {column: 'INR ≤1.5 (N = 489), No FFP Administered (N = 309)', cell: value, grp: 'no_ffp'}
+  - {column: 'INR ≤1.5 (N = 489), FFP Administered (N = 180)', cell: value, grp: 'ffp'}
+  - {column: 'p-value*', cell: p}
+rows:
+  - {var: age, row: value}
+  - {var: race, row: heading}
+  - {var: race, row: value, level: 'Asian'}
+  - {var: race, row: value, level: 'Black'}
+  - {var: race, row: value, level: 'Native American'}
+  - {var: race, row: value, level: 'Other'}
+  - {var: race, row: value, level: 'White'}
+  - {var: race, row: value, level: 'Declined'}
+  - {var: race, row: value, level: 'Unavailable'}
+  - {var: ethnicity, row: heading}
+  - {var: ethnicity, row: value, level: 'Hispanic'}
+  - {var: ethnicity, row: value, level: 'Not Hispanic'}
+  - {var: ethnicity, row: value, level: 'Declined'}
+  - {var: ethnicity, row: value, level: 'Unavailable'}
+  - {var: bmi, row: value}
+  - {var: gravidity, row: value}
+  - {var: parity, row: value}
+  - {var: mode, row: heading}
+  - {var: mode, row: value, level: 'Cesarean'}
+  - {var: mode, row: value, level: 'Vaginal'}
+  - {var: assisted, row: value}
+  - {var: gestation, row: value}
+  - {var: preterm, row: value}
+  - {var: prior_pph, row: value}
+  - {var: prior_cesarean, row: value}
+  - {var: multiple, row: value}
+  - {var: polyhydramnios, row: value}
+  - {var: macrosomia, row: value}
+  - {var: chorio, row: value}
+  - {var: induction, row: value}
+  - {var: magnesium, row: value}
+  - {var: abruption, row: value}
+  - {var: previa, row: value}
+  - {var: pas, row: value}
+  - {var: coagulopathy, row: value}
+  - {var: hgb, row: value}
+  - {var: inr, row: value}

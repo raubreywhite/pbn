@@ -244,8 +244,8 @@ test_that("a style adds value_pretty and p_pretty and changes no other column", 
 })
 
 test_that("table1_styles lists the style files of the style folder, sorted", {
-  # pbn 2026.12.4 installs no style.
-  expect_identical(table1_styles(), character(0))
+  # pbn 2026.12.9 installs one style.
+  expect_identical(table1_styles(), "ijoa_brief_report_2026_11_21")
   dir <- withr::local_tempdir()
   file.create(file.path(
     dir,
@@ -275,6 +275,17 @@ test_that("a bad style name is an error that names it", {
   # expect_error() without a pattern catches any error, and the message is
   # then compared exactly. So an error from a later step fails the
   # comparison, and does not pass through as a test error.
+  err <- expect_error(
+    table1(d20, by = "g", vars = vars20, style = "nope_2026_01_01")
+  )
+  expect_identical(
+    conditionMessage(err),
+    paste0(
+      "pbn has no Table 1 style named 'nope_2026_01_01'. The installed ",
+      "styles are: ijoa_brief_report_2026_11_21"
+    )
+  )
+  local_mocked_bindings(table1_style_dir = function() return(""))
   err <- expect_error(
     table1(d20, by = "g", vars = vars20, style = "nope_2026_01_01")
   )

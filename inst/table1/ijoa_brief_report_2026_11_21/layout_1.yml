@@ -1,0 +1,41 @@
+# How the output of table1() maps onto reference_1.csv, Maciejewska 2026 Table 1.
+# "Not recorded" (body mass index) and "Not assessedᵇ" (ASA physical status) are
+# levels of the fake data, because the paper counts those women in the
+# denominator of every percentage of the variable: 35 of 180 is 19.4%.
+columns:
+  - {column: 'Vaginal delivery (n = 180)', cell: value, grp: 'vaginal'}
+  - {column: 'Cesarean delivery (n = 230)', cell: value, grp: 'cesarean'}
+  - {column: 'Total (n = 410)', cell: value, grp: 'All'}
+  - {column: 'P value', cell: p}
+rows:
+  - {var: age_group, row: heading}
+  - {var: age_group, row: value, level: '< 30 years'}
+  - {var: age_group, row: value, level: '30–39 years'}
+  - {var: age_group, row: value, level: '≥40 years'}
+  - {var: bmi_group, row: heading}
+  - {var: bmi_group, row: value, level: 'Normal weight or underweightᵃ (< 25.0)'}
+  - {var: bmi_group, row: value, level: 'Overweight (25.0–29.9)'}
+  - {var: bmi_group, row: value, level: 'Obesity class I (30.0–34.9)'}
+  - {var: bmi_group, row: value, level: 'Obesity class II (35.0–39.9)'}
+  - {var: bmi_group, row: value, level: 'Obesity class III (≥40.0)'}
+  - {var: bmi_group, row: value, level: 'Not recorded'}
+  - {var: parity, row: heading}
+  - {var: parity, row: value, level: 'Primiparous'}
+  - {var: parity, row: value, level: 'Multiparous'}
+  - {var: gestation, row: heading}
+  - {var: gestation, row: value, level: 'Extremely preterm (< 28 weeks)'}
+  - {var: gestation, row: value, level: 'Very preterm (28–32 weeks)'}
+  - {var: gestation, row: value, level: 'Moderate-to-late preterm (33–36 weeks)'}
+  - {var: gestation, row: value, level: 'Term (≥37 weeks)'}
+  - {var: asa, row: heading}
+  - {var: asa, row: value, level: 'ASA II'}
+  - {var: asa, row: value, level: 'ASA III/IV'}
+  - {var: asa, row: value, level: 'Not assessedᵇ'}
+  - {var: multiple, row: value}
+  - {var: ivf, row: value}
+  - {var: hospitalized, row: value}
+  - {var: placental, row: value}
+  - {var: nicu, row: value}
+  - {var: stay, row: heading}
+  - {var: stay, row: value, level: '≤ 3 days'}
+  - {var: stay, row: value, level: '> 3 days'}

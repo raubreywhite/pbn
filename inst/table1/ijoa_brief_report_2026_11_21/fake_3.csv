@@ -1,0 +1,76 @@
+"cohort","age","pregnancy","simd","vaccination","diagnosis","ethnicity","comorbidity","wave","cc_stay","hospital_stay","advanced","noninvasive","both","advanced_days","cardiovascular","cardiovascular_days","renal","died","readmit_30","readmit_60","readmit_90"
+"cohort",41,"Antenatal","1 (most deprived)","One dose","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 1",27,53.5,1,1,1,1,1,1.5,1,1,1,1,1
+"cohort",31,"Antenatal","1 (most deprived)","Two or more doses","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 1",4.5,10.5,1,1,1,1.5,1,2,0,0,1,1,1
+"cohort",18.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",0.5,1.5,1,1,1,0.5,1,1,0,0,1,1,1
+"cohort",30,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",3.5,9,1,1,1,1,1,1,0,0,1,1,1
+"cohort",32,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",5.5,12,1,1,1,23.5,1,2.5,0,0,1,1,1
+"cohort",25,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",1,4.5,1,1,1,9,1,3,0,0,1,1,1
+"cohort",36,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",12.5,23.5,1,1,1,3,1,5,0,0,1,1,1
+"cohort",34,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",7.5,15,1,1,1,4,1,12.5,0,0,0,1,1
+"cohort",27.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",1.5,6,1,1,1,5.5,1,2,0,0,0,0,1
+"cohort",34.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",8.5,16,1,1,1,6,1,4,0,0,0,0,0
+"cohort",21.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",1,3,1,1,1,30,1,2.5,0,0,0,0,0
+"cohort",22.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",1,3.5,1,1,1,7.5,1,2,0,0,0,0,0
+"cohort",25.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",1.5,5,1,1,1,8,1,5,0,0,0,0,0
+"cohort",40.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",25.5,50,1,1,1,2.5,1,15,0,0,0,0,0
+"cohort",31,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",4,10,1,1,1,13.5,1,2,0,0,0,0,0
+"cohort",31.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",5,11,1,1,1,7,1,3.5,0,0,0,0,0
+"cohort",28.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",2,7,1,1,1,33.5,1,2.5,0,0,0,0,0
+"cohort",33,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",6,13,1,1,1,2,1,4.5,0,0,0,0,0
+"cohort",37,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",15.5,30.5,1,1,1,4,1,7.5,0,0,0,0,0
+"cohort",35,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",9,17,1,1,0,1.5,1,2,0,0,0,0,0
+"cohort",43,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",33.5,66.5,1,1,0,9.5,1,2.5,0,0,0,0,0
+"cohort",32,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",5,11.5,1,1,0,4.5,1,10,0,0,0,0,0
+"cohort",41.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",28.5,57,1,1,0,3,1,1,0,0,0,0,0
+"cohort",32.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 2",5.5,12.5,1,1,0,3.5,1,17.5,0,0,0,0,0
+"cohort",38,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",19,37,1,1,0,10,0,,0,0,0,0,0
+"cohort",30,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",3.5,9,1,1,0,26.5,0,,0,0,0,0,0
+"cohort",27.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1.5,6,1,1,0,2,0,,0,0,0,0,0
+"cohort",30.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",3.5,9.5,1,1,0,1.5,0,,0,0,0,0,0
+"cohort",21,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1,2.5,1,1,0,20,0,,0,0,0,0,0
+"cohort",23,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1,3.5,1,1,0,36.5,0,,0,0,0,0,0
+"cohort",39.5,"Antenatal","1 (most deprived)","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",23.5,47,1,1,0,1,0,,0,0,0,0,0
+"cohort",31,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",4,10,1,1,0,16.5,0,,0,0,0,0,0
+"cohort",33.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",7,14.5,1,1,0,5,0,,0,0,0,0,0
+"cohort",29,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",2.5,8,0,1,0,,0,,0,0,0,0,0
+"cohort",42.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",32,63.5,0,1,0,,0,,0,0,0,0,0
+"cohort",28,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",2,6.5,0,1,0,,0,,0,0,0,0,0
+"cohort",33,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",6.5,13.5,0,1,0,,0,,0,0,0,0,0
+"cohort",34.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",8,16,0,1,0,,0,,0,0,0,0,0
+"cohort",44,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",36.5,73.5,0,1,0,,0,,0,0,0,0,0
+"cohort",35,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",9,17,0,1,0,,0,,0,0,0,0,0
+"cohort",28.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",2,7,0,1,0,,0,,0,0,0,0,0
+"cohort",30,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",3,8.5,0,1,0,,0,,0,0,0,0,0
+"cohort",42,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",30,60,0,1,0,,0,,0,0,0,0,0
+"cohort",19,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",0.5,1.5,0,1,0,,0,,0,0,0,0,0
+"cohort",24.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1,4.5,0,0,0,,0,,0,0,0,0,0
+"cohort",27,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1.5,5.5,0,0,0,,0,,0,0,0,0,0
+"cohort",28,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",2,6.5,0,0,0,,0,,0,0,0,0,0
+"cohort",33.5,"Antenatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",7.5,14.5,0,0,0,,0,,0,0,0,0,0
+"cohort",30.5,"Postnatal","2","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",3.5,9.5,0,0,0,,0,,0,0,0,0,0
+"cohort",43.5,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",35,70,0,0,0,,0,,0,0,0,0,0
+"cohort",27.5,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1.5,6,0,0,0,,0,,0,0,0,0,0
+"cohort",34,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",8,15.5,0,0,0,,0,,0,0,0,0,0
+"cohort",22,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1,3,0,0,0,,0,,0,0,0,0,0
+"cohort",29,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",2.5,7.5,0,0,0,,0,,0,0,0,0,0
+"cohort",24,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",1,4,0,0,0,,0,,0,0,0,0,0
+"cohort",29,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",3,8,0,0,0,,0,,0,0,0,0,0
+"cohort",31.5,"Postnatal","3","Unvaccinated","COVID-19 confirmed chest infection/viral chest infection","White","0","Wave 3",4.5,11,0,0,0,,0,,0,0,0,0,0
+"cohort",39,"Postnatal","3","Unvaccinated","Other","White","0","Wave 3",22,43.5,0,0,0,,0,,0,0,0,0,0
+"cohort",23.5,"Postnatal","3","Unvaccinated","Other","Black/Caribbean/African","0","Wave 3",1,4,0,0,0,,0,,0,0,0,0,0
+"cohort",28.5,"Postnatal","3","Unvaccinated","Other","Black/Caribbean/African","0","Wave 3",2.5,7.5,0,0,0,,0,,0,0,0,0,0
+"cohort",20,"Postnatal","3","Unvaccinated","Other","Black/Caribbean/African","0","Wave 3",0.5,2,0,0,0,,0,,0,0,0,0,0
+"cohort",29.5,"Postnatal","4","Unvaccinated","Other","Black/Caribbean/African","0","Wave 3",3,8.5,0,0,0,,0,,0,0,0,0,0
+"cohort",33,"Postnatal","4","Unvaccinated","Other","Asian","0","Wave 3",7,14,0,0,0,,0,,0,0,0,0,0
+"cohort",38.5,"Postnatal","4","Unvaccinated","Other","Asian","0","Wave 3",20.5,40,0,0,0,,0,,0,0,0,0,0
+"cohort",37.5,"Postnatal","4","Unvaccinated","Other","Asian","0","Wave 3",17,33.5,0,0,0,,0,,0,0,0,0,0
+"cohort",29.5,"Postnatal","4","Unvaccinated","Other","Asian","0","Wave 3",3,8,0,0,0,,0,,0,0,0,0,0
+"cohort",44.5,"Postnatal","4","Unvaccinated","Other","Asian","1 or more","Wave 3",38.5,76.5,0,0,0,,0,,0,0,0,0,0
+"cohort",35.5,"Postnatal","4","Unvaccinated","Other","Asian","1 or more","Wave 3",10.5,20.5,0,0,0,,0,,0,0,0,0,0
+"cohort",20.5,"Postnatal","4","Unvaccinated","Other","Asian","1 or more","Wave 3",1,2.5,0,0,0,,0,,0,0,0,0,0
+"cohort",32.5,"Postnatal","4","Unvaccinated","Other","Asian","1 or more","Wave 3",6,12.5,0,0,0,,0,,0,0,0,0,0
+"cohort",26.5,"Postnatal","5 (least deprived)","Unvaccinated","Other","Other","1 or more","Wave 3",1.5,5.5,0,0,0,,0,,0,0,0,0,0
+"cohort",35,"Postnatal","5 (least deprived)","Unvaccinated","Other","Other","1 or more","Wave 3",8.5,16.5,0,0,0,,0,,0,0,0,0,0
+"cohort",26,"Postnatal","5 (least deprived)","Unvaccinated","Other","Other","1 or more","Wave 3",1.5,5,0,0,0,,0,,0,0,0,0,0
+"cohort",36.5,"Postnatal","5 (least deprived)","Unvaccinated","Other",,"1 or more","Wave 3",14,27,0,0,0,,0,,0,0,0,0,0
+"cohort",19.5,"Postnatal","5 (least deprived)","Unvaccinated","Other",,"1 or more","Wave 3",0.5,2,0,0,0,,0,,0,0,,,

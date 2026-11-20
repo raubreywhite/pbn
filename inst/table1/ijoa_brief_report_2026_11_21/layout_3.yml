@@ -1,0 +1,51 @@
+# How the output of table1() maps onto reference_3.csv, McPeake 2023 Table 1.
+# The re-admission heading is a section, because its three rows are three
+# 0/1 variables of 74 women, not the levels of one variable. Their labels
+# in vars_3.csv are the printed labels.
+columns:
+  - {column: 'n=75', cell: value, grp: 'cohort'}
+rows:
+  - {var: age, row: value}
+  - {var: pregnancy, row: heading}
+  - {var: pregnancy, row: value, level: 'Antenatal'}
+  - {var: pregnancy, row: value, level: 'Postnatal'}
+  - {var: simd, row: heading}
+  - {var: simd, row: value, level: '1 (most deprived)'}
+  - {var: simd, row: value, level: '2'}
+  - {var: simd, row: value, level: '3'}
+  - {var: simd, row: value, level: '4'}
+  - {var: simd, row: value, level: '5 (least deprived)'}
+  - {var: vaccination, row: heading}
+  - {var: vaccination, row: value, level: 'One dose'}
+  - {var: vaccination, row: value, level: 'Two or more doses'}
+  - {var: vaccination, row: value, level: 'Unvaccinated'}
+  - {var: diagnosis, row: heading}
+  - {var: diagnosis, row: value, level: 'COVID-19 confirmed chest infection/viral chest infection'}
+  - {var: diagnosis, row: value, level: 'Other'}
+  - {var: ethnicity, row: heading}
+  - {var: ethnicity, row: value, level: 'White'}
+  - {var: ethnicity, row: value, level: 'Black/Caribbean/African'}
+  - {var: ethnicity, row: value, level: 'Asian'}
+  - {var: ethnicity, row: value, level: 'Other'}
+  - {var: ethnicity, row: missing}
+  - {var: comorbidity, row: heading}
+  - {var: comorbidity, row: value, level: '0'}
+  - {var: comorbidity, row: value, level: '1 or more'}
+  - {var: wave, row: heading}
+  - {var: wave, row: value, level: 'Wave 1'}
+  - {var: wave, row: value, level: 'Wave 2'}
+  - {var: wave, row: value, level: 'Wave 3'}
+  - {var: cc_stay, row: value}
+  - {var: hospital_stay, row: value}
+  - {var: advanced, row: value}
+  - {var: noninvasive, row: value}
+  - {var: both, row: value}
+  - {var: advanced_days, row: value}
+  - {var: cardiovascular, row: value}
+  - {var: cardiovascular_days, row: value}
+  - {var: renal, row: value}
+  - {var: died, row: value}
+  - {row: section}
+  - {var: readmit_30, row: value}
+  - {var: readmit_60, row: value}
+  - {var: readmit_90, row: value}

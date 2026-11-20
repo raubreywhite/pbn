@@ -1,0 +1,20 @@
+# Liao 2026 Table 1, an NIH author manuscript. Each cell is the text content
+# of its <td> in the JATS XML, sup and xref included, with each run of
+# whitespace made one space and the ends trimmed, as a browser shows it.
+# The two header rows give one header per column: see layout_2.yml.
+authors:
+  - {family: Liao, given: Lillian}
+  - {family: Kovacheva, given: Vesela P.}
+  - {family: Farber, given: Michaela K.}
+  - {family: Kowalczyk, given: John J.}
+title: 'Morbidity associated with fresh frozen plasma administration for postpartum hemorrhage requiring transfusion: a retrospective cohort study (2016–2024)'
+journal: 'International Journal of Obstetric Anesthesia'
+year: 2026
+volume: 66
+pages: '104892'
+doi: '10.1016/j.ijoa.2026.104892'
+table: 1
+transcribed:
+  file: 'reference/papers/liao-ffp-postpartum-hemorrhage_PMC13271832/fulltext.xml, table-wrap T1, by a Python script of the standard library'
+  by: 'Claude (Anthropic), for the IJOA guide v004'
+  date: '2026-11-20'

@@ -1,0 +1,74 @@
+# Table 1 style: an observational study as a Brief Report in the International Journal of Obstetric Anesthesia (IJOA).
+# Schema: ?pbn::table1, section Styles, pbn 2026.12.8.
+# "Guide" is the IJOA Guide for Authors saved on 2026-11-20, reference/guidelines/ijoa-guide-for-authors-2026-11-20.pdf, cited by page.
+# The folder TABLE1/ beside this file is the proof: three published Table 1s, transcribed cell by cell, with fake data and exceptions.yml.
+# reference_1 is Maciejewska 2026 Table 1 (primary), reference_2 is Liao 2026 Table 1, reference_3 is McPeake 2023 Table 1.
+# A cell citation names the row after the header and the printed column header. GUIDE.md section 6 explains each field.
+bin:
+  template:
+    value: '{events} ({pct}%)'
+    source: 'reference_1, row 24, column "Vaginal delivery (n = 180)": "4 (2.2%)", a count, then its percentage with the % sign in parentheses. Guide p. 28 sets no cell format.'
+  pct_digits:
+    value: 1
+    source: 'reference_1, row 24, column "Vaginal delivery (n = 180)": one decimal, "4 (2.2%)".'
+cont:
+  template:
+    value: '{median} [{q1}–{q3}]'
+    source: 'reference_2, row 1, column "Total (N = 530)": "34 [31–38]", the median, then the first and third quartiles in square brackets with an en dash. Liao is the one reference that prints a numeric variable in a table with a P column. Maciejewska Table 1 prints no numeric variable.'
+  median_digits:
+    value: 0
+    source: 'reference_2, row 1, column "Total (N = 530)": no decimals, "34 [31–38]". Liao prints no decimals for 4 of its 7 numeric rows (age, BMI, gravidity, parity) and one decimal for 3. Guide p. 28 sets no decimals for a median.'
+cat:
+  template:
+    value: '{events} ({pct}%)'
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": "45 (25.0%)", a count, then its percentage with the % sign in parentheses.'
+  pct_digits:
+    value: 1
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": one decimal, "45 (25.0%)".'
+  heading_template:
+    value: ''
+    source: 'reference_1, row 1, column "Vaginal delivery (n = 180)": the heading row of "Maternal age" is empty. Its P is in the column "P value".'
+  level_prefix:
+    value: ''
+    source: 'reference_1, row 2, column "Variable": "< 30 years", the level with no text before it. Maciejewska sets the heading row in bold and the level rows in regular type, which a cell string cannot hold.'
+p:
+  digits:
+    value: 3
+    source: 'Guide p. 28: P values "should be exact and reported to three decimals". reference_1, row 15, column "P value": "0.009".'
+  template:
+    value: '{p}'
+    source: 'reference_1, row 15, column "P value": "0.009", the number alone under the header "P value". The Guide p. 28 form "P =0.005" is the form for a P value in the text.'
+  lower:
+    value: 0.001
+    source: 'Guide p. 28: three decimals "unless P <0.001". reference_1, row 20, column "P value": "<0.001".'
+  below_template:
+    value: '<{lower}'
+    source: 'reference_1, row 20, column "P value": "<0.001". Guide p. 28: no space between the symbol and the value.'
+  upper:
+    value: 0.999
+    source: 'Guide p. 28: three decimals unless "P >0.999". reference_1, row 26, column "P value": ">0.999".'
+  above_template:
+    value: '>{upper}'
+    source: 'reference_1, row 26, column "P value": ">0.999". Guide p. 28: no space between the symbol and the value.'
+thousands:
+  mark:
+    value: ','
+    source: 'Guide p. 28: "For large numbers in manuscript, Tables and Figures: use a comma" (e.g. 12,347).'
+  from:
+    value: 10000
+    source: 'Guide p. 28: a comma "for numbers larger than nine thousand nine hundred and ninety-nine". No reference Table 1 has a number above 999.'
+missing:
+  show:
+    value: row_if_any
+    source: 'reference_1, row 11, column "Variable": "Not recorded", a row under body mass index, the one variable of Maciejewska Table 1 with a value not recorded. reference_3, row 23, column "Characteristic": a Missing row under Ethnicity.'
+  row_template:
+    value: '{missing}'
+    source: 'decision: Richard Aubrey White, 2026-11-20: level percentages and the test use the women with a value, so a Missing percentage over all women would put two bases in one column'
+  row_label:
+    value: 'Not recorded'
+    source: 'reference_1, row 11, column "Variable": "Not recorded".'
+footnotes:
+  - value: 'Data are presented as number (percentage) or median [first–third quartile].'
+    source: 'reference_1, row 2, column "Vaginal delivery (n = 180)": "45 (25.0%)", a number with its percentage. reference_2, row 1, column "Total (N = 530)": "34 [31–38]", a median with its first and third quartiles. Maciejewska Table 1 and Liao Table 1 state these formats in their notes.'
+  - value: "P values from Pearson's chi-squared test without continuity correction, or from Fisher's exact test when an expected count is below 5."
+    source: 'reference_2, row 30, column "p-value*": "0.112" is the Pearson chi-squared test without continuity correction of 72 of 309 against 31 of 180. reference_2, row 32, column "p-value*": "0.549" is Fisher''s exact test of 9 of 309 against 3 of 180. The wording follows the note of Maciejewska Table 1.'

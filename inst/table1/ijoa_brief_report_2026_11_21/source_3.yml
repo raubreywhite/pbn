@@ -1,0 +1,25 @@
+# McPeake 2023 Table 1, the version of record. Each cell is the text content
+# of its <td> in the JATS XML, xref included, with each run of whitespace
+# made one space and the ends trimmed, as a browser shows it. A heading row
+# is one cell over both columns, so its second cell is "".
+authors:
+  - {family: McPeake, given: 'J.'}
+  - {family: Stewart, given: 'N.I.'}
+  - {family: Kaye, given: 'C.T.'}
+  - {family: Chan Seem, given: 'R.'}
+  - {family: Hall, given: 'R.'}
+  - {family: Martin, given: 'C.'}
+  - {family: Paton, given: 'M.'}
+  - {family: Wise, given: 'A.'}
+  - {family: Lone, given: 'N.I.'}
+title: 'COVID-19 infection and maternal morbidity in critical care units in Scotland: a national cohort study'
+journal: 'International Journal of Obstetric Anesthesia'
+year: 2023
+volume: 53
+pages: '103613'
+doi: '10.1016/j.ijoa.2022.103613'
+table: 1
+transcribed:
+  file: 'reference/papers/mcpeake-scotland-critical-care-covid_PMC9715259/fulltext.xml, table-wrap t0005, by a Python script of the standard library'
+  by: 'Claude (Anthropic), for the IJOA guide v004'
+  date: '2026-11-20'

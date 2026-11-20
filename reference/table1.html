@@ -9,7 +9,7 @@ all rows. With a style, it also formats these numbers as text."><meta property="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -268,7 +268,8 @@ of maps with the keys <code>family</code> and <code>given</code>. <code>pages</c
 number or the pages, and <code>table</code> is the number of the table.
 <code>transcribed</code> is a map with the keys <code>file</code>, <code>by</code> and <code>date</code>.</p></li>
 <li><p><code>fake_&lt;k&gt;.csv</code>: the fake data, one row per fake person. An empty cell or
-<code>NA</code> is a missing value.</p></li>
+<code>NA</code> is a missing value. The fake data MUST give every printed row and
+column. They need not give the printed numbers.</p></li>
 <li><p><code>vars_&lt;k&gt;.csv</code>: the columns <code>var</code>, <code>type</code>, <code>label</code>, <code>levels</code> and
 <code>section</code>. The one row of type <code>by</code> names the column of the groups. The
 other rows, with <code>var</code>, <code>type</code>, <code>label</code> and <code>section</code>, are the argument
@@ -294,9 +295,22 @@ variable of the layout, and the label is <code>""</code> without it. A row of
 <code>section</code> has <code>""</code> in each cell after the label. A row of <code>none</code> has <code>""</code>
 in each cell. So each printed cell of it that is not empty MUST be an
 exception with the rule <code>not_computable</code>.</p>
-<p>A cell passes when the two strings are identical. A cell that
-differs passes only when the file <code>exceptions.yml</code> of the folder lists it
-with the same two strings.</p>
+<p>A label cell, in the first column, passes when the two strings are
+identical. A value cell passes when the two strings have the same shape.
+The shape is the string with each number masked:</p><ul><li><p>The digits before a decimal point <code>.</code> collapse to one <code>N</code>. A thousands
+separator between them stays as printed, so <code>12,347</code> gives <code>N,N</code> and
+<code>1234</code> gives <code>N</code>.</p></li>
+<li><p>Each digit after a decimal point becomes its own <code>N</code>, so the shape keeps
+the number of decimals.</p></li>
+<li><p>Every other character stays as printed, and an empty cell stays empty.</p></li>
+</ul><p>So <code>397 (27.0%)</code> and <code>5 (2.8%)</code> share the shape <code>N (N.N%)</code>, and
+<code>57 (76%)</code> gives <code>N (N%)</code>. <code>&lt;0.001</code> gives <code>&lt;N.NNN</code>, and <code>P =0.010</code> gives
+<code>P =N.NNN</code>. A style controls the format of a cell, and the numbers come
+from the data.</p>
+<p>A cell that differs passes only when the file <code>exceptions.yml</code> of the
+folder lists it. For a value cell, the two strings of the exception MUST
+have the shapes of the two strings of the cell. For a label cell, they
+MUST be the same strings.</p>
 <p><code>exceptions.yml</code> is a map with the one key <code>exceptions</code>, a list. Each item
 has these fields:</p><ul><li><p><code>reference</code>, <code>row</code> and <code>column</code>: the cell, as <code>reference_1</code>, the number
 of the printed row after the header, and the printed header.</p></li>
@@ -309,11 +323,14 @@ style follows them. <code>source</code> names the guideline and its page.</p></l
 other one. <code>source</code> cites a cell of the other reference.</p></li>
 <li><p><code>not_computable</code>: <code>table1()</code> cannot compute the cell, such as a P of a
 <code>"cont"</code> variable.</p></li>
-<li><p><code>published_error</code>: the printed cell is wrong. <code>source</code> gives the
-computation that shows it.</p></li>
+<li><p><code>published_error</code>: the format of the printed cell is wrong, such as a
+median printed without its value. <code>source</code> gives the evidence. A wrong
+number in the right format has the shape of the style, so it needs no
+exception.</p></li>
 </ul><p>The test fails a style in each of these cases:</p><ul><li><p>A cell differs, and <code>exceptions.yml</code> does not list it.</p></li>
-<li><p>An exception has strings other than those of its cell. A cell that
-matches MUST NOT have an exception.</p></li>
+<li><p>The strings of an exception do not match those of its cell, as above.</p></li>
+<li><p>A cell matches, and <code>exceptions.yml</code> lists it. For a value cell, the
+two shapes are equal.</p></li>
 <li><p>An exception names no cell, or a cell twice.</p></li>
 <li><p>The style has no folder. The folder lacks a file, or it holds a file of
 another name.</p></li>

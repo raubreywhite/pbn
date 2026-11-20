@@ -129,15 +129,16 @@ group. Its Missing row divides by every row of the group.
 
 ## How a style is proven
 
-pbn installs a style only with the real published Table 1s that it
-reproduces. Beside each style file `inst/table1/<name>.yml` is the
+pbn installs a style only with the real published Table 1s whose format
+it reproduces. Beside each style file `inst/table1/<name>.yml` is the
 folder `inst/table1/<name>/`. For each reference table k, the folder
 holds five files:
 
 - `reference_<k>.csv`: the real table as printed, one string per cell.
 - `source_<k>.yml`: the authors, the journal, the DOI, the table number,
   and who transcribed the table from which file.
-- `fake_<k>.csv`: fake data, one row per fake person.
+- `fake_<k>.csv`: fake data, one row per fake person. They MUST give
+  every printed row and column, and need not give the printed numbers.
 - `vars_<k>.csv`: the arguments `by` and `vars` of
   [`table1()`](https://www.rwhite.no/pbn/reference/table1.md), with the
   columns `label` and `section` of `vars`.
@@ -146,7 +147,20 @@ holds five files:
 
 A test of pbn runs `table1(fake, by, vars, style)` for each reference
 table. It compares every printed cell with the cell of the style, the
-row labels included. Each label is the column `label` of the output of
+row labels included. A label MUST be the same string. A value cell MUST
+have the same shape, which is the string with each number masked:
+
+- The digits before a decimal point collapse to one `N`. A thousands
+  separator stays, so `12,347` gives `N,N`.
+- Each digit after a decimal point becomes its own `N`, so `0.272` gives
+  `N.NNN`.
+- Every other character stays as printed.
+
+So `397 (27.0%)` and `5 (2.8%)` share the shape `N (N.N%)`, but
+`57 (76%)` gives `N (N%)`. A style controls the format, and the numbers
+come from the data.
+
+Each label is the column `label` of the output of
 [`table1()`](https://www.rwhite.no/pbn/reference/table1.md), and never
 comes from the layout or the reference. A printed row with no computed
 counterpart MUST be an exception with the rule `not_computable`. A cell
@@ -161,14 +175,17 @@ justification. The rule is one of these:
 - `not_computable`:
   [`table1()`](https://www.rwhite.no/pbn/reference/table1.md) cannot
   compute the cell.
-- `published_error`: the printed cell is wrong. The source gives the
-  computation that shows it.
+- `published_error`: the format of the printed cell is wrong, such as a
+  median printed without its value. A wrong number in the right format
+  has the shape of the style, so it needs no exception.
 
-The test fails a difference that `exceptions.yml` does not list, and an
-exception whose strings no longer match. It also fails a style without
-its folder or with a missing file. A field whose `source` says
-“editorial”, or cites neither a reference table nor a guideline page,
-fails too. The section Styles of
+The test fails a difference that `exceptions.yml` does not list. It
+fails an exception whose strings no longer match those of its cell by
+the same rule. It fails an exception of a cell that now passes, such as
+one whose two shapes are now equal. It also fails a style without its
+folder or with a missing file. A field whose `source` says “editorial”,
+or cites neither a reference table nor a guideline page, fails too. The
+section Styles of
 [`?table1`](https://www.rwhite.no/pbn/reference/table1.md) gives every
 field of every file.
 
@@ -189,4 +206,4 @@ does not list it. These are the withdrawn styles:
 The tables below show `smoker` and `age` only. A style without the
 section `cat` cannot format a `"cat"` variable.
 
-pbn 2026.12.6 installs no style.
+pbn 2026.12.7 installs no style.

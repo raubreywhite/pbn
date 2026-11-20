@@ -1,5 +1,13 @@
 # Changelog
 
+## pbn 2026.12.7
+
+- Behaviour change: the proof of a style compares each value cell by its
+  shape, the string with each number masked. Labels stay exact. An
+  exception lists only a cell whose two shapes differ, as
+  [`?table1`](https://www.rwhite.no/pbn/reference/table1.md), section
+  Styles, says.
+
 ## pbn 2026.12.6
 
 - A style needs `missing.row_pct_digits` only when

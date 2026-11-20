@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.7</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -267,8 +267,8 @@ group.</p>
 <div class="section level2">
 <h2 id="how-a-style-is-proven">How a style is proven<a class="anchor" aria-label="anchor" href="#how-a-style-is-proven"></a>
 </h2>
-<p>pbn installs a style only with the real published Table 1s that it
-reproduces. Beside each style file
+<p>pbn installs a style only with the real published Table 1s whose
+format it reproduces. Beside each style file
 <code>inst/table1/&lt;name&gt;.yml</code> is the folder
 <code>inst/table1/&lt;name&gt;/</code>. For each reference table k, the
 folder holds five files:</p>
@@ -281,8 +281,9 @@ string per cell.</li>
 DOI, the table number, and who transcribed the table from which
 file.</li>
 <li>
-<code>fake_&lt;k&gt;.csv</code>: fake data, one row per fake
-person.</li>
+<code>fake_&lt;k&gt;.csv</code>: fake data, one row per fake person.
+They MUST give every printed row and column, and need not give the
+printed numbers.</li>
 <li>
 <code>vars_&lt;k&gt;.csv</code>: the arguments <code>by</code> and
 <code>vars</code> of <code><a href="../reference/table1.html">table1()</a></code>, with the columns
@@ -293,14 +294,28 @@ each cell of the output. It holds no label.</li>
 </ul>
 <p>A test of pbn runs <code>table1(fake, by, vars, style)</code> for
 each reference table. It compares every printed cell with the cell of
-the style, the row labels included. Each label is the column
-<code>label</code> of the output of <code><a href="../reference/table1.html">table1()</a></code>, and never
-comes from the layout or the reference. A printed row with no computed
-counterpart MUST be an exception with the rule
-<code>not_computable</code>. A cell that differs MUST have an entry in
-the file <code>exceptions.yml</code> of the folder. The entry gives the
-two strings, a rule, a source and a justification. The rule is one of
-these:</p>
+the style, the row labels included. A label MUST be the same string. A
+value cell MUST have the same shape, which is the string with each
+number masked:</p>
+<ul>
+<li>The digits before a decimal point collapse to one <code>N</code>. A
+thousands separator stays, so <code>12,347</code> gives
+<code>N,N</code>.</li>
+<li>Each digit after a decimal point becomes its own <code>N</code>, so
+<code>0.272</code> gives <code>N.NNN</code>.</li>
+<li>Every other character stays as printed.</li>
+</ul>
+<p>So <code>397 (27.0%)</code> and <code>5 (2.8%)</code> share the shape
+<code>N (N.N%)</code>, but <code>57 (76%)</code> gives
+<code>N (N%)</code>. A style controls the format, and the numbers come
+from the data.</p>
+<p>Each label is the column <code>label</code> of the output of
+<code><a href="../reference/table1.html">table1()</a></code>, and never comes from the layout or the reference.
+A printed row with no computed counterpart MUST be an exception with the
+rule <code>not_computable</code>. A cell that differs MUST have an entry
+in the file <code>exceptions.yml</code> of the folder. The entry gives
+the two strings, a rule, a source and a justification. The rule is one
+of these:</p>
 <ul>
 <li>
 <code>guideline</code>: the reference departs from the author
@@ -312,12 +327,15 @@ follows the other one. The source cites its cell.</li>
 <code>not_computable</code>: <code><a href="../reference/table1.html">table1()</a></code> cannot compute
 the cell.</li>
 <li>
-<code>published_error</code>: the printed cell is wrong. The source
-gives the computation that shows it.</li>
+<code>published_error</code>: the format of the printed cell is
+wrong, such as a median printed without its value. A wrong number in the
+right format has the shape of the style, so it needs no exception.</li>
 </ul>
 <p>The test fails a difference that <code>exceptions.yml</code> does not
-list, and an exception whose strings no longer match. It also fails a
-style without its folder or with a missing file. A field whose
+list. It fails an exception whose strings no longer match those of its
+cell by the same rule. It fails an exception of a cell that now passes,
+such as one whose two shapes are now equal. It also fails a style
+without its folder or with a missing file. A field whose
 <code>source</code> says “editorial”, or cites neither a reference table
 nor a guideline page, fails too. The section Styles of
 <code><a href="../reference/table1.html">?table1</a></code> gives every field of every file.</p>
@@ -354,7 +372,7 @@ sources are an editorial choice</td>
 <p>The tables below show <code>smoker</code> and <code>age</code> only.
 A style without the section <code>cat</code> cannot format a
 <code>"cat"</code> variable.</p>
-<p>pbn 2026.12.6 installs no style.</p>
+<p>pbn 2026.12.7 installs no style.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

@@ -1,3 +1,7 @@
+# pbn 2026.12.6
+
+- A style needs `missing.row_pct_digits` only when `missing.row_template` holds `{pct}`. The template `"{missing}"` gives a Missing row with the count only, because the level percentages and the test use the non-missing rows.
+
 # pbn 2026.12.5
 
 - `table1()` no longer stops when Fisher's exact test needs more than the default workspace. It tries again with a workspace of `2e7`. When that also fails, `p` is `NA`, `test` is `"fisher_failed"`, and a warning names the variable.

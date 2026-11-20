@@ -129,15 +129,16 @@
 #'   `missing` is above 0. With `always`, each cell that is not `NA` gets
 #'   it. With `row_if_any`, a variable gets a Missing row when its `"All"`
 #'   group has a missing value. With `row_always`, each variable gets a
-#'   Missing row. The two row choices need `missing.row_template` and
-#'   `missing.row_pct_digits`.
+#'   Missing row. The two row choices need `missing.row_template`.
 #' - `missing.template`: the text that `table1()` adds to the end of a cell,
 #'   over `{missing}`. An example is `"; {missing} missing"`. Only `if_any`
 #'   and `always` use it.
 #' - `missing.row_template` (optional): the cell of a Missing row, over
-#'   `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`.
+#'   `{missing}` and `{pct}`. An example is `"{missing} ({pct}%)"`. The
+#'   template `"{missing}"` gives the missing count only, such as `"2"`.
 #' - `missing.row_pct_digits` (optional): the decimals of `pct` in a Missing
-#'   row, a whole number from 0 to 10.
+#'   row, a whole number from 0 to 10. A Missing row needs it only when
+#'   `missing.row_template` holds `{pct}`.
 #' - `missing.row_label` (optional): the column `label` of a Missing row,
 #'   such as `"Missing"`. Without it, the label is `NA`.
 #' - `footnotes`: a list, which can be empty. Each item is a map with the keys
@@ -1016,8 +1017,9 @@ check_section <- function(x, section, file) {
 }
 
 # An optional field is needed where another field uses it: cont.median_digits
-# by a template that holds {median}, {q1} or {q3}, and missing.row_template
-# and missing.row_pct_digits by a missing.show that adds a Missing row.
+# by a template that holds {median}, {q1} or {q3}, missing.row_template by a
+# missing.show that adds a Missing row, and missing.row_pct_digits by such a
+# missing.row_template that holds {pct}.
 check_needs <- function(fields, file) {
   used <- intersect(
     template_keys(fields$cont$template$value),
@@ -1038,20 +1040,24 @@ check_needs <- function(fields, file) {
   if (!show %in% c("row_if_any", "row_always")) {
     return(invisible(NULL))
   }
-  for (name in c("row_template", "row_pct_digits")) {
-    if (is.null(fields$missing[[name]])) {
-      field_error(
-        "missing.show",
-        file,
-        paste0(
-          "is ",
-          show,
-          ", so the style needs the field missing.",
-          name,
-          "."
-        )
+  if (is.null(fields$missing[["row_template"]])) {
+    field_error(
+      "missing.show",
+      file,
+      paste0(
+        "is ",
+        show,
+        ", so the style needs the field missing.row_template."
       )
-    }
+    )
+  }
+  pct <- "pct" %in% template_keys(fields$missing$row_template$value)
+  if (pct && is.null(fields$missing[["row_pct_digits"]])) {
+    field_error(
+      "missing.row_template",
+      file,
+      "holds {pct}, so the style needs the field missing.row_pct_digits."
+    )
   }
   return(invisible(NULL))
 }

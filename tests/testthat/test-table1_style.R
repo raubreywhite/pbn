@@ -375,7 +375,7 @@ test_that("every field of the schema is checked: an ill-typed value, a missing f
   needs <- c(
     cont.median_digits = "The field cont.template of the style file %s holds {median}, so the style needs the field cont.median_digits.",
     missing.row_template = "The field missing.show of the style file %s is row_if_any, so the style needs the field missing.row_template.",
-    missing.row_pct_digits = "The field missing.show of the style file %s is row_if_any, so the style needs the field missing.row_pct_digits."
+    missing.row_pct_digits = "The field missing.row_template of the style file %s holds {pct}, so the style needs the field missing.row_pct_digits."
   )
   fields <- unlist(lapply(names(style_schema), function(section) {
     return(paste0(section, ".", names(style_schema[[section]])))

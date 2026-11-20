@@ -322,9 +322,9 @@ test_that("a new field is needed only where the style uses it", {
   expect_identical(
     error_text(read_table1_style(f)),
     paste0(
-      "The field missing.show of the style file ",
+      "The field missing.row_template of the style file ",
       f,
-      " is row_always, so the style needs the field missing.row_pct_digits."
+      " holds {pct}, so the style needs the field missing.row_pct_digits."
     )
   )
   f <- full_with(function(s) {
@@ -380,6 +380,47 @@ test_that("a style file of pbn 2026.12.2 stays valid, without the new fields", {
     ))),
     "no error"
   )
+})
+
+test_that("a Missing row may print the count only, without row_pct_digits", {
+  for (show in c("row_if_any", "row_always")) {
+    f <- full_with(function(s) {
+      s$missing$show$value <- show
+      s$missing$row_template$value <- "{missing}"
+      s$missing$row_pct_digits <- NULL
+      return(s)
+    })
+    expect_identical(error_text(read_table1_style(f)), "no error")
+    t1 <- table1(d12, by = "g", vars = vars12, style = f)
+    expect_identical(
+      t1$value_pretty[t1$var == "k" & t1$row == "missing"],
+      c("2", "1", "1")
+    )
+  }
+})
+
+test_that("a Missing row template with {pct} still needs row_pct_digits", {
+  f <- full_with(function(s) {
+    s$missing$row_template$value <- "{missing} of all, {pct}"
+    s$missing$row_pct_digits <- NULL
+    return(s)
+  })
+  expect_identical(
+    error_text(read_table1_style(f)),
+    paste0(
+      "The field missing.row_template of the style file ",
+      f,
+      " holds {pct}, so the style needs the field missing.row_pct_digits."
+    )
+  )
+  # With missing.show never, the style adds no Missing row and needs no
+  # missing.row_pct_digits.
+  f <- full_with(function(s) {
+    s$missing$show$value <- "never"
+    s$missing$row_pct_digits <- NULL
+    return(s)
+  })
+  expect_identical(error_text(read_table1_style(f)), "no error")
 })
 
 test_that("missing.row_template sets the text of the Missing row", {

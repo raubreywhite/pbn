@@ -160,15 +160,16 @@ prints as \verb{12,347} and 9999 prints as \code{9999}.
 \code{missing} is above 0. With \code{always}, each cell that is not \code{NA} gets
 it. With \code{row_if_any}, a variable gets a Missing row when its \code{"All"}
 group has a missing value. With \code{row_always}, each variable gets a
-Missing row. The two row choices need \code{missing.row_template} and
-\code{missing.row_pct_digits}.
+Missing row. The two row choices need \code{missing.row_template}.
 \item \code{missing.template}: the text that \code{table1()} adds to the end of a cell,
 over \code{{missing}}. An example is \code{"; {missing} missing"}. Only \code{if_any}
 and \code{always} use it.
 \item \code{missing.row_template} (optional): the cell of a Missing row, over
-\code{{missing}} and \code{{pct}}. An example is \code{"{missing} ({pct}\%)"}.
+\code{{missing}} and \code{{pct}}. An example is \code{"{missing} ({pct}\%)"}. The
+template \code{"{missing}"} gives the missing count only, such as \code{"2"}.
 \item \code{missing.row_pct_digits} (optional): the decimals of \code{pct} in a Missing
-row, a whole number from 0 to 10.
+row, a whole number from 0 to 10. A Missing row needs it only when
+\code{missing.row_template} holds \code{{pct}}.
 \item \code{missing.row_label} (optional): the column \code{label} of a Missing row,
 such as \code{"Missing"}. Without it, the label is \code{NA}.
 \item \code{footnotes}: a list, which can be empty. Each item is a map with the keys

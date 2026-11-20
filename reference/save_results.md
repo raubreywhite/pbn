@@ -521,7 +521,7 @@ Other results:
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
-writeLines("extends: house_2026_11_19", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
 writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   c(
@@ -536,7 +536,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/Rtmpwvi2uA/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp8iEUDv/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

@@ -11,7 +11,7 @@ it quits with status 1 when any rule fails."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,12 +88,13 @@ the tracked files, and the untracked files that git does not ignore.</p></li>
 <li><p>Otherwise, the list is every file and folder on disk.</p></li>
 </ul><p>Both lists leave out <code>.DS_Store</code>, <code>.Rhistory</code>, <code>.RData</code>, the Word lock
 files <code>~$*</code>, and everything in <code>.git/</code> or <code>.Rproj.user/</code>.</p>
-<p>The rules, with their level in the set <code>house_2026_11_19</code>, are below.
-The set <code>house_2026_11_17</code> has the same rules at the same levels, without
-<code>frozen_versions_unchanged</code>, <code>readme_and_changelog</code>,
-<code>changelog_with_code</code>, <code>comment_share</code>, <code>no_cross_version_reads</code> and
-<code>no_escape_hatches</code>. A rule that the set of the project does not have
-prints no line.</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
+<p>The rules, with their level in the set <code>house_2026_11_20</code>, are below.
+The set <code>house_2026_11_19</code> has the same rules at the same levels, without
+<code>built_reads_own_version</code>, <code>built_has_run</code> and <code>manual_not_ahead</code>. The
+set <code>house_2026_11_17</code> also does not have <code>frozen_versions_unchanged</code>,
+<code>readme_and_changelog</code>, <code>changelog_with_code</code>, <code>comment_share</code>,
+<code>no_cross_version_reads</code> and <code>no_escape_hatches</code>. A rule that the set of
+the project does not have prints no line.</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
 Everything under <code>background/</code> is not checked. These are exempt:
 <code>README.md</code>, <code>CHANGELOG.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>LICENSE</code>,
 <code>DESCRIPTION</code>, a top-level dotfile, a top-level <code>*.Rproj</code> file, file
@@ -123,7 +124,10 @@ ends of any other file counts, see <code><a href="freeze_version.html">freeze_ve
 the top level, or <code>CHANGELOG.md</code> has no section for a version. A
 section is a line that starts with <code>## vNN</code>, with a space or nothing
 after it, for example <code>## v01</code> or <code>## v01 (2026-11-19)</code>. A version is a
-<code>vNN_run.R</code> or a <code>vNN_functions/</code> at the top level. <code>README.md</code> says
+<code>vNN_run.R</code> or a <code>vNN_functions/</code> at the top level. From the set
+<code>house_2026_11_20</code>, a version is also the <code>vNN</code> of a file
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code> with a name that
+<code>manual_manuscript_names</code> passes. <code>README.md</code> says
 what the project is, how to run it and why its code is as it is.
 <code>CHANGELOG.md</code> says what changed in each version. The detail is
 <code>README.md: missing</code>, <code>CHANGELOG.md: missing</code> or
@@ -165,6 +169,28 @@ match <code>^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$</code>.</p></li>
 a <code>scenario</code> argument that is not the string <code>"real"</code>. A call without
 <code>scenario</code> passes. In <code>.qmd</code> and <code>.Rmd</code> files, the rule reads the R
 chunks that <code><a href="https://rdrr.io/pkg/knitr/man/knit.html" class="external-link">knitr::purl()</a></code> extracts and the inline R code.</p></li>
+<li><p><code>built_reads_own_version</code> (FAIL): an <code>.R</code>, <code>.qmd</code> or <code>.Rmd</code> file in
+<code>manuscript/built/vNN/</code> calls <code><a href="read_results.html">read_results()</a></code> or <code><a href="read_results.html">pbn::read_results()</a></code>
+with a <code>version</code> argument that is not the string <code>"vNN"</code>. A variable
+and a call without <code>version</code> fail too. The rule reads the code as
+<code>manuscript_reads_real</code> does, and it fails a file that R cannot parse.
+It does not read a file in <code>manuscript/built/</code> outside a folder <code>vNN/</code>,
+or a file of another language, such as <code>.py</code>. The detail lists each
+call that fails.</p></li>
+<li><p><code>built_has_run</code> (FAIL): a folder <code>manuscript/built/vNN/</code> has no
+<code>vNN_run.R</code> at the top level. In a git repository, an empty folder is
+not in the list of files, so the rule does not see it. The detail is
+<code>manuscript/built/vNN: there is no vNN_run.R</code>.</p></li>
+<li><p><code>manual_not_ahead</code> (FAIL): a file
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code> has <code>NN</code> at or above <code>MM</code>, the
+largest version of a <code>vMM_run.R</code>. The run scripts and the manuscripts
+share one version counter. So a hand edit of version <code>vMM</code> is
+<code>v(MM+1)_&lt;INITIALS&gt;.docx</code>, and the next run version is <code>v(MM+2)</code>. The
+detail is
+<code>manual vNN is ahead of the newest run vMM: freeze vMM and start vPP with pbn::new_version("vMM", to = "vPP")</code>,
+with <code>PP</code> = <code>NN</code> + 1. The rule does not read a name that
+<code>manual_manuscript_names</code> fails. Without a <code>vNN_run.R</code>, the rule has
+nothing to compare. It then prints one PASS line that says so.</p></li>
 <li><p><code>fake_data_names</code> (FAIL): a file in a folder <code>output_fake_data/</code> has a
 name without the prefix <code>fake_data_</code>, or a file with the prefix is in
 another folder. <code><a href="make_outputs.html">make_outputs()</a></code> writes these folders.</p></li>
@@ -336,13 +362,13 @@ ran on the server.</p>
 <p>Each project MUST have the file <code>pbn.yml</code> in its top folder <code>path</code>. pbn
 reads no other file. A file <code>pbn.yaml</code> stops <code>check_project()</code> with the
 advice to rename it. The smallest <code>pbn.yml</code> is one line:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_20</span></span></code></pre><p></p></div>
 <p>The key <code>extends</code> names a house rule set. A set is a dated file in the
 folder <code>rules/</code> of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-<code>readLines(system.file("rules", "house_2026_11_19.yml", package = "pbn"))</code>.</p>
+<code>readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))</code>.</p>
 <p>The set gives each rule one of three levels:</p><ul><li><p><code>fail</code>: a finding is FAIL, and <code>check_project.R</code> ends with status 1.</p></li>
 <li><p><code>warn</code>: a finding is WARN.</p></li>
 <li><p><code>off</code>: the rule does not run, and its one line is OFF.</p></li>
@@ -366,7 +392,7 @@ third keeps the output of fake data apart from the output of real data.
 <code>pbn.yml</code> cannot set a locked rule to <code>warn</code> or <code>off</code>, and cannot allow a
 path for it. It cannot name a rule of <code><a href="check_results.html">check_results()</a></code> either.</p>
 <p>This <code>pbn.yml</code> changes two rules and allows three paths:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_19</span></span>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_20</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">cyclomatic_complexity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">limit</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span><span class="kw">}</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">  </span><span class="fu">unknown_path</span><span class="kw">:</span><span class="at"> </span><span class="ch">off</span></span>
@@ -408,7 +434,7 @@ quotes.</p></li>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_check_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_19"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_20"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="st">'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))'</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span></span>
@@ -416,7 +442,7 @@ quotes.</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"# A fake project"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"README.md"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"# Changelog"</span>, <span class="st">""</span>, <span class="st">"## v01"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"CHANGELOG.md"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_project</span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
@@ -428,6 +454,9 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  scenario_checks  every vNN_results/&lt;scenario&gt;/check.csv passes</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_&lt;INITIALS&gt;.docx</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manuscript_reads_real  manuscript/built/ reads only the real results</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  built_reads_own_version  every read_results() call in manuscript/built/vNN/ reads the version vNN</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  built_has_run  every folder manuscript/built/vNN/ has a vNN_run.R</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  manual_not_ahead  every manuscript/manual/vNN_&lt;INITIALS&gt;.docx is older than the newest run version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  loc_per_file  no .R file has more than 1000 code lines</span>
@@ -441,7 +470,7 @@ quotes.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 24 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 27 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

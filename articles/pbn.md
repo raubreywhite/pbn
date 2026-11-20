@@ -60,7 +60,7 @@ and
 use. This project uses the set as it is:
 
 ``` yaml
-extends: house_2026_11_19
+extends: house_2026_11_20
 ```
 
 `CHANGELOG.md` has a section `## vNN` for each version, with what
@@ -461,7 +461,7 @@ prints the assertions. This chunk counts the lines of the data:
 
 ``` r
 out <- utils::capture.output(source(file.path(home, "v01_run.R"), chdir = TRUE))
-#> Sourcing all code inside /tmp/RtmpTzgq5z/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpcuY2i5/pbn_get_started/project/v01_functions into R_GlobalEnv
 data_lines <- grep("^pbn: data", out, value = TRUE)
 table(sub("^pbn: data d, [a-z]+ sim_[0-9]{4}: ", "", data_lines))
 #> 
@@ -494,7 +494,7 @@ value of the worker:
 
 ``` r
 by_hand <- p$run_one("confounded__sim_0003__models__1")
-#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-19 17:24.
+#> pbn: data d, confounded sim_0003: reused the cache of 2026-11-20 11:25.
 identical(by_hand, r[["confounded__sim_0003__models__1"]])
 #> [1] TRUE
 ```
@@ -736,7 +736,7 @@ file.rename(private, file.path(root, "kept.qs2"))
 #> [1] TRUE
 names(pbn::read_results("v01", home = home))
 #> Warning: The manifest names the analysis kinds predicted in
-#> /tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
+#> /tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/real/results_gitexclude.qs2,
 #> and that file is missing, for example in a clone of the repository.
 #> read_results() returns the other elements.
 #> [1] "manifest"   "exclusions" "table1"     "models"
@@ -785,14 +785,14 @@ cat(log[seq_len(grep("^## Exclusions", log) - 1)], sep = "\n")
     #> 
     #> ## When
     #> 
-    #> The run started 2026-11-19 17:24:02 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
+    #> The run started 2026-11-20 11:25:09 +0000. This section and the sections Timings and History change in every run. The other sections change when the code, the data, the cache, the packages or the files on the disk change.
     #> 
     #> ## Run
     #> 
     #> - Result: All 9 assertions passed.
     #> - Scenarios of this run: real, known, null and confounded.
     #> - R version 4.6.2 (2026-10-29).
-    #> - Packages: pbn 2026.11.29, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.
+    #> - Packages: pbn 2026.11.30, plnr 2026.11.19 and cohort 2026.11.18, and 58 other packages, listed in the manifest of each results file.
     #> - Workers: 2.
     #> 
     #> ## Scenarios
@@ -848,13 +848,13 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Step                                               | Wall seconds |
 #> |----------------------------------------------------|-------------:|
-#> | run_plan()                                         |        13.46 |
-#> | save_results(): build, write and stack the results |         2.31 |
-#> | save_results(): the checks of check_results()      |         1.23 |
+#> | run_plan()                                         |        12.81 |
+#> | save_results(): build, write and stack the results |         2.22 |
+#> | save_results(): the checks of check_results()      |         1.26 |
 #> | save_results(): the expect_ functions              |         0.02 |
-#> | save_results() in total                            |         3.67 |
-#> | make_outputs(): real                               |         0.70 |
-#> | make_outputs(): known                              |         0.61 |
+#> | save_results() in total                            |         3.62 |
+#> | make_outputs(): real                               |         1.06 |
+#> | make_outputs(): known                              |         0.58 |
 #> 
 #> ### Scenarios
 #> 
@@ -862,17 +862,17 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> 
 #> | Scenario   | Wall seconds |
 #> |------------|-------------:|
-#> | real       |         0.65 |
+#> | real       |         0.58 |
 #> | known      |         0.14 |
-#> | null       |         5.84 |
-#> | confounded |         5.80 |
+#> | null       |         5.38 |
+#> | confounded |         5.59 |
 #> 
 #> ### Data steps
 #> 
 #> | Data | Scenario   | Step         | Calls | Median | Maximum | Share |
 #> |------|------------|--------------|------:|-------:|--------:|------:|
 #> | d    | real       | raw          |     1 |   0.02 |    0.02 |  0.2% |
-#> | d    | real       | clean        |     1 |   0.31 |    0.31 |  3.0% |
+#> | d    | real       | clean        |     1 |   0.29 |    0.29 |  2.9% |
 #> | d    | real       | cohort       |     1 |   0.01 |    0.01 |  0.1% |
 #> | d    | real       | after_cohort |     1 |   0.02 |    0.02 |  0.2% |
 #> | d    | known      | raw          |     1 |   0.00 |    0.00 |  0.0% |
@@ -880,13 +880,13 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> | d    | known      | cohort       |     1 |   0.00 |    0.00 |  0.0% |
 #> | d    | known      | after_cohort |     1 |   0.00 |    0.00 |  0.0% |
 #> | d    | null       | raw          |   140 |   0.00 |    0.02 |  0.7% |
-#> | d    | null       | clean        |   140 |   0.01 |    0.22 |   14% |
+#> | d    | null       | clean        |   140 |   0.01 |    0.23 |   14% |
 #> | d    | null       | cohort       |   140 |   0.00 |    0.01 |  1.6% |
-#> | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  7.4% |
-#> | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.4% |
+#> | d    | null       | after_cohort |   140 |   0.00 |    0.02 |  7.1% |
+#> | d    | confounded | raw          |   140 |   0.00 |    0.00 |  0.5% |
 #> | d    | confounded | clean        |   140 |   0.01 |    0.02 |   12% |
 #> | d    | confounded | cohort       |   140 |   0.00 |    0.00 |  1.4% |
-#> | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  6.8% |
+#> | d    | confounded | after_cohort |   140 |   0.00 |    0.01 |  7.0% |
 #> 
 #> ### Analysis kinds
 #> 
@@ -895,18 +895,18 @@ cat(log[seq(grep("^## Timings", log), grep("^## History", log) - 1)], sep = "\n"
 #> | real       | table1    |        1 |   0.00 |    0.00 |  0.0% |
 #> | real       | models    |        1 |   0.03 |    0.03 |  0.3% |
 #> | real       | predicted |        1 |   0.00 |    0.00 |  0.0% |
-#> | known      | table1    |        1 |   0.00 |    0.00 |  0.0% |
+#> | known      | table1    |        1 |   0.01 |    0.01 |  0.1% |
 #> | known      | models    |        1 |   0.01 |    0.01 |  0.1% |
-#> | known      | crude     |        1 |   0.00 |    0.00 |  0.0% |
+#> | known      | crude     |        1 |   0.00 |    0.00 |  0.1% |
 #> | known      | predicted |        1 |   0.01 |    0.01 |  0.1% |
-#> | null       | table1    |      140 |   0.00 |    0.00 |  3.8% |
+#> | null       | table1    |      140 |   0.00 |    0.01 |  3.8% |
 #> | null       | models    |      140 |   0.01 |    0.03 |   10% |
 #> | null       | crude     |      140 |   0.01 |    0.01 |  9.2% |
 #> | null       | predicted |      140 |   0.00 |    0.01 |  3.0% |
 #> | confounded | table1    |      140 |   0.00 |    0.01 |  3.8% |
-#> | confounded | models    |      140 |   0.01 |    0.02 |   10% |
-#> | confounded | crude     |      140 |   0.01 |    0.01 |  8.8% |
-#> | confounded | predicted |      140 |   0.00 |    0.00 |  2.8% |
+#> | confounded | models    |      140 |   0.01 |    0.01 |   10% |
+#> | confounded | crude     |      140 |   0.01 |    0.02 |  9.1% |
+#> | confounded | predicted |      140 |   0.00 |    0.01 |  2.9% |
 #> 
 #> Median and Maximum are the seconds of one call. Share is the part of the seconds of all data steps and analyses of the run.
 ```
@@ -1031,8 +1031,8 @@ writeLines(code, file)
 grep("rhs <-", readLines(file), value = TRUE)
 #> [1] "    rhs <- if (argset$adjust == \"none\") paste0(\"group + x_\", k) else \"group\""
 red <- run_lines(status = 1)
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 17:24.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 17:24.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-20 11:25.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-20 11:25.
 cat(readLines(file.path(home, "v01_results", "known", "check.csv")), sep = "\n")
 #> "assertion","expected","observed","pass"
 #> "outcome events in group b",6,6,TRUE
@@ -1050,7 +1050,7 @@ stops on them:
 ``` r
 pbn::read_results("v01", scenario = "known", home = home)
 #> Error:
-#> ! /tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/known/results.qs2").
+#> ! /tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/known/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/known/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/known/results.qs2").
 ```
 
 The same code gave the real results of this run, so
@@ -1063,7 +1063,7 @@ records each fake scenario with a failed assertion in
 ``` r
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpTzgq5z/pbn_get_started/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "known". Its assertions are in /tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/known/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpcuY2i5/pbn_get_started/project/v01_results/real/results.qs2").
 ```
 
 Put the copy back, and run the script again. Its assertions pass.
@@ -1072,8 +1072,8 @@ Put the copy back, and run the script again. Its assertions pass.
 file.copy(file.path(root, "fit_models_copy.R"), file, overwrite = TRUE)
 #> [1] TRUE
 green <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 17:24.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 17:24.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-20 11:25.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-20 11:25.
 ```
 
 ### A cleaning step that drops a row
@@ -1135,8 +1135,8 @@ code <- readLines(file)
 code <- sub("upper = mean(est) + z * se)", "upper = mean(est) + z * se, n_imp = length(est))", code, fixed = TRUE)
 writeLines(code, file)
 third <- run_lines()
-#> pbn: data d, real sim_0001: reused the cache of 2026-11-19 17:24.
-#> pbn: data d, known sim_0001: reused the cache of 2026-11-19 17:24.
+#> pbn: data d, real sim_0001: reused the cache of 2026-11-20 11:25.
+#> pbn: data d, known sim_0001: reused the cache of 2026-11-20 11:25.
 pbn::read_results("v01", home = home)$models
 #>   adjust    term estimate        se     lower     upper n_imp
 #> 1      x group b 0.560694 0.2267864 0.1876635 0.9337245     3
@@ -1163,12 +1163,12 @@ log <- readLines(file.path(home, "v01_results", "run.md"))
 cat(log[seq(grep("^## History", log) + 4, length(log))], sep = "\n")
 #> | Started             | Result                   | Scenarios   |  Workers | run_plan() | save_results() | make_outputs() | pbn        |
 #> |---------------------|--------------------------|-------------|---------:|-----------:|---------------:|---------------:|------------|
-#> | 2026-11-19 17:24:02 | All 9 assertions passed  | 4           |        2 |      13.46 |           3.67 |           1.31 | 2026.11.29 |
-#> | 2026-11-19 17:24:22 | 1 of 2 assertions failed | real, known |        2 |       1.58 |           0.04 |                | 2026.11.29 |
-#> | 2026-11-19 17:24:25 | All 2 assertions passed  | real, known |        2 |       1.57 |           0.04 |           1.24 | 2026.11.29 |
-#> | 2026-11-19 17:24:28 | 9 of 9 analyses failed   | real, known |        2 |       1.79 |                |                | 2026.11.29 |
-#> | 2026-11-19 17:24:31 | All 2 assertions passed  | real, known |        2 |       1.62 |           0.04 |           1.21 | 2026.11.29 |
-#> | 2026-11-19 17:24:34 | All 2 assertions passed  | real, known |        2 |       1.82 |           0.04 |           1.20 | 2026.11.29 |
+#> | 2026-11-20 11:25:09 | All 9 assertions passed  | 4           |        2 |      12.81 |           3.62 |           1.64 | 2026.11.30 |
+#> | 2026-11-20 11:25:29 | 1 of 2 assertions failed | real, known |        2 |       1.78 |           0.04 |                | 2026.11.30 |
+#> | 2026-11-20 11:25:32 | All 2 assertions passed  | real, known |        2 |       1.57 |           0.04 |           1.44 | 2026.11.30 |
+#> | 2026-11-20 11:25:35 | 9 of 9 analyses failed   | real, known |        2 |       1.69 |                |                | 2026.11.30 |
+#> | 2026-11-20 11:25:38 | All 2 assertions passed  | real, known |        2 |       1.61 |           0.04 |           1.47 | 2026.11.30 |
+#> | 2026-11-20 11:25:42 | All 2 assertions passed  | real, known |        2 |       1.85 |           0.04 |           1.46 | 2026.11.30 |
 ```
 
 The cache key holds the md5 of each `data_*.R` file of `v01_functions/`,
@@ -1211,7 +1211,7 @@ is `TRUE`, so the first lines load that analysis:
 ``` r
 upto <- script[seq_len(grep("run_plan", script) - 1)]
 withr::with_dir(home, eval(parse(text = upto)))
-#> Sourcing all code inside /tmp/RtmpTzgq5z/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpcuY2i5/pbn_get_started/project/v01_functions into R_GlobalEnv
 argset <- pbn::get_argset(p, "confounded", 3, "models")
 data <- pbn::get_data(p, "confounded", 3)
 #> pbn: data d, confounded sim_0003: computed, because v01_functions/data_impute.R, the function given as `after_cohort` changed.
@@ -1288,7 +1288,7 @@ Each object then gets its value on the line that names it.
 
 ``` r
 pbn::check_project(home)
-#> Rules: house_2026_11_19, 0 overrides, 0 allowed paths (pbn.yml)
+#> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
@@ -1300,6 +1300,9 @@ pbn::check_project(home)
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
 #> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+#> PASS  built_reads_own_version  every read_results() call in manuscript/built/vNN/ reads the version vNN
+#> PASS  built_has_run  every folder manuscript/built/vNN/ has a vNN_run.R
+#> PASS  manual_not_ahead  every manuscript/manual/vNN_<INITIALS>.docx is older than the newest run version
 #> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
@@ -1313,7 +1316,7 @@ pbn::check_project(home)
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path
-#> 24 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 27 PASS, 0 WARN, 0 FAIL, 0 OFF
 ```
 
 In a non-interactive R session,
@@ -1329,7 +1332,7 @@ out$status
 #> [1] 1
 cat(grep("FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
 #> FAIL  lower_case_names  adhoc/Notes.txt: the name has a capital letter. Fix: rename it in lower case.
-#> 23 PASS, 0 WARN, 1 FAIL, 0 OFF
+#> 26 PASS, 0 WARN, 1 FAIL, 0 OFF
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 
@@ -1339,7 +1342,7 @@ allows. This file raises the limit of `cyclomatic_complexity` to 25,
 turns `unknown_path` off, and allows one name with a capital letter:
 
 ``` yaml
-extends: house_2026_11_19
+extends: house_2026_11_20
 rules:
   cyclomatic_complexity: {limit: 25}
   unknown_path: off
@@ -1351,7 +1354,7 @@ allow:
 dir.create(file.path(home, "adhoc"))
 writeLines("notes", file.path(home, "adhoc", "Notes.txt"))
 pbn::check_project(home)
-#> Rules: house_2026_11_19, 2 overrides, 1 allowed path (pbn.yml)
+#> Rules: house_2026_11_20, 2 overrides, 1 allowed path (pbn.yml)
 #> WARN  lower_case_names  adhoc/Notes.txt: the name has a capital letter (allowed). Fix: rename it in lower case.
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
@@ -1363,6 +1366,9 @@ pbn::check_project(home)
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
 #> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
+#> PASS  built_reads_own_version  every read_results() call in manuscript/built/vNN/ reads the version vNN
+#> PASS  built_has_run  every folder manuscript/built/vNN/ has a vNN_run.R
+#> PASS  manual_not_ahead  every manuscript/manual/vNN_<INITIALS>.docx is older than the newest run version
 #> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
@@ -1376,7 +1382,7 @@ pbn::check_project(home)
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> OFF  unknown_path  off in pbn.yml
-#> 22 PASS, 1 WARN, 0 FAIL, 1 OFF
+#> 25 PASS, 1 WARN, 0 FAIL, 1 OFF
 ```
 
 The allowed file is now a WARN, and `unknown_path` is OFF. An entry
@@ -1439,7 +1445,7 @@ fake scenarios only:
 new_home <- file.path(root, "new_project")
 dir.create(new_home)
 pbn::create_project(home = new_home, folders = c(main = "../data"))
-#> create_project(): wrote 14 files in /tmp/RtmpTzgq5z/pbn_get_started/new_project. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/RtmpcuY2i5/pbn_get_started/new_project. The project is at version v01. Run pbn::verify("v01") in that folder.
 list.files(new_home, recursive = TRUE, all.files = TRUE)
 #>  [1] ".gitignore"                          "AGENTS.md"                          
 #>  [3] "CHANGELOG.md"                        "check_project.R"                    
@@ -1523,7 +1529,7 @@ cat(readLines(file.path(new_home, "CHANGELOG.md")), sep = "\n")
 #> 
 #> - Created the project with `pbn::create_project()`.
 utils::tail(utils::capture.output(found <- pbn::check_project(new_home)), 1)
-#> [1] "24 PASS, 0 WARN, 0 FAIL, 0 OFF"
+#> [1] "27 PASS, 0 WARN, 0 FAIL, 0 OFF"
 ```
 
 [`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
@@ -1533,16 +1539,14 @@ frozen version changed after
 
 ## Manuscripts
 
-`manuscript/manual/` holds the Word files that a person edits. Each name
-MUST match `vNN_<INITIALS>.docx`, for example `v01_AB.docx`, with the
-initials in upper case. `manuscript/built/vNN/` holds the manuscripts
-that code builds from the results. A built manuscript MUST read the real
-results only, and
+`manuscript/built/vNN/` holds the manuscripts that code builds from the
+results of version vNN. A built manuscript MUST read the real results of
+its own version only.
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
 fails a
 [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
-call there with another scenario. A call without `scenario` reads the
-real results:
+call there with another scenario or another version. A call without
+`scenario` reads the real results:
 
 ``` r
 r <- pbn::read_results("v01")
@@ -1550,6 +1554,33 @@ r <- pbn::read_results("v01")
 
 The default `home = "."` is the working directory, so this file MUST run
 with the project folder as the working directory.
+[`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+also fails a folder `manuscript/built/vNN/` without its run script
+`vNN_run.R`.
+
+`manuscript/manual/` holds the Word files that a person edits. Each name
+MUST match `vNN_<INITIALS>.docx`, with the initials in upper case. The
+run scripts and the manuscripts share one version counter. So a hand
+edit of the built v01 is the version v02, and the next run version is
+v03. `CHANGELOG.md` needs a section for the manual version too. Here an
+empty file stands in for the Word file `v02_AB.docx`:
+
+``` r
+changelog <- readLines(file.path(home, "CHANGELOG.md"))
+dir.create(file.path(home, "manuscript", "manual"))
+file.create(file.path(home, "manuscript", "manual", "v02_AB.docx"))
+#> [1] TRUE
+writeLines(c(changelog, "", "## v02", "", "- v02_AB.docx: AB edited the text of v01."), file.path(home, "CHANGELOG.md"))
+out <- callr::rscript(file.path(home, "check_project.R"), wd = home, show = FALSE, fail_on_status = FALSE)
+cat(grep("^FAIL", strsplit(out$stdout, "\r?\n")[[1]], value = TRUE), sep = "\n")
+#> FAIL  manual_not_ahead  manual v02 is ahead of the newest run v01: freeze v01 and start v03 with pbn::new_version("v01", to = "v03"). Fix: start the next run version with the call of pbn::new_version() in the detail.
+```
+
+The rule `manual_not_ahead` fails each manual version at or above the
+newest run version. Its message names the call of
+[`pbn::new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
+that freezes the newest run version and starts the next one. A person
+decides when to make that call.
 
 ## Running on an air-gapped server
 
@@ -1626,7 +1657,7 @@ withr::with_dir(home, pbn::initialize_project(
   one_file_home = "N:/durable/project",
   one_file_folders = c(main = "N:/durable/data")
 ))
-#> Sourcing all code inside /tmp/RtmpTzgq5z/pbn_get_started/project/v01_functions into R_GlobalEnv
+#> Sourcing all code inside /tmp/RtmpcuY2i5/pbn_get_started/project/v01_functions into R_GlobalEnv
 ```
 
 ### The one file
@@ -1644,7 +1675,7 @@ file before the first full run:
 
 ``` r
 withr::with_dir(home, pbn::to_one_file())
-#> pbn: wrote v01_one_file.R in the project folder /tmp/RtmpTzgq5z/pbn_get_started/project: 213 lines, 8171 bytes, the longest line 138 characters.
+#> pbn: wrote v01_one_file.R in the project folder /tmp/RtmpcuY2i5/pbn_get_started/project: 213 lines, 8171 bytes, the longest line 138 characters.
 ```
 
 The file starts with a header and the call of
@@ -1657,7 +1688,7 @@ cat(one[seq_len(grep("^pbn::initialize_project\\(", one) + 9)], sep = "\n")
 #> # v01_one_file.R: the run of the real data of the project project, version v01,
 #> # as one file for a computer without the project folder.
 #> #
-#> # pbn 2026.11.29 generated it on 2026-11-19 from the project folder project.
+#> # pbn 2026.11.30 generated it on 2026-11-20 from the project folder project.
 #> # Do not edit: change the project and generate again with pbn::to_one_file().
 #> #
 #> # The md5 of each file in this file, as pbn computes it for the manifest:
@@ -1802,7 +1833,7 @@ These are the index and block 1 of this project:
 
 ``` r
 pbn::show_blocks()
-#> pbn: 3 blocks of v01, from the real results of 2026-11-19:
+#> pbn: 3 blocks of v01, from the real results of 2026-11-20:
 #>   1  Table 1                              6 rows, 1 page
 #>   2  Results para 1: exclusions           1 row, 1 page
 #>   3  Results para 2: adjusted odds ratio  1 row, 1 page

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.29</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.11.30</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -45,6 +45,15 @@
       <small>Source: <a href="https://github.com/raubreywhite/pbn/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="2026.11.30" id="pbn-20261130">pbn 2026.11.30<a class="anchor" aria-label="anchor" href="#pbn-20261130"></a></h2>
+<ul><li>New rule set <code>house_2026_11_20</code>: the set <code>house_2026_11_19</code> with three new rules at <code>fail</code>, for one version counter of the run scripts and the manuscripts. A project on <code>house_2026_11_17</code> or <code>house_2026_11_19</code> sees no change. The line for a new <code>pbn.yml</code> and <code><a href="../reference/create_project.html">create_project()</a></code> now name <code>house_2026_11_20</code>.</li>
+<li>New rule <code>built_reads_own_version</code> fails a <code><a href="../reference/read_results.html">read_results()</a></code> call in <code>manuscript/built/vNN/</code> that does not read the version <code>"vNN"</code>.</li>
+<li>New rule <code>built_has_run</code> fails a folder <code>manuscript/built/vNN/</code> without <code>vNN_run.R</code>.</li>
+<li>New rule <code>manual_not_ahead</code> fails a manual manuscript <code>vNN_&lt;INITIALS&gt;.docx</code> at or above the newest run version. Its message names the call <code>pbn::new_version("vMM", to = "vPP")</code> that starts the next run version.</li>
+<li>In <code>house_2026_11_20</code>, <code>readme_and_changelog</code> also needs a section <code>## vNN</code> in <code>CHANGELOG.md</code> for each manual manuscript.</li>
+<li>The template <code>AGENTS.md</code> gets the section Manuscripts, and the <code>README.md</code> of <code><a href="../reference/create_project.html">create_project()</a></code> states the one version counter.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="2026.11.29" id="pbn-20261129">pbn 2026.11.29<a class="anchor" aria-label="anchor" href="#pbn-20261129"></a></h2>
 <ul><li>Fix: a .R file with CR LF line ends no longer counts as changed in <code><a href="../reference/freeze_version.html">freeze_version()</a></code> and the rule <code>frozen_versions_unchanged</code> of <code>house_2026_11_19</code>, which pbn 2026.11.26 released. pbn hashes a .R file with each CR LF as LF, and each other file as its bytes.</li>

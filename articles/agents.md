@@ -143,7 +143,7 @@ cat(grep("^FAIL|PASS, ", strsplit(checked$stdout, "\r?\n")[[1]], value = TRUE), 
 #> FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.
 #> FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().
 #> FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().
-#> 21 PASS, 0 WARN, 3 FAIL, 0 OFF
+#> 24 PASS, 0 WARN, 3 FAIL, 0 OFF
 writeLines(raw_code, raw_file)
 unlink(file.path(home, "v01_functions", "data_folder.R"))
 ```
@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp9bmBxG/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/Rtmp62SeQ8/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -293,6 +293,14 @@ This project uses the R package pbn. Before you change any code, read how to use
 - Propose the fake scenarios and their expected values. A person confirms them before they count. After that, do not change an expected value in an `expect_` function, or add or remove a fake scenario, without asking.
 - Do not change `pbn.yml`. Ask.
 - Do not freeze a version or start a new one. Ask.
+
+## Manuscripts
+
+- A hand edit, by a person or by an agent for a person, is saved as `manuscript/manual/v(NN+1)_<INITIALS>.docx`. NN is the version it starts from. INITIALS are those of the person responsible.
+- Never edit or overwrite a file that is already in `manuscript/manual/` or `manuscript/built/`. Save a new file.
+- Add a `## v(NN+1)` section to `CHANGELOG.md` with the file name, who edited it, the version it starts from, and what changed.
+- `verify()` then fails on `manual_not_ahead` until a person starts the next run version. Do not start it; ask.
+- A built manuscript reads `read_results()` of its own version only.
 ```
 
 The template points the agent to

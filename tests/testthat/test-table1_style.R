@@ -195,8 +195,8 @@ test_that("a style adds value_pretty and p_pretty and changes no other column", 
 })
 
 test_that("table1_styles lists the style files of the style folder, sorted", {
-  # pbn 2026.12.1 installs no style.
-  expect_identical(table1_styles(), character(0))
+  # pbn 2026.12.2 installs one style.
+  expect_identical(table1_styles(), "ijoa_brief_report_2026_11_20")
   dir <- withr::local_tempdir()
   file.create(file.path(
     dir,
@@ -231,7 +231,10 @@ test_that("a bad style name is an error that names it", {
   )
   expect_identical(
     conditionMessage(err),
-    "pbn has no Table 1 style named 'nope_2026_01_01'. pbn installs no style."
+    paste0(
+      "pbn has no Table 1 style named 'nope_2026_01_01'. The installed ",
+      "styles are: ijoa_brief_report_2026_11_20"
+    )
   )
   local_mocked_bindings(
     table1_style_dir = function() return(test_path("fixtures"))
@@ -439,6 +442,64 @@ test_that("each check of a value gives its own message", {
       "The field bin.pct_digits of the style file ",
       f,
       " must be a map with the keys value and source."
+    )
+  )
+})
+
+test_that("pbn installs the IJOA brief report style, and it formats the fixture to the strings of its YAML", {
+  ijoa <- "ijoa_brief_report_2026_11_20"
+  expect_true(ijoa %in% table1_styles())
+  expect_identical(
+    attr(read_table1_style(ijoa), "file"),
+    file.path(system.file("table1", package = "pbn"), paste0(ijoa, ".yml"))
+  )
+  # The YAML inst/table1/ijoa_brief_report_2026_11_20.yml gives:
+  # bin.template "{events} ({pct}%)" with pct_digits 1; cont.template
+  # "{mean} ({sd})" with mean_digits 1 and sd_digits 1; missing.show if_any
+  # with "; {missing} missing"; p.digits 3, p.template "P ={p}", "P <0.001"
+  # below 0.001 and "P >0.999" above 0.999; the mark "," from 10000.
+  t1 <- table1(d20, by = "g", vars = vars20, style = ijoa)
+  x <- t1[t1$var == "x", ]
+  # The 0/1 cell. All: 9 of 18 = 50%, 2 missing. a: 3 of 10 = 30%.
+  # b: 6 of 8 = 75%, 2 missing.
+  expect_identical(
+    x$value_pretty,
+    c("9 (50.0%); 2 missing", "3 (30.0%)", "6 (75.0%); 2 missing")
+  )
+  # Fisher's exact p of x is 0.1534, so three decimals give 0.153.
+  expect_identical(x$p_pretty, rep("P =0.153", 3))
+  z <- t1[t1$var == "z", ]
+  # The numeric cell. All: mean 8.667, sd 7.347. a: mean 1.833, sd 1.009.
+  # b: mean 15.5, sd 3.028. One decimal each.
+  expect_identical(z$value_pretty, c("8.7 (7.3)", "1.8 (1.0)", "15.5 (3.0)"))
+  expect_identical(z$p_pretty, rep(NA_character_, 3))
+  # The thousands rule. All: 13581 of 25000 = 54.324%. a: 12347 of 20000 =
+  # 61.735%. b: 1234 of 5000 = 24.68%, and 1234 is below 10000. The
+  # chi-square p of dbig is below 1e-300, so below 0.001.
+  big <- table1(dbig, by = "g", vars = varsbig, style = ijoa)
+  expect_identical(
+    big$value_pretty,
+    c("13,581 (54.3%)", "12,347 (61.7%)", "1234 (24.7%)")
+  )
+  expect_identical(big$p_pretty, rep("P <0.001", 3))
+  # 5 of 10 in each group: every expected count is 5, so the chi-square
+  # test applies, its statistic is 0 and p is 1, above 0.999.
+  same <- data.table::data.table(
+    g = rep(c("a", "b"), each = 10),
+    y = rep(c(1, 0), times = 10)
+  )
+  eq <- table1(same, by = "g", vars = varsbig, style = ijoa)
+  expect_identical(eq$value_pretty, c("10 (50.0%)", "5 (50.0%)", "5 (50.0%)"))
+  expect_identical(eq$p_pretty, rep("P >0.999", 3))
+  expect_identical(
+    attr(t1, "footnotes"),
+    c(
+      "Values are n (%) or mean (SD).",
+      "SD, standard deviation.",
+      paste0(
+        "P values compare the groups with Pearson's chi-square test, or ",
+        "with Fisher's exact test when an expected count is below 5."
+      )
     )
   )
 })

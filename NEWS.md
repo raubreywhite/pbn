@@ -1,3 +1,7 @@
+# pbn 2026.12.2
+
+- New style `ijoa_brief_report_2026_11_20` of `table1()`, for a Brief Report in the International Journal of Obstetric Anesthesia. It is the file `TABLE1.yml` of the methods guide `observational/ijoa-brief-report/v003`, which cites the IJOA Guide for Authors saved on 2026-11-20. pbn never edits it.
+
 # pbn 2026.12.1
 
 - New argument `style` of `table1()`. With a style, `table1()` adds the columns `value_pretty` and `p_pretty` and the attribute `footnotes`. With `style = NULL`, the output is the same as in pbn 2026.11.30.

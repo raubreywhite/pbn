@@ -86,8 +86,9 @@ dropping_folders <- c(".git", ".Rproj.user")
 # When `path` is the top folder of a git repository, these are the files
 # that git tracks or that git does not ignore, and their folders. Otherwise
 # they are the files and folders on disk. The droppings are left out in both
-# cases.
-project_entries <- function(path) {
+# cases, and so is each folder of `ignore` with everything under it. A
+# locked rule gives `ignore = character(0)`.
+project_entries <- function(path, ignore = ignored_folders(path)) {
   files <- git_files(path)
   if (is.null(files)) {
     out <- disk_entries(path)
@@ -107,7 +108,9 @@ project_entries <- function(path) {
     },
     logical(1)
   )
-  return(out[!dropping])
+  out <- out[!dropping]
+  top <- sub("/.*$", "", out)
+  return(out[!top %in% ignore])
 }
 
 disk_entries <- function(path) {
@@ -372,7 +375,7 @@ rule_version_items_complete <- function(path) {
 
 rule_results_contract <- function(path) {
   rule <- "results_contract"
-  entries <- project_entries(path)
+  entries <- project_entries(path, ignore = character(0))
   is_file <- !dir.exists(file.path(path, entries))
   files <- entries[
     grepl(
@@ -706,10 +709,11 @@ rule_no_environment_variables <- function(path) {
   return(bind_rows(out))
 }
 
-# The rule unknown_path. The set house_2026_11_19 and the newer sets name
-# vNN_frozen.md5 too, the file of freeze_version().
-rule_unknown_path <- function(path, set = "house_2026_11_17") {
-  known <- c(
+# The top-level names of the house layout of the set `set`, as regular
+# expressions. The set house_2026_11_19 and the newer sets name
+# vNN_frozen.md5 too. The key ignore of pbn.yml MUST NOT name any of them.
+layout_patterns <- function(set = utils::tail(house_sets(), 1)) {
+  return(c(
     run_script_pattern,
     functions_pattern,
     one_file_pattern,
@@ -729,7 +733,13 @@ rule_unknown_path <- function(path, set = "house_2026_11_17") {
     "^\\.git$",
     "^pbn\\.yml$",
     if (set_is_from(set, "house_2026_11_19")) frozen_pattern
-  )
+  ))
+}
+
+# The rule unknown_path. The set house_2026_11_19 and the newer sets name
+# vNN_frozen.md5 too, the file of freeze_version().
+rule_unknown_path <- function(path, set = "house_2026_11_17") {
+  known <- layout_patterns(set)
   entries <- project_entries(path)
   top <- top_entries(entries[!is_root_tool_file(path, entries)])
   matched <- vapply(

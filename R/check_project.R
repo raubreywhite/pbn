@@ -352,7 +352,18 @@
 #' `pbn.yml` cannot set a locked rule to `warn` or `off`, and cannot allow a
 #' path for it. It cannot name a rule of [check_results()] either.
 #'
-#' This `pbn.yml` changes two rules and allows three paths:
+#' The key `ignore` MAY list folders at the top level, such as `archive/`,
+#' that no rule reads: their files give no finding, not even a WARN. Use it
+#' for old work that nothing runs. A final `/` changes nothing. An entry
+#' MUST be one folder at the top level that the house layout does not name,
+#' so it cannot be `manuscript/`, `background/`, `adhoc/` or a folder of a
+#' version. A folder that does not exist is no error. The locked rules still
+#' read an ignored folder, so a tracked file with `gitexclude` in its name
+#' fails there too. The first line of the report counts the ignored
+#' folders.
+#'
+#' This `pbn.yml` changes two rules, allows three paths and ignores one
+#' folder:
 #'
 #' ```yaml
 #' extends: house_2026_11_20
@@ -363,6 +374,7 @@
 #'   lower_case_names: [adhoc/Old_notes.txt, adhoc/Drafts/]
 #'   no_local_assign:
 #'     - adhoc/explore.R
+#' ignore: [archive/]
 #' ```
 #'
 #' `check_project()` and [initialize_project()] stop before any rule runs on
@@ -374,7 +386,7 @@
 #' - `pbn.yml` is not valid YAML. This includes a key that is there twice and
 #'   a tab. The message holds the message of the yaml package.
 #' - there is no key `extends`, or it names a set that pbn does not have.
-#' - a key other than `extends`, `rules` and `allow`.
+#' - a key other than `extends`, `rules`, `allow` and `ignore`.
 #' - a name that is not a rule. The message names the nearest rule.
 #' - a rule that the set of `extends` does not have. The message names the
 #'   oldest set with it.
@@ -388,6 +400,8 @@
 #'   `off`, `yes` and `no` as booleans, so a path with such a name needs
 #'   quotes.
 #' - a change or an allowed path of a locked rule.
+#' - an entry of `ignore` that is not one folder at the top level, is a name
+#'   of the house layout, is there twice, or is a file.
 #' @return Invisibly, a data.frame of the findings with the columns `rule`,
 #'   `status`, `path` and `detail`.
 #' @examples

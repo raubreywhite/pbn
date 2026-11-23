@@ -800,6 +800,8 @@ pbn::check_project(home)
 
 The allowed file is now a WARN, and `unknown_path` is OFF. An entry covers its path and each path under it, with or without a final `/`. So `lower_case_names: [archive]` allows each finding in `archive/` at any depth, and no finding in `archive2/`. `initialize_project()` applies `loc_per_file` in the same way to each `.R` file at the top of `v01_functions/`. It stops on a FAIL, so an allowed long file does not stop it. `?check_project` lists the levels, the parameters, and the locked rules that `pbn.yml` cannot change.
 
+Old work that nothing runs, such as the scripts of a project from before pbn, goes in a folder at the top level that `pbn.yml` ignores: `ignore: [archive/]`. No rule reads that folder, so it gives no finding and no WARN. The locked rules still read it, so a tracked file with `gitexclude` in its name fails there too. An entry MUST NOT be a name of the house layout, such as `adhoc/` or `manuscript/`.
+
 ```{r, include = FALSE}
 found <- pbn::check_project(home)
 stopifnot(

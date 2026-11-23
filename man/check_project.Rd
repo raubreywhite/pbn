@@ -380,7 +380,18 @@ third keeps the output of fake data apart from the output of real data.
 \code{pbn.yml} cannot set a locked rule to \code{warn} or \code{off}, and cannot allow a
 path for it. It cannot name a rule of \code{\link[=check_results]{check_results()}} either.
 
-This \code{pbn.yml} changes two rules and allows three paths:
+The key \code{ignore} MAY list folders at the top level, such as \verb{archive/},
+that no rule reads: their files give no finding, not even a WARN. Use it
+for old work that nothing runs. A final \code{/} changes nothing. An entry
+MUST be one folder at the top level that the house layout does not name,
+so it cannot be \verb{manuscript/}, \verb{background/}, \verb{adhoc/} or a folder of a
+version. A folder that does not exist is no error. The locked rules still
+read an ignored folder, so a tracked file with \code{gitexclude} in its name
+fails there too. The first line of the report counts the ignored
+folders.
+
+This \code{pbn.yml} changes two rules, allows three paths and ignores one
+folder:
 
 \if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_20
 rules:
@@ -390,6 +401,7 @@ allow:
   lower_case_names: [adhoc/Old_notes.txt, adhoc/Drafts/]
   no_local_assign:
     - adhoc/explore.R
+ignore: [archive/]
 }\if{html}{\out{</div>}}
 
 \code{check_project()} and \code{\link[=initialize_project]{initialize_project()}} stop before any rule runs on
@@ -402,7 +414,7 @@ each of these, with a message that names the key:
 \item \code{pbn.yml} is not valid YAML. This includes a key that is there twice and
 a tab. The message holds the message of the yaml package.
 \item there is no key \code{extends}, or it names a set that pbn does not have.
-\item a key other than \code{extends}, \code{rules} and \code{allow}.
+\item a key other than \code{extends}, \code{rules}, \code{allow} and \code{ignore}.
 \item a name that is not a rule. The message names the nearest rule.
 \item a rule that the set of \code{extends} does not have. The message names the
 oldest set with it.
@@ -416,6 +428,8 @@ oldest set with it.
 \code{off}, \code{yes} and \code{no} as booleans, so a path with such a name needs
 quotes.
 \item a change or an allowed path of a locked rule.
+\item an entry of \code{ignore} that is not one folder at the top level, is a name
+of the house layout, is there twice, or is a file.
 }
 }
 

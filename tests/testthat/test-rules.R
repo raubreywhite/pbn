@@ -307,7 +307,7 @@ test_that("pbn.yml stops on invalid YAML, a duplicated key and a tab, with the m
 test_that("pbn.yml stops on an unknown key, an unknown rule with the nearest rule, and a value that is not a map", {
   expect_identical(
     rules_error(c(house_line, "rule:", "  loc_per_file: off")),
-    "pbn.yml: the key rule is not known. The keys are extends, rules and allow."
+    "pbn.yml: the key rule is not known. The keys are extends, rules, allow and ignore."
   )
   expect_identical(
     rules_error(c(house_line, "rules:", "  lower_case_name: warn")),
@@ -325,7 +325,7 @@ test_that("pbn.yml stops on an unknown key, an unknown rule with the nearest rul
   )
   expect_identical(
     rules_error("- extends: house_2026_11_17"),
-    "pbn.yml MUST be a map with the keys extends, rules and allow."
+    "pbn.yml MUST be a map with the keys extends, rules, allow and ignore."
   )
   expect_identical(
     rules_error(c(house_line, "rules: [loc_per_file]")),

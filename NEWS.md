@@ -1,3 +1,7 @@
+# pbn 2026.12.10
+
+- `pbn.yml` takes a new key, `ignore`: a list of folders at the top level, such as `ignore: [archive/]`, that no rule reads. Their files give no finding and no WARN. The locked rules `results_contract`, `gitexclude_not_tracked` and `fake_data_names` still read them. An entry MUST be one folder at the top level that the house layout does not name. The first line of `check_project()` counts the ignored folders.
+
 # pbn 2026.12.9
 
 - pbn installs the Table 1 style `ijoa_brief_report_2026_11_21`. It comes from methods `observational/ijoa-brief-report/v004`, commit 1051a10. Three published IJOA Table 1s prove it, with 61 listed format exceptions. pbn never edits it.

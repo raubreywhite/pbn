@@ -325,7 +325,7 @@ read_scenario <- function(cl) {
 # fake_data_, and a file with such a name MUST be in such a folder.
 rule_fake_data_names <- function(path) {
   rule <- "fake_data_names"
-  entries <- project_entries(path)
+  entries <- project_entries(path, ignore = character(0))
   files <- entries[!dir.exists(file.path(path, entries))]
   inside <- vapply(
     strsplit(files, "/", fixed = TRUE),

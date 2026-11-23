@@ -6,7 +6,7 @@
 rules_file <- "pbn.yml"
 
 # The top-level keys of pbn.yml.
-rules_keys <- c("extends", "rules", "allow")
+rules_keys <- c("extends", "rules", "allow", "ignore")
 
 # The levels of a rule.
 rule_levels <- c("fail", "warn", "off")
@@ -150,7 +150,79 @@ read_rules <- function(home) {
       call. = FALSE
     )
   })
-  return(parse_rules(x))
+  rules <- parse_rules(x)
+  files <- rules$ignore[
+    file.exists(file.path(home, rules$ignore)) &
+      !dir.exists(file.path(home, rules$ignore))
+  ]
+  if (length(files) > 0) {
+    stop(
+      "pbn.yml: the entry ignore: ",
+      files[1],
+      " is not a folder. ignore names folders only.",
+      call. = FALSE
+    )
+  }
+  return(rules)
+}
+
+# The folders of the key ignore of pbn.yml, without a final /, after the
+# checks. Each is one folder at the top level that the house layout does not
+# name, once. A folder that does not exist is no error.
+parse_ignore <- function(x) {
+  if (is.null(x)) {
+    return(character(0))
+  }
+  if (!is.list(x) || !is.null(names(x))) {
+    stop(
+      "pbn.yml: ignore MUST be a list of folders, for example ignore: [archive/].",
+      call. = FALSE
+    )
+  }
+  if (!all(vapply(x, function(e) return(is.character(e) && length(e) == 1), logical(1)))) {
+    stop("pbn.yml: each entry of ignore MUST be one folder name.", call. = FALSE)
+  }
+  out <- sub("/$", "", trimws(unlist(x)))
+  bad <- out[!grepl("^[^/]+$", out) | out %in% c(".", "..")]
+  if (length(bad) > 0) {
+    stop(
+      "pbn.yml: the entry ignore: ",
+      bad[1],
+      " MUST name one folder at the top level, such as archive/.",
+      call. = FALSE
+    )
+  }
+  layout <- out[vapply(
+    out,
+    function(e) return(any(vapply(layout_patterns(), grepl, logical(1), x = e))),
+    logical(1)
+  )]
+  if (length(layout) > 0) {
+    stop(
+      "pbn.yml: the entry ignore: ",
+      layout[1],
+      " is a name of the house layout, which the rules exist to check.",
+      call. = FALSE
+    )
+  }
+  if (anyDuplicated(out) > 0) {
+    stop(
+      "pbn.yml: the entry ignore: ",
+      out[anyDuplicated(out)],
+      " is there twice.",
+      call. = FALSE
+    )
+  }
+  return(out)
+}
+
+# The folders of the key ignore of the pbn.yml in `path`. None when there is
+# no pbn.yml: read_rules() stops on that where the rules are read.
+ignored_folders <- function(path) {
+  if (!file.exists(file.path(path, rules_file))) {
+    return(character(0))
+  }
+  return(read_rules(path)$ignore)
 }
 
 # The rules of the parsed pbn.yml `x`, as read_rules() returns them.
@@ -160,7 +232,7 @@ parse_rules <- function(x) {
   }
   if (!is.list(x) || (length(x) > 0 && is.null(names(x)))) {
     stop(
-      "pbn.yml MUST be a map with the keys extends, rules and allow.",
+      "pbn.yml MUST be a map with the keys extends, rules, allow and ignore.",
       call. = FALSE
     )
   }
@@ -169,7 +241,7 @@ parse_rules <- function(x) {
     stop(
       "pbn.yml: the key ",
       unknown[1],
-      " is not known. The keys are extends, rules and allow.",
+      " is not known. The keys are extends, rules, allow and ignore.",
       call. = FALSE
     )
   }
@@ -184,7 +256,8 @@ parse_rules <- function(x) {
     set = set,
     rules = rules,
     overrides = names(overrides),
-    allow = allow
+    allow = allow,
+    ignore = parse_ignore(x[["ignore"]])
   ))
 }
 
@@ -605,6 +678,8 @@ rules_line <- function(rules) {
     if (n_over == 1) " override, " else " overrides, ",
     n_allow,
     if (n_allow == 1) " allowed path" else " allowed paths",
+    if (length(rules$ignore) == 1) ", 1 ignored folder",
+    if (length(rules$ignore) > 1) paste0(", ", length(rules$ignore), " ignored folders"),
     " (pbn.yml)"
   ))
 }

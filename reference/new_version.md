@@ -96,7 +96,7 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_new_version_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/RtmpYzBhRm/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/RtmplyudvS/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::new_version("v01", home = home)
 #> new_version(): v01 is now frozen in v01_frozen.md5. Wrote v02_run.R and v02_functions/. Added the section ## v02 to CHANGELOG.md.
 pbn::check_project(home)
@@ -110,7 +110,7 @@ pbn::check_project(home)
 #> PASS  results_contract  every vNN_results/<scenario>/results.qs2 and each vNN_results/<scenario>/sims_gitexclude/sim_NNNN.qs2 on the disk passes check_results()
 #> PASS  gitexclude_not_tracked  the project is not a git repository, so nothing to check
 #> PASS  scenario_checks  every vNN_results/<scenario>/check.csv passes
-#> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx
+#> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx
 #> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
 #> PASS  built_reads_own_version  every read_results() call in manuscript/built/vNN/ reads the version vNN
 #> PASS  built_has_run  every folder manuscript/built/vNN/ has a vNN_run.R

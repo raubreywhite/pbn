@@ -1,5 +1,12 @@
 # Changelog
 
+## pbn 2026.12.11
+
+- A manual manuscript MAY have a suffix of one word of lower-case
+  letters and digits, for a second file of the same version:
+  `manuscript/manual/v02_AB_si.docx` beside `v02_AB.docx`. It counts as
+  the version `v02` for `readme_and_changelog` and `manual_not_ahead`.
+
 ## pbn 2026.12.10
 
 - `pbn.yml` takes a new key, `ignore`: a list of folders at the top

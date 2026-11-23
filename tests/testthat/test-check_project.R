@@ -1045,7 +1045,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     results_contract = "delete the file, and write it again with pbn::run_plan() and pbn::save_results()",
     gitexclude_not_tracked = "remove the path from git with git rm --cached, and add the line *gitexclude* to .gitignore",
     scenario_checks = "correct the analysis, and run the scenario again with pbn::run_plan() and pbn::save_results()",
-    manual_manuscript_names = "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx",
+    manual_manuscript_names = "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx, or vNN_<INITIALS>_<suffix>.docx, for example v01_AB_si.docx",
     manuscript_reads_real = "remove the argument scenario from the call",
     built_reads_own_version = "read the version of the folder, as in read_results(\"vNN\"), or move the file to the folder of the version that it reads",
     built_has_run = "move the folder to the version of the run that it reads, or create the run script of the version",

@@ -1,3 +1,7 @@
+# pbn 2026.12.11
+
+- A manual manuscript MAY have a suffix of one word of lower-case letters and digits, for a second file of the same version: `manuscript/manual/v02_AB_si.docx` beside `v02_AB.docx`. It counts as the version `v02` for `readme_and_changelog` and `manual_not_ahead`.
+
 # pbn 2026.12.10
 
 - `pbn.yml` takes a new key, `ignore`: a list of folders at the top level, such as `ignore: [archive/]`, that no rule reads. Their files give no finding and no WARN. The locked rules `results_contract`, `gitexclude_not_tracked` and `fake_data_names` still read them. An entry MUST be one folder at the top level that the house layout does not name. The first line of `check_project()` counts the ignored folders.

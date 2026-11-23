@@ -406,3 +406,36 @@ test_that("a project on house_2026_11_19 runs none of the three rules, needs no 
     )
   )
 })
+
+test_that("a manual manuscript MAY have a lower-case suffix, such as v02_AB_si.docx, and it counts as its version", {
+  p <- local_project_20()
+  add_run(p$home, "v03")
+  write_lines(p$home, "manuscript/manual/v02_AB.docx", "")
+  write_lines(p$home, "manuscript/manual/v02_AB_si.docx", "")
+  write_lines(p$home, "manuscript/manual/v02_CD2_letter2.docx", "")
+  cat("\n## v02\n", file = file.path(p$home, "CHANGELOG.md"), append = TRUE)
+  found <- project_findings(p$home)
+  expect_identical(failed_rules(found), character(0))
+
+  q <- local_project_20()
+  write_lines(q$home, "manuscript/manual/v02_AB.docx", "")
+  write_lines(q$home, "manuscript/manual/v02_AB_si.docx", "")
+  found <- project_findings(q$home)
+  expect_identical(
+    sort(found$path[found$rule == "manual_not_ahead" & found$status == "FAIL"]),
+    c("manuscript/manual/v02_AB.docx", "manuscript/manual/v02_AB_si.docx")
+  )
+  expect_true(any(found$rule == "readme_and_changelog" & grepl("## v02", found$detail, fixed = TRUE)))
+})
+
+test_that("a manual manuscript with a suffix that is not one lower-case word fails its name", {
+  for (name in c("v02_AB_SI.docx", "v02_AB_.docx", "v02_AB_s-i.docx", "v02_AB_si_2.docx", "v02_AB-si.docx")) {
+    p <- local_project_20()
+    write_lines(p$home, file.path("manuscript", "manual", name), "")
+    found <- project_findings(p$home)
+    expect_true(
+      file.path("manuscript", "manual", name) %in% found$path[found$rule == "manual_manuscript_names" & found$status == "FAIL"],
+      info = name
+    )
+  }
+})

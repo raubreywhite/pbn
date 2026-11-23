@@ -613,6 +613,17 @@ test_that("a project with only extends gives the output of pbn before pbn.yml, w
       "",
       fixture_lines(fixture, name)
     )
+    # manual_manuscript_names names the suffixed form too since pbn 2026.12.11.
+    before <- sub(
+      "is named vNN_<INITIALS>\\.docx$",
+      "is named vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx",
+      before
+    )
+    before <- sub(
+      "the name must be vNN_<INITIALS>\\.docx$",
+      "the name must be vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx",
+      before
+    )
     n <- length(before)
     expect_identical(
       out[1],

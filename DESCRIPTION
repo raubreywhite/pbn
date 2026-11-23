@@ -1,6 +1,6 @@
 Package: pbn
 Title: House Layout and Checks for Analysis Projects
-Version: 2026.12.10
+Version: 2026.12.11
 Authors@R:
     c(
       person(

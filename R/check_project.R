@@ -33,7 +33,8 @@
 #'   Everything under `background/` is not checked. These are exempt:
 #'   `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
 #'   `DESCRIPTION`, a top-level dotfile, a top-level `*.Rproj` file, file
-#'   extensions, and the initials in `manuscript/manual/vNN_<INITIALS>.docx`.
+#'   extensions, and the initials in `manuscript/manual/vNN_<INITIALS>.docx`
+#'   and `manuscript/manual/vNN_<INITIALS>_<suffix>.docx`.
 #' - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
 #'   call `pbn::initialize_project()` whose `version` argument is the string
 #'   `"vNN"`. A call with an argument that [initialize_project()] does not
@@ -100,7 +101,9 @@
 #'   value of `pass` that is not `TRUE`, holds no assertion, or has no column
 #'   `pass` that R can read. [save_results()] writes these files.
 #' - `manual_manuscript_names` (FAIL): a file in `manuscript/manual/` does not
-#'   match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?\.docx$`.
+#'   match `^v[0-9]{2}_[A-Z]{2,4}[0-9]?(_[a-z0-9]+)?\.docx$`. The suffix is
+#'   one word of lower-case letters and digits, for a second file of the same version, such as the
+#'   supporting information `v02_AB_si.docx`.
 #' - `manuscript_reads_real` (FAIL): an `.R`, `.qmd` or `.Rmd` file in
 #'   `manuscript/built/` calls `read_results()` or `pbn::read_results()` with
 #'   a `scenario` argument that is not the string `"real"`. A call without

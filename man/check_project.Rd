@@ -49,7 +49,8 @@ the project does not have prints no line.
 Everything under \verb{background/} is not checked. These are exempt:
 \code{README.md}, \code{CHANGELOG.md}, \code{AGENTS.md}, \code{CLAUDE.md}, \code{LICENSE},
 \code{DESCRIPTION}, a top-level dotfile, a top-level \verb{*.Rproj} file, file
-extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}.
+extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}
+and \verb{manuscript/manual/vNN_<INITIALS>_<suffix>.docx}.
 \item \code{run_script_initialises} (FAIL): a \code{vNN_run.R} at the top level has no
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
 \code{"vNN"}. A call with an argument that \code{\link[=initialize_project]{initialize_project()}} does not
@@ -118,7 +119,9 @@ so.
 value of \code{pass} that is not \code{TRUE}, holds no assertion, or has no column
 \code{pass} that R can read. \code{\link[=save_results]{save_results()}} writes these files.
 \item \code{manual_manuscript_names} (FAIL): a file in \verb{manuscript/manual/} does not
-match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?\\.docx$}.
+match \verb{^v[0-9]\{2\}_[A-Z]\{2,4\}[0-9]?(_[a-z0-9]+)?\\.docx$}. The suffix is
+one word of lower-case letters and digits, for a second file of the same version, such as the
+supporting information \code{v02_AB_si.docx}.
 \item \code{manuscript_reads_real} (FAIL): an \code{.R}, \code{.qmd} or \code{.Rmd} file in
 \verb{manuscript/built/} calls \code{read_results()} or \code{pbn::read_results()} with
 a \code{scenario} argument that is not the string \code{"real"}. A call without

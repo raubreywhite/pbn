@@ -65,7 +65,9 @@ local_copy_allowed <- "get_data"
 
 run_script_pattern <- "^v[0-9]{2}_run\\.R$"
 functions_pattern <- "^v[0-9]{2}_functions$"
-manual_pattern <- "^v[0-9]{2}_[A-Z]{2,4}[0-9]?\\.docx$"
+# vNN_<INITIALS>.docx, or vNN_<INITIALS>_<suffix>.docx with one word of lower-case
+# letters and digits as the suffix, for a second file of the same version.
+manual_pattern <- "^v[0-9]{2}_[A-Z]{2,4}[0-9]?(_[a-z0-9]+)?\\.docx$"
 
 # project rules ---------------------------------------------------------------
 
@@ -502,7 +504,7 @@ rule_manual_manuscript_names <- function(path) {
     rule,
     "FAIL",
     where,
-    paste0(where, ": the name must be vNN_<INITIALS>.docx", recycle0 = TRUE)
+    paste0(where, ": the name must be vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx", recycle0 = TRUE)
   ))
 }
 
@@ -856,8 +858,8 @@ project_rules <- function() {
     ),
     manual_manuscript_names = list(
       rule_manual_manuscript_names,
-      "every file in manuscript/manual/ is named vNN_<INITIALS>.docx",
-      "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx"
+      "every file in manuscript/manual/ is named vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx",
+      "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx, or vNN_<INITIALS>_<suffix>.docx, for example v01_AB_si.docx"
     ),
     manuscript_reads_real = list(
       rule_manuscript_reads_real,

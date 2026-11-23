@@ -489,7 +489,18 @@ allow a path for it. It cannot name a rule of
 [`check_results()`](https://www.rwhite.no/pbn/reference/check_results.md)
 either.
 
-This `pbn.yml` changes two rules and allows three paths:
+The key `ignore` MAY list folders at the top level, such as `archive/`,
+that no rule reads: their files give no finding, not even a WARN. Use it
+for old work that nothing runs. A final `/` changes nothing. An entry
+MUST be one folder at the top level that the house layout does not name,
+so it cannot be `manuscript/`, `background/`, `adhoc/` or a folder of a
+version. A folder that does not exist is no error. The locked rules
+still read an ignored folder, so a tracked file with `gitexclude` in its
+name fails there too. The first line of the report counts the ignored
+folders.
+
+This `pbn.yml` changes two rules, allows three paths and ignores one
+folder:
 
     extends: house_2026_11_20
     rules:
@@ -499,6 +510,7 @@ This `pbn.yml` changes two rules and allows three paths:
       lower_case_names: [adhoc/Old_notes.txt, adhoc/Drafts/]
       no_local_assign:
         - adhoc/explore.R
+    ignore: [archive/]
 
 `check_project()` and
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
@@ -516,7 +528,7 @@ the key:
 
 - there is no key `extends`, or it names a set that pbn does not have.
 
-- a key other than `extends`, `rules` and `allow`.
+- a key other than `extends`, `rules`, `allow` and `ignore`.
 
 - a name that is not a rule. The message names the nearest rule.
 
@@ -538,6 +550,9 @@ the key:
   needs quotes.
 
 - a change or an allowed path of a locked rule.
+
+- an entry of `ignore` that is not one folder at the top level, is a
+  name of the house layout, is there twice, or is a file.
 
 ## See also
 

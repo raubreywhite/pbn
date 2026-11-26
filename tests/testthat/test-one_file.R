@@ -815,3 +815,110 @@ test_that("the comparison of check_one_file leaves blocks.R out of source_md5, a
   )
   expect_identical(manifest_source_md5(md5, "v02"), md5)
 })
+
+# The blocks of the set house_2026_11_26 for the project `p`: pbn.yml
+# extends it, and blocks.R holds two blocks of pbn::block().
+write_pbn_blocks <- function(p) {
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Models\" = pbn::block(",
+      "    function(results) data.frame(term = results$models$term, est = results$models$estimate, lo = -1, hi = 1),",
+      "    format = \"ci\",",
+      "    items = c(\"strobe:17\")",
+      "  ),",
+      "  \"Rows\" = pbn::block(",
+      "    function(results) data.frame(n = nrow(results$models), total = 12),",
+      "    format = \"n_pct\"",
+      "  )",
+      ")"
+    )
+  )
+  return(invisible(p))
+}
+
+test_that("after initialize_project() on saved real results, adding or editing formatters.R leaves the manifest md5 current and stale_results() empty", {
+  p <- local_project()
+  write_pbn_blocks(p)
+  expect_false(inherits(save_run(p, only = c("real", "known"))$err, "error"))
+  local <- file.path(p$home, "v01_results", "real")
+  recorded <- qs2::qs_read(file.path(local, "results.qs2"))$manifest$source_md5
+  for (body in c("x$n", "x$n + 1")) {
+    write_lines(
+      p$home,
+      "v01_functions/formatters.R",
+      paste0("n_pct <- function(x) return(as.character(", body, "))")
+    )
+    init(p)
+    expect_true("v01_functions/formatters.R" %in% names(state$source_md5))
+    expect_identical(state$manifest_md5, recorded, info = body)
+    expect_identical(
+      manifest_md5_of(p$home, "v01", source_md5(p$home, "v01")),
+      recorded,
+      info = body
+    )
+    expect_null(stale_results(local, "v01"), info = body)
+  }
+})
+
+test_that("under an older set formatters.R counts in the manifest md5 as before, so adding it makes the results older than the code", {
+  p <- local_project()
+  expect_false(inherits(save_run(p, only = c("real", "known"))$err, "error"))
+  write_lines(
+    p$home,
+    "v01_functions/formatters.R",
+    "n_pct <- function(x) return(x)"
+  )
+  init(p)
+  expect_true("v01_functions/formatters.R" %in% names(state$manifest_md5))
+  expect_match(
+    stale_results(file.path(p$home, "v01_results", "real"), "v01"),
+    "These files changed after the run that made them: v01_functions/formatters.R.",
+    fixed = TRUE
+  )
+})
+
+test_that("the comparison of check_one_file leaves formatters.R out of source_md5", {
+  md5 <- c(
+    v01_run.R = "00112233445566778899aabbccddeeff",
+    "v01_functions/formatters.R" = "ffeeddccbbaa99887766554433221100"
+  )
+  x <- list(manifest = list(version = "v01", source_md5 = md5))
+  expect_identical(
+    names(comparable_results(x)$manifest$source_md5),
+    "v01_run.R"
+  )
+  # Two manifests that differ only in the md5 of formatters.R compare equal.
+  y <- x
+  y$manifest$source_md5[["v01_functions/formatters.R"]] <-
+    "00000000000000000000000000000000"
+  expect_identical(comparable_results(x), comparable_results(y))
+})
+
+test_that("check_one_file gives PASS for blocks of pbn::block() with a project formatter, and compares the formatted pages", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  add_one_file_files(p)
+  write_pbn_blocks(p)
+  write_lines(
+    p$home,
+    "v01_functions/formatters.R",
+    "n_pct <- function(x) return(paste(\"rows:\", x$n))"
+  )
+  res <- run_script(p$home)
+  expect_identical(res$status, 0L, info = res$stdout)
+  init_server(p)
+  utils::capture.output(to_one_file())
+  withr::local_envvar(R_LIBS = NA)
+  out <- utils::capture.output(ok <- check_one_file())
+  expect_match(
+    out,
+    "^PASS: .*Each page of the 2 blocks prints the same for both\\.$"
+  )
+  expect_true(ok)
+  prints <- block_prints(p$home)
+  expect_identical(prints$blocks$Rows$text[4], "rows: 6")
+})

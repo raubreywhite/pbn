@@ -91,7 +91,11 @@ cannot change the results, which is when each of these holds:
 
 Otherwise
 \code{source_md5} holds it, also when the rule \code{blocks_list} of
-\code{\link[=check_project]{check_project()}} is \code{warn} or \code{off}. A change of a blocks file of that
+\code{\link[=check_project]{check_project()}} is \code{warn} or \code{off}. From the rule set
+\code{house_2026_11_26}, \code{\link[=initialize_project]{initialize_project()}} also leaves out
+\verb{<version>_functions/formatters.R}, the formatters of \code{\link[=block]{block()}}, under
+the same conditions. Its only shape is a name assigned to
+\verb{function(...)}, and only \code{blocks.R} MAY use its names. A change of a blocks file of that
 shape thus keeps the results current. \code{\link[=initialize_project]{initialize_project()}} computes the md5 before it
 sources the files. The cache key of \code{\link[=add_data]{add_data()}} holds the md5 of the
 files \code{data_*.R} only, so it never held \code{blocks.R}. The rule
@@ -214,7 +218,9 @@ not the stacked results. It writes the values of a scenario to
 for each block, in the order of \code{blocks}. It calls every block on
 every scenario before it writes a file. A block fails on an error of
 its function, or on a value that is not a data.frame or a character
-vector. At the first failure, it stops and writes no \code{blocks.qs2}. The
+vector. A \code{\link[=block]{block()}} fails on a raw value that breaks the rule of
+\code{\link[=block]{block()}}, and \code{blocks.qs2} holds its raw value. This step does not
+call the formatter. At the first failure, it stops and writes no \code{blocks.qs2}. The
 error is \verb{block <k> "<name>" failed on scenario <s>: <error>}. So a
 block MUST work on the results of each fake scenario too. Without
 \code{blocks}, this step writes nothing. The run log of step 5 does not

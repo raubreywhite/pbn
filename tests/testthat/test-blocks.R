@@ -219,3 +219,109 @@ test_that("a block that calls a function that R does not find stops with the hin
     fixed = TRUE
   )
 })
+
+test_that("a formatter that returns a data.table prints through show_block() with the same text as a plain block that returns that data.table", {
+  p <- local_project()
+  # A list column prints differently in a data.table and in a data.frame,
+  # so the text shows the class that show_block() printed.
+  table <- "data.table::data.table(i = 1:40, label = c(NA, rep(\"ab\", 39)), v = c(1.5, NA, 1:38), parts = rep(list(1:3), 40))"
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c("blocks <- list(", paste0("  \"Wide\" = function(results) ", table), ")")
+  )
+  save_run(p, only = c("real", "known"))
+  plain <- lapply(1:2, function(page) {
+    return(utils::capture.output(show_block(1, page = page)))
+  })
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Wide\" = pbn::block(",
+      "    function(results) data.frame(n = 1:40),",
+      "    format = \"wide_dt\"",
+      "  )",
+      ")"
+    )
+  )
+  write_lines(
+    p$home,
+    "v01_functions/formatters.R",
+    paste0("wide_dt <- function(x) return(", table, ")")
+  )
+  init(p)
+  formatted <- lapply(1:2, function(page) {
+    return(utils::capture.output(show_block(1, page = page)))
+  })
+  expect_identical(formatted, plain)
+  value <- NULL
+  utils::capture.output(value <- show_block(1))
+  expect_true(data.table::is.data.table(value))
+})
+
+test_that("show_block prints the formatted value of a pbn::block(), and show_blocks stops on a raw value with a formatted number and names the block, the column and the cell", {
+  p <- local_project()
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Effect\" = pbn::block(",
+      "    function(results) data.frame(est = c(0.8, 0.46), lo = c(0.46, -0.0712), hi = c(1.16, 1)),",
+      "    format = \"ci\"",
+      "  ),",
+      "  \"Broken formatter\" = pbn::block(function(results) data.frame(x = 1), format = \"ci\")",
+      ")"
+    )
+  )
+  save_run(p, only = c("real", "known"))
+  out <- utils::capture.output(value <- show_block(1))
+  expect_identical(
+    out,
+    c(
+      "[1] Effect",
+      "page 1 of 1, rows 1 to 2 of 2",
+      "",
+      "0.80 (95% CI 0.46 to 1.16)",
+      "0.46 (95% CI −0.07 to 1.00)"
+    )
+  )
+  expect_identical(value[2], "0.46 (95% CI −0.07 to 1.00)")
+  # A formatter that stops is an error in the index, and show_blocks goes on.
+  out <- utils::capture.output(index <- show_blocks())
+  expect_identical(index$rows, c(2L, NA))
+  expect_match(
+    out[3],
+    "error: The formatter ci of the block \"Broken formatter\" failed: the formatter ci needs the column est",
+    fixed = TRUE
+  )
+  # A raw value with a formatted number stops show_blocks().
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Effect\" = pbn::block(function(results) data.frame(est = 1, lo = 0, hi = 2), format = \"ci\"),",
+      "  \"Labels\" = pbn::block(function(results) data.frame(group = c(\"a\", \"68.7%\"), n = 1:2), format = \"p\")",
+      ")"
+    )
+  )
+  init(p)
+  expect_error(
+    utils::capture.output(show_blocks()),
+    paste0(
+      "The block 2, \"Labels\", failed: it holds a formatted number in the ",
+      "column group, row 2: \"68.7%\""
+    ),
+    fixed = TRUE
+  )
+  expect_error(
+    utils::capture.output(show_block(2)),
+    "column group, row 2: \"68.7%\"",
+    fixed = TRUE
+  )
+})

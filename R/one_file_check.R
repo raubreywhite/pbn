@@ -31,7 +31,8 @@
 #'    checked for ASCII, for a parse and for a left-out function before the
 #'    first full run.
 #' 3. It compares `manifest$source_md5` of the real results with the md5 of
-#'    the files of the project now, without `<version>_functions/blocks.R`.
+#'    the files of the project now, without the files that the manifest
+#'    leaves out, see `source_md5` of [save_results()].
 #'    When they differ, the results of the project are older than its code.
 #'    It prints FAIL with the changed files and says to run
 #'    `<version>_run.R` again. It runs nothing.
@@ -62,8 +63,9 @@
 #' - `fake_real_data`, because the file never runs on fake real data. See
 #'   [initialize_project()].
 #'
-#' The comparison also leaves `<version>_functions/blocks.R` out of
-#' `source_md5`, also for results of an older pbn that hold it. Every other
+#' The comparison also leaves `<version>_functions/blocks.R` and
+#' `<version>_functions/formatters.R` out of `source_md5`, also for results
+#' of an older pbn that hold them. Every other
 #' element MUST be identical, also `source_md5`, `data_files` and
 #' `cache_key`. So the results do not depend on the place of the project
 #' and of its folders. The copies keep the modification times of the files,
@@ -267,13 +269,13 @@ stale_results <- function(local, version) {
   if (!is_data_md5(recorded)) {
     return(NULL)
   }
-  # blocks.R does not count when it cannot change the results, also for the
-  # results of an older pbn that hold its md5.
+  # blocks.R, and formatters.R from the rule set house_2026_11_26, do not
+  # count when they cannot change the results, also for the results of an
+  # older pbn that hold the md5 of blocks.R.
   now <- source_md5(state$home, version)
-  if (blocks_file_inert(state$home, version)) {
-    recorded <- manifest_source_md5(recorded, version)
-    now <- manifest_source_md5(now, version)
-  }
+  inert <- inert_source_files(state$home, version, state$rule_set)
+  recorded <- recorded[!names(recorded) %in% inert]
+  now <- now[!names(now) %in% inert]
   both <- intersect(names(now), names(recorded))
   changed <- c(
     setdiff(union(names(now), names(recorded)), both),
@@ -435,8 +437,8 @@ comparable_results <- function(x) {
   x$manifest$run_date <- NULL
   x$manifest$packages <- NULL
   x$manifest$fake_real_data <- NULL
-  # A manifest of an older pbn holds the md5 of the blocks. They only print
-  # results, so they never count.
+  # A manifest of an older pbn holds the md5 of the blocks. They and the
+  # formatters only print results, so they never count.
   if (!is.null(x$manifest$source_md5)) {
     x$manifest$source_md5 <- manifest_source_md5(
       x$manifest$source_md5,

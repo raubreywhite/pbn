@@ -14,8 +14,10 @@
 #'   last [initialize_project()] in this R session.
 #' @details
 #' The project declares the blocks in its functions folder, as one object
-#' `blocks`. It is a named list of functions of `results`, in the order of
-#' the manuscript. The name of a block is its place in the manuscript, for
+#' `blocks`. It is a named list of blocks, in the order of the manuscript.
+#' Each block is a function of `results`, or a [block()] with such a
+#' function and a formatter. The rule set `house_2026_11_26` and the newer
+#' sets need a [block()] for each block. The name of a block is its place in the manuscript, for
 #' example `"Table 1"` or `"Results para 1: exclusions"`. In
 #' `show_block()`, each function gets the real results as [read_results()]
 #' returns them. [save_results()] also calls each function on simulation 1
@@ -25,6 +27,13 @@
 #' character vector that prints as one line for each element. The function
 #' formats the numbers for the manuscript, and
 #' `show_block()` prints the table as the function returns it.
+#'
+#' A [block()] returns numbers, and `blocks.qs2` holds that raw value.
+#' `show_block()` and `show_blocks()` call the formatter of the block on
+#' the raw value at each call, and print the formatted value. A formatter
+#' that returns a data.table prints as a data.table. A raw value with a
+#' formatted number in a label cell, see [block()], stops both functions,
+#' and the error names the block, the column and the cell.
 #'
 #' ```r
 #' blocks <- list(
@@ -80,7 +89,8 @@
 #' that a block function sets or adds does not stay.
 #' @return `show_blocks()`: invisibly, a data.frame with the columns
 #'   `block`, `name`, `rows`, `pages` and `error`. `show_block()`: invisibly,
-#'   the whole value of the block function.
+#'   the whole value of the block function, or of the formatter for a
+#'   [block()].
 #' @family one file
 #' @seealso `vignette("pbn")`, section "Running on an air-gapped server".
 #' @export
@@ -92,6 +102,7 @@ show_blocks <- function(version = NULL, home = NULL) {
   errors <- character(length(ctx$blocks))
   for (k in seq_along(ctx$blocks)) {
     got <- block_call(ctx, k)
+    stop_on_raw_fault(got, ctx, k)
     if (is.null(got$error)) {
       rows[k] <- block_rows(got$value)
     } else {
@@ -259,6 +270,12 @@ blocks_context <- function(version, home) {
   return(list(
     blocks = blocks,
     results = results,
+    formatters = formatters_of(
+      home,
+      version,
+      state$env,
+      isTRUE(state$generated)
+    ),
     version = version,
     run_date = if (is_one_string(run_date)) run_date else "an unknown date",
     fake_real_data = isTRUE(results$manifest$fake_real_data)
@@ -292,7 +309,9 @@ save_blocks <- function(scenarios, root) {
       names(blocks)
     )
     for (k in seq_along(blocks)) {
-      got <- block_call(ctx, k)
+      # blocks.qs2 holds the raw value. show_block() and txt() format it at
+      # each call, so a formatter that stops does not stop a run.
+      got <- block_call(ctx, k, format = FALSE)
       if (!is.null(got$error)) {
         stop(
           "block ",
@@ -306,7 +325,7 @@ save_blocks <- function(scenarios, root) {
           call. = FALSE
         )
       }
-      values[[s]][k] <- list(got$value)
+      values[[s]][k] <- list(got$raw)
     }
   }
   for (s in scenarios) {
@@ -333,7 +352,26 @@ check_blocks <- function(blocks, version) {
       call. = FALSE
     )
   }
+  plain <- !vapply(blocks, inherits, logical(1), what = "pbn_block")
+  if (needs_pbn_blocks(state$rule_set) && any(plain)) {
+    stop(
+      "The block \"",
+      names(blocks)[plain][1],
+      "\" is a function. The rule set ",
+      state$rule_set,
+      " needs pbn::block(fn, format, items) for each block, see ?pbn::block.",
+      call. = FALSE
+    )
+  }
   return(invisible(NULL))
+}
+
+# TRUE when the rule set `set` of the project, a name or NULL when it is not
+# known, needs pbn::block() for each block: house_2026_11_26 and newer. The
+# run of the file of to_one_file() has no pbn.yml, so there it is FALSE, and
+# check_project() checks the blocks of the project.
+needs_pbn_blocks <- function(set) {
+  return(is_one_string(set) && set_is_from(set, "house_2026_11_26"))
 }
 
 # TRUE when `blocks` is a list of one or more functions, each with a name of
@@ -347,7 +385,11 @@ is_blocks_list <- function(blocks) {
     !is.null(nm) &&
       all(nzchar(nm)) &&
       anyDuplicated(nm) == 0 &&
-      all(vapply(blocks, is.function, logical(1)))
+      all(vapply(
+        blocks,
+        function(b) return(is.function(b) || inherits(b, "pbn_block")),
+        logical(1)
+      ))
   )
 }
 
@@ -390,14 +432,23 @@ block_value <- function(ctx, k) {
   return(got$value)
 }
 
-# The value of the block `k` for the results of `ctx`, and `error`: NULL, the
-# error of the block function, or the fault of its value.
-block_call <- function(ctx, k) {
-  value <- tryCatch(ctx$blocks[[k]](ctx$results), error = function(e) {
+# The value of the block `k` for the results of `ctx`, `raw`, and `error`:
+# NULL, the error of the block function, or the fault of its value. For a
+# block of pbn::block(), `raw` is the value of its function, and `value` is
+# the formatted value, with the formatters `ctx$formatters`, or `raw` with
+# `format = FALSE`. A raw value that breaks the rule of pbn::block() gives
+# `raw_fault` TRUE. For a function, `value` and `raw` are its value.
+block_call <- function(ctx, k, format = TRUE) {
+  b <- ctx$blocks[[k]]
+  fn <- if (inherits(b, "pbn_block")) b$fn else b
+  value <- tryCatch(fn(ctx$results), error = function(e) {
     return(e)
   })
   if (inherits(value, "error")) {
     return(list(value = NULL, error = block_error(value)))
+  }
+  if (inherits(b, "pbn_block")) {
+    return(pbn_block_call(b, names(ctx$blocks)[k], value, ctx, format))
   }
   if (!is.data.frame(value) && !is.character(value)) {
     return(list(
@@ -409,7 +460,49 @@ block_call <- function(ctx, k) {
       )
     ))
   }
-  return(list(value = value, error = NULL))
+  return(list(value = value, raw = value, error = NULL))
+}
+
+# block_call() for the block `b` of pbn::block() with the name `name` and
+# the raw value `value`.
+pbn_block_call <- function(b, name, value, ctx, format) {
+  problem <- raw_value_problem(value)
+  if (!is.null(problem)) {
+    return(list(
+      value = NULL,
+      error = paste0("it ", problem),
+      raw_fault = TRUE
+    ))
+  }
+  if (!format) {
+    return(list(value = value, raw = value, error = NULL))
+  }
+  out <- tryCatch(
+    format_block(name, b, value, ctx$formatters),
+    error = function(e) return(e)
+  )
+  if (inherits(out, "error")) {
+    return(list(value = NULL, error = conditionMessage(out)))
+  }
+  return(list(value = out, raw = value, error = NULL))
+}
+
+# Stops when the value `got` of block_call() for the block `k` of `ctx`
+# breaks the rule of the raw value of pbn::block(). show_blocks() prints
+# the other errors of a block and goes on.
+stop_on_raw_fault <- function(got, ctx, k) {
+  if (isTRUE(got$raw_fault)) {
+    stop(
+      "The block ",
+      k,
+      ", \"",
+      names(ctx$blocks)[k],
+      "\", failed: ",
+      got$error,
+      call. = FALSE
+    )
+  }
+  return(invisible(NULL))
 }
 
 # The message of the error `e` of a block function. When R found no

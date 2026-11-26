@@ -44,7 +44,8 @@ prints FAIL also when the project has no such file.
 checked for ASCII, for a parse and for a left-out function before the
 first full run.
 \item It compares \code{manifest$source_md5} of the real results with the md5 of
-the files of the project now, without \verb{<version>_functions/blocks.R}.
+the files of the project now, without the files that the manifest
+leaves out, see \code{source_md5} of \code{\link[=save_results]{save_results()}}.
 When they differ, the results of the project are older than its code.
 It prints FAIL with the changed files and says to run
 \verb{<version>_run.R} again. It runs nothing.
@@ -78,8 +79,9 @@ packages than the R session of the normal run.
 \code{\link[=initialize_project]{initialize_project()}}.
 }
 
-The comparison also leaves \verb{<version>_functions/blocks.R} out of
-\code{source_md5}, also for results of an older pbn that hold it. Every other
+The comparison also leaves \verb{<version>_functions/blocks.R} and
+\verb{<version>_functions/formatters.R} out of \code{source_md5}, also for results
+of an older pbn that hold them. Every other
 element MUST be identical, also \code{source_md5}, \code{data_files} and
 \code{cache_key}. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,

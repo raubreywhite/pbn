@@ -477,3 +477,205 @@ test_that("initialize_project leaves blocks.R out of source_md5 only when it can
   init(p)
   expect_null(stale_results(file.path(p$home, "v01_results", "real"), "v01"))
 })
+
+# The project `p` under the set house_2026_11_26 with the element `element`
+# of blocks, and the lines `formatters` in formatters.R when given.
+new_set_blocks <- function(p, element, formatters = NULL) {
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c("blocks <- list(", paste0("  \"Effect\" = ", element), ")")
+  )
+  if (!is.null(formatters)) {
+    write_lines(p$home, "v01_functions/formatters.R", formatters)
+  }
+  return(invisible(p))
+}
+
+test_that("under house_2026_11_26 blocks_list passes pbn::block() with a string format and literal items, and fails a plain function, a bad format and items that are not literal", {
+  p <- local_project()
+  good <- c(
+    "pbn::block(function(results) results$table1, \"ci\", items = c(\"strobe:17\", \"agrema:6.1\"))",
+    "pbn::block(fn = function(results) results$table1, format = \"p\")",
+    "pbn::block(function(results) results$table1, \"own\", items = c())"
+  )
+  for (element in good) {
+    new_set_blocks(p, element, "own <- function(x) return(\"own\")")
+    expect_identical(
+      findings_of(p$home, "blocks_list")$status,
+      "PASS",
+      info = element
+    )
+  }
+  head <- "v01_functions/blocks.R:1: the element \"Effect\" of blocks"
+  bad <- list(
+    plain = c(
+      "function(results) results$table1",
+      " is not a call pbn::block(fn, format, items). The rule set house_2026_11_26 needs it for each block"
+    ),
+    unqualified = c(
+      "block(function(results) 1, \"ci\")",
+      " is not a call pbn::block(fn, format, items). The rule set house_2026_11_26 needs it for each block"
+    ),
+    no_fn = c(
+      "pbn::block(format = \"ci\")",
+      " is a call pbn::block() without fn, or with an argument that pbn::block() does not take"
+    ),
+    extra_argument = c(
+      "pbn::block(function(results) 1, \"ci\", scenario = \"null\")",
+      " is a call pbn::block() without fn, or with an argument that pbn::block() does not take"
+    ),
+    fn_not_function = c(
+      "pbn::block(1, \"ci\")",
+      " has a fn that is not a function, or the name of a function of the functions folder"
+    ),
+    format_variable = c(
+      "pbn::block(function(results) 1, my_format)",
+      " has a format that is not one string"
+    ),
+    format_null = c(
+      "pbn::block(function(results) 1, NULL)",
+      " has a format that is not one string"
+    ),
+    format_unknown = c(
+      "pbn::block(function(results) 1, \"nope\")",
+      " has the format nope, which is no house formatter and no function of formatters.R"
+    ),
+    format_elsewhere = c(
+      "pbn::block(function(results) 1, \"double_it\")",
+      " has the format double_it, which a file other than formatters.R assigns. A project formatter MUST be in formatters.R only"
+    ),
+    items_variable = c(
+      "pbn::block(function(results) 1, \"ci\", items = my_tags)",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_null = c(
+      "pbn::block(function(results) 1, \"ci\", items = NULL)",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_paste0 = c(
+      "pbn::block(function(results) 1, \"ci\", items = paste0(\"strobe:\", 17))",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_call_inside = c(
+      "pbn::block(function(results) 1, \"ci\", items = c(\"strobe:1a\", tolower(\"X:1\")))",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_one_string = c(
+      "pbn::block(function(results) 1, \"ci\", items = \"strobe:17\")",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_named = c(
+      "pbn::block(function(results) 1, \"ci\", items = c(a = \"strobe:17\"))",
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    ),
+    items_bad_tag = c(
+      "pbn::block(function(results) 1, \"ci\", items = c(\"strobe 17\"))",
+      ": items must be \"<id>:<item>\" strings, such as \"strobe:13a\", and \"strobe 17\" is not"
+    ),
+    items_twice = c(
+      "pbn::block(function(results) 1, \"ci\", items = c(\"strobe:17\", \"strobe:17\"))",
+      ": items must name each item once, and \"strobe:17\" comes more than once"
+    )
+  )
+  unlink(file.path(p$home, "v01_functions", "formatters.R"))
+  for (case in names(bad)) {
+    new_set_blocks(p, bad[[case]][1])
+    found <- findings_of(p$home, "blocks_list")
+    expect_identical(found$status, "FAIL", info = case)
+    expect_identical(
+      found$detail,
+      with_fix("blocks_list", paste0(head, bad[[case]][2])),
+      info = case
+    )
+  }
+})
+
+test_that("under each older set blocks_list passes a plain function, and does not check formatters.R", {
+  for (set in c("house_2026_11_17", "house_2026_11_20", "house_2026_11_25")) {
+    p <- local_project()
+    write_lines(p$home, "pbn.yml", paste("extends:", set))
+    write_lines(
+      p$home,
+      "v01_functions/blocks.R",
+      "blocks <- list(\"Effect\" = function(results) results$table1)"
+    )
+    write_lines(
+      p$home,
+      "v01_functions/formatters.R",
+      c("options(digits = 3)", "own <- function(x) return(x)")
+    )
+    write_lines(p$home, "v01_functions/uses.R", "f <- function() return(own(1))")
+    expect_identical(
+      findings_of(p$home, "blocks_list")$status,
+      "PASS",
+      info = set
+    )
+  }
+})
+
+test_that("under house_2026_11_26 blocks_list fails a top-level expression of formatters.R that is not a function assignment, and a name of formatters.R that another file assigns", {
+  p <- local_project()
+  element <- "pbn::block(function(results) results$table1, \"own\")"
+  new_set_blocks(
+    p,
+    element,
+    c("own <- function(x) return(x)", "options(digits = 3)")
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(
+    found$detail,
+    with_fix("blocks_list", paste0(
+      "v01_functions/formatters.R:2: the top level of formatters.R holds ",
+      "`options(digits = 3)`. It MUST hold only assignments of a name to ",
+      "function(...), because pbn leaves it out of manifest$source_md5"
+    ))
+  )
+  new_set_blocks(
+    p,
+    element,
+    c("own <- function(x) return(x)", "double_it <- function(x) return(x)")
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(
+    found$detail,
+    with_fix("blocks_list", paste0(
+      "v01_functions/formatters.R:2: double_it is assigned here and at ",
+      "v01_functions/double_it.R:1. A name of formatters.R MUST NOT be ",
+      "assigned in another file, because pbn leaves formatters.R out of ",
+      "manifest$source_md5"
+    ))
+  )
+})
+
+test_that("a function of formatters.R that analysis code calls fails blocks_list under house_2026_11_26, and blocks.R may call it", {
+  p <- local_project()
+  new_set_blocks(
+    p,
+    "pbn::block(function(results) data.frame(x = own_round(1)), \"own\")",
+    c(
+      "own <- function(x) return(as.character(x$x))",
+      "own_round <- function(x) return(round(x))"
+    )
+  )
+  expect_identical(findings_of(p$home, "blocks_list")$status, "PASS")
+  write_lines(
+    p$home,
+    "v01_functions/analyses.R",
+    c(analysis_lines(), "", "rounded <- function(x) return(own_round(x))")
+  )
+  found <- findings_of(p$home, "blocks_list")
+  expect_identical(found$status, "FAIL")
+  expect_identical(
+    found$detail,
+    with_fix("blocks_list", paste0(
+      "v01_functions/analyses.R:15: uses own_round, which ",
+      "v01_functions/formatters.R assigns. pbn leaves that file out of ",
+      "manifest$source_md5, so the run MUST NOT use it. Move own_round to ",
+      "another file"
+    ))
+  )
+  # The md5 of the manifest then holds formatters.R.
+  expect_false(formatters_file_inert(p$home, "v01", "house_2026_11_26"))
+})

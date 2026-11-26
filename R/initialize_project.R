@@ -46,6 +46,9 @@ state <- new.env(parent = emptyenv())
 #' 2. It computes the md5 of `<version>_run.R` and of each file in
 #'    `<version>_functions/`, before it sources them. [save_results()] stores
 #'    them in `manifest$source_md5`, without `<version>_functions/blocks.R`.
+#'    From the rule set `house_2026_11_26`, it also leaves out
+#'    `<version>_functions/formatters.R`, see `source_md5` of
+#'    [save_results()].
 #'    The section The md5 of the run script gives the text of the run script
 #'    that the md5 leaves out.
 #' 3. It lists each file under each folder of `folders` that exists, at any
@@ -257,7 +260,8 @@ initialize_project <- function(
       md5 = generated$source_md5,
       raw_md5 = generated$source_md5,
       manifest_md5 = generated$source_md5,
-      stat = NULL
+      stat = NULL,
+      set = NULL
     )
   }
   found <- folders_listing(folders, home, version)
@@ -298,6 +302,7 @@ initialize_project <- function(
         source_raw_md5 = code$raw_md5,
         manifest_md5 = code$manifest_md5,
         source_stat = code$stat,
+        rule_set = code$set,
         generated = !is.null(generated),
         fake_real_data = fake_real_data,
         one_file_home = server$home,
@@ -324,7 +329,8 @@ functions_folder_code <- function(version, home) {
   }
   # pbn checks the code lines, and not org, so that check_project() and the
   # start judge a file with one limit and one section allow of pbn.yml.
-  stop_on_long_files(home, version, read_rules(home))
+  rules <- read_rules(home)
+  stop_on_long_files(home, version, rules)
   # Before org sources the functions folder, so the md5 is of the files as
   # the run found them.
   raw_md5 <- source_md5(home, version, raw = TRUE)
@@ -332,8 +338,9 @@ functions_folder_code <- function(version, home) {
   return(list(
     md5 = md5,
     raw_md5 = raw_md5,
-    manifest_md5 = manifest_md5_of(home, version, md5),
-    stat = file_stat(file.path(home, names(md5)), names(md5))
+    manifest_md5 = manifest_md5_of(home, version, md5, rules$set),
+    stat = file_stat(file.path(home, names(md5)), names(md5)),
+    set = rules$set
   ))
 }
 
@@ -589,23 +596,33 @@ blocks_file <- function(version) {
 }
 
 # The md5 values `md5` of the source files of `version` in `home` for
-# manifest$source_md5: without vNN_functions/blocks.R when that file cannot
-# change the results, see blocks_file_inert(), and else all of them.
-manifest_md5_of <- function(home, version, md5) {
-  if (blocks_file_inert(home, version)) {
-    return(manifest_source_md5(md5, version))
-  }
-  return(md5)
+# manifest$source_md5: without each file of inert_source_files().
+manifest_md5_of <- function(home, version, md5, set = read_rules(home)$set) {
+  return(md5[!names(md5) %in% inert_source_files(home, version, set)])
 }
 
-# The md5 values `md5` of the source files without the file of the blocks of
-# `version`. The blocks only print results, so the manifest leaves them out,
-# and a change of the blocks does not make the results stale.
+# The files that manifest$source_md5 of `version` in `home` leaves out,
+# because they cannot change the results: vNN_functions/blocks.R, see
+# blocks_file_inert(), and, from the rule set house_2026_11_26 of `set`,
+# vNN_functions/formatters.R, see formatters_file_inert(). Under an older
+# set formatters.R is a file like any other, as before.
+inert_source_files <- function(home, version, set) {
+  return(c(
+    if (blocks_file_inert(home, version)) blocks_file(version),
+    if (formatters_file_inert(home, version, set)) formatters_file(version)
+  ))
+}
+
+# The md5 values `md5` of the source files without the file of the blocks
+# and the file of the formatters of `version`. They only print results, so
+# the comparison of check_one_file() leaves them out.
 manifest_source_md5 <- function(md5, version) {
   if (!is_one_string(version)) {
     return(md5)
   }
-  return(md5[names(md5) != blocks_file(version)])
+  return(md5[
+    !names(md5) %in% c(blocks_file(version), formatters_file(version))
+  ])
 }
 
 check_version <- function(version) {

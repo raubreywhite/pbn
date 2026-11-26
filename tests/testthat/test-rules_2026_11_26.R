@@ -735,3 +735,27 @@ test_that("under house_2026_11_17, _19, _20 and _25 the findings of the standard
     )
   }
 })
+
+test_that("is_one_string() has one definition, which passes the empty string, and guidelines_valid still fails an empty title", {
+  # R/guidelines.R once defined a second is_one_string() that failed "",
+  # and by collation it masked the one of R/check_rules_results.R.
+  expect_true(is_one_string(""))
+  expect_false(is_nonempty_string(""))
+  p <- local_project_26()
+  dir.create(file.path(p$home, "guidelines"))
+  lines <- guideline_lines("e", entry_text("1"))
+  lines[2] <- "title: \"\""
+  write_lines(p$home, "guidelines/e.yml", lines)
+  expect_identical(
+    rows_26(p$home, "guidelines_valid"),
+    data.frame(
+      status = "FAIL",
+      path = "guidelines/e.yml",
+      detail = with_fix(
+        "guidelines_valid",
+        "guidelines/e.yml: the key title is missing or not one string"
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})

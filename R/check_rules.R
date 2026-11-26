@@ -8,6 +8,7 @@
 pbn_exports <- c(
   "add_analyses",
   "add_data",
+  "block",
   "check_one_file",
   "check_project",
   "check_results",
@@ -36,6 +37,8 @@ pbn_exports <- c(
   "table1",
   "table1_styles",
   "to_one_file",
+  "txt",
+  "update_blocks",
   "verify"
 )
 
@@ -43,10 +46,13 @@ pbn_exports <- c(
 # set that knows it. The rule no_local_copy_of_pbn_function of an older set
 # passes a function with such a name, as before.
 new_exports <- c(
+  block = "house_2026_11_26",
   create_project = "house_2026_11_19",
   freeze_version = "house_2026_11_19",
   new_version = "house_2026_11_19",
   table1_styles = "house_2026_11_20",
+  txt = "house_2026_11_26",
+  update_blocks = "house_2026_11_26",
   verify = "house_2026_11_19"
 )
 

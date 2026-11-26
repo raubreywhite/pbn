@@ -237,11 +237,17 @@ has_ancestor <- function(id, parents, ids) {
 #   top-level assignment of the folder defines.
 # - no other file of the folder and no vNN_run.R uses a name that blocks.R
 #   assigns at its top level. The run then never depends on blocks.R.
+# From the set house_2026_11_26 of `set`, also:
+# - each element is a call pbn::block() whose format names a formatter and
+#   whose items is a literal c() of "<id>:<item>" strings, see
+#   pbn_block_problem().
+# - vNN_functions/formatters.R has the shape and the name rules of blocks.R,
+#   see formatters_file_problems().
 # A folder without blocks.R and without blocks passes.
-rule_blocks_list <- function(path) {
+rule_blocks_list <- function(path, set = "house_2026_11_17") {
   rows <- list()
   for (folder in sort(functions_folders(path), method = "radix")) {
-    found <- blocks_folder_problems(path, folder)
+    found <- blocks_folder_problems(path, folder, set)
     rows <- c(
       rows,
       list(project_row(
@@ -255,9 +261,10 @@ rule_blocks_list <- function(path) {
   return(bind_rows(rows))
 }
 
-# The problems of blocks_list in the functions folder `folder` of `path`:
-# `where`, each as <file>:<line>, and `problem`, the text of each.
-blocks_folder_problems <- function(path, folder) {
+# The problems of blocks_list in the functions folder `folder` of `path`
+# under the rule set `set`: `where`, each as <file>:<line>, and `problem`,
+# the text of each.
+blocks_folder_problems <- function(path, folder, set = "house_2026_11_17") {
   home_file <- paste0(folder, "/blocks.R")
   found <- blocks_assignments(path, folder)
   where <- character(0)
@@ -289,7 +296,11 @@ blocks_folder_problems <- function(path, folder) {
       )
     )
   } else if (length(inside) == 1) {
-    bad <- blocks_problem(found$values[!outside][[1]], found$functions)
+    bad <- blocks_problem(
+      found$values[!outside][[1]],
+      found$functions,
+      if (needs_pbn_blocks(set)) formatter_names_of(path, folder)
+    )
     if (!is.null(bad)) {
       where <- c(where, inside)
       problem <- c(problem, bad)
@@ -299,10 +310,134 @@ blocks_folder_problems <- function(path, folder) {
   others <- setdiff(files[dirname(files) == folder], home_file)
   script <- sub("_functions$", "_run.R", folder)
   found <- blocks_file_problems(path, home_file, others, script)
+  where <- c(where, found$where)
+  problem <- c(problem, found$problem)
+  if (needs_pbn_blocks(set)) {
+    mine <- paste0(folder, "/formatters.R")
+    found <- formatters_file_problems(
+      path,
+      mine,
+      setdiff(others, mine),
+      script
+    )
+    where <- c(where, found$where)
+    problem <- c(problem, found$problem)
+  }
+  return(list(where = where, problem = problem))
+}
+
+# The names of the formatters of the functions folder `folder` of `path`,
+# for the element checks of blocks_problem(): `own`, the names that
+# formatters.R assigns at its top level, and `elsewhere`, the names that
+# another file of the folder assigns at its top level.
+formatter_names_of <- function(path, folder) {
+  mine <- paste0(folder, "/formatters.R")
+  files <- functions_files(path)
+  others <- setdiff(files[dirname(files) == folder], mine)
+  elsewhere <- unlist(lapply(others, function(f) {
+    return(top_level_assignments(file.path(path, f))$name)
+  }))
   return(list(
-    where = c(where, found$where),
-    problem = c(problem, found$problem)
+    own = blocks_file_names(file.path(path, mine)),
+    elsewhere = unique(c(character(0), elsewhere))
   ))
+}
+
+# The problems of the file `home_file`, vNN_functions/formatters.R, of
+# `path`, from the rule set house_2026_11_26. pbn leaves it out of
+# manifest$source_md5, as blocks.R. `others` are the other .R files of its
+# folder, without formatters.R, and `script` the run script. The value is
+# that of blocks_file_problems(). The problems are:
+# - a top-level expression other than an assignment with <- or = of a name
+#   to function(...).
+# - a name that formatters.R assigns and another file of the folder other
+#   than blocks.R assigns too. blocks_list checks blocks.R against
+#   formatters.R already.
+# - a use of a name of formatters.R in a file other than blocks.R and
+#   formatters.R, or in the run script.
+formatters_file_problems <- function(path, home_file, others, script) {
+  out <- list(where = character(0), problem = character(0), parsed = TRUE)
+  file <- file.path(path, home_file)
+  if (!file.exists(file)) {
+    return(out)
+  }
+  exprs <- parse_or_null(file, keep_source = TRUE)
+  if (is.null(exprs)) {
+    out$parsed <- FALSE
+    return(out)
+  }
+  lines <- vapply(
+    attr(exprs, "srcref"),
+    function(r) return(as.integer(r[[1]])),
+    integer(1)
+  )
+  for (i in seq_along(exprs)) {
+    if (!is_formatters_shape(exprs[[i]])) {
+      out$where <- c(out$where, paste0(home_file, ":", lines[i]))
+      out$problem <- c(
+        out$problem,
+        paste0(
+          "the top level of formatters.R holds ",
+          cut_code(exprs[[i]]),
+          ". It MUST hold only assignments of a name to function(...), ",
+          "because pbn leaves it out of manifest$source_md5"
+        )
+      )
+    }
+  }
+  blocks <- paste0(dirname(home_file), "/blocks.R")
+  twice <- blocks_redefinitions(
+    path,
+    exprs,
+    lines,
+    home_file,
+    setdiff(others, blocks)
+  )
+  used <- blocks_names_used(path, home_file, c(script, setdiff(others, blocks)))
+  out$where <- c(out$where, twice$where, used$where)
+  out$problem <- c(out$problem, twice$problem, used$problem)
+  return(out)
+}
+
+# TRUE when the top-level expression `e` of formatters.R assigns with <- or
+# = a name to function(...).
+is_formatters_shape <- function(e) {
+  return(
+    is_assignment_call(e) &&
+      is.symbol(e[[2]]) &&
+      !identical(e[[2]], as.name("blocks")) &&
+      is_blocks_shape(e)
+  )
+}
+
+# TRUE when the file vNN_functions/formatters.R of `version` in `home`
+# cannot change the results under the rule set `set`: the set is
+# house_2026_11_26 or newer, and the file does not exist, or it parses and
+# has none of the problems of formatters_file_problems(). Under an older set
+# it is FALSE, so the manifest holds the file as before.
+formatters_file_inert <- function(home, version, set) {
+  if (!needs_pbn_blocks(set)) {
+    return(FALSE)
+  }
+  home_file <- formatters_file(version)
+  if (!file.exists(file.path(home, home_file))) {
+    return(TRUE)
+  }
+  others <- setdiff(
+    sourcing_order(home, version),
+    c(home_file, blocks_file(version))
+  )
+  script <- paste0(version, "_run.R")
+  if (!file.exists(file.path(home, script))) {
+    script <- character(0)
+  }
+  found <- formatters_file_problems(
+    home,
+    home_file,
+    c(others, blocks_file(version)),
+    script
+  )
+  return(found$parsed && length(found$where) == 0)
 }
 
 # The problems of the file `home_file`, vNN_functions/blocks.R, of `path`
@@ -404,8 +539,11 @@ blocks_redefinitions <- function(path, exprs, lines, home_file, others) {
           f,
           ":",
           at,
-          ". A name of blocks.R MUST NOT be assigned in another file, because ",
-          "pbn leaves blocks.R out of manifest$source_md5"
+          ". A name of ",
+          basename(home_file),
+          " MUST NOT be assigned in another file, because pbn leaves ",
+          basename(home_file),
+          " out of manifest$source_md5"
         )
       )
     }
@@ -591,7 +729,9 @@ is_assignment_to <- function(e, name) {
 
 # What is wrong with the value `value` of blocks, or NULL. `functions` names
 # the functions of the top-level assignments of the functions folder.
-blocks_problem <- function(value, functions) {
+# `formatters` is NULL before the set house_2026_11_26, and else the value
+# of formatter_names_of(): then each element MUST pass pbn_block_problem().
+blocks_problem <- function(value, functions, formatters = NULL) {
   if (!is.call(value) || !identical(value[[1]], as.name("list"))) {
     return(paste(
       "blocks MUST be list(...), one function of results for each place in",
@@ -606,6 +746,9 @@ blocks_problem <- function(value, functions) {
   problem <- blocks_names_problem(nm)
   if (!is.null(problem)) {
     return(problem)
+  }
+  if (!is.null(formatters)) {
+    return(pbn_blocks_problem(parts, nm, functions, formatters))
   }
   is_fn <- vapply(parts, is_block_function, logical(1), functions = functions)
   if (!all(is_fn)) {
@@ -635,11 +778,116 @@ blocks_names_problem <- function(nm) {
   return(NULL)
 }
 
-# TRUE when the element `x` of the list of blocks is a function, or the name
-# of one of the functions `functions`.
+# TRUE when the element `x` of the list of blocks is a function, the name
+# of one of the functions `functions`, or a call pbn::block().
 is_block_function <- function(x, functions) {
   if (is.call(x)) {
-    return(identical(x[[1]], as.name("function")))
+    return(
+      identical(x[[1]], as.name("function")) || is_block_call_of_pbn(x)
+    )
   }
   return(is.symbol(x) && as.character(x) %in% functions)
+}
+
+# The first problem of pbn_block_problem() of the elements `parts` with the
+# names `nm` of the list of blocks, or NULL.
+pbn_blocks_problem <- function(parts, nm, functions, formatters) {
+  for (i in seq_along(parts)) {
+    bad <- pbn_block_problem(parts[[i]], nm[i], functions, formatters)
+    if (!is.null(bad)) {
+      return(bad)
+    }
+  }
+  return(NULL)
+}
+
+# What is wrong with the element `x` with the name `name` of the list of
+# blocks, from the set house_2026_11_26, or NULL. It MUST be a call
+# pbn::block() whose arguments match block(). Its fn is a function, or the
+# name of one of the functions `functions`. Its format is one string: the
+# name of a function of formatters.R, or of a house formatter that no other
+# file of the folder assigns, see formatter_names_of() for `formatters`.
+# Its items is absent or a literal c() of "<id>:<item>" strings.
+pbn_block_problem <- function(x, name, functions, formatters) {
+  head <- paste0("the element ", encodeString(name, quote = "\""), " of blocks")
+  e <- block_element(x)
+  problem <- block_call_problem(e, functions)
+  if (is.null(problem)) {
+    problem <- block_format_problem(e$format, formatters)
+  }
+  if (is.null(problem)) {
+    problem <- block_items_problem(e$items)
+  }
+  if (is.null(problem)) {
+    return(NULL)
+  }
+  return(paste0(head, problem))
+}
+
+# What is wrong with the call of the element `e` of block_element(), as the
+# end of a sentence that starts with the element, or NULL. `functions` are
+# the functions of the folder.
+block_call_problem <- function(e, functions) {
+  if (!e$is_block) {
+    return(paste0(
+      " is not a call pbn::block(fn, format, items). The rule set ",
+      "house_2026_11_26 needs it for each block"
+    ))
+  }
+  if (is.null(e$args) || !"fn" %in% names(e$args)) {
+    return(paste0(
+      " is a call pbn::block() without fn, or with an argument that ",
+      "pbn::block() does not take"
+    ))
+  }
+  fn <- e$args[["fn"]]
+  is_fn <- is.call(fn) && identical(fn[[1]], as.name("function"))
+  if (!is_fn && !(is.symbol(fn) && as.character(fn) %in% functions)) {
+    return(paste0(
+      " has a fn that is not a function, or the name of a function of the ",
+      "functions folder"
+    ))
+  }
+  return(NULL)
+}
+
+# What is wrong with the format `format` of block_element(), NULL when it is
+# not one string, as the end of a sentence that starts with the element, or
+# NULL. `formatters` is the value of formatter_names_of().
+block_format_problem <- function(format, formatters) {
+  if (is.null(format)) {
+    return(" has a format that is not one string")
+  }
+  if (format %in% formatters$elsewhere) {
+    return(paste0(
+      " has the format ",
+      format,
+      ", which a file other than formatters.R assigns. A project formatter ",
+      "MUST be in formatters.R only"
+    ))
+  }
+  if (!format %in% c(formatters$own, names(house_formatters()))) {
+    return(paste0(
+      " has the format ",
+      format,
+      ", which is no house formatter and no function of formatters.R"
+    ))
+  }
+  return(NULL)
+}
+
+# What is wrong with the items `items` of block_element(), NULL when they
+# are not literal, as the end of a sentence that starts with the element, or
+# NULL.
+block_items_problem <- function(items) {
+  if (is.null(items)) {
+    return(
+      " has items that are not a literal c(\"<id>:<item>\", ...) of strings"
+    )
+  }
+  problem <- items_problem(items)
+  if (!is.null(problem)) {
+    return(paste0(": items ", problem))
+  }
+  return(NULL)
 }

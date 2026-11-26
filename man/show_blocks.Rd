@@ -26,7 +26,8 @@ fits one screenshot.}
 \value{
 \code{show_blocks()}: invisibly, a data.frame with the columns
 \code{block}, \code{name}, \code{rows}, \code{pages} and \code{error}. \code{show_block()}: invisibly,
-the whole value of the block function.
+the whole value of the block function, or of the formatter for a
+\code{\link[=block]{block()}}.
 }
 \description{
 \code{show_blocks()} prints the index of the blocks of the project, and
@@ -35,8 +36,10 @@ numbers leave a server only as a screenshot.
 }
 \details{
 The project declares the blocks in its functions folder, as one object
-\code{blocks}. It is a named list of functions of \code{results}, in the order of
-the manuscript. The name of a block is its place in the manuscript, for
+\code{blocks}. It is a named list of blocks, in the order of the manuscript.
+Each block is a function of \code{results}, or a \code{\link[=block]{block()}} with such a
+function and a formatter. The rule set \code{house_2026_11_26} and the newer
+sets need a \code{\link[=block]{block()}} for each block. The name of a block is its place in the manuscript, for
 example \code{"Table 1"} or \code{"Results para 1: exclusions"}. In
 \code{show_block()}, each function gets the real results as \code{\link[=read_results]{read_results()}}
 returns them. \code{\link[=save_results]{save_results()}} also calls each function on simulation 1
@@ -46,6 +49,13 @@ results of each fake scenario too. A function returns a data.frame, or a
 character vector that prints as one line for each element. The function
 formats the numbers for the manuscript, and
 \code{show_block()} prints the table as the function returns it.
+
+A \code{\link[=block]{block()}} returns numbers, and \code{blocks.qs2} holds that raw value.
+\code{show_block()} and \code{show_blocks()} call the formatter of the block on
+the raw value at each call, and print the formatted value. A formatter
+that returns a data.table prints as a data.table. A raw value with a
+formatted number in a label cell, see \code{\link[=block]{block()}}, stops both functions,
+and the error names the block, the column and the cell.
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{blocks <- list(
   "Table 1" = function(results) results$table1,

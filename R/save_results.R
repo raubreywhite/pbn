@@ -70,7 +70,11 @@
 #'
 #'   Otherwise
 #'   `source_md5` holds it, also when the rule `blocks_list` of
-#'   [check_project()] is `warn` or `off`. A change of a blocks file of that
+#'   [check_project()] is `warn` or `off`. From the rule set
+#'   `house_2026_11_26`, [initialize_project()] also leaves out
+#'   `<version>_functions/formatters.R`, the formatters of [block()], under
+#'   the same conditions. Its only shape is a name assigned to
+#'   `function(...)`, and only `blocks.R` MAY use its names. A change of a blocks file of that
 #'   shape thus keeps the results current. [initialize_project()] computes the md5 before it
 #'   sources the files. The cache key of [add_data()] holds the md5 of the
 #'   files `data_*.R` only, so it never held `blocks.R`. The rule
@@ -191,7 +195,9 @@
 #'    for each block, in the order of `blocks`. It calls every block on
 #'    every scenario before it writes a file. A block fails on an error of
 #'    its function, or on a value that is not a data.frame or a character
-#'    vector. At the first failure, it stops and writes no `blocks.qs2`. The
+#'    vector. A [block()] fails on a raw value that breaks the rule of
+#'    [block()], and `blocks.qs2` holds its raw value. This step does not
+#'    call the formatter. At the first failure, it stops and writes no `blocks.qs2`. The
 #'    error is `block <k> "<name>" failed on scenario <s>: <error>`. So a
 #'    block MUST work on the results of each fake scenario too. Without
 #'    `blocks`, this step writes nothing. The run log of step 5 does not

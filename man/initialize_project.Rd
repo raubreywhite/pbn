@@ -75,6 +75,9 @@ lines and the limit.
 \item It computes the md5 of \verb{<version>_run.R} and of each file in
 \verb{<version>_functions/}, before it sources them. \code{\link[=save_results]{save_results()}} stores
 them in \code{manifest$source_md5}, without \verb{<version>_functions/blocks.R}.
+From the rule set \code{house_2026_11_26}, it also leaves out
+\verb{<version>_functions/formatters.R}, see \code{source_md5} of
+\code{\link[=save_results]{save_results()}}.
 The section The md5 of the run script gives the text of the run script
 that the md5 leaves out.
 \item It lists each file under each folder of \code{folders} that exists, at any

@@ -185,3 +185,189 @@ test_that("a run script with a block that errors exits with an error that names 
   expect_false(identical(v$status, 0L))
   expect_identical(attr(v, "verdict"), "FAIL")
 })
+
+# The blocks `lines` of the set house_2026_11_26: pbn.yml extends it, and
+# blocks.R holds the lines `before` and then list() with the lines `lines`.
+write_new_blocks <- function(p, lines, before = character(0)) {
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  return(write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(before, "blocks <- list(", lines, ")")
+  ))
+}
+
+# The TRAUMA pattern: a helper outside the block formats the numbers.
+fmt_ci_helper <- c(
+  "fmt_ci <- function(est, lo, hi) {",
+  "  return(sprintf(\"%.2f (%.2f to %.2f)\", est, lo, hi))",
+  "}"
+)
+fmt_ci_block <- c(
+  "  \"Effect\" = pbn::block(",
+  "    function(results) data.frame(term = \"x\", ci = fmt_ci(0.8, 0.46, 1.16)),",
+  "    format = \"ci\"",
+  "  )"
+)
+
+test_that("a block that formats through a helper outside the block stops save_results() and update_blocks() with the block, the column and the cell, and writes no blocks.qs2", {
+  p <- local_project()
+  write_new_blocks(p, fmt_ci_block, fmt_ci_helper)
+  run <- save_run(p, only = c("real", "known"))
+  expect_s3_class(run$err, "error")
+  expect_identical(
+    if (inherits(run$err, "error")) conditionMessage(run$err),
+    paste0(
+      "block 1 \"Effect\" failed on scenario real: it holds a formatted ",
+      "number in the column ci, row 1: \"0.80 (0.46 to 1.16)\". A block of ",
+      "pbn::block() returns numbers, and its formatter formats them"
+    )
+  )
+  expect_identical(blocks_files(p), character(0))
+  # update_blocks() stops the same way on the saved results.
+  expect_error(
+    utils::capture.output(update_blocks()),
+    paste0(
+      "block 1 \"Effect\" failed on scenario known: it holds a formatted ",
+      "number in the column ci, row 1: \"0.80 (0.46 to 1.16)\""
+    ),
+    fixed = TRUE
+  )
+  expect_identical(blocks_files(p), character(0))
+})
+
+test_that("a helper that returns the label cell n = 3 stops save_results() with the block, the column and the cell", {
+  p <- local_project()
+  write_new_blocks(
+    p,
+    c(
+      "  \"Sample\" = pbn::block(",
+      "    function(results) data.frame(group = n_label(3), n = 3, total = 4),",
+      "    format = \"n_pct\"",
+      "  )"
+    ),
+    "n_label <- function(n) return(paste(\"n =\", n))"
+  )
+  run <- save_run(p, only = c("real", "known"))
+  expect_identical(
+    if (inherits(run$err, "error")) conditionMessage(run$err),
+    paste0(
+      "block 1 \"Sample\" failed on scenario real: it holds a formatted ",
+      "number in the column group, row 1: \"n = 3\". A block of ",
+      "pbn::block() returns numbers, and its formatter formats them"
+    )
+  )
+  expect_identical(blocks_files(p), character(0))
+})
+
+# A block that builds the names of its lookups with paste0() and returns
+# numbers.
+paste0_block <- c(
+  "  \"Models\" = pbn::block(",
+  "    function(results) {",
+  "      m <- results[[paste0(\"mod\", \"els\")]]",
+  "      m <- m[m$term == paste0(\"g\", \"b\"), , drop = FALSE]",
+  "      return(data.frame(outcome = m$outcome, est = m$estimate, lo = m$estimate - 1, hi = m$estimate + 1))",
+  "    },",
+  "    format = \"ci\",",
+  "    items = c(\"strobe:17\")",
+  "  )"
+)
+
+test_that("a block that builds lookup names with paste0() and returns numbers passes blocks_list, and save_results() writes its raw value", {
+  p <- local_project()
+  write_new_blocks(p, paste0_block)
+  found <- project_findings(p$home)
+  expect_identical(found$status[found$rule == "blocks_list"], "PASS")
+  run <- save_run(p, only = c("real", "known"))
+  expect_false(inherits(run$err, "error"))
+  saved <- qs2::qs_read(file.path(p$home, "v01_results", "real", "blocks.qs2"))
+  m <- read_results("v01", "real", home = p$home)$models
+  m <- m[m$term == "gb", , drop = FALSE]
+  expect_identical(
+    saved$Models,
+    data.frame(
+      outcome = m$outcome,
+      est = m$estimate,
+      lo = m$estimate - 1,
+      hi = m$estimate + 1
+    )
+  )
+})
+
+# Plain blocks that return formatted strings, as the projects of the older
+# sets have them.
+formatted_plain_blocks <- c(
+  "  \"Effect\" = function(results) data.frame(term = \"x\", ci = fmt_ci(0.8, 0.46, 1.16)),",
+  "  \"Sample\" = function(results) c(\"n = 3\", \"p < 0.001\")"
+)
+
+for (set in c("house_2026_11_17", "house_2026_11_20", "house_2026_11_25")) {
+  test_that(paste("under", set, "a plain block that returns formatted strings passes blocks_list, and save_results() writes it as before"), {
+    p <- local_project()
+    write_lines(p$home, "pbn.yml", paste("extends:", set))
+    write_lines(
+      p$home,
+      "v01_functions/blocks.R",
+      c(fmt_ci_helper, "blocks <- list(", formatted_plain_blocks, ")")
+    )
+    found <- project_findings(p$home)
+    expect_identical(found$status[found$rule == "blocks_list"], "PASS")
+    run <- save_run(p, only = c("real", "known"))
+    expect_false(inherits(run$err, "error"))
+    expect_identical(blocks_files(p), c("known/blocks.qs2", "real/blocks.qs2"))
+    saved <- qs2::qs_read(file.path(p$home, "v01_results", "real", "blocks.qs2"))
+    expect_identical(
+      saved,
+      list(
+        Effect = data.frame(term = "x", ci = "0.80 (0.46 to 1.16)"),
+        Sample = c("n = 3", "p < 0.001")
+      )
+    )
+  })
+}
+
+test_that("update_blocks() creates blocks.qs2 from the saved results without a run, and stops without a session or for another version", {
+  p <- local_project()
+  run <- save_run(p, only = c("real", "known"))
+  expect_identical(blocks_files(p), character(0))
+  write_new_blocks(p, paste0_block)
+  init(p)
+  before <- file.info(file.path(p$home, "v01_results", "real", "results.qs2"))$mtime
+  out <- utils::capture.output(written <- update_blocks())
+  expect_identical(written, c("known", "real"))
+  expect_identical(out, "pbn: wrote blocks.qs2 for known, real.")
+  expect_identical(blocks_files(p), c("known/blocks.qs2", "real/blocks.qs2"))
+  expect_identical(
+    file.info(file.path(p$home, "v01_results", "real", "results.qs2"))$mtime,
+    before
+  )
+  saved <- qs2::qs_read(file.path(p$home, "v01_results", "known", "blocks.qs2"))
+  expect_identical(names(saved), "Models")
+  expect_true(is.numeric(saved$Models$est))
+  expect_error(
+    update_blocks("v02"),
+    "The blocks in this R session are those of v01, not of v02.",
+    fixed = TRUE
+  )
+  local_clean_state()
+  expect_error(
+    update_blocks(),
+    "Call pbn::initialize_project() before pbn::update_blocks().",
+    fixed = TRUE
+  )
+})
+
+test_that("under house_2026_11_26 a plain function in blocks stops save_results() and names the block", {
+  p <- local_project()
+  write_new_blocks(p, "  \"Table 1\" = function(results) results$table1")
+  run <- save_run(p, only = c("real", "known"))
+  expect_identical(
+    if (inherits(run$err, "error")) conditionMessage(run$err),
+    paste0(
+      "The block \"Table 1\" is a function. The rule set house_2026_11_26 ",
+      "needs pbn::block(fn, format, items) for each block, see ?pbn::block."
+    )
+  )
+  expect_identical(blocks_files(p), character(0))
+})

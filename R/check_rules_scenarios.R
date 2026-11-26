@@ -63,7 +63,12 @@ manuscript_files <- function(path) {
   ])
 }
 
-rule_manuscript_reads_real <- function(path) {
+# The rule manuscript_reads_real: each read_results() call of a file in
+# manuscript/built/ reads the scenario "real". From the rule set
+# house_2026_11_26 of `set`, a pbn::txt() call counts too. txt() reads the
+# real blocks only, so a txt() call fails when its arguments do not match
+# txt(), for example with an argument scenario.
+rule_manuscript_reads_real <- function(path, set = "house_2026_11_17") {
   rule <- "manuscript_reads_real"
   out <- list()
   for (f in manuscript_files(path)) {
@@ -75,15 +80,36 @@ rule_manuscript_reads_real <- function(path) {
     calls <- find_calls(exprs, is_read_results_call)
     scenarios <- vapply(calls, read_scenario, character(1))
     bad <- scenarios[scenarios != "\"real\""]
+    found <- character(0)
     if (length(bad) > 0) {
+      found <- paste0(
+        "read_results() with scenario = ",
+        paste(unique(bad), collapse = ", ")
+      )
+    }
+    if (needs_pbn_blocks(set)) {
+      texts <- find_calls(exprs, is_txt_call)
+      odd <- vapply(texts, txt_scenario, character(1))
+      odd <- odd[odd != "\"real\""]
+      if (length(odd) > 0) {
+        found <- c(
+          found,
+          paste0(
+            "pbn::txt() with an argument that it does not take: ",
+            paste(unique(odd), collapse = ", ")
+          )
+        )
+      }
+    }
+    if (length(found) > 0) {
       out[[f]] <- project_row(
         rule,
         "FAIL",
         f,
         paste0(
           f,
-          ": read_results() with scenario = ",
-          paste(unique(bad), collapse = ", "),
+          ": ",
+          paste(found, collapse = "; "),
           ". A manuscript reads only scenario \"real\""
         )
       )
@@ -104,7 +130,9 @@ version_number <- function(x) {
 # The rule built_reads_own_version: each read_results() call of a file in
 # manuscript/built/vNN/ has the version argument "vNN", the string. A
 # variable, another string and a call without the version fail.
-rule_built_reads_own_version <- function(path) {
+# From the rule set house_2026_11_26 of `set`, each pbn::txt() call has the
+# version argument "vNN" too.
+rule_built_reads_own_version <- function(path, set = "house_2026_11_17") {
   rule <- "built_reads_own_version"
   files <- manuscript_files(path)
   files <- files[grepl(built_version_pattern, files)]
@@ -117,9 +145,15 @@ rule_built_reads_own_version <- function(path) {
     }
     own <- sub(built_version_pattern, "\\1", f)
     calls <- find_calls(exprs, is_read_results_call)
+    versions <- lapply(calls, read_version)
+    if (needs_pbn_blocks(set)) {
+      texts <- find_calls(exprs, is_txt_call)
+      calls <- c(calls, texts)
+      versions <- c(versions, lapply(texts, txt_version))
+    }
     reads_own <- vapply(
-      calls,
-      function(cl) return(identical(read_version(cl), own)),
+      versions,
+      function(v) return(identical(v, own)),
       logical(1)
     )
     bad <- vapply(
@@ -302,6 +336,38 @@ is_read_results_call <- function(cl) {
       identical(f[[2]], quote(pbn)) &&
       identical(f[[3]], quote(read_results))
   )
+}
+
+# TRUE when `cl` is a call of txt() or pbn::txt().
+is_txt_call <- function(cl) {
+  f <- cl[[1]]
+  if (identical(f, quote(txt))) {
+    return(TRUE)
+  }
+  return(
+    is.call(f) &&
+      length(f) == 3 &&
+      as.character(f[[1]]) %in% c("::", ":::") &&
+      identical(f[[2]], quote(pbn)) &&
+      identical(f[[3]], quote(txt))
+  )
+}
+
+# The version argument of one txt() call, or NULL when the call has none or
+# R cannot match it to txt().
+txt_version <- function(cl) {
+  matched <- tryCatch(match.call(txt, cl), error = function(e) return(NULL))
+  return(matched[["version"]])
+}
+
+# "\"real\"" for a txt() call that R matches to txt(), which reads the real
+# blocks only, and else the call, deparsed.
+txt_scenario <- function(cl) {
+  matched <- tryCatch(match.call(txt, cl), error = function(e) return(NULL))
+  if (is.null(matched)) {
+    return(paste(deparse(cl), collapse = " "))
+  }
+  return("\"real\"")
 }
 
 # The scenario argument of one read_results() call, deparsed. A call without

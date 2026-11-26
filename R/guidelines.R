@@ -59,7 +59,7 @@ guideline_files <- function(home) {
 }
 
 # TRUE when `x` is one string that is not NA and not empty.
-is_one_string <- function(x) {
+is_nonempty_string <- function(x) {
   return(is.character(x) && length(x) == 1 && !is.na(x) && nzchar(x))
 }
 
@@ -72,7 +72,7 @@ is_string_list <- function(x) {
     is.list(x) &&
       is.null(names(x)) &&
       length(x) > 0 &&
-      all(vapply(x, is_one_string, logical(1)))
+      all(vapply(x, is_nonempty_string, logical(1)))
   )
 }
 
@@ -111,7 +111,7 @@ read_guideline_file <- function(home, file) {
   problems <- guideline_top_problems(y)
   entries <- guideline_entries(y)
   problems <- c(problems, entries$problems)
-  id <- if (is_one_string(y[["id"]])) y[["id"]] else NA_character_
+  id <- if (is_nonempty_string(y[["id"]])) y[["id"]] else NA_character_
   if (length(problems) > 0) {
     return(list(problems = problems, items = NULL, id = id))
   }
@@ -134,11 +134,11 @@ guideline_top_problems <- function(y) {
     out <- c(out, paste0("the key ", unknown, " is not a key of the schema"))
   }
   for (key in c("id", "title")) {
-    if (!is_one_string(y[[key]])) {
+    if (!is_nonempty_string(y[[key]])) {
       out <- c(out, paste0("the key ", key, " is missing or not one string"))
     }
   }
-  if (is_one_string(y[["id"]]) && !grepl("^[a-z0-9-]+$", y[["id"]])) {
+  if (is_nonempty_string(y[["id"]]) && !grepl("^[a-z0-9-]+$", y[["id"]])) {
     out <- c(
       out,
       paste0("the id ", y[["id"]], " has a character other than a-z, 0-9 and -")
@@ -151,7 +151,7 @@ guideline_top_problems <- function(y) {
     out <- c(out, paste0("the key ", key, " is present but empty"))
   }
   for (key in c("version", "source", "citation")) {
-    if (!is.null(y[[key]]) && !is_one_string(y[[key]])) {
+    if (!is.null(y[[key]]) && !is_nonempty_string(y[[key]])) {
       out <- c(out, paste0("the key ", key, " is not one string"))
     }
   }
@@ -162,7 +162,7 @@ guideline_top_problems <- function(y) {
   design <- y[["design"]]
   if (
     !is.null(design) &&
-      !(is_one_string(design) &&
+      !(is_nonempty_string(design) &&
         is_string_list(designs) &&
         design %in% unlist(designs))
   ) {
@@ -191,12 +191,12 @@ guideline_entries <- function(y) {
   } else {
     character(0)
   }
-  design <- if (is_one_string(y[["design"]])) y[["design"]] else NULL
+  design <- if (is_nonempty_string(y[["design"]])) y[["design"]] else NULL
   problems <- character(0)
   rows <- list()
   for (i in seq_along(entries)) {
     e <- entries[[i]]
-    label <- if (is.list(e) && is_one_string(e[["item"]])) {
+    label <- if (is.list(e) && is_nonempty_string(e[["item"]])) {
       paste0("item ", e[["item"]])
     } else {
       paste0("entry ", i)
@@ -249,11 +249,11 @@ guideline_entry_problems <- function(e, all_designs) {
     out <- c(out, paste0("the key ", unknown, " is not a key of an item"))
   }
   for (key in c("item", "section", "topic", "kind", "text")) {
-    if (!is_one_string(e[[key]])) {
+    if (!is_nonempty_string(e[[key]])) {
       out <- c(out, paste0("the key ", key, " is missing or not one string"))
     }
   }
-  if (is_one_string(e[["kind"]]) && !e[["kind"]] %in% guideline_kinds) {
+  if (is_nonempty_string(e[["kind"]]) && !e[["kind"]] %in% guideline_kinds) {
     out <- c(
       out,
       paste0("the kind ", e[["kind"]], " is not result, prose or author")

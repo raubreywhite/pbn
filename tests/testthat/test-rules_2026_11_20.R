@@ -451,3 +451,70 @@ test_that("a manual manuscript with a suffix that is not one lower-case word fai
     )
   }
 })
+
+test_that("under house_2026_11_26 a pbn::txt() call in manuscript/built/v02/ with another version fails built_reads_own_version, and under house_2026_11_20 it is not read", {
+  p <- local_project_20()
+  write_lines(
+    p$home,
+    "manuscript/built/v02/text.qmd",
+    c(
+      "```{r}",
+      "a <- pbn::txt(\"Effect\", version = \"v02\")",
+      "```",
+      "",
+      "The effect is `r pbn::txt(\"x\", version = \"v01\")`, `r txt(\"y\", 2, NULL, \"v02\")`."
+    )
+  )
+  expect_identical(
+    rows_20(p$home, "built_reads_own_version")$status,
+    "PASS"
+  )
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  expect_identical(
+    rows_20(p$home, "built_reads_own_version"),
+    data.frame(
+      status = "FAIL",
+      path = "manuscript/built/v02/text.qmd",
+      detail = with_fix(
+        "built_reads_own_version",
+        paste0(
+          "manuscript/built/v02/text.qmd: a manuscript in ",
+          "manuscript/built/v02/ reads only the version \"v02\", and these ",
+          "calls do not: pbn::txt(\"x\", version = \"v01\")"
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("under house_2026_11_26 manuscript_reads_real fails a pbn::txt() call with an argument that txt() does not take, and passes the others", {
+  p <- local_project_20()
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")
+  write_lines(
+    p$home,
+    "manuscript/built/v01/text.R",
+    c(
+      "a <- pbn::txt(\"Effect\", version = \"v01\")",
+      "b <- pbn::txt(\"Effect\", scenario = \"null\", version = \"v01\")"
+    )
+  )
+  expect_identical(
+    rows_20(p$home, "manuscript_reads_real"),
+    data.frame(
+      status = "FAIL",
+      path = "manuscript/built/v01/text.R",
+      detail = with_fix(
+        "manuscript_reads_real",
+        paste0(
+          "manuscript/built/v01/text.R: pbn::txt() with an argument that it ",
+          "does not take: pbn::txt(\"Effect\", scenario = \"null\", version = ",
+          "\"v01\"). A manuscript reads only scenario \"real\""
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_25")
+  expect_identical(rows_20(p$home, "manuscript_reads_real")$status, "PASS")
+})

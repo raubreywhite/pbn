@@ -211,9 +211,12 @@ the code. That includes an argument such as \code{lapply(x, f)}, a formula,
 and a string such as \code{do.call("f", args)}.
 So a helper in \code{utils.R} counts. A function that only an analysis calls
 does not change the key.
-\item \code{CFG$data}, when \code{CFG} has the element \code{data}. Put the config that the
-data code reads there. A change in another element of \code{CFG} does not
-change the key.
+\item \code{CFG$data}, when \code{CFG} has the element \code{data}.
+\item each other element of \code{CFG} that \code{fn}, a step or a function of the part
+above reads as \code{CFG$x} or \code{CFG[["x"]]}. When that code uses \code{CFG} in any
+other way, for example \code{CFG[[k]]}, \code{cfg = CFG} or \code{f(CFG)}, each element
+of \code{CFG} counts. Otherwise, an element that only an analysis reads does
+not change the key.
 \item the versions of R and pbn. The version of R covers the base packages.
 \item the three parts of \code{\link[=RNGkind]{RNGkind()}}.
 }
@@ -242,7 +245,8 @@ leave the key the same, and the run reads the old data:
 \itemize{
 \item a function whose name the data code builds when it runs, for example
 \code{get(paste0("f", 1))}.
-\item an object of the folder that is neither a function nor \code{CFG$data}.
+\item an object of the folder that is neither a function nor an element of
+\code{CFG}.
 Examples are a lookup vector in \code{utils.R} and a function inside a list.
 }
 
@@ -255,7 +259,8 @@ delete the folder \verb{<version>_cache_gitexclude/}. No argument does that.
 For each scenario and simulation, \code{\link[=run_plan]{run_plan()}} prints one line with
 \code{cat()}. The line says that the data came from the cache, with the date
 and time of the cache file. Or it says that pbn computed it, and why.
-The reason names each changed \code{data_*.R} file, \code{CFG$data}, or the
+The reason names each changed \code{data_*.R} file, \code{CFG$data}, each changed
+element of \code{CFG} that the data code reads, such as \code{CFG$ncc}, or the
 settings. It names changed raw data with its folders, for example "the
 raw data in the folder lookup". It names a changed \code{fn} as "the data function of
 add_data()", and each changed step as, for example, "the function given

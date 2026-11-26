@@ -178,6 +178,56 @@ code_names <- function(f) {
   )))
 }
 
+# The names of the elements of CFG that the code of the function `f` reads,
+# as CFG$x or CFG[["x"]], in its arguments and in its body. NA when the code
+# uses CFG in any other way, for example CFG[[k]], cfg = CFG, f(CFG) or
+# get("CFG"). Then the whole of CFG counts.
+cfg_names <- function(f) {
+  if (!is.function(f) || is.primitive(f)) {
+    return(character(0))
+  }
+  return(unique(c(cfg_names_code(formals(f)), cfg_names_code(body(f)))))
+}
+
+# cfg_names() of the code `x`, a call, a pairlist of arguments, a symbol or a
+# constant.
+cfg_names_code <- function(x) {
+  if (is.symbol(x)) {
+    return(if (identical(as.character(x), "CFG")) NA_character_ else character(0))
+  }
+  if (is.character(x)) {
+    return(if ("CFG" %in% x) NA_character_ else character(0))
+  }
+  if (!is.call(x) && !is.pairlist(x)) {
+    return(character(0))
+  }
+  if (is.call(x) && length(x) == 3 && is.symbol(x[[2]]) &&
+    identical(as.character(x[[2]]), "CFG") &&
+    (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("[[")))) {
+    el <- x[[3]]
+    if (is.symbol(el) && identical(x[[1]], as.name("$"))) {
+      return(as.character(el))
+    }
+    if (is.character(el) && length(el) == 1) {
+      return(el)
+    }
+    return(NA_character_)
+  }
+  # The name after $ or @, as in d$CFG, is no use of CFG.
+  if (is.call(x) && length(x) == 3 &&
+    (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("@")))) {
+    return(cfg_names_code(x[[2]]))
+  }
+  out <- character(0)
+  for (i in seq_along(x)) {
+    # The empty symbol of an argument without a default cannot be passed on.
+    if (!identical(x[[i]], quote(expr = ))) {
+      out <- c(out, cfg_names_code(x[[i]]))
+    }
+  }
+  return(out)
+}
+
 # Each string constant in the code `x`, a call, a pairlist of arguments or a
 # constant. A symbol, also the empty symbol of an argument without a default,
 # is skipped before it is passed on, because a missing argument cannot be

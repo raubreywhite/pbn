@@ -773,3 +773,92 @@ test_that("on a worker, the record holds the packages that the data function loa
   }
   expect_identical(cohort_run(p)$out, cache_lines(p, rep(NA, 3)))
 })
+
+test_that("an element of CFG outside CFG$data that the data code reads is in the cache key, an element that only an analysis reads is not, and a use of the whole of CFG counts each element", {
+  skip_if_not_installed("cohort")
+  p <- local_cohort_project()
+  files <- cohort_function_files()
+  edit <- function(rel, lines) {
+    write_lines(p$home, file.path("v01_functions", rel), lines)
+  }
+  step <- function(why) {
+    before <- length(calls(p))
+    run <- cohort_run(p)
+    expect_identical(run$out, cache_lines(p, why))
+    now <- calls(p)
+    return(list(run = run, new_calls = now[seq_along(now) > before]))
+  }
+  cfg <- function(age_min, outcome = "y") {
+    x <- sub(
+      "outcome = \"y\"",
+      paste0("outcome = \"", outcome, "\""),
+      cohort_cfg_lines(p$counter),
+      fixed = TRUE
+    )
+    return(sub(
+      "  outcome = ",
+      paste0("  cut = list(age_min = ", age_min, "),\n  outcome = "),
+      x,
+      fixed = TRUE
+    ))
+  }
+  # data_cohort() reads CFG$cut, with $ and with [[ and a string.
+  edit(
+    "data_cohort.R",
+    gsub(
+      "CFG$data$age_min",
+      "CFG[[\"cut\"]]$age_min",
+      sub("CFG$data$age_min", "CFG$cut$age_min", files[["data_cohort.R"]], fixed = TRUE),
+      fixed = TRUE
+    )
+  )
+  edit("_cfg.R", cfg(18))
+  step(rep(no_file, 3))
+
+  edit("_cfg.R", cfg(17))
+  s <- step(rep("CFG$cut changed", 3))
+  expect_identical(s$new_calls, c("real 1", "null 1", "null 2"))
+  expect_identical(
+    attr(s$run$r[["real__sim_0001__pbn_n_rows"]], "exclusions")$d$n_excluded,
+    1L
+  )
+
+  # CFG$outcome is read by an analysis only: the data comes from the cache.
+  edit("analyses.R", gsub("CFG$outcome", "CFG$y_name", files[["analyses.R"]], fixed = TRUE))
+  edit("_cfg.R", sub("  outcome = ", "  y_name = \"y\",\n  outcome = ", cfg(17, "z"), fixed = TRUE))
+  expect_identical(step(rep(NA, 3))$new_calls, character(0))
+
+  # A data step that uses the whole of CFG: each element counts.
+  edit(
+    "data_cohort.R",
+    c(
+      "data_cohort <- function(d, cfg = CFG) {",
+      "  cp <- cohort::CohortPipeline$new(d)",
+      "  cp$exclude_and_track(",
+      "    \"root\",",
+      "    paste(\"age under\", cfg$cut$age_min),",
+      "    paste(\"age <\", cfg$cut$age_min)",
+      "  )",
+      "  cp",
+      "}"
+    )
+  )
+  cohort_run(p)
+  edit("_cfg.R", sub("  outcome = ", "  y_name = \"y\",\n  outcome = ", cfg(17, "w"), fixed = TRUE))
+  s <- step(rep("CFG$outcome changed", 3))
+  expect_identical(s$new_calls, c("real 1", "null 1", "null 2"))
+})
+
+test_that("cfg_names() finds CFG$x and CFG[[\"x\"]], and gives NA for any other use of CFG", {
+  f <- function(d) {
+    a <- CFG$one$x
+    b <- CFG[["two"]]
+    c <- lapply(d, function(z) z + CFG$three)
+    d$CFG
+  }
+  expect_identical(cfg_names(f), c("one", "two", "three"))
+  expect_identical(cfg_names(function(d, cfg = CFG) cfg$x), NA_character_)
+  expect_identical(cfg_names(function(k) CFG[[k]]), NA_character_)
+  expect_identical(cfg_names(function() get("CFG")$x), NA_character_)
+  expect_identical(cfg_names(function(d) d), character(0))
+})

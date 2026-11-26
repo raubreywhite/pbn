@@ -696,7 +696,7 @@ rows <- grep("^\\| 20", log, value = TRUE)
 stopifnot(length(rows) == 6, grepl(" analyses failed", rows[4], fixed = TRUE), grepl("| real, known ", rows[2], fixed = TRUE))
 ```
 
-The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, and `CFG$data`. It also holds the code of each step, and of each function of `v01_functions/` that a step calls, also through other functions. So a helper in `utils.R` counts. A function that only an analysis calls does not change the key. The key also holds the fingerprint of the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. To compute every value again, delete `v01_cache_gitexclude/`.
+The cache key holds the md5 of each `data_*.R` file of `v01_functions/`, `CFG$data`, and each other element of `CFG` that the data code reads, such as `CFG$ncc`. A use of `CFG` in another form, such as `cfg = CFG`, puts every element of `CFG` in the key. It also holds the code of each step, and of each function of `v01_functions/` that a step calls, also through other functions. So a helper in `utils.R` counts. A function that only an analysis calls does not change the key. The key also holds the fingerprint of the raw data, the settings, the versions of R and pbn, and `RNGkind()`. Beside the key, pbn records the version of each package loaded when the data was computed. A new version of one of them computes the data again. `?add_data` gives the full rule. To compute every value again, delete `v01_cache_gitexclude/`.
 
 ## Stepping through one analysis by hand
 
@@ -1250,8 +1250,8 @@ In a one-file version, the rule `built_reads_source` of the set `house_2026_11_2
 - The checks between the steps compare the number of rows, not which rows. A `data_clean()`, or a `data_cohort()` before `$new()`, that drops one row and repeats another passes. pbn does not check the rows of the step `after_cohort`.
 - The check of the rows of the data compares sizes only. A copy of the data with one row less passes.
 - The cache stores the whole value of one data element for each scenario and simulation. A change of the code of one imputation computes every imputation again.
-- The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string such as `do.call("f", args)`. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, is not in the key. Nor is an object that is neither a function nor `CFG$data`, for example a lookup vector in `utils.R`. A change of either then leaves the old data in use.
-- `fake_md5` holds the code of the same functions as the cache key, and of no other object. A change of `CFG$data` or of a lookup vector in `utils.R` does not change `fake_md5`. `source_md5` holds the md5 of their files.
+- The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string such as `do.call("f", args)`. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, is not in the key. Nor is an object that is neither a function nor an element of `CFG`, for example a lookup vector in `utils.R`. A change of either then leaves the old data in use.
+- `fake_md5` holds the code of the same functions as the cache key, and of no other object. A change of `CFG` or of a lookup vector in `utils.R` does not change `fake_md5`. `source_md5` holds the md5 of their files.
 - No argument computes the cached data again. Delete `v01_cache_gitexclude/` to do that.
 - A use of the cache stops when a `data_*.R` file changed after `initialize_project()`. Run `initialize_project()` again.
 - Do not run one scenario of one version in two R sessions at the same time. The two runs can mix the files of their results.

@@ -303,6 +303,7 @@ cache_parts <- function(ctx, where) {
     data_function = ctx[["data_function"]],
     helpers = ctx[["helpers"]],
     cfg_data = ctx[["cfg_data"]],
+    cfg_read = ctx[["cfg_read"]],
     versions = ctx[["versions"]],
     rng = ctx[["rng"]]
   ))
@@ -401,7 +402,8 @@ part_change <- function(nm, a, b) {
   # The words before and after each changed name of the part.
   around <- list(
     versions = c("the version of ", ""),
-    helpers = c("the function `", "`")
+    helpers = c("the function `", "`"),
+    cfg_read = c("CFG$", "")
   )
   if (nm %in% names(around)) {
     return(paste0(around[[nm]][1], differing_names(a, b), around[[nm]][2]))
@@ -549,6 +551,7 @@ cache_context <- function(info, name, print_now) {
     raw_data = state$data_files,
     data_files = data_files_md5(state$source_md5),
     cfg_data = cfg_data(state$env),
+    cfg_read = cfg_read(info, name, state$env),
     versions = cache_versions(),
     rng = RNGkind(),
     skip = record_skip(),
@@ -715,6 +718,32 @@ cfg_data <- function(env) {
     return(NULL)
   }
   return(cfg[["data"]])
+}
+
+# The elements of CFG of the sourced environment, other than CFG$data, that
+# the code of the data `name` reads: `fn` or each step, and each function of
+# the part helpers, see cfg_names(). Sorted by name in the C locale. When the
+# code uses CFG in another way than CFG$x or CFG[["x"]], each element counts.
+# NULL when the code reads none or there is no CFG.
+cfg_read <- function(info, name, env) {
+  cfg <- get0("CFG", envir = env, inherits = FALSE)
+  if (!is.list(cfg) || is.null(names(cfg))) {
+    return(NULL)
+  }
+  steps <- info$steps[[name]]
+  code <- c(
+    if (is.null(steps)) info$data[name] else steps,
+    project_functions()[helper_names(info, name)]
+  )
+  used <- unique(unlist(lapply(code, cfg_names)))
+  if (anyNA(used)) {
+    used <- names(cfg)
+  }
+  used <- sort(setdiff(intersect(used, names(cfg)), "data"), method = "radix")
+  if (length(used) == 0) {
+    return(NULL)
+  }
+  return(cfg[used])
 }
 
 # The versions of R and pbn. The record beside each cache file holds the

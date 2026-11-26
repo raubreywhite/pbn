@@ -1015,6 +1015,8 @@ When `blocks.R` breaks one of the last two, `initialize_project()` puts it back 
 
 Each run also calls every block on each scenario, after the assertions pass. A block gets simulation 1 of a scenario with more simulations, and never the stacked results. `save_results()` writes the raw values to `v01_results/<scenario>/blocks.qs2`, a named list with one value for each block. `pbn::show_block()` and `pbn::txt()` call the formatter at each call, so a change of a formatter needs no new run. After a change of the function of a block, `pbn::update_blocks()` writes `blocks.qs2` again from the saved results, without a run. A block that fails stops the run, and the error names the block and the scenario. So a block MUST also work on the results of each fake scenario.
 
+Each page of `pbn::show_block()` has the line `v01, run <run date>` under the page line, so a screenshot shows its version and its run date. The run date has no time, so two runs of one day print the same line. The option `width` is 270 during the call. The screen wraps a printed line wider than 270 characters. So a page with such a line ends with a warning that names the block and the width of the widest line.
+
 A block runs at the console, where the packages of the run script MAY be missing. So a block function names the package of each call, for example `data.table::data.table()`. The sections above changed other code of the project, so run it again here. Then start the project in this R session with the first call of `v01_run.R`, as you do at the console in the project folder:
 
 ```{r}

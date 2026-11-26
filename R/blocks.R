@@ -74,7 +74,15 @@
 #' `show_block()` prints these lines:
 #' 1. the number and the name of the block,
 #' 2. the page, for example `page 2 of 4, rows 36 to 70 of 140`,
-#' 3. the rows of the page.
+#' 3. the version and the date of the real run, for example
+#'    `v01, run 2026-11-26`, or `v01, run an unknown date` when the manifest
+#'    has no `run_date`,
+#' 4. the rows of the page,
+#' 5. a warning that names the block and the width of its widest line, only
+#'    when a printed line of the page is more than 270 characters wide.
+#'
+#' So a screenshot shows its version and its run date. The version line
+#' comes after the page line, so the first two lines keep their place.
 #'
 #' Real results MAY come from fake real data, see `fake_real_data` of
 #' [initialize_project()]. Then `show_block()` prints the line
@@ -186,20 +194,23 @@ show_block <- function(k, page = 1, rows = 35, version = NULL, home = NULL) {
       call. = FALSE
     )
   }
-  show_page(ctx, k, value, page, rows)
+  show_page(ctx, k, value, page, rows, run_line = TRUE)
   return(invisible(value))
 }
 
 # Prints the page `page` of `rows` rows of the value `value` of the block
 # `k` of `ctx`, as show_block() does. It sets the options of show_block(),
-# and the caller sets them back.
-show_page <- function(ctx, k, value, page, rows) {
+# and the caller sets them back. `run_line = TRUE` prints the line
+# "<version>, run <run date>" under the page line. check_one_file() compares
+# the pages of two runs with `run_line = FALSE`, because the run date of the
+# file of to_one_file() MAY differ from the run date of the project.
+show_page <- function(ctx, k, value, page, rows, run_line = FALSE) {
   n <- block_rows(value)
   pages <- max(1L, as.integer(ceiling(n / rows)))
   i <- seq_len(n)
   i <- i[ceiling(i / rows) == page]
   options(
-    width = 270,
+    width = page_width,
     max.print = .Machine$integer.max,
     datatable.print.nrows = Inf,
     datatable.print.colnames = "top",
@@ -222,12 +233,35 @@ show_page <- function(ctx, k, value, page, rows) {
     } else {
       paste0(", rows ", min(i), " to ", max(i), " of ", n)
     },
-    "\n\n",
+    "\n",
+    if (run_line) paste0(ctx$version, ", run ", ctx$run_date, "\n"),
+    "\n",
     sep = ""
   )
-  print_page(value, i)
+  out <- utils::capture.output(print_page(value, i))
+  # Each line ends with a newline, also the last line of a character block.
+  cat(paste0(out, "\n"), sep = "")
+  widest <- max(0L, nchar(out, type = "width"))
+  if (widest > page_width) {
+    cat(
+      "Warning: the block ",
+      k,
+      ", \"",
+      names(ctx$blocks)[k],
+      "\", has a line ",
+      widest,
+      " characters wide, wider than ",
+      page_width,
+      ". The screen wraps it.\n",
+      sep = ""
+    )
+  }
   return(invisible(NULL))
 }
+
+# The option `width` of show_block(), and the widest line of a page that
+# gets no warning.
+page_width <- 270
 
 # The label of the blocks of real results from fake real data, see
 # initialize_project(fake_real_data = TRUE).

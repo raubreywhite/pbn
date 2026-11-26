@@ -96,8 +96,16 @@ it prints the error in the place of the rows, and goes on.
 \enumerate{
 \item the number and the name of the block,
 \item the page, for example \verb{page 2 of 4, rows 36 to 70 of 140},
-\item the rows of the page.
+\item the version and the date of the real run, for example
+\verb{v01, run 2026-11-26}, or \verb{v01, run an unknown date} when the manifest
+has no \code{run_date},
+\item the rows of the page,
+\item a warning that names the block and the width of its widest line, only
+when a printed line of the page is more than 270 characters wide.
 }
+
+So a screenshot shows its version and its run date. The version line
+comes after the page line, so the first two lines keep their place.
 
 Real results MAY come from fake real data, see \code{fake_real_data} of
 \code{\link[=initialize_project]{initialize_project()}}. Then \code{show_block()} prints the line

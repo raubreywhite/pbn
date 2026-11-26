@@ -319,6 +319,21 @@
 #'   without `blocks.R` passes. [initialize_project()] makes the same checks
 #'   of `blocks.R`, and puts it back into `manifest$source_md5` when one
 #'   fails, also when this rule is `warn` or `off`.
+#'
+#'   From the set `house_2026_11_26`, the rule also fails each of these:
+#'   - an element of `blocks` that is not a call `pbn::block(fn, format,
+#'     items)`.
+#'   - a `format` that is not one string, or that names no house formatter
+#'     and no function of `formatters.R`.
+#'   - an `items` that is not a literal `c("<id>:<item>", ...)` of strings.
+#'   - a top-level expression of `vNN_functions/formatters.R` that does not
+#'     assign a name to `function(...)`.
+#'   - a name of `formatters.R` that a file other than `blocks.R` uses or
+#'     assigns.
+#'
+#'   The rule does not run the blocks, so it does not see their raw values.
+#'   [save_results()], [update_blocks()], [show_blocks()], [show_block()] and
+#'   [txt()] check each raw value as [block()] says.
 #' - `real_results_are_fake` (WARN): a file `vNN_results/real/results.qs2`
 #'   holds `manifest$fake_real_data` `TRUE`. Its run had
 #'   `fake_real_data = TRUE` of [initialize_project()], so its numbers are
@@ -331,9 +346,13 @@
 #'   `.yml` file directly in `guidelines/`. It does not read a file in a
 #'   folder under `guidelines/`, or a file with another extension, such as
 #'   `.yaml`.
-#' - `guidelines_covered` (WARN): this version of pbn does not check it, so
-#'   it always passes. A later version checks that the manuscript answers
-#'   each item of `guidelines/*.yml`.
+#' - `guidelines_covered` (WARN): a result item of a valid file
+#'   `guidelines/<x>.yml` has no block, or a block names an item that no
+#'   valid file has. Each such item and each such tag gives one WARN. The
+#'   rule reads the literal `items` of each [block()] in the `blocks.R` of
+#'   the newest functions folder, without running code. A tag of a file
+#'   that fails `guidelines_valid` gives no WARN. [make_checklists()] then
+#'   checks the manuscript text against the formatted strings of the blocks.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R`,

@@ -129,42 +129,45 @@ test_that("house_2026_11_26 is house_2026_11_25 with guidelines_valid at fail an
   )))
   expect_identical(starter_line(), "extends: house_2026_11_26")
   # create_project() stays on house_2026_11_25: its template has no
-  # guidelines/, and guidelines_covered checks nothing yet.
+  # guidelines/.
   expect_identical(create_project_set, "house_2026_11_25")
 })
 
-test_that("valid checklist files pass guidelines_valid, guidelines_covered passes, and guidelines/ is a known path", {
+test_that("valid checklist files pass guidelines_valid, guidelines_covered WARNs each result item without a block, and guidelines/ is a known path", {
   p <- local_project_26()
   copy_guidelines(p$home)
   found <- project_findings(p$home)
   expect_identical(failed_rules(found), character(0))
   expect_identical(
-    found[found$rule %in% rules_2026_11_26, c("rule", "status", "detail")],
+    found[found$rule == "guidelines_valid", c("status", "detail")],
     data.frame(
-      rule = rules_2026_11_26,
-      status = c("PASS", "PASS"),
-      detail = c(
-        "every guidelines/*.yml follows the checklist schema",
-        paste(
-          "not checked yet: a later version of pbn checks guidelines/*.yml",
-          "against the manuscript"
-        )
-      )
+      status = "PASS",
+      detail = "every guidelines/*.yml follows the checklist schema"
     ),
     ignore_attr = TRUE
   )
-  # guidelines_covered is a placeholder until a later version: one PASS row.
+  # The project has no blocks.R, so each result item of the two files gives
+  # one WARN: 5 of AGReMA and 11 of STROBE. STROBE has 13 result entries,
+  # and its item 15 comes 3 times, once per design.
+  covered <- found[found$rule == "guidelines_covered", ]
+  expect_identical(nrow(covered), 16L)
+  expect_identical(unique(covered$status), "WARN")
   expect_identical(
-    found[found$rule == "guidelines_covered", c("status", "path", "detail")],
-    data.frame(
-      status = "PASS",
-      path = "",
-      detail = paste(
-        "not checked yet: a later version of pbn checks guidelines/*.yml",
-        "against the manuscript"
+    as.vector(table(covered$path)[c(
+      "guidelines/agrema.yml",
+      "guidelines/strobe.yml"
+    )]),
+    c(5L, 11L)
+  )
+  expect_identical(
+    covered$detail[1],
+    with_fix(
+      "guidelines_covered",
+      paste0(
+        "guidelines/agrema.yml: no block of v01_functions/blocks.R names ",
+        "the result item agrema:17 in its items"
       )
-    ),
-    ignore_attr = TRUE
+    )
   )
   # No unknown_path row names guidelines/.
   expect_false(any(found$rule == "unknown_path" & found$path == "guidelines"))
@@ -758,4 +761,142 @@ test_that("is_one_string() has one definition, which passes the empty string, an
     ),
     ignore_attr = TRUE
   )
+})
+
+# The checklist guidelines/mini.yml with the result items 1 and 2 and the
+# prose item 3, and v01_functions/blocks.R with one block whose items are
+# the strings `items`.
+write_mini_coverage <- function(home, items) {
+  write_lines(
+    home,
+    "guidelines/mini.yml",
+    guideline_lines(
+      "mini",
+      c(
+        entry_text("1", kind = "result"),
+        entry_text("2", kind = "result"),
+        entry_text("3", kind = "prose")
+      )
+    )
+  )
+  write_lines(
+    home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Effect\" = pbn::block(",
+      "    function(results) results$effect,",
+      "    format = \"ci\",",
+      paste0(
+        "    items = c(",
+        paste0("\"", items, "\"", collapse = ", "),
+        ")"
+      ),
+      "  )",
+      ")"
+    )
+  )
+  return(invisible(home))
+}
+
+test_that("a result item that no block names gives a WARN guidelines_covered, and a prose item never does", {
+  p <- local_project_26()
+  write_mini_coverage(p$home, "mini:1")
+  expect_identical(
+    rows_26(p$home, "guidelines_covered"),
+    data.frame(
+      status = "WARN",
+      path = "guidelines/mini.yml",
+      detail = with_fix(
+        "guidelines_covered",
+        paste0(
+          "guidelines/mini.yml: no block of v01_functions/blocks.R names ",
+          "the result item mini:2 in its items"
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+  write_mini_coverage(p$home, c("mini:1", "mini:2"))
+  expect_identical(
+    rows_26(p$home, "guidelines_covered")[, c("status", "detail")],
+    data.frame(
+      status = "PASS",
+      detail = paste(
+        "every result item of guidelines/*.yml has a block, and every item",
+        "of a block is in guidelines/*.yml"
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("a tag that names no item gives a WARN guidelines_covered, also a tag of a checklist that is not there", {
+  p <- local_project_26()
+  write_mini_coverage(
+    p$home,
+    c("mini:1", "mini:2", "mini:3", "mini:99", "strobe:99")
+  )
+  expect_identical(
+    rows_26(p$home, "guidelines_covered"),
+    data.frame(
+      status = c("WARN", "WARN"),
+      path = c("v01_functions/blocks.R", "v01_functions/blocks.R"),
+      detail = with_fix(
+        "guidelines_covered",
+        c(
+          paste0(
+            "v01_functions/blocks.R: the block \"Effect\" names mini:99, ",
+            "and no file guidelines/*.yml has that item"
+          ),
+          paste0(
+            "v01_functions/blocks.R: the block \"Effect\" names strobe:99, ",
+            "and no file guidelines/*.yml has that item"
+          )
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("guidelines_covered reads the blocks.R of the newest version only, and a broken checklist gives it no finding", {
+  p <- local_project_26()
+  write_mini_coverage(p$home, c("mini:1", "mini:2", "mini:99"))
+  # v02 names mini:1 only. The tags of v01 count no more.
+  dir.create(file.path(p$home, "v02_functions"))
+  file.copy(
+    file.path(p$home, "v01_functions", "blocks.R"),
+    file.path(p$home, "v02_functions")
+  )
+  write_lines(
+    p$home,
+    "v02_functions/blocks.R",
+    sub(
+      "c(\"mini:1\", \"mini:2\", \"mini:99\")",
+      "c(\"mini:1\")",
+      readLines(file.path(p$home, "v02_functions", "blocks.R")),
+      fixed = TRUE
+    )
+  )
+  expect_identical(
+    rows_26(p$home, "guidelines_covered")$detail,
+    with_fix(
+      "guidelines_covered",
+      paste0(
+        "guidelines/mini.yml: no block of v02_functions/blocks.R names ",
+        "the result item mini:2 in its items"
+      )
+    )
+  )
+  # A file that breaks the schema gives guidelines_valid a FAIL, and
+  # guidelines_covered nothing for its items or its tags.
+  unlink(file.path(p$home, "v02_functions"), recursive = TRUE)
+  write_lines(
+    p$home,
+    "guidelines/mini.yml",
+    guideline_lines("mini", entry_text("1", kind = "maybe"))
+  )
+  expect_identical(rows_26(p$home, "guidelines_covered")$status, "PASS")
+  expect_identical(rows_26(p$home, "guidelines_valid")$status, "FAIL")
 })

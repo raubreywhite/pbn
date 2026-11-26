@@ -394,9 +394,93 @@ rule_guidelines_valid <- function(path) {
   return(project_row("guidelines_valid", "FAIL", names(bad), detail))
 }
 
-# The rule guidelines_covered. It finds nothing yet, so it always passes. A
-# later version of pbn checks that the manuscript answers each item of
-# read_guidelines().
+# The rule guidelines_covered: each result item of the valid checklist
+# files has a block, and each tag of a block names an item. The blocks are
+# those of vNN_functions/blocks.R of the newest functions folder, the
+# version that the manuscript reads, and their tags are the literal items of
+# each pbn::block(), read without running code. Older versions are frozen or
+# out of date, so their tags give no finding. A broken checklist file gives
+# no finding here, because guidelines_valid fails it, and a tag of its id
+# gives none either. Returns one WARN per result item without a block, with
+# the path of its checklist file, and one WARN per tag with no item, with
+# the path of the blocks.R.
 rule_guidelines_covered <- function(path) {
-  return(project_row(character(0), character(0), character(0), character(0)))
+  checked <- check_guidelines(path)
+  ok <- vapply(
+    checked,
+    function(x) return(length(x[["problems"]]) == 0),
+    logical(1)
+  )
+  items <- do.call(
+    rbind,
+    c(
+      list(empty_guidelines()),
+      unname(lapply(checked[ok], function(x) return(x[["items"]])))
+    )
+  )
+  broken <- vapply(checked[!ok], function(x) return(x[["id"]]), character(1))
+  tags <- covered_tags(path)
+  known <- paste0(items$id, ":", items$item, recycle0 = TRUE)
+  result <- items[items$kind == "result", , drop = FALSE]
+  result_tags <- paste0(result$id, ":", result$item, recycle0 = TRUE)
+  result <- result[!duplicated(result_tags), , drop = FALSE]
+  bare <- result[
+    !paste0(result$id, ":", result$item, recycle0 = TRUE) %in% tags$tag,
+    ,
+    drop = FALSE
+  ]
+  where <- if (is.na(tags$file)) "vNN_functions/blocks.R" else tags$file
+  rows <- project_row(
+    "guidelines_covered",
+    "WARN",
+    bare$file,
+    paste0(
+      bare$file,
+      ": no block of ",
+      where,
+      " names the result item ",
+      bare$id,
+      ":",
+      bare$item,
+      " in its items",
+      recycle0 = TRUE
+    )
+  )
+  unknown <- !tags$tag %in% known & !sub(":.*$", "", tags$tag) %in% broken
+  extra <- project_row(
+    "guidelines_covered",
+    "WARN",
+    rep(where, sum(unknown)),
+    paste0(
+      where,
+      ": the block \"",
+      tags$block[unknown],
+      "\" names ",
+      tags$tag[unknown],
+      ", and no file guidelines/*.yml has that item",
+      recycle0 = TRUE
+    )
+  )
+  return(rbind(rows, extra))
+}
+
+# The tags of the blocks of the newest functions folder of the project in
+# `path`: `file`, its blocks.R relative to `path`, or NA when there is no
+# functions folder; `tag` and `block`, each tag of the literal items of a
+# pbn::block() and the name of that block. A blocks.R that is missing or
+# that blocks_list fails for its list gives no tag.
+covered_tags <- function(path) {
+  folders <- sort(functions_folders(path), method = "radix")
+  out <- list(file = NA_character_, tag = character(0), block = character(0))
+  if (length(folders) == 0) {
+    return(out)
+  }
+  out$file <- paste0(folders[length(folders)], "/blocks.R")
+  elements <- blocks_elements_of_file(file.path(path, out$file))
+  for (name in names(elements)) {
+    tags <- elements[[name]]$items
+    out$tag <- c(out$tag, tags)
+    out$block <- c(out$block, rep(name, length(tags)))
+  }
+  return(out)
 }

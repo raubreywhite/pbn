@@ -23,6 +23,7 @@ pbn_exports <- c(
   "get_data",
   "initialize_project",
   "keep_exclusions",
+  "make_checklists",
   "make_outputs",
   "new_version",
   "progress",
@@ -49,6 +50,7 @@ new_exports <- c(
   block = "house_2026_11_26",
   create_project = "house_2026_11_19",
   freeze_version = "house_2026_11_19",
+  make_checklists = "house_2026_11_26",
   new_version = "house_2026_11_19",
   table1_styles = "house_2026_11_20",
   txt = "house_2026_11_26",
@@ -1046,8 +1048,8 @@ project_rules <- function() {
     ),
     guidelines_covered = list(
       rule_guidelines_covered,
-      "not checked yet: a later version of pbn checks guidelines/*.yml against the manuscript",
-      "answer the item in the manuscript"
+      "every result item of guidelines/*.yml has a block, and every item of a block is in guidelines/*.yml",
+      "name the item in items of a pbn::block() in vNN_functions/blocks.R, or correct the item of the block to one of guidelines/*.yml"
     ),
     unknown_path = list(
       rule_unknown_path,

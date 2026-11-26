@@ -1050,6 +1050,61 @@ pbn::txt("Results para 1: exclusions", version = "v01", home = home)
 stopifnot(identical(pbn::txt("Results para 1: exclusions", version = "v01", home = home), "388 (97.0%)"))
 ```
 
+### Checklists
+
+A project declares its reporting checklists as files `guidelines/<id>.yml`, in the checklist schema of `?check_project`. This file holds 3 items of STROBE:
+
+```{r, include = FALSE}
+dir.create(file.path(home, "guidelines"))
+```
+
+```{cat, engine.opts = list(file = file.path(home, "guidelines", "strobe.yml"), lang = "yaml")}
+id: strobe
+title: STROBE
+items:
+  - item: "4"
+    section: "Methods"
+    topic: "Study design"
+    kind: prose
+    text: "Present key elements of study design early in the paper"
+  - item: "13a"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "(a) Report numbers of individuals at each stage of study\u2014eg numbers potentially eligible, examined for eligibility, confirmed eligible, included in the study, completing follow-up, and analysed"
+  - item: "16a"
+    section: "Results"
+    topic: "Main results"
+    kind: result
+    text: "(a) Give unadjusted estimates and, if applicable, confounder-adjusted estimates and their precision (eg, 95% confidence interval). Make clear which confounders were adjusted for and why they were included"
+```
+
+Here the built manuscript prints the string of the block for item 13a, and it leaves out the odds ratio of item 16a. In a project, Quarto writes this file from a `.qmd`. `pbn::make_checklists()` then compares each item with the text:
+
+```{r}
+writeLines(c(
+  "## Results",
+  "",
+  paste("Of the people,", pbn::txt("Results para 1: exclusions", version = "v01", home = home), "stayed in the analysis.")
+), file.path(home, "manuscript", "built", "v01", "paper.md"))
+checklist <- pbn::make_checklists("v01", home = home)
+checklist[, c("Item", "Reported in", "Status")]
+```
+
+```{r, include = FALSE}
+stopifnot(identical(checklist$Status[1:2], c("to fill", "numbers found")), identical(checklist$`Reported in`[2], "Results"), startsWith(checklist$Status[3], "numbers missing: Odds ratio of group b against a, adjusted for x: "))
+```
+
+It wrote the same table, with the full text of each item, to `manuscript/built/v01/checklist_strobe.md`. Item 13a is `numbers found`, because the text holds each formatted string of its blocks. Reported in names the heading of each string. `numbers found` does not prove that the text answers the item, so a reader confirms each item. Item 16a gives the first string that the text does not hold. Item 4 is prose, so the authors fill it in.
+
+The set `house_2026_11_26` also checks the items of the blocks. Its rule `guidelines_covered` warns about each result item that no block names, and about each item of a block that no checklist has.
+
+```{r, include = FALSE}
+# The sections below need the project without the checklist.
+unlink(file.path(home, "guidelines"), recursive = TRUE)
+unlink(file.path(home, "manuscript", "built", "v01", c("paper.md", "checklist_strobe.md")))
+```
+
 ### The one file
 
 The arguments `one_file_home` and `one_file_folders` of `pbn::initialize_project()` in `v01_run.R` declare the paths on the server. `# pbn::to_one_file()` and `# pbn::check_one_file()` are comments, so a normal run of `v01_run.R` does not write or check the file. To write the file, run the first call of the script and then `pbn::to_one_file()` at the console. It takes no argument, and it writes `v01_one_file.R` in the project folder. It needs no results, so you MAY write and read the file before the first full run:

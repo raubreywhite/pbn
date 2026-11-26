@@ -350,6 +350,22 @@ The detail is \verb{<file>:<line>: <what>}. A folder without \code{blocks} and
 without \code{blocks.R} passes. \code{\link[=initialize_project]{initialize_project()}} makes the same checks
 of \code{blocks.R}, and puts it back into \code{manifest$source_md5} when one
 fails, also when this rule is \code{warn} or \code{off}.
+
+From the set \code{house_2026_11_26}, the rule also fails each of these:
+\itemize{
+\item an element of \code{blocks} that is not a call \code{pbn::block(fn, format, items)}.
+\item a \code{format} that is not one string, or that names no house formatter
+and no function of \code{formatters.R}.
+\item an \code{items} that is not a literal \code{c("<id>:<item>", ...)} of strings.
+\item a top-level expression of \code{vNN_functions/formatters.R} that does not
+assign a name to \verb{function(...)}.
+\item a name of \code{formatters.R} that a file other than \code{blocks.R} uses or
+assigns.
+}
+
+The rule does not run the blocks, so it does not see their raw values.
+\code{\link[=save_results]{save_results()}}, \code{\link[=update_blocks]{update_blocks()}}, \code{\link[=show_blocks]{show_blocks()}}, \code{\link[=show_block]{show_block()}} and
+\code{\link[=txt]{txt()}} check each raw value as \code{\link[=block]{block()}} says.
 \item \code{real_results_are_fake} (WARN): a file \code{vNN_results/real/results.qs2}
 holds \code{manifest$fake_real_data} \code{TRUE}. Its run had
 \code{fake_real_data = TRUE} of \code{\link[=initialize_project]{initialize_project()}}, so its numbers are
@@ -362,9 +378,13 @@ names its first 3 problems and counts the rest. The rule reads each
 \code{.yml} file directly in \verb{guidelines/}. It does not read a file in a
 folder under \verb{guidelines/}, or a file with another extension, such as
 \code{.yaml}.
-\item \code{guidelines_covered} (WARN): this version of pbn does not check it, so
-it always passes. A later version checks that the manuscript answers
-each item of \verb{guidelines/*.yml}.
+\item \code{guidelines_covered} (WARN): a result item of a valid file
+\verb{guidelines/<x>.yml} has no block, or a block names an item that no
+valid file has. Each such item and each such tag gives one WARN. The
+rule reads the literal \code{items} of each \code{\link[=block]{block()}} in the \code{blocks.R} of
+the newest functions folder, without running code. A tag of a file
+that fails \code{guidelines_valid} gives no WARN. \code{\link[=make_checklists]{make_checklists()}} then
+checks the manuscript text against the formatted strings of the blocks.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},

@@ -1066,7 +1066,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     blocks_list = "keep the list blocks and the functions of the blocks in vNN_functions/blocks.R only, and use none of its names in another file",
     real_results_are_fake = "run the scenario \"real\" again with pbn::initialize_project(fake_real_data = FALSE)",
     guidelines_valid = "correct the file to the checklist schema of ?check_project",
-    guidelines_covered = "answer the item in the manuscript",
+    guidelines_covered = "name the item in items of a pbn::block() in vNN_functions/blocks.R, or correct the item of the block to one of guidelines/*.yml",
     unknown_path = "move it into a folder of the layout, such as adhoc/, or delete it"
   )
   expect_identical(

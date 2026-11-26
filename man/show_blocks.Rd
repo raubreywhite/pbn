@@ -37,10 +37,14 @@ numbers leave a server only as a screenshot.
 The project declares the blocks in its functions folder, as one object
 \code{blocks}. It is a named list of functions of \code{results}, in the order of
 the manuscript. The name of a block is its place in the manuscript, for
-example \code{"Table 1"} or \code{"Results para 1: exclusions"}. Each function gets
-the real results as \code{\link[=read_results]{read_results()}} returns them. It returns a
-data.frame, or a character vector that prints as one line for each
-element. The function formats the numbers for the manuscript, and
+example \code{"Table 1"} or \code{"Results para 1: exclusions"}. In
+\code{show_block()}, each function gets the real results as \code{\link[=read_results]{read_results()}}
+returns them. \code{\link[=save_results]{save_results()}} also calls each function on simulation 1
+of every scenario of the run, and writes the values to
+\verb{<version>_results/<scenario>/blocks.qs2}. So a block MUST work on the
+results of each fake scenario too. A function returns a data.frame, or a
+character vector that prints as one line for each element. The function
+formats the numbers for the manuscript, and
 \code{show_block()} prints the table as the function returns it.
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{blocks <- list(

@@ -205,6 +205,20 @@ error message at 1000 bytes by default. The error gives the number of
 failed assertions, their scenarios and the path of \code{check.csv}. The
 files stay, so that you can find the fault, and \code{\link[=read_results]{read_results()}} stops
 on them until the assertions pass.
+\item When the functions folder defines \code{blocks}, see \code{\link[=show_block]{show_block()}}, it
+calls each block function on the results of each scenario of
+\code{scenarios}. It reads them with \code{\link[=read_results]{read_results()}} and \code{sim = 1}. So for
+a scenario with 2 or more simulations, a block gets simulation 1, and
+not the stacked results. It writes the values of a scenario to
+\verb{<version>_results/<scenario>/blocks.qs2}, a named list with one value
+for each block, in the order of \code{blocks}. It calls every block on
+every scenario before it writes a file. A block fails on an error of
+its function, or on a value that is not a data.frame or a character
+vector. At the first failure, it stops and writes no \code{blocks.qs2}. The
+error is \verb{block <k> "<name>" failed on scenario <s>: <error>}. So a
+block MUST work on the results of each fake scenario too. Without
+\code{blocks}, this step writes nothing. The run log of step 5 does not
+record this step.
 }
 }
 \section{The run log}{
@@ -301,7 +315,8 @@ git gets the results of each scenario as one file, \code{results.qs2}, and
 never the results of each simulation. These are the files of
 \verb{<version>_results/<scenario>/}:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{check.csv                  the assertions of expect_<scenario>()
+\if{html}{\out{<div class="sourceCode">}}\preformatted{blocks.qs2                 the values of the blocks, on simulation 1
+check.csv                  the assertions of expect_<scenario>()
 results.qs2                the results, stacked for more than 1 simulation
 results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
 sims_gitexclude/           only for more than 1 simulation
@@ -321,6 +336,13 @@ Before it writes a scenario, \code{save_results()} deletes each file in its
 \verb{sims_gitexclude/}, and prints one line when there was one. So no
 simulation of an earlier run stays, for example after \code{sims} became
 smaller. For a scenario that now has 1 simulation, it deletes the folder.
+
+Before it writes a scenario, \code{save_results()} also deletes its
+\code{blocks.qs2}. So a call that stops before step 7 leaves no values of the
+blocks of an earlier run beside the new results. A block gets the results
+with the kinds of \code{gitexclude}. So a block that shows rows for each person
+writes them into \code{blocks.qs2}. The line \verb{*gitexclude*} of \code{.gitignore}
+does not keep that file out of git.
 
 \code{save_results()} stops when a file or a folder that it deletes is still
 there afterwards, for example because another program holds it open on

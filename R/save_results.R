@@ -182,6 +182,20 @@
 #'    failed assertions, their scenarios and the path of `check.csv`. The
 #'    files stay, so that you can find the fault, and [read_results()] stops
 #'    on them until the assertions pass.
+#' 7. When the functions folder defines `blocks`, see [show_block()], it
+#'    calls each block function on the results of each scenario of
+#'    `scenarios`. It reads them with [read_results()] and `sim = 1`. So for
+#'    a scenario with 2 or more simulations, a block gets simulation 1, and
+#'    not the stacked results. It writes the values of a scenario to
+#'    `<version>_results/<scenario>/blocks.qs2`, a named list with one value
+#'    for each block, in the order of `blocks`. It calls every block on
+#'    every scenario before it writes a file. A block fails on an error of
+#'    its function, or on a value that is not a data.frame or a character
+#'    vector. At the first failure, it stops and writes no `blocks.qs2`. The
+#'    error is `block <k> "<name>" failed on scenario <s>: <error>`. So a
+#'    block MUST work on the results of each fake scenario too. Without
+#'    `blocks`, this step writes nothing. The run log of step 5 does not
+#'    record this step.
 #' @section The run log:
 #' [run_plan()] replaces the run log at its start with a short log that says
 #' that the run has not finished. A run that ends before the next log, for
@@ -269,6 +283,7 @@
 #' `<version>_results/<scenario>/`:
 #'
 #' ```
+#' blocks.qs2                 the values of the blocks, on simulation 1
 #' check.csv                  the assertions of expect_<scenario>()
 #' results.qs2                the results, stacked for more than 1 simulation
 #' results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
@@ -289,6 +304,13 @@
 #' `sims_gitexclude/`, and prints one line when there was one. So no
 #' simulation of an earlier run stays, for example after `sims` became
 #' smaller. For a scenario that now has 1 simulation, it deletes the folder.
+#'
+#' Before it writes a scenario, `save_results()` also deletes its
+#' `blocks.qs2`. So a call that stops before step 7 leaves no values of the
+#' blocks of an earlier run beside the new results. A block gets the results
+#' with the kinds of `gitexclude`. So a block that shows rows for each person
+#' writes them into `blocks.qs2`. The line `*gitexclude*` of `.gitignore`
+#' does not keep that file out of git.
 #'
 #' `save_results()` stops when a file or a folder that it deletes is still
 #' there afterwards, for example because another program holds it open on
@@ -428,6 +450,7 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
     stop(checks)
   }
   stop_on_failed_checks(checks, state$results)
+  save_blocks(table$scenario, state$results)
   return(invisible(checks))
 }
 
@@ -1044,6 +1067,8 @@ mark_not_checked <- function(folder) {
 write_scenario <- function(o, root, s) {
   folder <- file.path(root, s)
   mark_not_checked(folder)
+  # The values of the blocks of an earlier run belong to its results.
+  delete_paths(file.path(folder, blocks_qs2_file))
   empty_sims_folder(folder, s, o$sims)
   if (o$sims == 1) {
     qs2::qs_save(o$runs[[1]], file.path(folder, "results.qs2"))

@@ -16,10 +16,14 @@
 #' The project declares the blocks in its functions folder, as one object
 #' `blocks`. It is a named list of functions of `results`, in the order of
 #' the manuscript. The name of a block is its place in the manuscript, for
-#' example `"Table 1"` or `"Results para 1: exclusions"`. Each function gets
-#' the real results as [read_results()] returns them. It returns a
-#' data.frame, or a character vector that prints as one line for each
-#' element. The function formats the numbers for the manuscript, and
+#' example `"Table 1"` or `"Results para 1: exclusions"`. In
+#' `show_block()`, each function gets the real results as [read_results()]
+#' returns them. [save_results()] also calls each function on simulation 1
+#' of every scenario of the run, and writes the values to
+#' `<version>_results/<scenario>/blocks.qs2`. So a block MUST work on the
+#' results of each fake scenario too. A function returns a data.frame, or a
+#' character vector that prints as one line for each element. The function
+#' formats the numbers for the manuscript, and
 #' `show_block()` prints the table as the function returns it.
 #'
 #' ```r
@@ -259,6 +263,56 @@ blocks_context <- function(version, home) {
     run_date = if (is_one_string(run_date)) run_date else "an unknown date",
     fake_real_data = isTRUE(results$manifest$fake_real_data)
   ))
+}
+
+# The file of the values of the blocks in the folder of each scenario.
+blocks_qs2_file <- "blocks.qs2"
+
+# Step 7 of save_results(): evaluates each block of the functions folder on
+# simulation 1 of each scenario of `scenarios` under `root`, and writes the
+# values of a scenario to <root>/<scenario>/blocks.qs2, a named list in the
+# order of `blocks`. It writes no file when the functions folder has no
+# blocks. It stops at the first block that fails, before it writes a file.
+save_blocks <- function(scenarios, root) {
+  blocks <- get0("blocks", envir = state$env, inherits = FALSE)
+  if (is.null(blocks)) {
+    return(invisible(NULL))
+  }
+  check_blocks(blocks, state$version)
+  restore <- keep_options()
+  on.exit(restore(), add = TRUE)
+  values <- list()
+  for (s in scenarios) {
+    ctx <- list(
+      blocks = blocks,
+      results = read_results(state$version, s, sim = 1, home = state$home)
+    )
+    values[[s]] <- stats::setNames(
+      vector("list", length(blocks)),
+      names(blocks)
+    )
+    for (k in seq_along(blocks)) {
+      got <- block_call(ctx, k)
+      if (!is.null(got$error)) {
+        stop(
+          "block ",
+          k,
+          " \"",
+          names(blocks)[k],
+          "\" failed on scenario ",
+          s,
+          ": ",
+          got$error,
+          call. = FALSE
+        )
+      }
+      values[[s]][k] <- list(got$value)
+    }
+  }
+  for (s in scenarios) {
+    qs2::qs_save(values[[s]], file.path(root, s, blocks_qs2_file))
+  }
+  return(invisible(NULL))
 }
 
 # Stops when `blocks` is not a named list of functions with names that come

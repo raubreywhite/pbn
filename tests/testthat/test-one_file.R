@@ -772,7 +772,7 @@ test_that("check_one_file fails a block that prints differently for the two resu
     c(
       "blocks <- list(",
       "  \"Table 1\" = function(results) results$table1,",
-      "  \"A call without its package\" = function(results) mle(function(m) 0)",
+      "  \"A call without its package\" = function(results) class(mle(function(m = 1) (m - 1)^2))[1]",
       ")"
     )
   )

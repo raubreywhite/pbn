@@ -975,6 +975,8 @@ Write `blocks` in `v01_functions/blocks.R` only. pbn leaves that file out of `ma
 
 When `blocks.R` breaks one of the last two, `initialize_project()` puts it back into `manifest$source_md5`.
 
+Each run also calls every block on each scenario, after the assertions pass. A block gets simulation 1 of a scenario with more simulations, and never the stacked results. `save_results()` writes the values to `v01_results/<scenario>/blocks.qs2`, a named list with one value for each block. A block that fails stops the run, and the error names the block and the scenario. So a block MUST also work on the results of each fake scenario.
+
 A block runs at the console, where the packages of the run script MAY be missing. So a block function names the package of each call, for example `data.table::data.table()`. The sections above changed other code of the project, so run it again here. Then start the project in this R session with the first call of `v01_run.R`, as you do at the console in the project folder:
 
 ```{r}
@@ -991,6 +993,13 @@ withr::with_dir(home, pbn::initialize_project(
 
 ```{r, include = FALSE}
 stopifnot(out$status == 0)
+```
+
+The run wrote a `blocks.qs2` for each scenario. These are the names of the values for the real data:
+
+```{r}
+list.files(file.path(home, "v01_results"), "^blocks[.]qs2$", recursive = TRUE)
+names(qs2::qs_read(file.path(home, "v01_results", "real", "blocks.qs2")))
 ```
 
 ### The one file

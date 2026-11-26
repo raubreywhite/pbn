@@ -354,7 +354,7 @@
 #' home <- file.path(tempdir(), "pbn_save_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 #' dir.create(file.path(home, "data"))
-#' writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 #' writeLines("# The run script.", file.path(home, "v01_run.R"))
 #' writeLines(
 #'   c(
@@ -1028,7 +1028,7 @@ drop_outputs <- function(root, scenarios) {
 # refuses the results there until the expect_ function has checked them. A
 # reader thus never gets new results with the check.csv of an earlier run.
 mark_not_checked <- function(folder) {
-  dir.create(folder, recursive = TRUE, showWarnings = FALSE)
+  create_folder(folder)
   write_csv_atomic(
     failed_assertion(
       "save_results() checks these results with expect_<scenario>()",
@@ -1051,7 +1051,7 @@ write_scenario <- function(o, root, s) {
     return(invisible(NULL))
   }
   delete_paths(file.path(folder, "results.qs2"))
-  dir.create(file.path(folder, sims_folder), showWarnings = FALSE)
+  create_folder(file.path(folder, sims_folder))
   for (sim in seq_len(o$sims)) {
     qs2::qs_save(o$runs[[sim]], file.path(folder, sim_file(sim)))
     write_private(o$private[[sim]], file.path(folder, sim_private_file(sim)))

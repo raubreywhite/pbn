@@ -95,6 +95,12 @@ Project code finds a folder with \code{\link[=folder]{folder()}}, for example
 function: a top-level call in a file of the functions folder runs before
 \code{initialize_project()} sets the folders, and it stops.
 
+\code{initialize_project()} drops a final \code{/} or \verb{\\} of \code{home} and of each path
+of \code{folders}, \code{one_file_home} and \code{one_file_folders}. So
+\code{"N:/durable/project/"} is \code{"N:/durable/project"}, and a path that pbn
+builds from it never holds \verb{//}. A root keeps its separator: \code{"N:/"} and
+\code{"/"} stay as they are.
+
 The results folder is \verb{<home>/<version>_results}. \code{\link[=save_results]{save_results()}} creates
 it. \code{initialize_project()} creates no folder, also no folder with today's
 date. It stops when \verb{<version>_functions/} does not exist.
@@ -187,8 +193,9 @@ could change the results. See the section The md5 of the run script.
 
 The paths are text only. \code{initialize_project()} stops on one of the two
 without the other, and on a folder of \code{folders} that \code{one_file_folders}
-does not name, or the reverse. It checks no folder on the disk,
-normalises no path and uses no path in the run. The paths never go into
+does not name, or the reverse. It checks no folder on the disk and uses
+no path in the run. It drops a final \code{/} or \verb{\\} of each path, as the
+section Details says, and changes nothing else. The paths never go into
 the manifest, a cache key or the run log.
 }
 
@@ -245,7 +252,7 @@ file.
 \examples{
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")

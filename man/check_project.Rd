@@ -37,10 +37,12 @@ the tracked files, and the untracked files that git does not ignore.
 Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules, with their level in the set \code{house_2026_11_20}, are below.
-The set \code{house_2026_11_19} has the same rules at the same levels, without
-\code{built_reads_own_version}, \code{built_has_run} and \code{manual_not_ahead}. The
-set \code{house_2026_11_17} also does not have \code{frozen_versions_unchanged},
+The rules, with their level in the set \code{house_2026_11_25}, are below.
+The set \code{house_2026_11_20} has the same rules at the same levels, without
+\code{no_plot_title}, \code{no_plot_subtitle} and \code{no_plot_caption}. The set
+\code{house_2026_11_19} also does not have \code{built_reads_own_version},
+\code{built_has_run} and \code{manual_not_ahead}. The set \code{house_2026_11_17} also
+does not have \code{frozen_versions_unchanged},
 \code{readme_and_changelog}, \code{changelog_with_code}, \code{comment_share},
 \code{no_cross_version_reads} and \code{no_escape_hatches}. A rule that the set of
 the project does not have prints no line.
@@ -279,6 +281,45 @@ builds stays outside the rule.
 The detail is \verb{<file>:<line>: "<the string, cut at 40 characters>"}, or
 \verb{<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)}. A path under \code{allow} allows each finding of one
 file.
+\item \code{no_plot_title} (FAIL): an \code{.R} file of \code{loc_per_file} gives a figure
+a title. A figure has no title, no subtitle and no caption, because its
+legend belongs in the manuscript. The rule fails each of these:
+\itemize{
+\item a call \code{ggtitle()} with a value of its first argument \code{label}.
+\item an argument \code{title} of \code{labs()}.
+\item an argument \code{title} of \code{plot_annotation()}, by name or as its first
+argument.
+\item an assignment to \verb{<x>$labels$title}.
+}
+
+A call MAY have the prefix \verb{ggplot2::} for \code{ggtitle()} and \code{labs()}, and
+\verb{patchwork::} for \code{plot_annotation()}. A call of the same name from
+another package passes. R matches the arguments of a call as it does
+in a run: by name, by a part of a name and by position. These pass:
+\itemize{
+\item the value \code{NULL}, as in \code{labs(title = NULL)}, which removes the title.
+\item the other arguments, as in \code{labs(x = "Age", colour = "Group", tag = "A")}
+and \code{plot_annotation(tag_levels = "A")}.
+\item a theme element, as in \code{theme(plot.title = element_text())}.
+\item an argument \code{title} or \code{caption} of another function, as in
+\code{knitr::kable(d, caption = "x")}.
+\item a call that R cannot match, as one with an argument that the function
+does not have, and a title that \code{do.call()} or a \code{...} passes. The
+rule misses these.
+}
+
+The rule parses each file and runs no code of it. It skips a file that
+R cannot parse. The detail is \verb{<file>:<line>: <call>(<argument> = ...)},
+for example \code{v01_functions/output.R:12: ggplot2::labs(title = ...)}, or
+\verb{<file>:<line>: <target> <- ...}. A path under \code{allow} allows each
+finding of one file.
+\item \code{no_plot_subtitle} (FAIL): as \code{no_plot_title}, for a subtitle: the
+argument \code{subtitle} of \code{ggtitle()}, by name or as its second argument,
+the argument \code{subtitle} of \code{labs()} and of \code{plot_annotation()}, and an
+assignment to \verb{<x>$labels$subtitle}.
+\item \code{no_plot_caption} (FAIL): as \code{no_plot_title}, for a caption: the
+argument \code{caption} of \code{labs()} and of \code{plot_annotation()}, and an
+assignment to \verb{<x>$labels$caption}.
 \item \code{blocks_list} (FAIL): for each functions folder, one of these is true:
 \itemize{
 \item a file other than \code{vNN_functions/blocks.R} assigns \code{blocks} at its
@@ -333,8 +374,9 @@ and the symbols.
 
 \code{vNN_one_file.R} at the top level is the file of \code{\link[=to_one_file]{to_one_file()}}. It holds
 the paths of a server by design, and pbn writes it. So \code{loc_per_file},
-\code{cyclomatic_complexity}, \code{no_local_assign} and \code{no_absolute_paths} do not
-read it, and no rule takes it for a run script. Put it in git: it is what
+\code{cyclomatic_complexity}, \code{no_local_assign}, \code{no_absolute_paths},
+\code{no_plot_title}, \code{no_plot_subtitle} and \code{no_plot_caption} do not read it,
+and no rule takes it for a run script. Put it in git: it is what
 ran on the server.
 }
 \section{The file pbn.yml}{
@@ -343,7 +385,7 @@ Each project MUST have the file \code{pbn.yml} in its top folder \code{path}. pb
 reads no other file. A file \code{pbn.yaml} stops \code{check_project()} with the
 advice to rename it. The smallest \code{pbn.yml} is one line:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_20
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_25
 }\if{html}{\out{</div>}}
 
 The key \code{extends} names a house rule set. A set is a dated file in the
@@ -351,7 +393,7 @@ folder \verb{rules/} of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-\code{readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))}.
+\code{readLines(system.file("rules", "house_2026_11_25.yml", package = "pbn"))}.
 
 The set gives each rule one of three levels:
 \itemize{
@@ -396,7 +438,7 @@ folders.
 This \code{pbn.yml} changes two rules, allows three paths and ignores one
 folder:
 
-\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_20
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{extends: house_2026_11_25
 rules:
   cyclomatic_complexity: \{limit: 25\}
   unknown_path: off
@@ -439,7 +481,7 @@ of the house layout, is there twice, or is a file.
 \examples{
 home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")

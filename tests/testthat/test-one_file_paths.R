@@ -88,7 +88,8 @@ test_that("initialize_project stops on one path of the server without the other,
     fixed = TRUE
   )
   expect_null(state$results)
-  # The paths are text: pbn checks no folder and normalises no path.
+  # The paths are text: pbn checks no folder and normalises no path, but
+  # for a final separator.
   q(
     one_file_home = "N:/no/such/../folder",
     one_file_folders = c(lookup = "relative/l", main = "N:/d")
@@ -409,6 +410,26 @@ test_that("check_one_file finds the file older than the run script when the path
       "\"  generated = list(\" now."
     )
   )
+})
+
+test_that("a final / or \\ of a path of the server changes no line of the file of to_one_file, so check_one_file finds the file current", {
+  p <- local_project()
+  save_run(p, only = c("real", "known"))
+  init_server(p)
+  utils::capture.output(to_one_file())
+  file <- file.path(p$home, "v01_one_file.R")
+  lines <- readLines(file)
+  init(p, one_file_home = "N:/x/", one_file_folders = c(main = "N:/d\\"))
+  expect_identical(state$one_file_home, "N:/x")
+  expect_identical(state$one_file_folders, c(main = "N:/d"))
+  expect_null(disk_one_file("v01")$found)
+  utils::capture.output(to_one_file())
+  expect_identical(readLines(file), lines)
+  expect_false(any(grepl("N:/x//", lines, fixed = TRUE)))
+  # A root keeps its separator.
+  init(p, one_file_home = "N:/", one_file_folders = c(main = "/"))
+  expect_identical(state$one_file_home, "N:/")
+  expect_identical(state$one_file_folders, c(main = "/"))
 })
 
 test_that("the md5 of the run script leaves out an argument only when its value is literal strings, and keeps a value that is code", {

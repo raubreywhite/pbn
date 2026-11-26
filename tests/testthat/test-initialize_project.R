@@ -31,6 +31,47 @@ test_that("initialize_project sources the functions folder, returns the paths an
   expect_identical(state$env, sourced)
 })
 
+test_that("initialize_project drops a final / or \\ of home and of each folder, so no path of pbn holds //, and a root keeps its separator", {
+  p <- local_project()
+  local_clean_state()
+  absent <- file.path(p$root, "absent")
+  out <- suppressMessages(initialize_project(
+    "v01",
+    paste0(p$home, "/"),
+    c(main = paste0(p$data_default, "/"), lookup = paste0(absent, "//")),
+    env = new.env()
+  ))
+  home <- normalizePath(p$home, winslash = "/")
+  expect_identical(out$home, home)
+  expect_identical(out$results, file.path(home, "v01_results"))
+  expect_identical(out$folders, c(main = p$data_default, lookup = absent))
+  expect_identical(state$home, home)
+  expect_identical(folder("main", "d.csv"), file.path(p$data_default, "d.csv"))
+  expect_identical(folder("lookup", "x.csv"), file.path(absent, "x.csv"))
+  expect_identical(
+    drop_final_separator(c(
+      a = "N:/durable/project/",
+      b = "N:\\data\\",
+      c = "N:/",
+      d = "N:\\",
+      e = "/",
+      f = "//",
+      g = "../data",
+      h = "\\\\server\\share\\"
+    )),
+    c(
+      a = "N:/durable/project",
+      b = "N:\\data",
+      c = "N:/",
+      d = "N:\\",
+      e = "/",
+      f = "/",
+      g = "../data",
+      h = "\\\\server\\share"
+    )
+  )
+})
+
 test_that("initialize_project sets no seed and reads no command-line argument", {
   p <- local_project()
   set.seed(42)

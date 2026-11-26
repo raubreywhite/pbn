@@ -119,7 +119,7 @@ check_one_file <- function(...) {
     return(invisible(FALSE))
   }
   tmp <- tempfile("pbn_one_file_")
-  dir.create(file.path(tmp, "home"), recursive = TRUE)
+  create_folder(file.path(tmp, "home"))
   # A temporary path on Windows holds \ and can hold a short name such as
   # RUNNER~1. Each path that goes into the file is the long path with /.
   tmp <- normalizePath(tmp, winslash = "/")
@@ -351,7 +351,7 @@ copy_folders <- function(folders, root) {
     if (!dir.exists(folders[[nm]])) {
       next
     }
-    dir.create(out[[nm]], recursive = TRUE)
+    create_folder(out[[nm]])
     inner <- list.files(
       folders[[nm]],
       full.names = TRUE,

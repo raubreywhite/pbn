@@ -24,11 +24,12 @@
 #' so the same data in another place gives the same results.
 #' @return The path of the folder, or of the path inside it, one string. A
 #'   folder that existed at [initialize_project()] has its normalised path
-#'   with `/`, and another folder has the path as `folders` gave it.
+#'   with `/`, and another folder has the path as `folders` gave it. Neither
+#'   has a final `/` or `\`, but a root such as `"N:/"` keeps it.
 #' @examples
 #' home <- file.path(tempdir(), "pbn_folder_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-#' writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 #' writeLines("CFG <- list()", file.path(home, "v01_functions", "_cfg.R"))
 #' pbn::initialize_project(
 #'   "v01",
@@ -152,7 +153,8 @@ check_folders <- function(folders, arg = "folders") {
 }
 
 # The folders `folders` of the project in `home` at initialize_project():
-# `folders`, the named paths, normalised for a folder that exists; `absent`,
+# `folders`, the named paths, normalised for a folder that exists and
+# without a final separator, see drop_final_separator(); `absent`,
 # the names of the folders that do not exist; and `files`, the fingerprint
 # of the files of the folders that exist, see folder_files(). Stops on a
 # folder inside another, and on a folder that holds or is inside the results
@@ -160,6 +162,7 @@ check_folders <- function(folders, arg = "folders") {
 folders_listing <- function(folders, home, version) {
   exists <- dir.exists(folders)
   folders[exists] <- normalizePath(folders[exists], winslash = "/")
+  folders <- drop_final_separator(folders)
   check_nested_folders(folders[exists], home, version)
   return(list(
     folders = folders,
@@ -261,6 +264,16 @@ folder_files <- function(folders) {
     )
   }
   return(x)
+}
+
+# The paths `x` without a final / or \, so that file.path() and folder()
+# never build a // in a path. A root keeps its separator: "/" stays "/", and
+# "N:/" stays "N:/". The names of `x` stay.
+drop_final_separator <- function(x) {
+  out <- sub("[/\\\\]+$", "", x)
+  root <- !nzchar(out) | grepl("^[A-Za-z]:$", out)
+  out[root] <- sub("^([A-Za-z]:)?([/\\\\]).*$", "\\1\\2", x[root])
+  return(out)
 }
 
 # The folders of the project in this R session, for the workers of

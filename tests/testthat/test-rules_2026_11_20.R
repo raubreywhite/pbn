@@ -80,8 +80,8 @@ test_that("house_2026_11_20 is house_2026_11_19 with three new rules at fail, an
     function(r) return(r$locked),
     logical(1)
   )))
-  expect_identical(starter_line(), "extends: house_2026_11_20")
-  expect_identical(create_project_set, "house_2026_11_20")
+  expect_identical(starter_line(), "extends: house_2026_11_25")
+  expect_identical(create_project_set, "house_2026_11_25")
 })
 
 test_that("a project on house_2026_11_20 without a manual manuscript passes every rule, and the new rules print their PASS lines", {

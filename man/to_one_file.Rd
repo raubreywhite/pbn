@@ -109,8 +109,9 @@ it on its last line.
 The file has LF line ends. pbn does not cut long lines, and it prints the
 length of the longest line. The file keeps the \code{workers} of
 \code{pbn::run_plan()} of the run script, and its header says how to change
-it. The paths go into the file as they are given, so give \code{/} in a path
-for Windows too, for example \code{"N:/durable/project"}.
+it. The paths go into the file as they are given, without a final \code{/} or
+\verb{\\}, so give \code{/} in a path for Windows too, for example
+\code{"N:/durable/project"}.
 
 The file is always \verb{<version>_one_file.R} in the folder of the project of
 the last \code{\link[=initialize_project]{initialize_project()}} of this R session. The printed line names

@@ -1060,6 +1060,9 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     no_local_assign = "return the value from a function, and assign it with <- where it is used",
     no_escape_hatches = "remove the call and let the warning or the error show, or allow the path in pbn.yml with a reason in a comment",
     no_absolute_paths = "start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs()",
+    no_plot_title = "remove the title, because the legend of a figure belongs in the manuscript, or allow the path in pbn.yml",
+    no_plot_subtitle = "remove the subtitle, because the legend of a figure belongs in the manuscript, or allow the path in pbn.yml",
+    no_plot_caption = "remove the caption, because the legend of a figure belongs in the manuscript, or allow the path in pbn.yml",
     blocks_list = "keep the list blocks and the functions of the blocks in vNN_functions/blocks.R only, and use none of its names in another file",
     real_results_are_fake = "run the scenario \"real\" again with pbn::initialize_project(fake_real_data = FALSE)",
     unknown_path = "move it into a folder of the layout, such as adhoc/, or delete it"

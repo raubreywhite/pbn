@@ -15,7 +15,12 @@ rules_error <- function(lines) {
 test_that("each shipped set names every rule of check_project() in its order, and house_2026_11_17 holds the levels and the parameters of pbn 2026.11.23", {
   expect_identical(
     house_sets(),
-    c("house_2026_11_17", "house_2026_11_19", "house_2026_11_20")
+    c(
+      "house_2026_11_17",
+      "house_2026_11_19",
+      "house_2026_11_20",
+      "house_2026_11_25"
+    )
   )
   for (set in house_sets()) {
     rules <- read_house_set(set)
@@ -28,7 +33,7 @@ test_that("each shipped set names every rule of check_project() in its order, an
     expect_true(all(levels %in% rule_levels), info = set)
   }
   expect_identical(
-    names(read_house_set("house_2026_11_20")),
+    names(read_house_set("house_2026_11_25")),
     names(project_rules())
   )
   expect_identical(
@@ -39,7 +44,8 @@ test_that("each shipped set names every rule of check_project() in its order, an
         rules_2026_11_19,
         "built_reads_own_version",
         "built_has_run",
-        "manual_not_ahead"
+        "manual_not_ahead",
+        rules_2026_11_25
       )
     )
   )
@@ -104,7 +110,8 @@ test_that("the bytes of each shipped set are pinned", {
   pinned <- c(
     house_2026_11_17 = "ac42b7368bc90e2735bf4cb47e4a8e0e",
     house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097",
-    house_2026_11_20 = "66615d03431f9ae95a8102a200d81831"
+    house_2026_11_20 = "66615d03431f9ae95a8102a200d81831",
+    house_2026_11_25 = "91998c756abbf55915449ce3b14892a2"
   )
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")
@@ -139,7 +146,7 @@ test_that("a project without pbn.yml stops check_project() and initialize_projec
     "There is no pbn.yml in ",
     p$home,
     ". Create it with this one line:\n\n",
-    "extends: house_2026_11_20\n\n",
+    "extends: house_2026_11_25\n\n",
     "The line names the house rules of check_project(). ",
     "?check_project tells how pbn.yml changes them."
   )
@@ -156,7 +163,7 @@ test_that("a project without pbn.yml stops check_project() and initialize_projec
     paste0(
       "There is no pbn.yml in ",
       normalizePath(p$home, winslash = "/"),
-      ". Create it with this one line:\n\nextends: house_2026_11_20\n\n"
+      ". Create it with this one line:\n\nextends: house_2026_11_25\n\n"
     ),
     fixed = TRUE
   )
@@ -216,7 +223,7 @@ test_that("a file pbn_allow.txt stops with its lines as the YAML of the section 
     paste0(
       "pbn reads no pbn_allow.txt. Move its lines into the section allow: ",
       "of a new file pbn.yml, and delete pbn_allow.txt. This is the file:\n\n",
-      paste(c("extends: house_2026_11_20", section), collapse = "\n")
+      paste(c("extends: house_2026_11_25", section), collapse = "\n")
     )
   )
 
@@ -254,7 +261,10 @@ test_that("extends MUST name a set of pbn, and is never the newest set by defaul
   sets <- paste0(
     " is not a rule set of pbn ",
     utils::packageVersion("pbn"),
-    ". The sets are: house_2026_11_17, house_2026_11_19, house_2026_11_20."
+    paste0(
+      ". The sets are: house_2026_11_17, house_2026_11_19, house_2026_11_20, ",
+      "house_2026_11_25."
+    )
   )
   expect_identical(
     rules_error("extends: house_2026.11.17"),
@@ -266,7 +276,7 @@ test_that("extends MUST name a set of pbn, and is never the newest set by defaul
   )
   no_extends <- paste0(
     "pbn.yml has no key extends. Add this line:\n\n",
-    "extends: house_2026_11_20"
+    "extends: house_2026_11_25"
   )
   expect_identical(rules_error("rules:\n  loc_per_file: off"), no_extends)
   expect_identical(rules_error(""), no_extends)

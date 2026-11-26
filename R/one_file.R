@@ -90,8 +90,9 @@
 #' The file has LF line ends. pbn does not cut long lines, and it prints the
 #' length of the longest line. The file keeps the `workers` of
 #' `pbn::run_plan()` of the run script, and its header says how to change
-#' it. The paths go into the file as they are given, so give `/` in a path
-#' for Windows too, for example `"N:/durable/project"`.
+#' it. The paths go into the file as they are given, without a final `/` or
+#' `\`, so give `/` in a path for Windows too, for example
+#' `"N:/durable/project"`.
 #'
 #' The file is always `<version>_one_file.R` in the folder of the project of
 #' the last [initialize_project()] of this R session. The printed line names

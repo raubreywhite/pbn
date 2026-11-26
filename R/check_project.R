@@ -22,10 +22,12 @@
 #' Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 #' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 #'
-#' The rules, with their level in the set `house_2026_11_20`, are below.
-#' The set `house_2026_11_19` has the same rules at the same levels, without
-#' `built_reads_own_version`, `built_has_run` and `manual_not_ahead`. The
-#' set `house_2026_11_17` also does not have `frozen_versions_unchanged`,
+#' The rules, with their level in the set `house_2026_11_25`, are below.
+#' The set `house_2026_11_20` has the same rules at the same levels, without
+#' `no_plot_title`, `no_plot_subtitle` and `no_plot_caption`. The set
+#' `house_2026_11_19` also does not have `built_reads_own_version`,
+#' `built_has_run` and `manual_not_ahead`. The set `house_2026_11_17` also
+#' does not have `frozen_versions_unchanged`,
 #' `readme_and_changelog`, `changelog_with_code`, `comment_share`,
 #' `no_cross_version_reads` and `no_escape_hatches`. A rule that the set of
 #' the project does not have prints no line.
@@ -254,6 +256,41 @@
 #'   `<file>:<line>: file.path("<the first argument, cut at 40
 #'   characters>", ...)`. A path under `allow` allows each finding of one
 #'   file.
+#' - `no_plot_title` (FAIL): an `.R` file of `loc_per_file` gives a figure
+#'   a title. A figure has no title, no subtitle and no caption, because its
+#'   legend belongs in the manuscript. The rule fails each of these:
+#'   - a call `ggtitle()` with a value of its first argument `label`.
+#'   - an argument `title` of `labs()`.
+#'   - an argument `title` of `plot_annotation()`, by name or as its first
+#'     argument.
+#'   - an assignment to `<x>$labels$title`.
+#'
+#'   A call MAY have the prefix `ggplot2::` for `ggtitle()` and `labs()`, and
+#'   `patchwork::` for `plot_annotation()`. A call of the same name from
+#'   another package passes. R matches the arguments of a call as it does
+#'   in a run: by name, by a part of a name and by position. These pass:
+#'   - the value `NULL`, as in `labs(title = NULL)`, which removes the title.
+#'   - the other arguments, as in `labs(x = "Age", colour = "Group", tag = "A")`
+#'     and `plot_annotation(tag_levels = "A")`.
+#'   - a theme element, as in `theme(plot.title = element_text())`.
+#'   - an argument `title` or `caption` of another function, as in
+#'     `knitr::kable(d, caption = "x")`.
+#'   - a call that R cannot match, as one with an argument that the function
+#'     does not have, and a title that `do.call()` or a `...` passes. The
+#'     rule misses these.
+#'
+#'   The rule parses each file and runs no code of it. It skips a file that
+#'   R cannot parse. The detail is `<file>:<line>: <call>(<argument> = ...)`,
+#'   for example `v01_functions/output.R:12: ggplot2::labs(title = ...)`, or
+#'   `<file>:<line>: <target> <- ...`. A path under `allow` allows each
+#'   finding of one file.
+#' - `no_plot_subtitle` (FAIL): as `no_plot_title`, for a subtitle: the
+#'   argument `subtitle` of `ggtitle()`, by name or as its second argument,
+#'   the argument `subtitle` of `labs()` and of `plot_annotation()`, and an
+#'   assignment to `<x>$labels$subtitle`.
+#' - `no_plot_caption` (FAIL): as `no_plot_title`, for a caption: the
+#'   argument `caption` of `labs()` and of `plot_annotation()`, and an
+#'   assignment to `<x>$labels$caption`.
 #' - `blocks_list` (FAIL): for each functions folder, one of these is true:
 #'   - a file other than `vNN_functions/blocks.R` assigns `blocks` at its
 #'     top level. pbn leaves `blocks.R` out of `manifest$source_md5`, so the
@@ -305,8 +342,9 @@
 #'
 #' `vNN_one_file.R` at the top level is the file of [to_one_file()]. It holds
 #' the paths of a server by design, and pbn writes it. So `loc_per_file`,
-#' `cyclomatic_complexity`, `no_local_assign` and `no_absolute_paths` do not
-#' read it, and no rule takes it for a run script. Put it in git: it is what
+#' `cyclomatic_complexity`, `no_local_assign`, `no_absolute_paths`,
+#' `no_plot_title`, `no_plot_subtitle` and `no_plot_caption` do not read it,
+#' and no rule takes it for a run script. Put it in git: it is what
 #' ran on the server.
 #'
 #' @section The file pbn.yml:
@@ -315,7 +353,7 @@
 #' advice to rename it. The smallest `pbn.yml` is one line:
 #'
 #' ```yaml
-#' extends: house_2026_11_20
+#' extends: house_2026_11_25
 #' ```
 #'
 #' The key `extends` names a house rule set. A set is a dated file in the
@@ -323,7 +361,7 @@
 #' change to the house rules is a new set with a new date. pbn never chooses
 #' a set for a project. So a new version of pbn does not change the rules of
 #' a project. To read the set, run
-#' `readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))`.
+#' `readLines(system.file("rules", "house_2026_11_25.yml", package = "pbn"))`.
 #'
 #' The set gives each rule one of three levels:
 #' - `fail`: a finding is FAIL, and `check_project.R` ends with status 1.
@@ -369,7 +407,7 @@
 #' folder:
 #'
 #' ```yaml
-#' extends: house_2026_11_20
+#' extends: house_2026_11_25
 #' rules:
 #'   cyclomatic_complexity: {limit: 25}
 #'   unknown_path: off
@@ -410,7 +448,7 @@
 #' @examples
 #' home <- file.path(tempdir(), "pbn_check_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-#' writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 #' writeLines(
 #'   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
 #'   file.path(home, "v01_run.R")

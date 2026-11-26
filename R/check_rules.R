@@ -504,7 +504,11 @@ rule_manual_manuscript_names <- function(path) {
     rule,
     "FAIL",
     where,
-    paste0(where, ": the name must be vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx", recycle0 = TRUE)
+    paste0(
+      where,
+      ": the name must be vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx",
+      recycle0 = TRUE
+    )
   ))
 }
 
@@ -979,6 +983,30 @@ project_rules <- function() {
       paste(
         "start a path to data from pbn::folder(), and a path for output from",
         "the argument dir of the output function of pbn::make_outputs()"
+      )
+    ),
+    no_plot_title = list(
+      rule_no_plot_title,
+      "no .R file gives a figure a title",
+      paste(
+        "remove the title, because the legend of a figure belongs in the",
+        "manuscript, or allow the path in pbn.yml"
+      )
+    ),
+    no_plot_subtitle = list(
+      rule_no_plot_subtitle,
+      "no .R file gives a figure a subtitle",
+      paste(
+        "remove the subtitle, because the legend of a figure belongs in the",
+        "manuscript, or allow the path in pbn.yml"
+      )
+    ),
+    no_plot_caption = list(
+      rule_no_plot_caption,
+      "no .R file gives a figure a caption",
+      paste(
+        "remove the caption, because the legend of a figure belongs in the",
+        "manuscript, or allow the path in pbn.yml"
       )
     ),
     blocks_list = list(

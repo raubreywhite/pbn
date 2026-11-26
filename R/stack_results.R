@@ -482,6 +482,69 @@ remove_paths <- function(paths, recursive) {
   return(invisible(NULL))
 }
 
+# Creates the folder `dir` with the folders above it, and stops when it is
+# not there after `tries` tries. The pause before each new try doubles from
+# `wait` seconds up to 8, so 8 tries wait about 30 seconds in all. On a
+# network drive of Windows, a folder that pbn just deleted stays "pending
+# delete" until each program that holds it lets go, such as a virus scanner
+# or the Files pane of RStudio. dir.create() then says "already exists", and
+# the folder is gone a moment later (TSD, 2026-11-25). So a folder counts as
+# created only when pbn can write a file into it. The error names the folder
+# and the last warning of dir.create(). A folder that is there already is no
+# error.
+create_folder <- function(dir, tries = 8, wait = 0.5) {
+  warned <- NULL
+  for (i in seq_len(tries)) {
+    if (i > 1) {
+      Sys.sleep(min(wait * 2^(i - 2), 8))
+    }
+    # dir.create() warns when it fails, so the warning ends the try.
+    said <- tryCatch(
+      {
+        make_folder(dir)
+        NULL
+      },
+      warning = function(w) return(conditionMessage(w))
+    )
+    if (dir.exists(dir) && folder_writable(dir)) {
+      return(invisible(dir))
+    }
+    if (!is.null(said)) {
+      warned <- said
+    }
+  }
+  stop(
+    "pbn could not create the folder ",
+    dir,
+    " in ",
+    tries,
+    if (tries == 1) " try" else " tries",
+    ". R says: ",
+    if (is.null(warned)) "nothing" else warned,
+    ". Check that the folder above it exists and that you may write there. ",
+    "On a network drive, wait a moment, and run the call again.",
+    call. = FALSE
+  )
+}
+
+# dir.create() with the folders above `dir`, in one place, so that the tests
+# can make it fail.
+make_folder <- function(dir) {
+  return(dir.create(dir, recursive = TRUE))
+}
+
+# TRUE when pbn can write and delete a file in the folder `dir`. A folder that
+# is pending delete refuses a new file. In one place, so that the tests can
+# make it fail.
+folder_writable <- function(dir) {
+  probe <- file.path(dir, ".pbn_write_test")
+  ok <- tryCatch(file.create(probe), warning = function(w) return(FALSE))
+  if (isTRUE(ok)) {
+    unlink(probe)
+  }
+  return(isTRUE(ok))
+}
+
 failed_assertion <- function(assertion, observed) {
   return(data.frame(
     assertion = assertion,

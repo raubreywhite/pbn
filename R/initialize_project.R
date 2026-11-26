@@ -65,6 +65,12 @@ state <- new.env(parent = emptyenv())
 #' function: a top-level call in a file of the functions folder runs before
 #' `initialize_project()` sets the folders, and it stops.
 #'
+#' `initialize_project()` drops a final `/` or `\` of `home` and of each path
+#' of `folders`, `one_file_home` and `one_file_folders`. So
+#' `"N:/durable/project/"` is `"N:/durable/project"`, and a path that pbn
+#' builds from it never holds `//`. A root keeps its separator: `"N:/"` and
+#' `"/"` stay as they are.
+#'
 #' The results folder is `<home>/<version>_results`. [save_results()] creates
 #' it. `initialize_project()` creates no folder, also no folder with today's
 #' date. It stops when `<version>_functions/` does not exist.
@@ -145,8 +151,9 @@ state <- new.env(parent = emptyenv())
 #'
 #' The paths are text only. `initialize_project()` stops on one of the two
 #' without the other, and on a folder of `folders` that `one_file_folders`
-#' does not name, or the reverse. It checks no folder on the disk,
-#' normalises no path and uses no path in the run. The paths never go into
+#' does not name, or the reverse. It checks no folder on the disk and uses
+#' no path in the run. It drops a final `/` or `\` of each path, as the
+#' section Details says, and changes nothing else. The paths never go into
 #' the manifest, a cache key or the run log.
 #' @section The md5 of the run script:
 #' `manifest$source_md5` holds the md5 of `<version>_run.R` without the
@@ -194,7 +201,7 @@ state <- new.env(parent = emptyenv())
 #' @examples
 #' home <- file.path(tempdir(), "pbn_initialize_example")
 #' dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-#' writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+#' writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 #' writeLines(
 #'   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
 #'   file.path(home, "v01_functions", "_cfg.R")
@@ -238,7 +245,11 @@ initialize_project <- function(
     folders,
     generated
   )
-  home <- normalizePath(home, winslash = "/", mustWork = TRUE)
+  home <- drop_final_separator(normalizePath(
+    home,
+    winslash = "/",
+    mustWork = TRUE
+  ))
   if (is.null(generated)) {
     code <- functions_folder_code(version, home)
   } else {
@@ -414,7 +425,7 @@ check_generated_arg <- function(generated) {
 # as `folders`, after their checks: `folders` gets the names and the order
 # of the folders `project` of the project. Both are NULL without the paths.
 # pbn never uses the paths on this computer, so it checks no folder on the
-# disk and normalises no path. Stops on one of the two without the other,
+# disk. It only drops a final separator, see drop_final_separator(). Stops on one of the two without the other,
 # on the paths in the file of to_one_file() (`generated`), and on a folder
 # of the project that `folders` does not name, or the reverse.
 check_one_file_paths <- function(home, folders, project, generated) {
@@ -466,7 +477,10 @@ check_one_file_paths <- function(home, folders, project, generated) {
       call. = FALSE
     )
   }
-  return(list(home = home, folders = folders[want]))
+  return(list(
+    home = drop_final_separator(home),
+    folders = drop_final_separator(folders[want])
+  ))
 }
 
 # TRUE when `x` is a call of `{`, the block of quote({ ... }).

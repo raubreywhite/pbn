@@ -31,7 +31,7 @@ new_project_files <- c(
   "v01_run.R"
 )
 
-test_that("create_project writes the files of a project that passes every rule of house_2026_11_20 without a WARN", {
+test_that("create_project writes the files of a project that passes every rule of house_2026_11_25 without a WARN", {
   home <- local_empty_home()
   written <- suppressMessages(create_project(
     home = home,
@@ -49,11 +49,11 @@ test_that("create_project writes the files of a project that passes every rule o
   expect_identical(unique(found$status), "PASS")
   expect_identical(
     unique(found$rule),
-    names(read_house_set("house_2026_11_20"))
+    names(read_house_set("house_2026_11_25"))
   )
   expect_identical(
     readLines(file.path(home, "pbn.yml")),
-    "extends: house_2026_11_20"
+    "extends: house_2026_11_25"
   )
   expect_identical(readLines(file.path(home, ".gitignore")), "*gitexclude*")
   expect_identical(

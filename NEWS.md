@@ -1,3 +1,12 @@
+# pbn 2026.12.12
+
+- New rule set `house_2026_11_25`: the set `house_2026_11_20` with three new rules at `fail`. A figure has no title, no subtitle and no caption, because its legend belongs in the manuscript. A project on an older set sees no change. The line for a new `pbn.yml` and `create_project()` now name `house_2026_11_25`.
+- New rule `no_plot_title` fails `ggtitle()`, the argument `title` of `labs()` and of `plot_annotation()`, and an assignment to `<x>$labels$title`, in each `.R` file that `no_absolute_paths` reads. The value `NULL` passes, and so do the other arguments, such as `x`, `tag` and `tag_levels`, and a theme element such as `plot.title`.
+- New rule `no_plot_subtitle` fails the argument `subtitle` of `ggtitle()`, `labs()` and `plot_annotation()`, and an assignment to `<x>$labels$subtitle`.
+- New rule `no_plot_caption` fails the argument `caption` of `labs()` and `plot_annotation()`, and an assignment to `<x>$labels$caption`.
+- Fix: `make_outputs()` stops when it cannot create the output folder that it emptied. Before, it ignored a failed `dir.create()`, and the output function then wrote into a folder that was not there. It tries 8 times, with pauses that double from 0.5 seconds to 8, about 30 seconds in all, because a network drive of Windows keeps a folder that was just deleted "pending delete" while another program holds it: on TSD, `dir.create()` said "already exists" and the folder was gone a moment later. A folder counts as created only when pbn can write a file into it. The error names the folder and what R said. `save_results()`, the run log and `check_one_file()` create their folders in the same way.
+- Behaviour change: `initialize_project()` drops a final `/` or `\` of `home` and of each path of `folders`, `one_file_home` and `one_file_folders`. So pbn builds no path with `//`, such as `N:/project//v05_results`. A root such as `N:/` or `/` stays as it is. A file of `to_one_file()` with a final `/` in a path of the server is then older than the run script for `check_one_file()`. Run `to_one_file()` again.
+
 # pbn 2026.12.11
 
 - A manual manuscript MAY have a suffix of one word of lower-case letters and digits, for a second file of the same version: `manuscript/manual/v02_AB_si.docx` beside `v02_AB.docx`. It counts as the version `v02` for `readme_and_changelog` and `manual_not_ahead`.

@@ -72,7 +72,7 @@ test_that("house_2026_11_19 is house_2026_11_17 with six new rules, at their lev
     function(r) return(r$locked),
     logical(1)
   )))
-  expect_identical(starter_line(), "extends: house_2026_11_20")
+  expect_identical(starter_line(), "extends: house_2026_11_25")
 })
 
 test_that("a project on house_2026_11_17 runs none of the new rules, and its pbn.yml cannot name one", {
@@ -87,7 +87,7 @@ test_that("a project on house_2026_11_17 runs none of the new rules, and its pbn
   )
   writeLines("x", file.path(p$home, "v01_frozen.md5"))
   found <- project_findings(p$home)
-  # The rules of house_2026_11_20 are newer still.
+  # The rules of house_2026_11_20 and house_2026_11_25 are newer still.
   expect_identical(
     unique(found$rule),
     setdiff(
@@ -96,7 +96,8 @@ test_that("a project on house_2026_11_17 runs none of the new rules, and its pbn
         rules_2026_11_19,
         "built_reads_own_version",
         "built_has_run",
-        "manual_not_ahead"
+        "manual_not_ahead",
+        rules_2026_11_25
       )
     )
   )

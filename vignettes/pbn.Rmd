@@ -54,7 +54,7 @@ dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 Each project MUST have the file `pbn.yml`. It names the set of house rules that `check_project()` and `initialize_project()` use. This project uses the set as it is:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_20
+extends: house_2026_11_25
 ```
 
 `CHANGELOG.md` has a section `## vNN` for each version, with what changed and why. The rule `readme_and_changelog` of `check_project()` fails a project without `CHANGELOG.md`, without `README.md`, or without the section of a version:
@@ -760,7 +760,7 @@ A script with output code after the run that is not in a function MAY use `pbn::
 pbn::check_project()
 ```
 
-`check_project()` checks a project folder against the rules of `pbn.yml`. It prints the name of the set, one line for each rule that passes, one line for each finding, and a count. Each WARN and FAIL line ends with the fix. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it.
+`check_project()` checks a project folder against the rules of `pbn.yml`. It prints the name of the set, one line for each rule that passes, one line for each finding, and a count. Each WARN and FAIL line ends with the fix. The rule `cyclomatic_complexity` fails a function that scores above 15 in `cyclocomp`, as the lint gate of the house packages does. The rule `no_local_assign` fails `local()`, `assign()`, `<<-` and the other constructs of `?check_project`. Each object then gets its value on the line that names it. The rules `no_plot_title`, `no_plot_subtitle` and `no_plot_caption` fail a figure with a title, a subtitle or a caption, such as `ggplot2::labs(title = "Risk")`, because the legend of a figure belongs in the manuscript.
 
 ```{r}
 pbn::check_project(home)
@@ -784,7 +784,7 @@ stopifnot(out$status == 1, any(startsWith(strsplit(out$stdout, "\r?\n")[[1]], "F
 `pbn.yml` MAY change the set. Under `rules`, it changes the level or a parameter of a rule. Under `allow`, it lists the paths that a rule allows. This file raises the limit of `cyclomatic_complexity` to 25, turns `unknown_path` off, and allows one name with a capital letter:
 
 ```{cat, engine.opts = list(file = file.path(home, "pbn.yml"), lang = "yaml")}
-extends: house_2026_11_20
+extends: house_2026_11_25
 rules:
   cyclomatic_complexity: {limit: 25}
   unknown_path: off
@@ -809,7 +809,7 @@ stopifnot(
   identical(found$status[found$rule == "unknown_path"], "OFF"),
   !any(found$status == "FAIL")
 )
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 unlink(file.path(home, "adhoc"), recursive = TRUE)
 ```
 

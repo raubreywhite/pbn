@@ -41,8 +41,14 @@ output_state <- new.env(parent = emptyenv())
 #' results. Before it calls `fn`, `make_outputs()` deletes the folder `dir`
 #' and creates it again. So no file of an earlier run stays. Keep no other file
 #' in that folder. It stops when the folder is still there afterwards, for
-#' example because another program holds a file open on Windows. After each
-#' scenario, it prints one line with the folder and the number of files.
+#' example because another program holds a file open on Windows. It tries
+#' to create the folder 8 times, with pauses that double from 0.5 seconds to
+#' 8, about 30 seconds in all, because a network drive of Windows keeps a
+#' folder that was just deleted "pending delete" while another program holds
+#' it. The folder counts as created only when pbn can write a file into it.
+#' It stops after the eighth try, and the error names the folder and what R
+#' said. After each scenario, it prints one line with the folder
+#' and the number of files.
 #'
 #' After [save_results()] in the same R session, `make_outputs()` adds its
 #' files, its seconds and the number of warnings of `fn` for each scenario to
@@ -162,7 +168,7 @@ output_scenario <- function(fn, s) {
   }
   results <- read_results(state$version, s, home = state$home)
   delete_paths(dir, recursive = TRUE)
-  dir.create(dir, recursive = TRUE)
+  create_folder(dir)
   skip <- file.path(s, sub)
   before <- if (fake) hash_recent(results_listing(state$results, skip))
   warned <- 0L

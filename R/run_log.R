@@ -298,7 +298,7 @@ log_outputs <- function(done) {
 # the project keeps the log, so that make_outputs() can add to it.
 write_run_log <- function(log) {
   root <- state$results
-  dir.create(root, recursive = TRUE, showWarnings = FALSE)
+  create_folder(root)
   log$errors <- log_errors(log)
   log$errors_file <- errors_file_status(log$errors)
   errors_file <- file.path(root, errors_file_name)
@@ -331,7 +331,7 @@ write_started_log <- function(scenarios, started, workers = NULL) {
     return(invisible(NULL))
   }
   root <- state$results
-  dir.create(root, recursive = TRUE, showWarnings = FALSE)
+  create_folder(root)
   delete_paths(file.path(root, errors_file_name))
   log <- list(
     stage = "started",

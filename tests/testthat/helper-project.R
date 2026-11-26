@@ -227,6 +227,9 @@ rules_2026_11_19 <- c(
   "no_escape_hatches"
 )
 
+# The rules that the set house_2026_11_25 adds to house_2026_11_20.
+rules_2026_11_25 <- c("no_plot_title", "no_plot_subtitle", "no_plot_caption")
+
 local_project <- function(env = parent.frame(), counter = NULL) {
   root <- tempfile("pbntest")
   dir.create(root)

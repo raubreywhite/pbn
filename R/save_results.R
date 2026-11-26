@@ -286,7 +286,9 @@
 #' @section The files:
 #' git gets the results of each scenario as one file, `results.qs2`, and
 #' never the results of each simulation. These are the files of
-#' `<version>_results/<scenario>/`:
+#' `<version>_results/<scenario>/`. In a one-file project, the folder of
+#' `"real"` is `<version>_results/fake/`, see the section The folder fake/ of
+#' [initialize_project()]:
 #'
 #' ```
 #' blocks.qs2                 the values of the blocks, on simulation 1
@@ -456,7 +458,7 @@ save_results <- function(r, p, scenarios, gitexclude = NULL) {
     stop(checks)
   }
   stop_on_failed_checks(checks, state$results)
-  save_blocks(table$scenario, state$results)
+  save_blocks(table$scenario)
   return(invisible(checks))
 }
 
@@ -478,22 +480,21 @@ save_steps <- function(r, index, table, info, gitexclude, done) {
   done$contract <- contract_failures(objects)
   done$seconds[["contract"]] <- elapsed_since(start)
   stop_on_contract(done$contract)
-  root <- state$results
   start <- proc.time()[["elapsed"]]
-  done$outputs_deleted <- drop_outputs(root, table$scenario)
+  done$outputs_deleted <- drop_outputs(table$scenario)
   done$seconds[["write"]] <- done$seconds[["write"]] + elapsed_since(start)
   # The fake scenarios come first, so that the manifest of the real results
   # records the fake scenarios of this run whose assertions did not pass.
   # read_results() refuses the real results of an earlier run from here
   # on, also when this call stops before it writes "real".
   if ("real" %in% table$scenario) {
-    mark_not_checked(file.path(root, "real"))
+    mark_not_checked(scenario_dir(state, "real"))
   }
   fakes <- table$scenario[table$scenario != "real"]
-  checks <- write_and_check(objects, fakes, root, done, list())
+  checks <- write_and_check(objects, fakes, done, list())
   if ("real" %in% table$scenario) {
     objects$real <- record_failed_fakes(objects$real, checks)
-    checks <- write_and_check(objects, "real", root, done, checks)
+    checks <- write_and_check(objects, "real", done, checks)
   }
   checks <- checks[intersect(table$scenario, names(checks))]
   checks <- if (length(checks) == 0) {
@@ -505,24 +506,24 @@ save_steps <- function(r, index, table, info, gitexclude, done) {
   return(checks)
 }
 
-# Writes the results of the scenarios `scenarios` under `root`, then checks
+# Writes the results of the scenarios `scenarios`, then checks
 # each with its expect_ function. Returns `checks`, the list of the
 # assertions of each scenario, with these scenarios added. The environment
 # `done` gets the seconds of the writes and of the checks.
-write_and_check <- function(objects, scenarios, root, done, checks) {
+write_and_check <- function(objects, scenarios, done, checks) {
   start <- proc.time()[["elapsed"]]
   for (s in scenarios) {
-    write_scenario(objects[[s]], root, s)
+    write_scenario(objects[[s]], s)
   }
   done$seconds[["write"]] <- done$seconds[["write"]] + elapsed_since(start)
   start <- proc.time()[["elapsed"]]
   for (s in scenarios) {
     fn <- expect_function(s)
     if (!is.null(fn)) {
-      checks[[s]] <- check_expectations(fn, root, s)
+      checks[[s]] <- check_expectations(fn, s)
     } else {
       # Only "real" MAY have no expect_ function.
-      delete_paths(file.path(root, s, "check.csv"))
+      delete_paths(file.path(scenario_dir(state, s), "check.csv"))
     }
   }
   done$seconds[["expect"]] <- done$seconds[["expect"]] + elapsed_since(start)
@@ -1029,12 +1030,13 @@ stop_on_contract <- function(failures) {
 }
 
 # Deletes the folders output/ and output_fake_data/ of each scenario of
-# `scenarios` under `root`, the output of an earlier run, because the new
-# results replace the results of that output. Prints one line when it
-# deleted a folder, and returns the deleted folders relative to the project.
-drop_outputs <- function(root, scenarios) {
+# `scenarios`, the output of an earlier run, because the new results
+# replace the results of that output. Prints one line when it deleted a
+# folder, and returns the deleted folders relative to the project.
+drop_outputs <- function(scenarios) {
+  root <- state$results
   dirs <- file.path(
-    rep(scenarios, each = 2),
+    rep(basename(scenario_dir(state, scenarios)), each = 2),
     rep(c("output", "output_fake_data"), length(scenarios))
   )
   dirs <- dirs[dir.exists(file.path(root, dirs))]
@@ -1068,10 +1070,10 @@ mark_not_checked <- function(folder) {
   return(invisible(NULL))
 }
 
-# Writes the results of one scenario under `root`, and stacks them when the
-# scenario has more than 1 simulation.
-write_scenario <- function(o, root, s) {
-  folder <- file.path(root, s)
+# Writes the results of one scenario into its folder, see scenario_dir(),
+# and stacks them when the scenario has more than 1 simulation.
+write_scenario <- function(o, s) {
+  folder <- scenario_dir(state, s)
   mark_not_checked(folder)
   # The values of the blocks of an earlier run belong to its results.
   delete_paths(file.path(folder, blocks_qs2_file))
@@ -1087,7 +1089,7 @@ write_scenario <- function(o, root, s) {
     qs2::qs_save(o$runs[[sim]], file.path(folder, sim_file(sim)))
     write_private(o$private[[sim]], file.path(folder, sim_private_file(sim)))
   }
-  stack_scenario(root, s, o$sims)
+  stack_scenario(s, o$sims)
   delete_old_layout(folder)
   return(invisible(NULL))
 }

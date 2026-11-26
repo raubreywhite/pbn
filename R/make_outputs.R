@@ -19,10 +19,12 @@ output_state <- new.env(parent = emptyenv())
 #' Call [initialize_project()] first. For each scenario of `scenarios`,
 #' `make_outputs()` does this:
 #' - `"real"`: it calls `fn(results, dir)` with
-#'   `dir = <version>_results/real/output/`. The output is fake output when
+#'   `dir = <version>_results/real/output/`. In a one-file project, the
+#'   folder is `fake/` in the place of `real/`, see the section The folder
+#'   fake/ of [initialize_project()]. The output is fake output when
 #'   the manifest of the real results on the disk has `fake_real_data`
-#'   `TRUE`. It then goes to `real/output_fake_data/`, as for a fake
-#'   scenario below. The
+#'   `TRUE`. It then goes to `output_fake_data/` of that folder, as for a
+#'   fake scenario below. The
 #'   manifest decides, and never the argument `fake_real_data` of
 #'   [initialize_project()] in this R session. `make_outputs()` deletes the
 #'   other of the two folders of `"real"` with one printed line, so no
@@ -152,13 +154,13 @@ make_outputs <- function(fn, scenarios) {
 # to the project, `note`, the printed line when pbn skipped the scenario,
 # or NULL, and `warnings`, the number of warnings of fn.
 output_scenario <- function(fn, s) {
-  folder <- file.path(state$results, s)
+  folder <- scenario_dir(state, s)
   # The output of real results from fake real data is fake output. The
   # manifest of the results on the disk decides, not this R session.
   fake <- s != "real" || results_from_fake_real_data(folder)
   sub <- if (fake) "output_fake_data" else "output"
   dir <- file.path(folder, sub)
-  rel <- file.path(paste0(state$version, "_results"), s, sub)
+  rel <- file.path(paste0(state$version, "_results"), basename(folder), sub)
   if (s == "real") {
     drop_other_real_output(folder, fake)
   }
@@ -169,7 +171,7 @@ output_scenario <- function(fn, s) {
   results <- read_results(state$version, s, home = state$home)
   delete_paths(dir, recursive = TRUE)
   create_folder(dir)
-  skip <- file.path(s, sub)
+  skip <- file.path(basename(folder), sub)
   before <- if (fake) hash_recent(results_listing(state$results, skip))
   warned <- 0L
   failed <- tryCatch(
@@ -234,7 +236,7 @@ drop_other_real_output <- function(folder, fake) {
   delete_paths(dir, recursive = TRUE)
   cat(
     "pbn: deleted ",
-    file.path(paste0(state$version, "_results"), "real", other),
+    file.path(paste0(state$version, "_results"), basename(folder), other),
     "/, because the real results come from ",
     if (fake) "fake real data" else "real data",
     ", so no output of ",

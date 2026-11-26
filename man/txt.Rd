@@ -32,7 +32,9 @@ example \code{`r pbn::txt("Results para 1: effect", version = "v02")`}.
 \details{
 \code{txt()} reads the raw value from
 \verb{<home>/<version>_results/real/blocks.qs2}, which \code{\link[=save_results]{save_results()}} and
-\code{\link[=update_blocks]{update_blocks()}} write. It formats the value at each call, so a change of
+\code{\link[=update_blocks]{update_blocks()}} write. In a one-file project, it reads \verb{fake/} in the
+place of \verb{real/}, see the section The folder fake/ of
+\code{\link[=initialize_project]{initialize_project()}}. It formats the value at each call, so a change of
 a formatter needs no new \code{blocks.qs2}.
 
 After \code{\link[=initialize_project]{initialize_project()}} of \code{version} and \code{home} in this R session,

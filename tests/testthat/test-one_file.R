@@ -751,7 +751,8 @@ test_that("check_one_file fails a block that prints differently for the two resu
   )
   res <- run_script(p$home)
   expect_identical(res$status, 0L, info = res$stdout)
-  init_server(p, fake_real_data = TRUE)
+  # A call with one_file_home takes no fake_real_data = TRUE.
+  init_server(p)
   utils::capture.output(to_one_file())
   out <- utils::capture.output(ok <- check_one_file())
   expect_false(ok)

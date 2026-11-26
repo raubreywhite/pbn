@@ -1,10 +1,10 @@
 # Stacking: the simulations of one scenario in one results object, and the
 # assertions of the expect_<scenario>() functions.
 
-# Stacks the simulation files of one scenario into
-# <root>/<scenario>/results.qs2. `root` is <home>/<version>_results.
-stack_scenario <- function(root, scenario, sims) {
-  folder <- file.path(root, scenario)
+# Stacks the simulation files of one scenario into results.qs2 of its
+# folder, see scenario_dir().
+stack_scenario <- function(scenario, sims) {
+  folder <- scenario_dir(state, scenario)
   want <- sim_file(seq_len(sims))
   missing <- want[!file.exists(file.path(folder, want))]
   if (length(missing) > 0) {
@@ -377,12 +377,12 @@ check_column <- function(a, b, k, where, col, scenario) {
   }
   return(invisible(NULL))
 }
-# Calls expect_<scenario>() on the results of the scenario under `root`,
+# Calls expect_<scenario>() on the results of the scenario in its folder,
 # writes check.csv and prints the table. An error, zero rows or a wrong shape
 # is one failed assertion. A change of an object of the functions folder in
 # place, such as CFG, adds one failed assertion.
-check_expectations <- function(fn, root, scenario) {
-  folder <- file.path(root, scenario)
+check_expectations <- function(fn, scenario) {
+  folder <- scenario_dir(state, scenario)
   fn_name <- paste0("expect_", scenario, "()")
   main <- file.path(folder, "results.qs2")
   results <- merge_gitexclude(qs2::qs_read(main), main)

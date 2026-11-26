@@ -340,6 +340,11 @@ pbn supports two more practices:
 - **The analysis plan is the specification and the decision log.** A changed decision goes into the plan first, with a date and a reason, and then into the code. In pbn, the values of the plan go into `CFG`. The true values of its simulations go into the fake scenarios, where the `expect_` functions check them.
 - **Keep the data on its server.** The agent works on the code and on the fake scenarios, and needs no real data. A person runs the code on the server. `pbn::to_one_file()` writes one R script that runs the scenario `real` on a server without a network.
 
+Two folders keep the work of an agent apart from the numbers that count:
+
+- **`manuscript/draft/`** holds the drafts of an agent, `vNN_<INITIALS>.docx` and `vNN_<INITIALS>_si.docx`. A draft is outside the version counter, so a rebuild overwrites it and costs no manual version.
+- **`vNN_results/fake/`** holds the scenario `real` of a one-file project on this computer. A one-file project is one whose run script gives `one_file_home`, and its data on this computer are fake. `vNN_results/real/` then holds only the real results that come back from the server, so they can stay beside the local run. `fake/` stands in for the real results. It is not one of the fake scenarios, which have planted effects and an `expect_` function.
+
 ## What the checks do not catch
 
 The checks find only the mistakes that they name. [What pbn does not do yet](pbn.html#what-pbn-does-not-do-yet) lists the gaps. One of them applies to code that an agent writes. The cache key holds the code of each function of `v01_functions/` that the data code names, also in a string. A function whose name the code builds when it runs, for example `get(paste0("f", 1))`, can change, and the run then uses the old data.

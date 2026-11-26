@@ -259,7 +259,10 @@ rule_lower_case_names <- function(path) {
   name <- basename(entries)
   is_dir <- dir.exists(file.path(path, entries))
   stem <- ifelse(is_dir, name, tools::file_path_sans_ext(name))
-  manual <- dirname(entries) == "manuscript/manual" &
+  # A draft of an agent in manuscript/draft/ has the names of a manual
+  # manuscript, and stays outside the version counter.
+  manual <- dirname(entries) %in%
+    c("manuscript/manual", "manuscript/draft") &
     grepl(manual_pattern, name)
   bad <- grepl("[A-Z]", stem) & !name %in% exempt & !manual
   return(project_row(

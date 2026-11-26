@@ -190,7 +190,8 @@ test_that("run_script_initialises accepts fake_real_data, and the file of to_one
   writeLines(run, file.path(p$home, "v01_run.R"))
   found <- project_findings(p$home)
   expect_identical(found$status[found$rule == "run_script_initialises"], "PASS")
-  init_server(p, fake_real_data = TRUE)
+  # A call with one_file_home takes no fake_real_data = TRUE.
+  init_server(p)
   utils::capture.output(file <- to_one_file())
   gen <- parse(file, keep.source = FALSE)
   call <- Filter(
@@ -227,7 +228,8 @@ test_that("check_one_file passes a project on fake real data: the fresh run has 
   expect_identical(res$status, 0L, info = res$stdout)
   real <- qs2::qs_read(file.path(p$home, "v01_results", "real", "results.qs2"))
   expect_true(real$manifest$fake_real_data)
-  init_server(p, fake_real_data = TRUE)
+  # A call with one_file_home takes no fake_real_data = TRUE.
+  init_server(p)
   utils::capture.output(to_one_file())
   out <- utils::capture.output(ok <- check_one_file())
   expect_match(

@@ -32,7 +32,9 @@ reserved_fields <- c(
 #' @details
 #' `cfg$scenarios` MUST be a data.frame with these columns:
 #' - `scenario`: unique names that match `^[a-z0-9_]+$`. One name MUST be
-#'   `"real"`.
+#'   `"real"`. A name MUST NOT be `"fake"`, because in a one-file project the
+#'   folder `fake/` holds `"real"`, see the section The folder fake/ of
+#'   [initialize_project()].
 #' - `sims`: the number of simulations of the scenario, a whole number of 1 or
 #'   more.
 #'
@@ -133,6 +135,15 @@ check_scenario_table <- function(table, where) {
   }
   if (anyDuplicated(table$scenario) > 0) {
     stop(where, ": each scenario must be there once.", call. = FALSE)
+  }
+  if ("fake" %in% table$scenario) {
+    stop(
+      where,
+      ": the name fake is reserved. In a one-file project, the folder ",
+      "fake/ holds the scenario real of this computer. Give the scenario ",
+      "another name.",
+      call. = FALSE
+    )
   }
   if (!all(vapply(table$sims, is_count, logical(1)))) {
     stop(

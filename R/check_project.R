@@ -38,7 +38,8 @@
 #'   `README.md`, `CHANGELOG.md`, `AGENTS.md`, `CLAUDE.md`, `LICENSE`,
 #'   `DESCRIPTION`, a top-level dotfile, a top-level `*.Rproj` file, file
 #'   extensions, and the initials in `manuscript/manual/vNN_<INITIALS>.docx`
-#'   and `manuscript/manual/vNN_<INITIALS>_<suffix>.docx`.
+#'   and `manuscript/manual/vNN_<INITIALS>_<suffix>.docx`, and in the drafts
+#'   of an agent with the same names in `manuscript/draft/`.
 #' - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
 #'   call `pbn::initialize_project()` whose `version` argument is the string
 #'   `"vNN"`. A call with an argument that [initialize_project()] does not

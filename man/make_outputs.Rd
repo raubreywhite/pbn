@@ -28,10 +28,12 @@ Call \code{\link[=initialize_project]{initialize_project()}} first. For each sce
 \code{make_outputs()} does this:
 \itemize{
 \item \code{"real"}: it calls \code{fn(results, dir)} with
-\verb{dir = <version>_results/real/output/}. The output is fake output when
+\verb{dir = <version>_results/real/output/}. In a one-file project, the
+folder is \verb{fake/} in the place of \verb{real/}, see the section The folder
+fake/ of \code{\link[=initialize_project]{initialize_project()}}. The output is fake output when
 the manifest of the real results on the disk has \code{fake_real_data}
-\code{TRUE}. It then goes to \verb{real/output_fake_data/}, as for a fake
-scenario below. The
+\code{TRUE}. It then goes to \verb{output_fake_data/} of that folder, as for a
+fake scenario below. The
 manifest decides, and never the argument \code{fake_real_data} of
 \code{\link[=initialize_project]{initialize_project()}} in this R session. \code{make_outputs()} deletes the
 other of the two folders of \code{"real"} with one printed line, so no

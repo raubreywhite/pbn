@@ -20,7 +20,7 @@ saved_log <- function(run, table, done, checks, seconds) {
   if (inherits(checks, "error") && length(log$contract) == 0) {
     log$error <- conditionMessage(checks)
   }
-  log$files <- files_written(state$results, table$scenario)
+  log$files <- files_written(table$scenario)
   log$outputs_deleted <- done$outputs_deleted
   log$timing$save <- c(done$seconds, total = seconds)
   log$result <- log_result(log)
@@ -65,7 +65,7 @@ base_log <- function(run, scenarios) {
     other_packages = other_packages(run$packages),
     run = run,
     scenarios = run$scenarios,
-    earlier = earlier_scenarios(state$results, scenarios),
+    earlier = earlier_scenarios(scenarios),
     fake_real_data = isTRUE(state$fake_real_data) &&
       "real" %in% run$scenarios$scenario,
     saved = FALSE,
@@ -210,18 +210,19 @@ log_versions <- function() {
   ))
 }
 
-# The scenario folders under `root` that are not in `scenarios` and hold a
-# results.qs2, with the run_date of its manifest, sorted by name.
-earlier_scenarios <- function(root, scenarios) {
-  found <- if (dir.exists(root)) list.files(root) else character(0)
-  found <- found[dir.exists(file.path(root, found))]
-  found <- sort(setdiff(found, scenarios), method = "radix")
-  found <- found[file.exists(file.path(root, found, "results.qs2"))]
+# The scenarios with a folder, see scenario_dirs(), that are not in
+# `scenarios` and hold a results.qs2, with the run_date of its manifest,
+# sorted by name.
+earlier_scenarios <- function(scenarios) {
+  dirs <- scenario_dirs(state)
+  dirs <- dirs[!names(dirs) %in% scenarios]
+  dirs <- dirs[file.exists(file.path(dirs, "results.qs2"))]
+  found <- as.character(names(dirs))
   dates <- vapply(
-    found,
-    function(s) {
+    dirs,
+    function(folder) {
       x <- tryCatch(
-        qs2::qs_read(file.path(root, s, "results.qs2")),
+        qs2::qs_read(file.path(folder, "results.qs2")),
         error = function(e) return(NULL)
       )
       d <- if (is.list(x) && is.list(x$manifest)) x$manifest$run_date else NULL
@@ -233,26 +234,27 @@ earlier_scenarios <- function(root, scenarios) {
   return(data.frame(scenario = found, run_date = dates))
 }
 
-# The results files of the scenarios `scenarios` under `root`, relative to
-# the project, with their sizes. The folder sims_gitexclude/ is one row with
-# its number of files and their total size.
-files_written <- function(root, scenarios) {
-  rel_root <- paste0(state$version, "_results")
+# The results files of the scenarios `scenarios`, relative to the project,
+# with their sizes. The folder sims_gitexclude/ is one row with its number
+# of files and their total size.
+files_written <- function(scenarios) {
   out <- list()
   for (s in scenarios) {
+    folder <- scenario_dir(state, s)
+    rel_root <- paste0(state$version, "_results/", basename(folder))
     for (f in c("check.csv", "results.qs2", gitexclude_file)) {
-      path <- file.path(root, s, f)
+      path <- file.path(folder, f)
       if (file.exists(path)) {
         out[[length(out) + 1]] <- data.frame(
-          file = paste(rel_root, s, f, sep = "/"),
+          file = paste(rel_root, f, sep = "/"),
           size = format_size(file.size(path))
         )
       }
     }
-    sims <- list.files(file.path(root, s, sims_folder), full.names = TRUE)
+    sims <- list.files(file.path(folder, sims_folder), full.names = TRUE)
     if (length(sims) > 0) {
       out[[length(out) + 1]] <- data.frame(
-        file = paste0(paste(rel_root, s, sims_folder, sep = "/"), "/"),
+        file = paste0(paste(rel_root, sims_folder, sep = "/"), "/"),
         size = paste0(
           length(sims),
           if (length(sims) == 1) " file, " else " files, ",
@@ -340,7 +342,7 @@ write_started_log <- function(scenarios, started, workers = NULL) {
     started = started,
     workers = workers,
     scenarios = scenarios,
-    earlier = earlier_scenarios(root, scenarios$scenario),
+    earlier = earlier_scenarios(scenarios$scenario),
     fake_real_data = isTRUE(state$fake_real_data) &&
       "real" %in% scenarios$scenario,
     timing = list(run = NULL, save = NULL, outputs = NULL),

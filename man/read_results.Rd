@@ -36,6 +36,10 @@ For a scenario with 1 simulation, \code{sim = 1} reads its \code{results.qs2}, t
 results of that simulation.
 The section The files of \code{\link[=save_results]{save_results()}} shows each file.
 
+In a one-file project, \verb{<scenario>} is \code{fake} for the scenario \code{"real"}.
+So \code{read_results(version)} there reads \verb{<version>_results/fake/}. The
+section The folder fake/ of \code{\link[=initialize_project]{initialize_project()}} gives the rule.
+
 \code{read_results()} stops when \verb{<home>/<version>_results/<scenario>/check.csv}
 exists and holds a value of \code{pass} that is not \code{TRUE}, also when it reads
 one simulation. It also stops when that file holds no assertion, or has

@@ -25,6 +25,7 @@ Names are lower case, with a few exceptions such as `README.md` and the initials
 v01_run.R                 the run script of version v01
 v01_functions/            the config and the functions that the run script sources
 v01_results/<scenario>/   the results and the output of each scenario
+v01_results/fake/         the scenario real of a one-file project on this computer
 v01_results/run.md        the log of the last run
 v01_cache_gitexclude/     the cache of the data, which git ignores
 v01_test/                 optional testthat files for the functions
@@ -33,6 +34,7 @@ v01_frozen.md5            optional md5 of the files of a frozen version
 check_project.R           one line: pbn::check_project()
 pbn.yml                   the rules of check_project()
 manuscript/manual/        manuscripts that a person edits
+manuscript/draft/         drafts of an agent, outside the version counter
 manuscript/built/vNN/     manuscripts that code builds from the results
 background/               documents from outside the project, with names that pbn does not check
 adhoc/                    work outside the run script
@@ -435,6 +437,10 @@ files <- list.files(file.path(home, "v01_results"), recursive = TRUE)
 unique(sub("sim_[0-9]{4}", "sim_<kkkk>", files))
 ```
 
+This project is a one-file project: `v01_run.R` gives `one_file_home`, see "Running on an air-gapped server". So the scenario `real` of this computer is in `v01_results/fake/`, and its manifest has `fake_real_data = TRUE`. `v01_results/real/` holds only the real results that come back from the server, and no function of pbn writes there. In a project that is not one-file, `real` is in `v01_results/real/`. `save_results()`, `read_results()` and `make_outputs()` find the folder themselves.
+
+`fake/` stands in for the real results. It is not one of the fake scenarios, which have planted effects and an `expect_` function, so `pbn::scenarios()` refuses the name `fake`.
+
 A results object is a named list. The first element is `manifest`, and the second is `exclusions`, the exclusion table of the cohort. Then comes one element for each analysis kind. The data.frames of one kind are row-bound, with the extra dimension `adjust` as the first column. `?save_results` gives the rules.
 
 ```{r}
@@ -468,18 +474,18 @@ str(res$manifest[c("scenario", "sim", "sims", "data_files", "n_rows_data", "n_ro
 A results file goes to git, so it MUST NOT hold one row for each person. Some results do: fitted models, the imputations, or the predicted risk of `predict_risk()`. `save_results(gitexclude = "predicted")` writes that kind to `results_gitexclude.qs2`, beside `results.qs2`, and to `sim_<kkkk>_gitexclude.qs2` for each simulation. The line `*gitexclude*` of `.gitignore` keeps that file out of git. `read_results()` reads both files and returns one list:
 
 ```{r}
-list.files(file.path(home, "v01_results", "real"))
+list.files(file.path(home, "v01_results", "fake"))
 nrow(res$predicted)
 ```
 
 ```{r, include = FALSE}
-stopifnot(nrow(res$predicted) == 388, !"predicted" %in% names(qs2::qs_read(file.path(home, "v01_results", "real", "results.qs2"))))
+stopifnot(nrow(res$predicted) == 388, !"predicted" %in% names(qs2::qs_read(file.path(home, "v01_results", "fake", "results.qs2"))), !dir.exists(file.path(home, "v01_results", "real")))
 ```
 
 A coauthor who clones the repository has no `results_gitexclude.qs2`. `read_results()` then returns the other elements, with one warning:
 
 ```{r}
-private <- file.path(home, "v01_results", "real", "results_gitexclude.qs2")
+private <- file.path(home, "v01_results", "fake", "results_gitexclude.qs2")
 file.rename(private, file.path(root, "kept.qs2"))
 names(pbn::read_results("v01", home = home))
 file.rename(file.path(root, "kept.qs2"), private)
@@ -725,7 +731,7 @@ stopifnot(identical(nrow(d), 388L))
 
 ## The output
 
-`pbn::make_outputs(make_output, scenarios)` calls the output function for `real` and for each fake scenario with `output = TRUE`. The folder of `real` is `v01_results/real/output/`. The folder of a fake scenario is `v01_results/<scenario>/output_fake_data/`, and pbn renames each file there so that its name starts with `fake_data_`. Before each call, it empties the folder, so no file of an earlier run stays.
+`pbn::make_outputs(make_output, scenarios)` calls the output function for `real` and for each fake scenario with `output = TRUE`. The folder of a fake scenario is `v01_results/<scenario>/output_fake_data/`, and pbn renames each file there so that its name starts with `fake_data_`. The folder of `real` is `v01_results/real/output/` on real data. This project is one-file, so on this computer `real` is fake real data, and its output goes to `v01_results/fake/output_fake_data/` with the same prefix. Before each call, it empties the folder, so no file of an earlier run stays.
 
 ```{r}
 files <- list.files(file.path(home, "v01_results"), recursive = TRUE)
@@ -733,10 +739,10 @@ grep("output", files, value = TRUE)
 ```
 
 ```{r, include = FALSE}
-stopifnot(identical(grep("output", files, value = TRUE), c("known/output_fake_data/fake_data_outcome_by_group.png", "real/output/outcome_by_group.png")))
+stopifnot(identical(grep("output", files, value = TRUE), c("fake/output_fake_data/fake_data_outcome_by_group.png", "known/output_fake_data/fake_data_outcome_by_group.png")))
 ```
 
-`q <- pbn::stamp_fake(q)` in `make_output()` puts the label "FAKE DATA" on the figure of a fake scenario. It returns the figure as it is for `real`. This is the figure of `known`:
+`q <- pbn::stamp_fake(q)` in `make_output()` puts the label "FAKE DATA" on the figure of a fake scenario, and of `real` from fake real data. It returns the figure as it is for `real` on real data. This is the figure of `known`:
 
 ```{r, echo = FALSE, out.width = "60%"}
 # The figure goes beside the figures of knitr, because the last chunk
@@ -936,6 +942,8 @@ unlink(file.path(home, "manuscript", "manual"), recursive = TRUE)
 writeLines(changelog, file.path(home, "CHANGELOG.md"))
 ```
 
+`manuscript/draft/` holds the drafts of an agent: `vNN_<INITIALS>.docx`, and `vNN_<INITIALS>_si.docx` for the supporting information. NN is the version that the draft starts from. A draft is outside the version counter, so `manual_not_ahead` does not count it, and a new draft MAY overwrite an old one. Its name follows the rule of `manuscript/manual/`, so `lower_case_names` passes the initials in upper case.
+
 ## Running on an air-gapped server
 
 Some real data stays on a server without a network, and the numbers leave it only as screenshots. pbn runs the scenario `real` there from one file that you paste into R. Then it shows the numbers of the manuscript one page at a time.
@@ -1035,11 +1043,11 @@ withr::with_dir(home, pbn::initialize_project(
 stopifnot(out$status == 0)
 ```
 
-The run wrote a `blocks.qs2` for each scenario. These are the names of the values for the real data:
+The run wrote a `blocks.qs2` for each scenario. The scenario `real` of this one-file project has its file in `fake/`. These are the names of its values:
 
 ```{r}
 list.files(file.path(home, "v01_results"), "^blocks[.]qs2$", recursive = TRUE)
-names(qs2::qs_read(file.path(home, "v01_results", "real", "blocks.qs2")))
+names(qs2::qs_read(file.path(home, "v01_results", "fake", "blocks.qs2")))
 ```
 
 A manuscript takes one formatted string with `pbn::txt()`, for example in inline R code of a `.qmd` file in `manuscript/built/v01/`. It reads the raw value from the real `blocks.qs2` and formats it:
@@ -1161,7 +1169,7 @@ if (!isTRUE(pass)) {
 
 Run it before you go to the server. It cannot find a difference of the server itself, such as another version of R or of a package there. When the code changed after the last run, it says that the results are older than the code, and runs nothing. Without real results, it stops after the comparison of the file.
 
-On a computer without the real data, the folders MAY hold fake files in the formats of the real data. The code that reads the real data then runs there. Say so in the run script of that computer. pbn then labels the real results as fake real data in the run log, the output and the blocks:
+On a computer without the real data, the folders MAY hold fake files in the formats of the real data. The code that reads the real data then runs there. pbn labels the real results as fake real data in the run log, the output and the blocks. A one-file project gets these labels from `one_file_home`, and its call MUST NOT give `fake_real_data = TRUE`. A project that is not one-file says so in the run script of that computer:
 
 ```r
 pbn::initialize_project(version = "v01", home = ".", folders = c(main = "../data"), fake_real_data = TRUE)

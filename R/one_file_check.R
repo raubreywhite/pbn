@@ -10,7 +10,10 @@
 #'   [initialize_project()] of this R session.
 #' @details
 #' Run the project as normal first, so that `<version>_results/real/` holds
-#' its real results. Write the file with [to_one_file()], and call
+#' its real results. In a one-file project, that folder is
+#' `<version>_results/fake/`, see the section The folder fake/ of
+#' [initialize_project()]. The run of the file writes `real/` of its
+#' temporary project folder, as on the server. Write the file with [to_one_file()], and call
 #' [initialize_project()] again in this R session, with `one_file_home` and
 #' `one_file_folders`.
 #'
@@ -103,11 +106,11 @@ check_one_file <- function(...) {
     cat("FAIL: ", disk$found, "\n", sep = "")
     return(invisible(FALSE))
   }
-  local <- file.path(state$results, "real")
+  local <- scenario_dir(state, "real")
   if (!file.exists(file.path(local, "results.qs2"))) {
     stop(
       "There are no real results in ",
-      paste0(version, "_results/real/"),
+      paste0(version, "_results/", basename(local), "/"),
       ". The file of pbn::to_one_file() passes the checks that need no ",
       "results: it is the file that pbn::to_one_file() writes now, its code ",
       "is ASCII, it parses, and it uses no function that it leaves out. Run ",
@@ -134,10 +137,9 @@ check_one_file <- function(...) {
   if (!identical(status, 0L)) {
     return(one_file_verdict(child_failure(status, log), tmp))
   }
-  found <- one_file_difference(
-    local,
-    file.path(home, paste0(version, "_results"), "real")
-  )
+  # The temporary project folder has no run script, as on the server, so
+  # its real results are in real/.
+  found <- one_file_difference(local, scenario_dir(version, "real", home))
   blocks <- NULL
   if (is.null(found)) {
     blocks <- check_blocks_of_file(file, home, tmp)

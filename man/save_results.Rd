@@ -319,7 +319,9 @@ history again.
 
 git gets the results of each scenario as one file, \code{results.qs2}, and
 never the results of each simulation. These are the files of
-\verb{<version>_results/<scenario>/}:
+\verb{<version>_results/<scenario>/}. In a one-file project, the folder of
+\code{"real"} is \verb{<version>_results/fake/}, see the section The folder fake/ of
+\code{\link[=initialize_project]{initialize_project()}}:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{blocks.qs2                 the values of the blocks, on simulation 1
 check.csv                  the assertions of expect_<scenario>()

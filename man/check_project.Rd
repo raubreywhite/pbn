@@ -54,7 +54,8 @@ Everything under \verb{background/} is not checked. These are exempt:
 \code{README.md}, \code{CHANGELOG.md}, \code{AGENTS.md}, \code{CLAUDE.md}, \code{LICENSE},
 \code{DESCRIPTION}, a top-level dotfile, a top-level \verb{*.Rproj} file, file
 extensions, and the initials in \verb{manuscript/manual/vNN_<INITIALS>.docx}
-and \verb{manuscript/manual/vNN_<INITIALS>_<suffix>.docx}.
+and \verb{manuscript/manual/vNN_<INITIALS>_<suffix>.docx}, and in the drafts
+of an agent with the same names in \verb{manuscript/draft/}.
 \item \code{run_script_initialises} (FAIL): a \code{vNN_run.R} at the top level has no
 call \code{pbn::initialize_project()} whose \code{version} argument is the string
 \code{"vNN"}. A call with an argument that \code{\link[=initialize_project]{initialize_project()}} does not

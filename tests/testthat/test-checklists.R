@@ -441,6 +441,61 @@ test_that("a pretty-printed .docx, with each paragraph, run and text on its own 
   expect_identical(out$`Reported in`, c("Results", "Results", ""))
 })
 
+# checklist_project() as a one-file project: its run script gives
+# one_file_home, so its blocks.qs2 of real is in v01_results/fake/. Its
+# v01_results/real/ holds other values, as the results of the server.
+one_file_checklist_project <- function(env = parent.frame()) {
+  home <- checklist_project(env = env)
+  write_lines(
+    home,
+    "v01_run.R",
+    paste0(
+      "pbn::initialize_project(version = \"v01\", home = \".\", ",
+      "folders = c(main = \"../data\"), one_file_home = \"N:/x\", ",
+      "one_file_folders = c(main = \"N:/d\"))"
+    )
+  )
+  results <- file.path(home, "v01_results")
+  file.rename(file.path(results, "real"), file.path(results, "fake"))
+  dir.create(file.path(results, "real"))
+  qs2::qs_save(
+    list(
+      "Effect" = data.frame(est = 0.5, lo = 0.2, hi = 0.9, p = 0.04),
+      "Sample" = data.frame(n = 1, total = 2),
+      "Table 1" = data.frame(
+        variable = c("Maternal age", "Body mass index"),
+        mean = c(20, 20),
+        sd = c(1, 1)
+      )
+    ),
+    file.path(results, "real", "blocks.qs2")
+  )
+  return(home)
+}
+
+test_that("txt() of a one-file project reads fake/blocks.qs2, not real/", {
+  local_clean_state()
+  home <- one_file_checklist_project()
+  expect_identical(txt("Sample", version = "v01", home = home), "1,037 (68.7%)")
+})
+
+test_that("make_checklists() of a one-file project reads fake/blocks.qs2, not real/", {
+  local_clean_state()
+  home <- one_file_checklist_project()
+  out <- NULL
+  expect_no_error(out <- make_checklists("v01", home = home))
+  expect_identical(
+    statuses(out),
+    c("1" = "numbers found", "2" = "numbers found", "3" = "to fill")
+  )
+  lines <- readLines(file.path(home, "manuscript/built/v01/checklist_mini.md"))
+  expect_true(any(grepl(
+    "Blocks: v01_functions/blocks.R and v01_results/fake/blocks.qs2.",
+    lines,
+    fixed = TRUE
+  )))
+})
+
 test_that("make_checklists() checks its arguments, and NULL is the default only", {
   local_clean_state()
   home <- checklist_project()

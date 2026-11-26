@@ -38,12 +38,13 @@ given with its full name.}
 
 \item{fake_real_data}{\code{TRUE} when the folders of \code{folders} on this
 computer hold fake files in the formats of the real data, and \code{FALSE},
-the default, otherwise. See the section Fake real data.}
+the default, otherwise. See the section Fake real data. A call with
+\code{one_file_home} MUST NOT give \code{fake_real_data = TRUE}, and it stops.}
 
 \item{one_file_home}{The project folder on the server without a network,
 one string, for example \code{"N:/durable/project"}, or \code{NULL}, the default.
-\code{\link[=to_one_file]{to_one_file()}} writes it into its file. See the section Paths of the
-server.}
+\code{\link[=to_one_file]{to_one_file()}} writes it into its file. See the sections Paths of the
+server and The folder fake/.}
 
 \item{one_file_folders}{The folders of \code{folders} on the server, as a named
 character vector, or \code{NULL}, the default. It MUST name exactly the
@@ -143,8 +144,10 @@ like changed data, so the cache computes the data again. \code{file.copy(..., co
 The real data of a project MAY be on a server only. Its folders on this
 computer MAY then hold fake files in the formats of the real data. Then the code
 that reads the real data runs here, and \code{\link[=check_one_file]{check_one_file()}} has results to
-compare. Give \code{fake_real_data = TRUE} in the run script of such a
-computer. It is about the scenario \code{"real"} only:
+compare. In a project that is not one-file, give \code{fake_real_data = TRUE}
+in the run script of such a computer. A one-file project gets the same
+labels without it, see the section The folder fake/. It is about the
+scenario \code{"real"} only:
 \itemize{
 \item The manifest of the real results gets \code{fake_real_data = TRUE}. It is
 \code{FALSE} without the flag. A fake scenario has no such field.
@@ -152,8 +155,8 @@ computer. It is about the scenario \code{"real"} only:
 sections Run and History. The sections Data and Exclusions name the
 scenario \verb{real (fake real data)}.
 \item \code{\link[=make_outputs]{make_outputs()}} writes the output of \code{"real"} as fake output, into
-\verb{real/output_fake_data/} with the prefix \code{fake_data_}, and
-\code{\link[=stamp_fake]{stamp_fake()}} marks its figures. It deletes an old \verb{real/output/}.
+\verb{output_fake_data/} of its folder with the prefix \code{fake_data_}, and
+\code{\link[=stamp_fake]{stamp_fake()}} marks its figures. It deletes an old \verb{output/} there.
 \item \code{\link[=show_blocks]{show_blocks()}} and \code{\link[=show_block]{show_block()}} print \verb{FAKE REAL DATA}.
 }
 
@@ -171,6 +174,34 @@ real results are on the disk.
 \code{\link[=read_results]{read_results()}} reads such results as usual. The file of \code{\link[=to_one_file]{to_one_file()}}
 never gives \code{fake_real_data}, because the server holds the real data.
 \code{fake_real_data = TRUE} together with \code{generated} stops.
+}
+
+\section{The folder fake/}{
+
+A one-file project is a project whose run script \verb{<version>_run.R} gives
+\code{one_file_home} in a top-level call \code{pbn::initialize_project()}. pbn
+finds this from the parse of the run script, and evaluates nothing. In a
+one-file project on this computer, the scenario \code{"real"} is in
+\verb{<version>_results/fake/}, and not in \verb{<version>_results/real/}:
+\itemize{
+\item \code{\link[=save_results]{save_results()}}, \code{\link[=read_results]{read_results()}}, \code{\link[=make_outputs]{make_outputs()}}, \code{\link[=show_block]{show_block()}},
+\code{\link[=txt]{txt()}}, \code{\link[=update_blocks]{update_blocks()}}, \code{\link[=check_one_file]{check_one_file()}} and \code{\link[=verify]{verify()}} read and
+write the scenario \code{"real"} in \verb{fake/}. No function of pbn creates
+\verb{real/} there.
+\item \verb{real/} holds only the real results that come back from the server.
+\item \code{one_file_home} says that the data on this computer are fake. So pbn
+writes \code{fake_real_data = TRUE} into the manifest of \verb{fake/}, and the
+labels of the section Fake real data apply. The call MUST NOT give
+\code{fake_real_data = TRUE}, and it stops.
+}
+
+\verb{fake/} stands in for the real results. It is not one of the fake
+scenarios of \code{CFG$scenarios}, which have planted effects and an
+\verb{expect_<scenario>()} function. So \code{\link[=scenarios]{scenarios()}} refuses the name \code{fake}.
+
+The file of \code{\link[=to_one_file]{to_one_file()}} calls \code{initialize_project()} without
+\code{one_file_home}, and the server has no run script. So on the server the
+scenario \code{"real"} is in \verb{real/}, as in a project that is not one-file.
 }
 
 \section{Paths of the server}{

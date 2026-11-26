@@ -30,8 +30,9 @@
 #' - a rule of `check_project()` fails.
 #'
 #' Else the verdict is PASS. The last line names each reason of a FAIL. A
-#' PASS of a run that did not write `<version>_results/real/results.qs2`
-#' has the last line
+#' PASS of a run that did not write `<version>_results/real/results.qs2`,
+#' or `<version>_results/fake/results.qs2` in a one-file project, has the
+#' last line
 #' ``Verdict: PASS on the fake scenarios only. The scenario `real` did not run.``
 #' It covers the fake data only. Its verdict is still PASS. In a
 #' non-interactive R session, `verify()` quits R with status 1 after a
@@ -165,10 +166,11 @@ verdict_line <- function(verdict, reasons, real_ran) {
   return("Verdict: PASS")
 }
 
-# TRUE when the run wrote <version>_results/real/results.qs2 in `home` at or
-# after the time `since`, so the scenario real ran in this run.
+# TRUE when the run wrote results.qs2 of the scenario real in `home` at or
+# after the time `since`, so the scenario real ran in this run. Its folder
+# is real/, or fake/ in a one-file project, see scenario_dir().
 real_results_written <- function(home, version, since) {
-  file <- file.path(home, paste0(version, "_results"), "real", "results.qs2")
+  file <- file.path(scenario_dir(version, "real", home), "results.qs2")
   return(file.exists(file) && file.mtime(file) >= since)
 }
 

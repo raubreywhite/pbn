@@ -27,7 +27,9 @@ the rows of the scenarios in \code{only}. The real data is the scenario
 \code{cfg$scenarios} MUST be a data.frame with these columns:
 \itemize{
 \item \code{scenario}: unique names that match \verb{^[a-z0-9_]+$}. One name MUST be
-\code{"real"}.
+\code{"real"}. A name MUST NOT be \code{"fake"}, because in a one-file project the
+folder \verb{fake/} holds \code{"real"}, see the section The folder fake/ of
+\code{\link[=initialize_project]{initialize_project()}}.
 \item \code{sims}: the number of simulations of the scenario, a whole number of 1 or
 more.
 \item \code{output}: optional. \code{TRUE} or \code{FALSE} on each row, and \code{FALSE} for

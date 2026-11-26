@@ -102,7 +102,9 @@ block <- function(fn, format, items = character(0)) {
 #' @details
 #' `txt()` reads the raw value from
 #' `<home>/<version>_results/real/blocks.qs2`, which [save_results()] and
-#' [update_blocks()] write. It formats the value at each call, so a change of
+#' [update_blocks()] write. In a one-file project, it reads `fake/` in the
+#' place of `real/`, see the section The folder fake/ of
+#' [initialize_project()]. It formats the value at each call, so a change of
 #' a formatter needs no new `blocks.qs2`.
 #'
 #' After [initialize_project()] of `version` and `home` in this R session,
@@ -129,9 +131,7 @@ txt <- function(name, row = 1, col = NULL, version = NULL, home = NULL) {
   where <- txt_where(version, home)
   found <- txt_block(name, where$version, where$home)
   file <- file.path(
-    where$home,
-    paste0(where$version, "_results"),
-    "real",
+    scenario_dir(where$version, "real", where$home),
     blocks_qs2_file
   )
   if (!file.exists(file)) {
@@ -165,7 +165,10 @@ txt <- function(name, row = 1, col = NULL, version = NULL, home = NULL) {
 #' @inheritParams show_blocks
 #' @details
 #' It does what step 7 of [save_results()] does, for each folder
-#' `<version>_results/<scenario>/` that holds a `results.qs2`. It creates
+#' `<version>_results/<scenario>/` that holds a `results.qs2`. In a one-file
+#' project, the folder of `"real"` is `fake/`, and `update_blocks()` does
+#' not change `real/`, the results of the server. See the section The
+#' folder fake/ of [initialize_project()]. It creates
 #' `blocks.qs2` where it is absent. Call it after a change of the raw value
 #' of a block, or to create the files without a run. A change of a
 #' formatter needs no call, because [show_block()] and [txt()] format at
@@ -213,11 +216,8 @@ update_blocks <- function(version = NULL, home = NULL) {
   }
   blocks <- get0("blocks", envir = state$env, inherits = FALSE)
   check_blocks(blocks, state$version)
-  scenarios <- list.dirs(state$results, full.names = FALSE, recursive = FALSE)
-  scenarios <- sort(
-    scenarios[file.exists(file.path(state$results, scenarios, "results.qs2"))],
-    method = "radix"
-  )
+  dirs <- scenario_dirs(state)
+  scenarios <- names(dirs)[file.exists(file.path(dirs, "results.qs2"))]
   if (length(scenarios) == 0) {
     stop(
       "There are no saved results in ",
@@ -226,7 +226,7 @@ update_blocks <- function(version = NULL, home = NULL) {
       call. = FALSE
     )
   }
-  save_blocks(scenarios, state$results)
+  save_blocks(scenarios)
   cat(
     "pbn: wrote blocks.qs2 for ",
     paste(scenarios, collapse = ", "),

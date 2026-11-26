@@ -375,7 +375,7 @@ tagged_strings <- function(home, version, items) {
     }
     if (!name %in% names(saved)) {
       stop(
-        file.path(home, paste0(version, "_results"), "real", blocks_qs2_file),
+        file.path(scenario_dir(version, "real", home), blocks_qs2_file),
         " holds no block \"",
         name,
         "\". Write it again with pbn::update_blocks().",
@@ -393,7 +393,7 @@ tagged_strings <- function(home, version, items) {
 # The raw values of the real blocks.qs2 of `version` in `home`. Stops when
 # the file is missing.
 read_real_blocks <- function(home, version) {
-  file <- file.path(home, paste0(version, "_results"), "real", blocks_qs2_file)
+  file <- file.path(scenario_dir(version, "real", home), blocks_qs2_file)
   if (!file.exists(file)) {
     stop(
       "There is no ",
@@ -507,7 +507,9 @@ checklist_lines <- function(rows, first, files, home, version) {
       blocks_file(version),
       " and ",
       version,
-      "_results/real/blocks.qs2."
+      "_results/",
+      basename(scenario_dir(version, "real", home)),
+      "/blocks.qs2."
     ),
     "",
     "| Section | Item | Recommendation | Reported in | Status |",

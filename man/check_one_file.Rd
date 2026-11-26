@@ -22,7 +22,10 @@ difference.
 }
 \details{
 Run the project as normal first, so that \verb{<version>_results/real/} holds
-its real results. Write the file with \code{\link[=to_one_file]{to_one_file()}}, and call
+its real results. In a one-file project, that folder is
+\verb{<version>_results/fake/}, see the section The folder fake/ of
+\code{\link[=initialize_project]{initialize_project()}}. The run of the file writes \verb{real/} of its
+temporary project folder, as on the server. Write the file with \code{\link[=to_one_file]{to_one_file()}}, and call
 \code{\link[=initialize_project]{initialize_project()}} again in this R session, with \code{one_file_home} and
 \code{one_file_folders}.
 

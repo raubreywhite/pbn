@@ -23,11 +23,12 @@ state <- new.env(parent = emptyenv())
 #'   given with its full name.
 #' @param fake_real_data `TRUE` when the folders of `folders` on this
 #'   computer hold fake files in the formats of the real data, and `FALSE`,
-#'   the default, otherwise. See the section Fake real data.
+#'   the default, otherwise. See the section Fake real data. A call with
+#'   `one_file_home` MUST NOT give `fake_real_data = TRUE`, and it stops.
 #' @param one_file_home The project folder on the server without a network,
 #'   one string, for example `"N:/durable/project"`, or `NULL`, the default.
-#'   [to_one_file()] writes it into its file. See the section Paths of the
-#'   server.
+#'   [to_one_file()] writes it into its file. See the sections Paths of the
+#'   server and The folder fake/.
 #' @param one_file_folders The folders of `folders` on the server, as a named
 #'   character vector, or `NULL`, the default. It MUST name exactly the
 #'   folders of `folders`. One folder MAY have no name on both sides, and it
@@ -107,16 +108,18 @@ state <- new.env(parent = emptyenv())
 #' The real data of a project MAY be on a server only. Its folders on this
 #' computer MAY then hold fake files in the formats of the real data. Then the code
 #' that reads the real data runs here, and [check_one_file()] has results to
-#' compare. Give `fake_real_data = TRUE` in the run script of such a
-#' computer. It is about the scenario `"real"` only:
+#' compare. In a project that is not one-file, give `fake_real_data = TRUE`
+#' in the run script of such a computer. A one-file project gets the same
+#' labels without it, see the section The folder fake/. It is about the
+#' scenario `"real"` only:
 #' - The manifest of the real results gets `fake_real_data = TRUE`. It is
 #'   `FALSE` without the flag. A fake scenario has no such field.
 #' - The run log says that the scenario `real` ran on fake real data, in the
 #'   sections Run and History. The sections Data and Exclusions name the
 #'   scenario `real (fake real data)`.
 #' - [make_outputs()] writes the output of `"real"` as fake output, into
-#'   `real/output_fake_data/` with the prefix `fake_data_`, and
-#'   [stamp_fake()] marks its figures. It deletes an old `real/output/`.
+#'   `output_fake_data/` of its folder with the prefix `fake_data_`, and
+#'   [stamp_fake()] marks its figures. It deletes an old `output/` there.
 #' - [show_blocks()] and [show_block()] print `FAKE REAL DATA`.
 #'
 #' The argument decides only what [save_results()] writes into the
@@ -131,6 +134,29 @@ state <- new.env(parent = emptyenv())
 #' [read_results()] reads such results as usual. The file of [to_one_file()]
 #' never gives `fake_real_data`, because the server holds the real data.
 #' `fake_real_data = TRUE` together with `generated` stops.
+#' @section The folder fake/:
+#' A one-file project is a project whose run script `<version>_run.R` gives
+#' `one_file_home` in a top-level call `pbn::initialize_project()`. pbn
+#' finds this from the parse of the run script, and evaluates nothing. In a
+#' one-file project on this computer, the scenario `"real"` is in
+#' `<version>_results/fake/`, and not in `<version>_results/real/`:
+#' - [save_results()], [read_results()], [make_outputs()], [show_block()],
+#'   [txt()], [update_blocks()], [check_one_file()] and [verify()] read and
+#'   write the scenario `"real"` in `fake/`. No function of pbn creates
+#'   `real/` there.
+#' - `real/` holds only the real results that come back from the server.
+#' - `one_file_home` says that the data on this computer are fake. So pbn
+#'   writes `fake_real_data = TRUE` into the manifest of `fake/`, and the
+#'   labels of the section Fake real data apply. The call MUST NOT give
+#'   `fake_real_data = TRUE`, and it stops.
+#'
+#' `fake/` stands in for the real results. It is not one of the fake
+#' scenarios of `CFG$scenarios`, which have planted effects and an
+#' `expect_<scenario>()` function. So [scenarios()] refuses the name `fake`.
+#'
+#' The file of [to_one_file()] calls `initialize_project()` without
+#' `one_file_home`, and the server has no run script. So on the server the
+#' scenario `"real"` is in `real/`, as in a project that is not one-file.
 #' @section Paths of the server:
 #' Give `one_file_home` and `one_file_folders` together, or neither. A
 #' project that never goes to a server gives neither. The run script holds
@@ -241,7 +267,7 @@ initialize_project <- function(
   rm(list = ls(state, all.names = TRUE), envir = state)
   check_no_dots(...names(), ...length())
   folders <- check_init_args(version, home, folders, env, generated)
-  check_fake_real_data(fake_real_data, generated)
+  check_fake_real_data(fake_real_data, generated, one_file_home)
   server <- check_one_file_paths(
     one_file_home,
     one_file_folders,
@@ -291,6 +317,8 @@ initialize_project <- function(
     results = file.path(home, paste0(version, "_results")),
     folders = found$folders
   )
+  # The file of to_one_file() runs on the server, where "real" is real/.
+  one_file <- is.null(generated) && is_one_file_version(version, home)
   # Every step that can stop is above this line.
   list2env(
     c(
@@ -304,7 +332,8 @@ initialize_project <- function(
         source_stat = code$stat,
         rule_set = code$set,
         generated = !is.null(generated),
-        fake_real_data = fake_real_data,
+        fake_real_data = fake_real_data || one_file,
+        one_file = one_file,
         one_file_home = server$home,
         one_file_folders = server$folders,
         project = if (is.null(generated)) basename(home) else generated$project,
@@ -392,9 +421,18 @@ check_init_args <- function(version, home, folders, env, generated) {
 # Stops when `fake_real_data` is not TRUE or FALSE, and on TRUE with
 # `generated`: the file of to_one_file() runs on the server, where the data
 # is real.
-check_fake_real_data <- function(fake_real_data, generated) {
+check_fake_real_data <- function(fake_real_data, generated, one_file_home) {
   if (!isTRUE(fake_real_data) && !isFALSE(fake_real_data)) {
     stop("`fake_real_data` must be TRUE or FALSE.", call. = FALSE)
+  }
+  if (fake_real_data && !is.null(one_file_home)) {
+    stop(
+      "A one-file project takes no fake_real_data = TRUE: one_file_home ",
+      "already says that the data on this computer are fake. Drop ",
+      "fake_real_data from the call. pbn writes fake_real_data = TRUE into ",
+      "the manifest of the folder fake/ itself.",
+      call. = FALSE
+    )
   }
   if (fake_real_data && !is.null(generated)) {
     stop(

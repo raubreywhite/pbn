@@ -320,11 +320,11 @@ blocks_context <- function(version, home) {
 blocks_qs2_file <- "blocks.qs2"
 
 # Step 7 of save_results(): evaluates each block of the functions folder on
-# simulation 1 of each scenario of `scenarios` under `root`, and writes the
-# values of a scenario to <root>/<scenario>/blocks.qs2, a named list in the
-# order of `blocks`. It writes no file when the functions folder has no
+# simulation 1 of each scenario of `scenarios`, and writes the values of a
+# scenario to blocks.qs2 in its folder, see scenario_dir(), a named list in
+# the order of `blocks`. It writes no file when the functions folder has no
 # blocks. It stops at the first block that fails, before it writes a file.
-save_blocks <- function(scenarios, root) {
+save_blocks <- function(scenarios) {
   blocks <- get0("blocks", envir = state$env, inherits = FALSE)
   if (is.null(blocks)) {
     return(invisible(NULL))
@@ -363,7 +363,10 @@ save_blocks <- function(scenarios, root) {
     }
   }
   for (s in scenarios) {
-    qs2::qs_save(values[[s]], file.path(root, s, blocks_qs2_file))
+    qs2::qs_save(
+      values[[s]],
+      file.path(scenario_dir(state, s), blocks_qs2_file)
+    )
   }
   return(invisible(NULL))
 }

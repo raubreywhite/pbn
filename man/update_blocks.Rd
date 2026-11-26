@@ -23,7 +23,10 @@ analysis.
 }
 \details{
 It does what step 7 of \code{\link[=save_results]{save_results()}} does, for each folder
-\verb{<version>_results/<scenario>/} that holds a \code{results.qs2}. It creates
+\verb{<version>_results/<scenario>/} that holds a \code{results.qs2}. In a one-file
+project, the folder of \code{"real"} is \verb{fake/}, and \code{update_blocks()} does
+not change \verb{real/}, the results of the server. See the section The
+folder fake/ of \code{\link[=initialize_project]{initialize_project()}}. It creates
 \code{blocks.qs2} where it is absent. Call it after a change of the raw value
 of a block, or to create the files without a run. A change of a
 formatter needs no call, because \code{\link[=show_block]{show_block()}} and \code{\link[=txt]{txt()}} format at

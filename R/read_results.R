@@ -21,6 +21,10 @@
 #' results of that simulation.
 #' The section The files of [save_results()] shows each file.
 #'
+#' In a one-file project, `<scenario>` is `fake` for the scenario `"real"`.
+#' So `read_results(version)` there reads `<version>_results/fake/`. The
+#' section The folder fake/ of [initialize_project()] gives the rule.
+#'
 #' `read_results()` stops when `<home>/<version>_results/<scenario>/check.csv`
 #' exists and holds a value of `pass` that is not `TRUE`, also when it reads
 #' one simulation. It also stops when that file holds no assertion, or has
@@ -68,7 +72,7 @@ read_results <- function(version, scenario = "real", sim = NULL, home = ".") {
       call. = FALSE
     )
   }
-  folder <- file.path(home, paste0(version, "_results"), scenario)
+  folder <- scenario_dir(version, scenario, home)
   file <- file.path(folder, "results.qs2")
   if (!is.null(sim)) {
     if (!is_sim_number(sim)) {
@@ -249,4 +253,70 @@ is_sim_number <- function(sim) {
       sim >= 1 &&
       sim == round(sim)
   )
+}
+
+# The folder of the scenario `scenario` of a project version. `where` is the
+# state of initialize_project(), or a version such as "v01" of the project
+# folder `home`. The folder is <home>/<version>_results/<scenario>, with one
+# exception: in a one-file project, the scenario "real" of this computer is
+# in the folder fake/, because its data are fake. The folder real/ there
+# holds only the real results that come back from the server. See
+# is_one_file_version(). `scenario` MAY be a vector.
+scenario_dir <- function(where, scenario, home = ".") {
+  if (is.environment(where) || is.list(where)) {
+    root <- where[["results"]]
+    one_file <- isTRUE(where[["one_file"]])
+  } else {
+    root <- file.path(home, paste0(where, "_results"))
+    one_file <- is_one_file_version(where, home)
+  }
+  folder <- ifelse(one_file & scenario == "real", "fake", scenario)
+  return(file.path(root, folder))
+}
+
+# The scenarios with a folder under the results folder of `where`, as
+# scenario_dir() takes it: a character vector of the folders, named by the
+# scenario, sorted by name in the C locale. In a one-file project, the
+# folder fake/ is the scenario "real", and the folder real/, which holds
+# the real results of the server, is not a scenario of this computer. In
+# another project, a folder fake/ is not a scenario, because scenarios()
+# refuses the name.
+scenario_dirs <- function(where, home = ".") {
+  real <- scenario_dir(where, "real", home)
+  root <- dirname(real)
+  found <- if (dir.exists(root)) list.files(root) else character(0)
+  found <- found[dir.exists(file.path(root, found))]
+  if (basename(real) == "fake") {
+    found <- sub("^fake$", "real", setdiff(found, "real"))
+  } else {
+    found <- setdiff(found, "fake")
+  }
+  found <- sort(found, method = "radix")
+  return(stats::setNames(scenario_dir(where, found, home), found))
+}
+
+# TRUE when the version `version` of the project folder `home` is a
+# one-file project: a top-level call pbn::initialize_project() of its run
+# script <version>_run.R gives one_file_home. pbn parses the run script and
+# evaluates nothing. FALSE without a run script, and for a run script that R
+# cannot parse. The file of to_one_file() is not a run script, so on the
+# server the scenario "real" has the folder real/.
+is_one_file_version <- function(version, home = ".") {
+  script <- file.path(home, paste0(version, "_run.R"))
+  if (!file.exists(script)) {
+    return(FALSE)
+  }
+  for (e in as.list(parse_or_null(script))) {
+    if (!is.call(e) || !identical(e[[1]], quote(pbn::initialize_project))) {
+      next
+    }
+    matched <- tryCatch(
+      match.call(initialize_project, e),
+      error = function(err) return(NULL)
+    )
+    if (!is.null(matched) && !is.null(matched$one_file_home)) {
+      return(TRUE)
+    }
+  }
+  return(FALSE)
 }

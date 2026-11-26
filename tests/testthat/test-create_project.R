@@ -121,8 +121,32 @@ test_that("the AGENTS.md template holds the rules for an agent", {
       "- Do not change `pbn.yml`. Ask.",
       "- Do not freeze a version or start a new one. Ask.",
       "",
+      "## Results",
+      "",
+      paste(
+        "- In a one-file project, the run on this computer writes the",
+        "scenario `real` to `vNN_results/fake/`. A one-file project is one",
+        "whose `vNN_run.R` gives `one_file_home` to",
+        "`pbn::initialize_project()`."
+      ),
+      paste(
+        "- `fake/` stands in for the real results, and its numbers are fake.",
+        "It is not one of the fake scenarios, which have planted effects."
+      ),
+      paste(
+        "- `vNN_results/real/` holds only the real results that come back",
+        "from the server. Do not write into it."
+      ),
+      "",
       "## Manuscripts",
       "",
+      paste(
+        "- Save your own draft as `manuscript/draft/vNN_<INITIALS>.docx`, and",
+        "its supporting information as",
+        "`manuscript/draft/vNN_<INITIALS>_si.docx`. NN is the version it",
+        "starts from. A draft is outside the version counter, so you MAY",
+        "overwrite it."
+      ),
       paste(
         "- A hand edit, by a person or by an agent for a person, is saved as",
         "`manuscript/manual/v(NN+1)_<INITIALS>.docx`. NN is the version it",

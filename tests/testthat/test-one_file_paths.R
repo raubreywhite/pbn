@@ -291,10 +291,10 @@ test_that("the md5 of the run script leaves out the paths of the server and the 
   )
 })
 
-test_that("the paths of the server and the commented calls change no results, no run log and no source_md5, keep the results current, and change only the md5 of the bytes of the run script", {
+test_that("the paths of the server and the commented calls change no source_md5, keep the results current, and change only the md5 of the bytes of the run script; the one-file run then writes real into fake/ with fake_real_data TRUE", {
   p <- local_project()
-  files <- c("real/results.qs2", "known/results.qs2")
-  read_all <- function() {
+  read_all <- function(real) {
+    files <- c(file.path(real, "results.qs2"), "known/results.qs2")
     out <- lapply(files, function(f) {
       x <- qs2::qs_read(file.path(p$home, "v01_results", f))
       # The one field that MUST differ between two runs.
@@ -313,7 +313,7 @@ test_that("the paths of the server and the commented calls change no results, no
   }
   first <- save_run(p, only = c("real", "known"))
   expect_false(inherits(first$err, "error"))
-  before <- read_all()
+  before <- read_all("real")
   raw_before <- state$source_raw_md5[["v01_run.R"]]
   md5_before <- state$source_md5[["v01_run.R"]]
   run <- readLines(file.path(p$home, "v01_run.R"))
@@ -329,8 +329,28 @@ test_that("the paths of the server and the commented calls change no results, no
   )
   expect_false(inherits(second$err, "error"))
   expect_identical(state$one_file_home, "N:/x")
-  after <- read_all()
-  expect_identical(after, before)
+  # The run script gives one_file_home, so real is in fake/, as fake real
+  # data. The run log names the folder and the label, and only those.
+  after <- read_all("fake")
+  expect_false(before$results[[1]]$manifest$fake_real_data)
+  expect_true(after$results[[1]]$manifest$fake_real_data)
+  after$results[[1]]$manifest$fake_real_data <- FALSE
+  expect_identical(after$results, before$results)
+  expect_identical(after$check, before$check)
+  expect_true(any(grepl(
+    "| v01_results/fake/results.qs2 ",
+    after$log,
+    fixed = TRUE
+  )))
+  expect_true(any(grepl("| real (fake real data) |", after$log, fixed = TRUE)))
+  expect_false(any(grepl("v01_results/real/", after$log, fixed = TRUE)))
+  relabel <- function(log) {
+    log <- grep("ran on fake real data", log, value = TRUE, invert = TRUE)
+    log <- gsub("v01_results/(fake|real)/", "v01_results/<real>/", log)
+    log <- gsub("real (fake real data)", "real", log, fixed = TRUE)
+    return(gsub("[ -]+", " ", log))
+  }
+  expect_identical(relabel(after$log), relabel(before$log))
   expect_identical(state$source_md5[["v01_run.R"]], md5_before)
   expect_false(identical(state$source_raw_md5[["v01_run.R"]], raw_before))
   expect_false(any(grepl("N:/", unlist(after$results), fixed = TRUE)))

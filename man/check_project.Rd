@@ -39,7 +39,8 @@ files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
 The rules, with their level in the set \code{house_2026_11_26}, are below.
 The set \code{house_2026_11_25} has the same rules at the same levels, without
-\code{guidelines_valid} and \code{guidelines_covered}. The set \code{house_2026_11_20}
+\code{manual_has_supplement}, \code{manual_si_has_main}, \code{guidelines_valid} and
+\code{guidelines_covered}. The set \code{house_2026_11_20}
 also does not have \code{no_plot_title}, \code{no_plot_subtitle} and
 \code{no_plot_caption}. The set
 \code{house_2026_11_19} also does not have \code{built_reads_own_version},
@@ -154,6 +155,18 @@ detail is
 with \code{PP} = \code{NN} + 1. The rule does not read a name that
 \code{manual_manuscript_names} fails. Without a \code{vNN_run.R}, the rule has
 nothing to compare. It then prints one PASS line that says so.
+\item \code{manual_has_supplement} (FAIL): a main file
+\verb{manuscript/manual/vNN_<INITIALS>.docx} has no supplement
+\verb{manuscript/manual/vMM_<INITIALS>_si.docx} with \code{MM} at or below \code{NN}.
+The initials of the supplement MAY differ. The supplement suffix is
+exactly \code{si}, so a file with another suffix is neither a main file nor a
+supplement. The rule reads \verb{manuscript/manual/} only, so a draft in
+\verb{manuscript/draft/} does not count. A project without a supplement turns
+the rule off with \code{rules: manual_has_supplement: off} in \code{pbn.yml}.
+\item \code{manual_si_has_main} (FAIL): a supplement
+\verb{manuscript/manual/vNN_<INITIALS>_si.docx} has no main file
+\verb{manuscript/manual/vNN_<INITIALS>.docx} with the same version and the
+same initials. The detail names the main file to add.
 \item \code{fake_data_names} (FAIL): a file in a folder \verb{output_fake_data/} has a
 name without the prefix \code{fake_data_}, or a file with the prefix is in
 another folder. \code{\link[=make_outputs]{make_outputs()}} writes these folders.

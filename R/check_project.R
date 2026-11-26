@@ -24,7 +24,8 @@
 #'
 #' The rules, with their level in the set `house_2026_11_26`, are below.
 #' The set `house_2026_11_25` has the same rules at the same levels, without
-#' `guidelines_valid` and `guidelines_covered`. The set `house_2026_11_20`
+#' `manual_has_supplement`, `manual_si_has_main`, `guidelines_valid` and
+#' `guidelines_covered`. The set `house_2026_11_20`
 #' also does not have `no_plot_title`, `no_plot_subtitle` and
 #' `no_plot_caption`. The set
 #' `house_2026_11_19` also does not have `built_reads_own_version`,
@@ -136,6 +137,18 @@
 #'   with `PP` = `NN` + 1. The rule does not read a name that
 #'   `manual_manuscript_names` fails. Without a `vNN_run.R`, the rule has
 #'   nothing to compare. It then prints one PASS line that says so.
+#' - `manual_has_supplement` (FAIL): a main file
+#'   `manuscript/manual/vNN_<INITIALS>.docx` has no supplement
+#'   `manuscript/manual/vMM_<INITIALS>_si.docx` with `MM` at or below `NN`.
+#'   The initials of the supplement MAY differ. The supplement suffix is
+#'   exactly `si`, so a file with another suffix is neither a main file nor a
+#'   supplement. The rule reads `manuscript/manual/` only, so a draft in
+#'   `manuscript/draft/` does not count. A project without a supplement turns
+#'   the rule off with `rules: manual_has_supplement: off` in `pbn.yml`.
+#' - `manual_si_has_main` (FAIL): a supplement
+#'   `manuscript/manual/vNN_<INITIALS>_si.docx` has no main file
+#'   `manuscript/manual/vNN_<INITIALS>.docx` with the same version and the
+#'   same initials. The detail names the main file to add.
 #' - `fake_data_names` (FAIL): a file in a folder `output_fake_data/` has a
 #'   name without the prefix `fake_data_`, or a file with the prefix is in
 #'   another folder. [make_outputs()] writes these folders.

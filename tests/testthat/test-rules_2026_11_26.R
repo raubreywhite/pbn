@@ -1,7 +1,12 @@
-# The set house_2026_11_26: the rules guidelines_valid and
-# guidelines_covered, and the folder guidelines/ in the house layout. A
+# The set house_2026_11_26: the rules manual_has_supplement,
+# manual_si_has_main, guidelines_valid and guidelines_covered, and the folder
+# guidelines/ in the house layout. A
 # project keeps its reporting checklists in guidelines/, one YAML file per
 # guideline. The projects of house_2026_11_25 and older sets see none of it.
+
+# The two supplement rules of house_2026_11_26. rules_2026_11_26 of
+# helper-project.R has them too.
+supplement_rules <- c("manual_has_supplement", "manual_si_has_main")
 
 # A synthetic project of local_project() on the set house_2026_11_26, without
 # the manual manuscript that manual_not_ahead fails.
@@ -109,28 +114,39 @@ test_that("the checklist fixtures are the files of the methods repository", {
   )
 })
 
-test_that("house_2026_11_26 is house_2026_11_25 with guidelines_valid at fail and guidelines_covered at warn, and a new pbn.yml names it", {
+test_that("house_2026_11_26 is house_2026_11_25 with manual_has_supplement, manual_si_has_main and guidelines_valid at fail and guidelines_covered at warn, and a new pbn.yml names it", {
   old <- read_house_set("house_2026_11_25")
   new <- read_house_set("house_2026_11_26")
   expect_identical(new[names(old)], old)
   expect_identical(
     names(new),
-    intersect(names(project_rules()), c(names(old), rules_2026_11_26))
+    intersect(
+      names(project_rules()),
+      c(names(old), rules_2026_11_26)
+    )
   )
   expect_identical(setdiff(names(new), names(old)), rules_2026_11_26)
   expect_identical(
-    vapply(new[rules_2026_11_26], function(r) return(r$level), character(1)),
-    c(guidelines_valid = "fail", guidelines_covered = "warn")
+    vapply(
+      new[rules_2026_11_26],
+      function(r) return(if (is.null(r$level)) "missing" else r$level),
+      character(1)
+    ),
+    c(
+      manual_has_supplement = "fail",
+      manual_si_has_main = "fail",
+      guidelines_valid = "fail",
+      guidelines_covered = "warn"
+    )
   )
-  expect_false(any(vapply(
+  expect_true(all(vapply(
     new[rules_2026_11_26],
-    function(r) return(r$locked),
+    function(r) return(identical(r$locked, FALSE)),
     logical(1)
   )))
   expect_identical(starter_line(), "extends: house_2026_11_26")
-  # create_project() stays on house_2026_11_25: its template has no
-  # guidelines/.
-  expect_identical(create_project_set, "house_2026_11_25")
+  # create_project() names house_2026_11_26: its template passes the set.
+  expect_identical(create_project_set, "house_2026_11_26")
 })
 
 test_that("valid checklist files pass guidelines_valid, guidelines_covered WARNs each result item without a block, and guidelines/ is a known path", {
@@ -899,4 +915,240 @@ test_that("guidelines_covered reads the blocks.R of the newest version only, and
   )
   expect_identical(rows_26(p$home, "guidelines_covered")$status, "PASS")
   expect_identical(rows_26(p$home, "guidelines_valid")$status, "FAIL")
+})
+
+# The manual manuscripts `files` in manuscript/manual/ of `home`, and no
+# other file there.
+write_manual <- function(home, files) {
+  unlink(file.path(home, "manuscript", "manual"), recursive = TRUE)
+  for (f in files) {
+    write_lines(home, file.path("manuscript", "manual", f), "")
+  }
+  return(invisible(home))
+}
+
+# The rule, the status, the path and the detail of the rows of the two
+# supplement rules. When project_findings() stops, one row with the rule
+# "error" and the message, so that the comparison fails, and not the call.
+supplement_rows <- function(home) {
+  found <- tryCatch(project_findings(home), error = function(e) return(e))
+  if (inherits(found, "error")) {
+    return(data.frame(
+      rule = "error",
+      status = "error",
+      path = "",
+      detail = conditionMessage(found)
+    ))
+  }
+  keep <- found$rule %in% supplement_rules
+  return(found[keep, c("rule", "status", "path", "detail")])
+}
+
+test_that("manual_has_supplement fails a main manual file with no _si file at or below its version, and names the file to add", {
+  p <- local_project_26()
+  write_manual(p$home, "v01_AB.docx")
+  expect_identical(
+    supplement_rows(p$home),
+    data.frame(
+      rule = c("manual_has_supplement", "manual_si_has_main"),
+      status = c("FAIL", "PASS"),
+      path = c("manuscript/manual/v01_AB.docx", ""),
+      detail = c(
+        with_fix(
+          "manual_has_supplement",
+          paste0(
+            "manuscript/manual/v01_AB.docx: there is no supplement ",
+            "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01"
+          )
+        ),
+        paste(
+          "every manuscript/manual/vNN_<INITIALS>_si.docx has the main file",
+          "manuscript/manual/vNN_<INITIALS>.docx"
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+  expect_identical(
+    project_rules()$manual_has_supplement[[3]],
+    paste(
+      "add the supplement manuscript/manual/vNN_<INITIALS>_si.docx, or",
+      "turn the rule off with the line manual_has_supplement: off under",
+      "rules: in pbn.yml"
+    )
+  )
+  # A file with another suffix is not a supplement.
+  write_manual(p$home, c("v01_AB.docx", "v01_AB_cover.docx"))
+  expect_identical(
+    supplement_rows(p$home)$status,
+    c("FAIL", "PASS")
+  )
+})
+
+test_that("v02_AB.docx, v02_AB_si.docx and v03_CD.docx pass both rules, because the _si file of v02 covers v03 whatever its initials", {
+  p <- local_project_26()
+  write_manual(p$home, c("v02_AB.docx", "v02_AB_si.docx", "v03_CD.docx"))
+  found <- project_findings(p$home)
+  expect_identical(intersect(failed_rules(found), supplement_rules), character(0))
+  expect_identical(
+    supplement_rows(p$home)$status,
+    c("PASS", "PASS")
+  )
+  # The _si file of v02 does not cover v01.
+  write_manual(p$home, c("v01_CD.docx", "v02_AB.docx", "v02_AB_si.docx"))
+  expect_identical(
+    supplement_rows(p$home),
+    data.frame(
+      rule = c("manual_has_supplement", "manual_si_has_main"),
+      status = c("FAIL", "PASS"),
+      path = c("manuscript/manual/v01_CD.docx", ""),
+      detail = c(
+        with_fix(
+          "manual_has_supplement",
+          paste0(
+            "manuscript/manual/v01_CD.docx: there is no supplement ",
+            "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01"
+          )
+        ),
+        paste(
+          "every manuscript/manual/vNN_<INITIALS>_si.docx has the main file",
+          "manuscript/manual/vNN_<INITIALS>.docx"
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("manual_si_has_main fails v02_AB_si.docx beside v03_AB.docx without v02_AB.docx, and an _si file with no main file at all", {
+  p <- local_project_26()
+  write_manual(p$home, c("v02_AB_si.docx", "v03_AB.docx"))
+  expect_identical(
+    supplement_rows(p$home),
+    data.frame(
+      rule = c("manual_has_supplement", "manual_si_has_main"),
+      status = c("PASS", "FAIL"),
+      path = c("", "manuscript/manual/v02_AB_si.docx"),
+      detail = c(
+        paste(
+          "every manuscript/manual/vNN_<INITIALS>.docx has a supplement",
+          "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below NN"
+        ),
+        with_fix(
+          "manual_si_has_main",
+          paste0(
+            "manuscript/manual/v02_AB_si.docx: there is no main file ",
+            "manuscript/manual/v02_AB.docx"
+          )
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+  expect_identical(
+    project_rules()$manual_si_has_main[[3]],
+    paste(
+      "add the main file manuscript/manual/vNN_<INITIALS>.docx with the",
+      "version and the initials of the _si file, or rename the _si file"
+    )
+  )
+  # Other initials of the same version are not the main file.
+  write_manual(p$home, c("v02_AB_si.docx", "v02_CD.docx"))
+  expect_identical(
+    supplement_rows(p$home)[, c("status", "path")],
+    data.frame(
+      status = c("PASS", "FAIL"),
+      path = c("", "manuscript/manual/v02_AB_si.docx")
+    ),
+    ignore_attr = TRUE
+  )
+  write_manual(p$home, "v01_AB_si.docx")
+  expect_identical(
+    supplement_rows(p$home)[, c("status", "path")],
+    data.frame(
+      status = c("PASS", "FAIL"),
+      path = c("", "manuscript/manual/v01_AB_si.docx")
+    ),
+    ignore_attr = TRUE
+  )
+  expect_identical(
+    intersect(failed_rules(project_findings(p$home)), supplement_rules),
+    "manual_si_has_main"
+  )
+})
+
+test_that("rules: manual_has_supplement: off gives OFF, and an allow entry of the path of the main file leaves no FAIL", {
+  p <- local_project_26()
+  write_manual(p$home, "v01_AB.docx")
+  write_lines(
+    p$home,
+    "pbn.yml",
+    c("extends: house_2026_11_26", "rules:", "  manual_has_supplement: off")
+  )
+  expect_identical(
+    supplement_rows(p$home)[1, c("rule", "status", "path", "detail")],
+    data.frame(
+      rule = "manual_has_supplement",
+      status = "OFF",
+      path = "",
+      detail = "off in pbn.yml"
+    ),
+    ignore_attr = TRUE
+  )
+  write_lines(
+    p$home,
+    "pbn.yml",
+    c(
+      "extends: house_2026_11_26",
+      "allow:",
+      "  manual_has_supplement: [manuscript/manual/v01_AB.docx]"
+    )
+  )
+  expect_false("FAIL" %in% supplement_rows(p$home)$status)
+  # apply_allow() makes an allowed finding a WARN that ends in "(allowed)".
+  expect_identical(
+    supplement_rows(p$home)[1, c("status", "path", "detail")],
+    data.frame(
+      status = "WARN",
+      path = "manuscript/manual/v01_AB.docx",
+      detail = with_fix(
+        "manual_has_supplement",
+        paste0(
+          "manuscript/manual/v01_AB.docx: there is no supplement ",
+          "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01 ",
+          "(allowed)"
+        )
+      )
+    ),
+    ignore_attr = TRUE
+  )
+})
+
+test_that("the supplement rules ignore manuscript/draft/: a draft main without _si and a draft _si without main give no finding", {
+  p <- local_project_26()
+  write_manual(p$home, c("v02_AB.docx", "v02_AB_si.docx"))
+  write_lines(p$home, "manuscript/draft/v03_CD.docx", "")
+  write_lines(p$home, "manuscript/draft/v03_EF_si.docx", "")
+  rows <- supplement_rows(p$home)
+  expect_identical(
+    rows[, c("rule", "status", "path")],
+    data.frame(
+      rule = supplement_rules,
+      status = c("PASS", "PASS"),
+      path = c("", "")
+    ),
+    ignore_attr = TRUE
+  )
+  expect_false(any(startsWith(rows$path, "manuscript/draft/")))
+})
+
+test_that("under house_2026_11_25 the same projects give no row of manual_has_supplement or manual_si_has_main", {
+  p <- local_project_26()
+  write_lines(p$home, "pbn.yml", "extends: house_2026_11_25")
+  for (files in list("v01_AB.docx", c("v02_AB_si.docx", "v03_AB.docx"))) {
+    write_manual(p$home, files)
+    # supplement_rows() gives one row "error" when project_findings() stops.
+    expect_identical(nrow(supplement_rows(p$home)), 0L)
+  }
+  expect_false(any(supplement_rules %in% names(read_house_set("house_2026_11_25"))))
 })

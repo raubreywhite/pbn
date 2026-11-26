@@ -1,8 +1,8 @@
 # The house rules of pbn::check_project(), the set house_2026_11_26. It is
-# the set house_2026_11_25 with two new rules: guidelines_valid and
-# guidelines_covered. A project keeps its reporting checklists in the folder
-# guidelines/, one YAML file per guideline, and the house layout names that
-# folder.
+# the set house_2026_11_25 with four new rules: manual_has_supplement,
+# manual_si_has_main, guidelines_valid and guidelines_covered. A project
+# keeps its reporting checklists in the folder guidelines/, one YAML file per
+# guideline, and the house layout names that folder.
 #
 # pbn never changes this file. A change to the house rules is a new file
 # beside it, with the date of the change in its name. A project names its
@@ -71,6 +71,13 @@ built_has_run: fail
 # Each manuscript/manual/vNN_<INITIALS>.docx has NN below the newest run
 # version. Versions of manual and built manuscripts use one counter.
 manual_not_ahead: fail
+
+# Each manuscript/manual/vNN_<INITIALS>.docx has a supplement
+# vMM_<INITIALS>_si.docx with MM at or below NN, whatever its initials.
+manual_has_supplement: fail
+
+# Each manuscript/manual/vNN_<INITIALS>_si.docx has vNN_<INITIALS>.docx.
+manual_si_has_main: fail
 
 # The output of fake data has the prefix fake_data_, and only it has.
 fake_data_names:

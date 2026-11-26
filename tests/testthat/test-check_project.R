@@ -1050,6 +1050,8 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     built_reads_own_version = "read the version of the folder, as in read_results(\"vNN\"), or move the file to the folder of the version that it reads",
     built_has_run = "move the folder to the version of the run that it reads, or create the run script of the version",
     manual_not_ahead = "start the next run version with the call of pbn::new_version() in the detail",
+    manual_has_supplement = "add the supplement manuscript/manual/vNN_<INITIALS>_si.docx, or turn the rule off with the line manual_has_supplement: off under rules: in pbn.yml",
+    manual_si_has_main = "add the main file manuscript/manual/vNN_<INITIALS>.docx with the version and the initials of the _si file, or rename the _si file",
     fake_data_names = "write the output of fake data with pbn::make_outputs(), and rename any other file whose name starts with fake_data_",
     no_local_copy_of_pbn_function = "rename the function, or use the pbn export and correct any fault in pbn",
     loc_per_file = "split the file into smaller files",

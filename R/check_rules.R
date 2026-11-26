@@ -911,6 +911,29 @@ project_rules <- function() {
         "the detail"
       )
     ),
+    manual_has_supplement = list(
+      rule_manual_has_supplement,
+      paste(
+        "every manuscript/manual/vNN_<INITIALS>.docx has a supplement",
+        "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below NN"
+      ),
+      paste(
+        "add the supplement manuscript/manual/vNN_<INITIALS>_si.docx, or",
+        "turn the rule off with the line manual_has_supplement: off under",
+        "rules: in pbn.yml"
+      )
+    ),
+    manual_si_has_main = list(
+      rule_manual_si_has_main,
+      paste(
+        "every manuscript/manual/vNN_<INITIALS>_si.docx has the main file",
+        "manuscript/manual/vNN_<INITIALS>.docx"
+      ),
+      paste(
+        "add the main file manuscript/manual/vNN_<INITIALS>.docx with the",
+        "version and the initials of the _si file, or rename the _si file"
+      )
+    ),
     fake_data_names = list(
       rule_fake_data_names,
       paste(

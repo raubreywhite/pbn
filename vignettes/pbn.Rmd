@@ -944,6 +944,8 @@ writeLines(changelog, file.path(home, "CHANGELOG.md"))
 
 `manuscript/draft/` holds the drafts of an agent: `vNN_<INITIALS>.docx`, and `vNN_<INITIALS>_si.docx` for the supporting information. NN is the version that the draft starts from. A draft is outside the version counter, so `manual_not_ahead` does not count it, and a new draft MAY overwrite an old one. Its name follows the rule of `manuscript/manual/`, so `lower_case_names` passes the initials in upper case.
 
+The set `house_2026_11_26` needs a supplement in `manuscript/manual/`. The rule `manual_has_supplement` fails a main file `vNN_<INITIALS>.docx` when no `vMM_<INITIALS>_si.docx` has MM at or below NN. The rule `manual_si_has_main` fails a `_si` file without the main file of its version and initials. A paper without a supplement sets `manual_has_supplement: off` under `rules:` in `pbn.yml`.
+
 ## Running on an air-gapped server
 
 Some real data stays on a server without a network, and the numbers leave it only as screenshots. pbn runs the scenario `real` there from one file that you paste into R. Then it shows the numbers of the manuscript one page at a time.

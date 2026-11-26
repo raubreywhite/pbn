@@ -269,6 +269,59 @@ rule_manual_not_ahead <- function(path) {
   ))
 }
 
+# The main files and the supplements of manual_files() in the project in
+# `path`. A main file is vNN_<INITIALS>.docx, and a supplement is
+# vNN_<INITIALS>_si.docx. A file with another suffix is neither.
+manual_main_files <- function(path) {
+  files <- manual_files(path)
+  return(files[!grepl("_[a-z0-9]+\\.docx$", basename(files))])
+}
+
+manual_si_files <- function(path) {
+  files <- manual_files(path)
+  return(files[grepl("_si\\.docx$", basename(files))])
+}
+
+# The rule manual_has_supplement, from the set house_2026_11_26: each main
+# file vNN_X.docx of manuscript/manual/ has a supplement vMM_Y_si.docx with
+# MM at or below NN, whatever the initials Y.
+rule_manual_has_supplement <- function(path) {
+  rule <- "manual_has_supplement"
+  main <- manual_main_files(path)
+  si <- version_number(basename(manual_si_files(path)))
+  n <- version_number(basename(main))
+  bad <- main[vapply(n, function(x) return(!any(si <= x)), logical(1))]
+  return(project_row(
+    rule,
+    "FAIL",
+    bad,
+    sprintf(
+      paste0(
+        "%s: there is no supplement manuscript/manual/vMM_<INITIALS>_si.docx ",
+        "with MM at or below %s"
+      ),
+      bad,
+      substr(basename(bad), 2, 3)
+    )
+  ))
+}
+
+# The rule manual_si_has_main, from the set house_2026_11_26: each
+# supplement vNN_X_si.docx of manuscript/manual/ has the main file
+# vNN_X.docx, with the same version and the same initials.
+rule_manual_si_has_main <- function(path) {
+  rule <- "manual_si_has_main"
+  si <- manual_si_files(path)
+  main <- sub("_si\\.docx$", ".docx", si)
+  bad <- !main %in% manual_main_files(path)
+  return(project_row(
+    rule,
+    "FAIL",
+    si[bad],
+    paste0(si[bad], ": there is no main file ", main[bad], recycle0 = TRUE)
+  ))
+}
+
 # The R code of one manuscript file as an expression, or NULL when R cannot
 # parse it. For .qmd and .Rmd, it is the code of the R chunks that knitr::purl()
 # extracts, and the inline R code.

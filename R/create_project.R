@@ -4,7 +4,7 @@
 
 # The rule set that the pbn.yml of create_project() names. The files of
 # inst/templates/project/ pass each rule of this set.
-create_project_set <- "house_2026_11_25"
+create_project_set <- "house_2026_11_26"
 
 #' Create a new project
 #'
@@ -17,7 +17,7 @@ create_project_set <- "house_2026_11_25"
 #'   for [initialize_project()]. The run script gets them as they are given.
 #' @details
 #' `create_project()` writes these files:
-#' - `pbn.yml`, with the line `extends: house_2026_11_25`.
+#' - `pbn.yml`, with the line `extends: house_2026_11_26`.
 #' - `v01_run.R`, the run script. Its data steps are `raw`, `clean` and
 #'   `cohort`, and it has one analysis kind, `risk_difference`.
 #' - `v01_functions/`, with `_cfg.R`, the data steps `data_raw.R`,

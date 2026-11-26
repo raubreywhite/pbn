@@ -22,9 +22,11 @@
 #' Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 #' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 #'
-#' The rules, with their level in the set `house_2026_11_25`, are below.
-#' The set `house_2026_11_20` has the same rules at the same levels, without
-#' `no_plot_title`, `no_plot_subtitle` and `no_plot_caption`. The set
+#' The rules, with their level in the set `house_2026_11_26`, are below.
+#' The set `house_2026_11_25` has the same rules at the same levels, without
+#' `guidelines_valid` and `guidelines_covered`. The set `house_2026_11_20`
+#' also does not have `no_plot_title`, `no_plot_subtitle` and
+#' `no_plot_caption`. The set
 #' `house_2026_11_19` also does not have `built_reads_own_version`,
 #' `built_has_run` and `manual_not_ahead`. The set `house_2026_11_17` also
 #' does not have `frozen_versions_unchanged`,
@@ -323,12 +325,22 @@
 #'   not those of the real data. It passes when no such file is in the
 #'   list of files. In a git repository, a real results file that git
 #'   ignores is not in the list, so the rule does not see it.
+#' - `guidelines_valid` (FAIL): a file `guidelines/<x>.yml` breaks the
+#'   checklist schema below. Each such file gives one FAIL, and its detail
+#'   names its first 3 problems and counts the rest. The rule reads each
+#'   `.yml` file directly in `guidelines/`. It does not read a file in a
+#'   folder under `guidelines/`, or a file with another extension, such as
+#'   `.yaml`.
+#' - `guidelines_covered` (WARN): this version of pbn does not check it, so
+#'   it always passes. A later version checks that the manuscript answers
+#'   each item of `guidelines/*.yml`.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R`,
 #'   `vNN_one_file.R`, `check_project.R` and `pbn.yml`, among others. From
 #'   the set `house_2026_11_19`, it also names `vNN_frozen.md5` of
-#'   [freeze_version()]. A top-level dotfile and a top-level
+#'   [freeze_version()]. From the set `house_2026_11_26`, it also names the
+#'   folder `guidelines/`. A top-level dotfile and a top-level
 #'   `*.Rproj` file are never unknown. The rule also reads the files
 #'   directly in `vNN_results/`. There it names the run log `run.md`, its PDF
 #'   `run.pdf` and its errors file `run_errors_gitexclude.md`, and no rule
@@ -336,6 +348,40 @@
 #'   warns on the folders `output/` and `output_fake_data/` that
 #'   [make_outputs()] writes in `vNN_results/<scenario>/`, or on the folder
 #'   `sims_gitexclude/` that [save_results()] writes there.
+#'
+#' A checklist file `guidelines/<x>.yml` holds one reporting guideline, in
+#' the checklist schema of the methods repository. Copy the file from there.
+#' `guidelines_valid` fails the file unless each of these is true:
+#' - The file is valid YAML, and a map.
+#' - It has no key other than `id`, `title`, `version`, `source`,
+#'   `citation`, `designs`, `design` and `items`.
+#' - `id` and `title` are each one string. `id` has only the characters
+#'   `a-z`, `0-9` and `-`, and no other file has the same `id`.
+#' - `version`, `source` and `citation` MAY be missing. Each one that is
+#'   there is one string.
+#' - A key that is there has a value. `version:` with nothing after it, or
+#'   `citation: ~`, fails. This holds for `designs` and `design` too, and
+#'   for the `designs` of an entry.
+#' - `designs` MAY be missing. When it is there, it is a YAML sequence of
+#'   strings, such as `[cohort]`. One string, such as `designs: cohort`, or a
+#'   map fails. The same holds for the `designs` of an entry.
+#' - `design` MAY be missing. When it is there, it is one of `designs`.
+#' - `items` is a YAML sequence with at least one entry. A map fails.
+#' - Each entry has no key other than `item`, `section`, `topic`, `kind`,
+#'   `designs` and `text`. Its `item`, `section`, `topic`, `kind` and `text`
+#'   are each one string. Quote an item id such as `"2"`, because YAML reads
+#'   `2` as a number.
+#' - The `kind` of each entry is `result`, `prose` or `author`.
+#' - The `designs` of an entry MAY be missing, and the entry then belongs to
+#'   each design of the file. When it is there, the file has `designs`, and
+#'   each value is one of them.
+#' - An item id comes once per design, among the entries that `design`
+#'   keeps. STROBE has three entries with the item id `15`, one for each
+#'   design, so it passes.
+#'
+#' A project copy MAY add the key `design`, such as `design: cohort`. pbn
+#' then keeps the entries whose `designs` include it, and the entries
+#' without `designs`.
 #'
 #' The R parser, not a regular expression, finds the calls, the assignments
 #' and the symbols.
@@ -396,9 +442,10 @@
 #' The key `ignore` MAY list folders at the top level, such as `archive/`,
 #' that no rule reads: their files give no finding, not even a WARN. Use it
 #' for old work that nothing runs. A final `/` changes nothing. An entry
-#' MUST be one folder at the top level that the house layout does not name,
-#' so it cannot be `manuscript/`, `background/`, `adhoc/` or a folder of a
-#' version. A folder that does not exist is no error. The locked rules still
+#' MUST be one folder at the top level that the house layout of the set does
+#' not name, so it cannot be `manuscript/`, `background/`, `adhoc/` or a
+#' folder of a version. From the set `house_2026_11_26`, it cannot be
+#' `guidelines/` either. A folder that does not exist is no error. The locked rules still
 #' read an ignored folder, so a tracked file with `gitexclude` in its name
 #' fails there too. The first line of the report counts the ignored
 #' folders.

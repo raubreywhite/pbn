@@ -167,9 +167,9 @@ read_rules <- function(home) {
 }
 
 # The folders of the key ignore of pbn.yml, without a final /, after the
-# checks. Each is one folder at the top level that the house layout does not
-# name, once. A folder that does not exist is no error.
-parse_ignore <- function(x) {
+# checks. Each is one folder at the top level that the house layout of the
+# set `set` does not name, once. A folder that does not exist is no error.
+parse_ignore <- function(x, set) {
   if (is.null(x)) {
     return(character(0))
   }
@@ -179,8 +179,17 @@ parse_ignore <- function(x) {
       call. = FALSE
     )
   }
-  if (!all(vapply(x, function(e) return(is.character(e) && length(e) == 1), logical(1)))) {
-    stop("pbn.yml: each entry of ignore MUST be one folder name.", call. = FALSE)
+  if (
+    !all(vapply(
+      x,
+      function(e) return(is.character(e) && length(e) == 1),
+      logical(1)
+    ))
+  ) {
+    stop(
+      "pbn.yml: each entry of ignore MUST be one folder name.",
+      call. = FALSE
+    )
   }
   out <- sub("/$", "", trimws(unlist(x)))
   bad <- out[!grepl("^[^/]+$", out) | out %in% c(".", "..")]
@@ -192,9 +201,17 @@ parse_ignore <- function(x) {
       call. = FALSE
     )
   }
+  # Before house_2026_11_26, this check used the layout of the newest set
+  # for every set. So the layout of house_2026_11_19, with vNN_frozen.md5, is
+  # the least that it uses, and a project of house_2026_11_17 sees no change.
+  ignore_layout <- layout_patterns(
+    if (set_is_from(set, "house_2026_11_19")) set else "house_2026_11_19"
+  )
   layout <- out[vapply(
     out,
-    function(e) return(any(vapply(layout_patterns(), grepl, logical(1), x = e))),
+    function(e) {
+      return(any(vapply(ignore_layout, grepl, logical(1), x = e)))
+    },
     logical(1)
   )]
   if (length(layout) > 0) {
@@ -257,7 +274,7 @@ parse_rules <- function(x) {
     rules = rules,
     overrides = names(overrides),
     allow = allow,
-    ignore = parse_ignore(x[["ignore"]])
+    ignore = parse_ignore(x[["ignore"]], set)
   ))
 }
 
@@ -679,7 +696,9 @@ rules_line <- function(rules) {
     n_allow,
     if (n_allow == 1) " allowed path" else " allowed paths",
     if (length(rules$ignore) == 1) ", 1 ignored folder",
-    if (length(rules$ignore) > 1) paste0(", ", length(rules$ignore), " ignored folders"),
+    if (length(rules$ignore) > 1) {
+      paste0(", ", length(rules$ignore), " ignored folders")
+    },
     " (pbn.yml)"
   ))
 }

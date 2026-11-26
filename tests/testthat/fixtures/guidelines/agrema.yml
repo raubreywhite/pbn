@@ -1,0 +1,179 @@
+id: agrema
+title: AGReMA
+version: "2021, long form (items 1 to 25) and short form AGReMA-SF (items s1 to s9)"
+source: https://pmc.ncbi.nlm.nih.gov/articles/PMC8974292/
+citation: "Lee H, Cashin AG, Lamb SE, et al. A Guideline for Reporting Mediation Analyses of Randomized Trials and Observational Studies. JAMA. 2021;326(11):1045-1056. doi:10.1001/jama.2021.14075"
+# Long-form items keep the source numbers. Short-form (AGReMA-SF) items take
+# the source number with the prefix "s". A "<br>" in a text starts a new
+# bullet point or paragraph of the source cell.
+items:
+  - item: "1"
+    section: "Title and abstract"
+    topic: "Title"
+    kind: prose
+    text: "Identify that the study uses mediation analyses"
+  - item: "2"
+    section: "Title and abstract"
+    topic: "Abstract"
+    kind: prose
+    text: "Provide a structured summary of the objectives, methods, results, and conclusions specific to mediation analyses"
+  - item: "3"
+    section: "Introduction"
+    topic: "Background and rationale"
+    kind: prose
+    text: "Describe the study background and theoretical rationale for investigating the mechanisms of interest<br>Include supporting evidence or theoretical rationale for why the intervention or exposure might have a causal relationship with the proposed mediators<br>Include supporting evidence or theoretical rationale for why the mediators might have a causal relationship with the outcomes"
+  - item: "4"
+    section: "Introduction"
+    topic: "Objectives"
+    kind: prose
+    text: "State the objectives of the study specific to the mechanisms of interest<br>The objectives should specify whether the study aims to test or estimate the mechanistic effects"
+  - item: "5"
+    section: "Methods"
+    topic: "Study registration"
+    kind: author
+    text: "If applicable, provide references to any protocols or study registrations specific to mediation analyses and highlight any deviations from the planned protocol"
+  - item: "6"
+    section: "Methods"
+    topic: "Study design and source of data"
+    kind: prose
+    text: "Specify the design of the original study that was used in mediation analyses and where the details can be accessed, supported by a reference<br>If applicable, describe study design features that are relevant to mediation analyses"
+  - item: "7"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    text: "Describe the target population, eligibility criteria specific to mediation analyses, study locations, and study dates (start of participant enrollment and end of follow-up)"
+  - item: "8"
+    section: "Methods"
+    topic: "Sample size"
+    kind: prose
+    text: "State whether a sample size calculation was conducted for mediation analyses<br>If so, explain how it was calculated"
+  - item: "9"
+    section: "Methods"
+    topic: "Effects of interest"
+    kind: prose
+    text: "Specify the effects of interest"
+  - item: "10"
+    section: "Methods"
+    topic: "Assumed causal model"
+    kind: prose
+    text: "Include a graphic representation of the assumed causal model including the exposure, mediator, outcome, and possible confounders"
+  - item: "11"
+    section: "Methods"
+    topic: "Causal assumptions"
+    kind: prose
+    text: "Specify assumptions about the causal model"
+  - item: "12"
+    section: "Methods"
+    topic: "Measurement"
+    kind: prose
+    text: "Clearly describe the interventions or exposures, mediators, outcomes, confounders, and moderators that were used in the analyses<br>Specify how and when they were measured, the measurement properties, and whether blinded assessment was used"
+  - item: "13"
+    section: "Methods"
+    topic: "Measurement levels"
+    kind: prose
+    text: "If relevant, describe the levels at which the exposure, mediator, and outcome were measured"
+  - item: "14"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "Describe the statistical methods used to estimate the causal relationships of interest<br>This description should specify analytic strategies used to reduce confounding, model building procedures, justification for the inclusion or exclusion of possible interaction terms, modeling assumptions, and methods used to handle missing data<br>Provide a reference to the statistical software and package used"
+  - item: "15"
+    section: "Methods"
+    topic: "Sensitivity analyses"
+    kind: prose
+    text: "Describe any sensitivity analyses that were used to explore causal or statistical assumptions and the influence of missing data"
+  - item: "16"
+    section: "Methods"
+    topic: "Ethical approval"
+    kind: author
+    text: "Name the institutional research board or ethics committee that approved the study<br>Provide a description of participant informed consent or ethics committee waiver of informed consent"
+  - item: "17"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "Describe baseline characteristics of participants included in mediation analyses<br>Report the total sample size and number of participants lost during follow-up or with missing data"
+  - item: "18"
+    section: "Results"
+    topic: "Outcomes and estimates"
+    kind: result
+    text: "Report point estimates and uncertainty estimates for the exposure-mediator and mediator-outcome relationships<br>If inference concerning the causal relationship of interest is considered feasible given the causal assumptions, report the point estimate and uncertainty estimate"
+  - item: "19"
+    section: "Results"
+    topic: "Sensitivity parameters"
+    kind: result
+    text: "Report the results from any sensitivity analyses used to assess robustness of the causal or statistical assumptions and the influence of missing data"
+  - item: "20"
+    section: "Discussion"
+    topic: "Limitations"
+    kind: prose
+    text: "Discuss the limitations of the study including potential sources of bias"
+  - item: "21"
+    section: "Discussion"
+    topic: "Interpretation"
+    kind: prose
+    text: "Interpret the estimated effects considering the study’s magnitude and uncertainty, plausibility of the causal assumptions, limitations, generalizability of the findings, and results from relevant studies"
+  - item: "22"
+    section: "Discussion"
+    topic: "Implications"
+    kind: prose
+    text: "Discuss the implications of the overall results for clinical practice, policy, and science"
+  - item: "23"
+    section: "Other information"
+    topic: "Funding and role of sponsor"
+    kind: author
+    text: "List all sources of funding or sponsorship for mediation analyses and the role of the funders/sponsors in the conduct of the study, writing of the manuscript, and decision to submit the manuscript for publication"
+  - item: "24"
+    section: "Other information"
+    topic: "Conflicts of interest and financial disclosures"
+    kind: author
+    text: "State any conflicts of interest and financial disclosures for all authors"
+  - item: "25"
+    section: "Other information"
+    topic: "Data and code"
+    kind: prose
+    text: "Authors are encouraged to provide a statement for sharing data and code for mediation analyses"
+  - item: "s1"
+    section: "Introduction"
+    topic: "Objectives"
+    kind: prose
+    text: "State the objectives of the study, specific to the mechanisms of interest<br>The objectives should specify whether the study aims to test or estimate the mechanistic effects"
+  - item: "s2"
+    section: "Methods"
+    topic: "Effects of interest"
+    kind: prose
+    text: "Specify the effects of interest"
+  - item: "s3"
+    section: "Methods"
+    topic: "Causal assumptions"
+    kind: prose
+    text: "Specify assumptions about the causal model"
+  - item: "s4"
+    section: "Methods"
+    topic: "Measurement"
+    kind: prose
+    text: "Clearly describe the interventions or exposures, mediators, outcomes, confounders, and moderators that were used in the analyses<br>Specify how and when they were measured, the measurement properties, and whether blinded assessment was used"
+  - item: "s5"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "Describe the statistical methods used to estimate the causal relationships of interest<br>This description should specify analytic strategies used to reduce confounding, model building procedures, justification for the inclusion or exclusion of possible interaction terms, modeling assumptions, and methods used to handle missing data<br>Provide reference to the statistical software and package used"
+  - item: "s6"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "Describe baseline characteristics of participants included in mediation analyses<br>Report the total sample size and number of participants lost during follow-up or with missing data"
+  - item: "s7"
+    section: "Results"
+    topic: "Outcomes and estimates"
+    kind: result
+    text: "Report point estimates and uncertainty estimates for the exposure-mediator and mediator-outcome relationships<br>If inference concerning the causal relationship of interest is considered feasible given the causal assumptions, report the point estimate and uncertainty estimate"
+  - item: "s8"
+    section: "Discussion"
+    topic: "Limitations"
+    kind: prose
+    text: "Discuss the limitations of the study including potential sources of bias"
+  - item: "s9"
+    section: "Discussion"
+    topic: "Interpretation"
+    kind: prose
+    text: "Interpret the estimated effects considering the study’s magnitude and uncertainty, plausibility of the causal assumptions, limitations, generalizability of the findings, and results from relevant studies"

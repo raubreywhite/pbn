@@ -1,0 +1,168 @@
+# The house rules of pbn::check_project(), the set house_2026_11_26. It is
+# the set house_2026_11_25 with two new rules: guidelines_valid and
+# guidelines_covered. A project keeps its reporting checklists in the folder
+# guidelines/, one YAML file per guideline, and the house layout names that
+# folder.
+#
+# pbn never changes this file. A change to the house rules is a new file
+# beside it, with the date of the change in its name. A project names its
+# set in pbn.yml, so a new version of pbn does not change its rules.
+#
+# Each rule has a level:
+#   fail  a finding fails, and check_project.R ends with status 1.
+#   warn  a finding is a warning.
+#   off   check_project() does not run the rule, and prints OFF.
+#
+# locked: true marks a rule that protects data for each person, or keeps
+# fake output apart from real output. pbn.yml cannot set it to warn or off,
+# and cannot allow a path for it.
+#
+# The rules are in the order that check_project() prints them.
+# ?check_project gives the details of each rule.
+
+# No capital letter in the name of a file or a folder.
+lower_case_names: fail
+
+# Each vNN_run.R calls pbn::initialize_project() with its own version.
+run_script_initialises: fail
+
+# Each vNN_run.R has a vNN_functions/ folder, and the reverse.
+version_items_complete: fail
+
+# Each version but the newest has the vNN_frozen.md5 of
+# pbn::freeze_version(), and no file of a frozen version changes after it.
+frozen_versions_unchanged: fail
+
+# README.md and CHANGELOG.md exist, and CHANGELOG.md has a section
+# "## vNN" for each version and for each file
+# manuscript/manual/vNN_<INITIALS>.docx.
+readme_and_changelog: fail
+
+# In a git repository, an uncommitted change to a vNN_run.R or a file under
+# vNN_functions/ comes with a change to CHANGELOG.md.
+changelog_with_code: warn
+
+# Each results file passes pbn::check_results(). This includes the rule
+# no_row_per_person.
+results_contract:
+  level: fail
+  locked: true
+
+# git tracks no path with gitexclude in its name.
+gitexclude_not_tracked:
+  level: fail
+  locked: true
+
+# Each assertion of the fake scenarios in check.csv passes.
+scenario_checks: fail
+
+# Each file in manuscript/manual/ is named vNN_<INITIALS>.docx.
+manual_manuscript_names: fail
+
+# A manuscript in manuscript/built/ reads the real results only.
+manuscript_reads_real: fail
+
+# Each read_results() call in manuscript/built/vNN/ reads the version vNN.
+built_reads_own_version: fail
+
+# Each folder manuscript/built/vNN/ has a vNN_run.R.
+built_has_run: fail
+
+# Each manuscript/manual/vNN_<INITIALS>.docx has NN below the newest run
+# version. Versions of manual and built manuscripts use one counter.
+manual_not_ahead: fail
+
+# The output of fake data has the prefix fake_data_, and only it has.
+fake_data_names:
+  level: fail
+  locked: true
+
+# No file in vNN_functions/ defines a function with the name of a pbn
+# function.
+no_local_copy_of_pbn_function: fail
+
+# No .R file has more than `limit` code lines.
+# pbn::initialize_project() gives the same limit to org.
+loc_per_file:
+  level: fail
+  limit: 1000
+
+# No function scores above `limit` in cyclocomp::cyclocomp().
+cyclomatic_complexity:
+  level: fail
+  limit: 15
+
+# In each run script and each .R file of a functions folder, the comment
+# lines are at most the share `limit` of the lines that are not blank. A
+# section marker such as "# PART 1 ====" is not a comment.
+comment_share:
+  level: warn
+  limit: 0.25
+
+# No Sys.getenv() or Sys.setenv() in a run script or a functions folder.
+no_environment_variables: fail
+
+# No string in a run script or a functions folder names an item of another
+# version, such as "v01_results", or the folder adhoc/.
+no_cross_version_reads: fail
+
+# No .R file uses a construct of `forbid`. Each one creates or changes an
+# object in a place other than the line where it stands.
+no_local_assign:
+  level: fail
+  forbid:
+    - local()
+    - assign()
+    - delayedAssign()
+    - assignInNamespace()
+    - assignInMyNamespace()
+    - "<<-"
+    - "->>"
+
+# No run script or functions folder calls suppressWarnings(),
+# suppressMessages(), try(), tryCatch() or withCallingHandlers().
+no_escape_hatches: warn
+
+# No string in an .R file is an absolute path, such as "/home/a/x",
+# "~/x", "C:/x" or "\\server\x", and no file.path() or fs::path() starts
+# from a string, such as file.path("data", "x.csv"). The arguments of
+# pbn::initialize_project() and pbn::to_one_file() are exempt.
+no_absolute_paths: fail
+
+# No .R file of loc_per_file gives a figure a title: ggtitle(), labs(title =),
+# plot_annotation(title =) or an assignment to <x>$labels$title. A value NULL
+# passes.
+no_plot_title: fail
+
+# No .R file of loc_per_file gives a figure a subtitle: the subtitle of
+# ggtitle(), labs(subtitle =), plot_annotation(subtitle =) or an assignment
+# to <x>$labels$subtitle. A value NULL passes.
+no_plot_subtitle: fail
+
+# No .R file of loc_per_file gives a figure a caption: labs(caption =),
+# plot_annotation(caption =) or an assignment to <x>$labels$caption. A value
+# NULL passes.
+no_plot_caption: fail
+
+# The object blocks of a functions folder, when it is there, is one list()
+# of named functions with names that come once, in vNN_functions/blocks.R
+# only. blocks.R holds only assignments of a name to function(...) and of
+# blocks to list(...). No other file of the folder assigns one of its
+# names, and no other file and no vNN_run.R uses one.
+blocks_list: fail
+
+# No vNN_results/real/results.qs2 comes from a run with
+# pbn::initialize_project(fake_real_data = TRUE).
+real_results_are_fake: warn
+
+# Each file guidelines/<x>.yml parses, and follows the checklist schema of
+# ?check_project.
+guidelines_valid: fail
+
+# The manuscript answers each item of guidelines/*.yml. ?check_project
+# tells what the rule checks in the version of pbn that runs it.
+guidelines_covered: warn
+
+# The house layout names each top-level file and folder. It names
+# vNN_frozen.md5 and guidelines/ too.
+unknown_path: warn

@@ -80,7 +80,7 @@ test_that("house_2026_11_20 is house_2026_11_19 with three new rules at fail, an
     function(r) return(r$locked),
     logical(1)
   )))
-  expect_identical(starter_line(), "extends: house_2026_11_25")
+  expect_identical(starter_line(), "extends: house_2026_11_26")
   expect_identical(create_project_set, "house_2026_11_25")
 })
 
@@ -425,16 +425,28 @@ test_that("a manual manuscript MAY have a lower-case suffix, such as v02_AB_si.d
     sort(found$path[found$rule == "manual_not_ahead" & found$status == "FAIL"]),
     c("manuscript/manual/v02_AB.docx", "manuscript/manual/v02_AB_si.docx")
   )
-  expect_true(any(found$rule == "readme_and_changelog" & grepl("## v02", found$detail, fixed = TRUE)))
+  expect_true(any(
+    found$rule == "readme_and_changelog" &
+      grepl("## v02", found$detail, fixed = TRUE)
+  ))
 })
 
 test_that("a manual manuscript with a suffix that is not one lower-case word fails its name", {
-  for (name in c("v02_AB_SI.docx", "v02_AB_.docx", "v02_AB_s-i.docx", "v02_AB_si_2.docx", "v02_AB-si.docx")) {
+  for (name in c(
+    "v02_AB_SI.docx",
+    "v02_AB_.docx",
+    "v02_AB_s-i.docx",
+    "v02_AB_si_2.docx",
+    "v02_AB-si.docx"
+  )) {
     p <- local_project_20()
     write_lines(p$home, file.path("manuscript", "manual", name), "")
     found <- project_findings(p$home)
     expect_true(
-      file.path("manuscript", "manual", name) %in% found$path[found$rule == "manual_manuscript_names" & found$status == "FAIL"],
+      file.path("manuscript", "manual", name) %in%
+        found$path[
+          found$rule == "manual_manuscript_names" & found$status == "FAIL"
+        ],
       info = name
     )
   }

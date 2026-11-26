@@ -230,6 +230,9 @@ rules_2026_11_19 <- c(
 # The rules that the set house_2026_11_25 adds to house_2026_11_20.
 rules_2026_11_25 <- c("no_plot_title", "no_plot_subtitle", "no_plot_caption")
 
+# The rules that the set house_2026_11_26 adds to house_2026_11_25.
+rules_2026_11_26 <- c("guidelines_valid", "guidelines_covered")
+
 local_project <- function(env = parent.frame(), counter = NULL) {
   root <- tempfile("pbntest")
   dir.create(root)
@@ -267,7 +270,11 @@ local_project <- function(env = parent.frame(), counter = NULL) {
   dir.create(file.path(home, "adhoc"))
   dir.create(file.path(home, "data_describe"))
   write_lines(home, "README.md", "# A synthetic project")
-  write_lines(home, "CHANGELOG.md", c("# Changelog", "", "## v01", "", "- First version."))
+  write_lines(
+    home,
+    "CHANGELOG.md",
+    c("# Changelog", "", "## v01", "", "- First version.")
+  )
   write_lines(home, "AGENTS.md", "# Agents")
   write_lines(home, ".gitignore", "v01_results/")
   write_lines(home, "pbn.yml", house_line)

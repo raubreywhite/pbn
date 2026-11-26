@@ -717,7 +717,9 @@ rule_no_environment_variables <- function(path) {
 
 # The top-level names of the house layout of the set `set`, as regular
 # expressions. The set house_2026_11_19 and the newer sets name
-# vNN_frozen.md5 too. The key ignore of pbn.yml MUST NOT name any of them.
+# vNN_frozen.md5 too. The set house_2026_11_26 and the newer sets name the
+# folder guidelines/ too. The key ignore of the pbn.yml of a project of the
+# set `set` MUST NOT name any of them.
 layout_patterns <- function(set = utils::tail(house_sets(), 1)) {
   return(c(
     run_script_pattern,
@@ -738,7 +740,8 @@ layout_patterns <- function(set = utils::tail(house_sets(), 1)) {
     "^\\.gitignore$",
     "^\\.git$",
     "^pbn\\.yml$",
-    if (set_is_from(set, "house_2026_11_19")) frozen_pattern
+    if (set_is_from(set, "house_2026_11_19")) frozen_pattern,
+    if (set_is_from(set, "2026_11_26")) "^guidelines$"
   ))
 }
 
@@ -1029,6 +1032,16 @@ project_rules <- function() {
         "run the scenario \"real\" again with",
         "pbn::initialize_project(fake_real_data = FALSE)"
       )
+    ),
+    guidelines_valid = list(
+      rule_guidelines_valid,
+      "every guidelines/*.yml follows the checklist schema",
+      "correct the file to the checklist schema of ?check_project"
+    ),
+    guidelines_covered = list(
+      rule_guidelines_covered,
+      "not checked yet: a later version of pbn checks guidelines/*.yml against the manuscript",
+      "answer the item in the manuscript"
     ),
     unknown_path = list(
       rule_unknown_path,

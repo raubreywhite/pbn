@@ -1,0 +1,224 @@
+id: strobe
+title: STROBE
+version: "4, combined"
+source: https://www.strobe-statement.org/download/strobe-checklist-cohort-case-control-and-cross-sectional-studies-combined-doc
+citation: "von Elm E, Altman DG, Egger M, Pocock SJ, Gøtzsche PC, Vandenbroucke JP, et al. The Strengthening the Reporting of Observational Studies in Epidemiology (STROBE) statement: guidelines for reporting observational studies. PLoS Med. 2007;4(10):e296. doi:10.1371/journal.pmed.0040296"
+designs: [cohort, case-control, cross-sectional]
+items:
+  - item: "1a"
+    section: "Title and abstract"
+    topic: "Title and abstract"
+    kind: prose
+    text: "(a) Indicate the study’s design with a commonly used term in the title or the abstract"
+  - item: "1b"
+    section: "Title and abstract"
+    topic: "Title and abstract"
+    kind: prose
+    text: "(b) Provide in the abstract an informative and balanced summary of what was done and what was found"
+  - item: "2"
+    section: "Introduction"
+    topic: "Background/rationale"
+    kind: prose
+    text: "Explain the scientific background and rationale for the investigation being reported"
+  - item: "3"
+    section: "Introduction"
+    topic: "Objectives"
+    kind: prose
+    text: "State specific objectives, including any prespecified hypotheses"
+  - item: "4"
+    section: "Methods"
+    topic: "Study design"
+    kind: prose
+    text: "Present key elements of study design early in the paper"
+  - item: "5"
+    section: "Methods"
+    topic: "Setting"
+    kind: prose
+    text: "Describe the setting, locations, and relevant dates, including periods of recruitment, exposure, follow-up, and data collection"
+  - item: "6a"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    designs: [cohort]
+    text: "(a) Cohort study—Give the eligibility criteria, and the sources and methods of selection of participants. Describe methods of follow-up"
+  - item: "6a"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    designs: [case-control]
+    text: "Case-control study—Give the eligibility criteria, and the sources and methods of case ascertainment and control selection. Give the rationale for the choice of cases and controls"
+  - item: "6a"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    designs: [cross-sectional]
+    text: "Cross-sectional study—Give the eligibility criteria, and the sources and methods of selection of participants"
+  - item: "6b"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    designs: [cohort]
+    text: "(b) Cohort study—For matched studies, give matching criteria and number of exposed and unexposed"
+  - item: "6b"
+    section: "Methods"
+    topic: "Participants"
+    kind: prose
+    designs: [case-control]
+    text: "Case-control study—For matched studies, give matching criteria and the number of controls per case"
+  - item: "7"
+    section: "Methods"
+    topic: "Variables"
+    kind: prose
+    text: "Clearly define all outcomes, exposures, predictors, potential confounders, and effect modifiers. Give diagnostic criteria, if applicable"
+  - item: "8"
+    section: "Methods"
+    topic: "Data sources/ measurement"
+    kind: prose
+    text: "For each variable of interest, give sources of data and details of methods of assessment (measurement). Describe comparability of assessment methods if there is more than one group"
+  - item: "9"
+    section: "Methods"
+    topic: "Bias"
+    kind: prose
+    text: "Describe any efforts to address potential sources of bias"
+  - item: "10"
+    section: "Methods"
+    topic: "Study size"
+    kind: prose
+    text: "Explain how the study size was arrived at"
+  - item: "11"
+    section: "Methods"
+    topic: "Quantitative variables"
+    kind: prose
+    text: "Explain how quantitative variables were handled in the analyses. If applicable, describe which groupings were chosen and why"
+  - item: "12a"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "(a) Describe all statistical methods, including those used to control for confounding"
+  - item: "12b"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "(b) Describe any methods used to examine subgroups and interactions"
+  - item: "12c"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "(c) Explain how missing data were addressed"
+  - item: "12d"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    designs: [cohort]
+    text: "(d) Cohort study—If applicable, explain how loss to follow-up was addressed"
+  - item: "12d"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    designs: [case-control]
+    text: "Case-control study—If applicable, explain how matching of cases and controls was addressed"
+  - item: "12d"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    designs: [cross-sectional]
+    text: "Cross-sectional study—If applicable, describe analytical methods taking account of sampling strategy"
+  - item: "12e"
+    section: "Methods"
+    topic: "Statistical methods"
+    kind: prose
+    text: "(e) Describe any sensitivity analyses"
+  - item: "13a"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "(a) Report numbers of individuals at each stage of study—eg numbers potentially eligible, examined for eligibility, confirmed eligible, included in the study, completing follow-up, and analysed"
+  - item: "13b"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "(b) Give reasons for non-participation at each stage"
+  - item: "13c"
+    section: "Results"
+    topic: "Participants"
+    kind: result
+    text: "(c) Consider use of a flow diagram"
+  - item: "14a"
+    section: "Results"
+    topic: "Descriptive data"
+    kind: result
+    text: "(a) Give characteristics of study participants (eg demographic, clinical, social) and information on exposures and potential confounders"
+  - item: "14b"
+    section: "Results"
+    topic: "Descriptive data"
+    kind: result
+    text: "(b) Indicate number of participants with missing data for each variable of interest"
+  - item: "14c"
+    section: "Results"
+    topic: "Descriptive data"
+    kind: result
+    designs: [cohort]
+    text: "(c) Cohort study—Summarise follow-up time (eg, average and total amount)"
+  - item: "15"
+    section: "Results"
+    topic: "Outcome data"
+    kind: result
+    designs: [cohort]
+    text: "Cohort study—Report numbers of outcome events or summary measures over time"
+  - item: "15"
+    section: "Results"
+    topic: "Outcome data"
+    kind: result
+    designs: [case-control]
+    text: "Case-control study—Report numbers in each exposure category, or summary measures of exposure"
+  - item: "15"
+    section: "Results"
+    topic: "Outcome data"
+    kind: result
+    designs: [cross-sectional]
+    text: "Cross-sectional study—Report numbers of outcome events or summary measures"
+  - item: "16a"
+    section: "Results"
+    topic: "Main results"
+    kind: result
+    text: "(a) Give unadjusted estimates and, if applicable, confounder-adjusted estimates and their precision (eg, 95% confidence interval). Make clear which confounders were adjusted for and why they were included"
+  - item: "16b"
+    section: "Results"
+    topic: "Main results"
+    kind: result
+    text: "(b) Report category boundaries when continuous variables were categorized"
+  - item: "16c"
+    section: "Results"
+    topic: "Main results"
+    kind: result
+    text: "(c) If relevant, consider translating estimates of relative risk into absolute risk for a meaningful time period"
+  - item: "17"
+    section: "Results"
+    topic: "Other analyses"
+    kind: result
+    text: "Report other analyses done—eg analyses of subgroups and interactions, and sensitivity analyses"
+  - item: "18"
+    section: "Discussion"
+    topic: "Key results"
+    kind: prose
+    text: "Summarise key results with reference to study objectives"
+  - item: "19"
+    section: "Discussion"
+    topic: "Limitations"
+    kind: prose
+    text: "Discuss limitations of the study, taking into account sources of potential bias or imprecision. Discuss both direction and magnitude of any potential bias"
+  - item: "20"
+    section: "Discussion"
+    topic: "Interpretation"
+    kind: prose
+    text: "Give a cautious overall interpretation of results considering objectives, limitations, multiplicity of analyses, results from similar studies, and other relevant evidence"
+  - item: "21"
+    section: "Discussion"
+    topic: "Generalisability"
+    kind: prose
+    text: "Discuss the generalisability (external validity) of the study results"
+  - item: "22"
+    section: "Other information"
+    topic: "Funding"
+    kind: author
+    text: "Give the source of funding and the role of the funders for the present study and, if applicable, for the original study on which the present article is based"

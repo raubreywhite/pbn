@@ -37,9 +37,11 @@ the tracked files, and the untracked files that git does not ignore.
 Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules, with their level in the set \code{house_2026_11_25}, are below.
-The set \code{house_2026_11_20} has the same rules at the same levels, without
-\code{no_plot_title}, \code{no_plot_subtitle} and \code{no_plot_caption}. The set
+The rules, with their level in the set \code{house_2026_11_26}, are below.
+The set \code{house_2026_11_25} has the same rules at the same levels, without
+\code{guidelines_valid} and \code{guidelines_covered}. The set \code{house_2026_11_20}
+also does not have \code{no_plot_title}, \code{no_plot_subtitle} and
+\code{no_plot_caption}. The set
 \code{house_2026_11_19} also does not have \code{built_reads_own_version},
 \code{built_has_run} and \code{manual_not_ahead}. The set \code{house_2026_11_17} also
 does not have \code{frozen_versions_unchanged},
@@ -354,12 +356,22 @@ holds \code{manifest$fake_real_data} \code{TRUE}. Its run had
 not those of the real data. It passes when no such file is in the
 list of files. In a git repository, a real results file that git
 ignores is not in the list, so the rule does not see it.
+\item \code{guidelines_valid} (FAIL): a file \verb{guidelines/<x>.yml} breaks the
+checklist schema below. Each such file gives one FAIL, and its detail
+names its first 3 problems and counts the rest. The rule reads each
+\code{.yml} file directly in \verb{guidelines/}. It does not read a file in a
+folder under \verb{guidelines/}, or a file with another extension, such as
+\code{.yaml}.
+\item \code{guidelines_covered} (WARN): this version of pbn does not check it, so
+it always passes. A later version checks that the manuscript answers
+each item of \verb{guidelines/*.yml}.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},
 \code{vNN_one_file.R}, \code{check_project.R} and \code{pbn.yml}, among others. From
 the set \code{house_2026_11_19}, it also names \code{vNN_frozen.md5} of
-\code{\link[=freeze_version]{freeze_version()}}. A top-level dotfile and a top-level
+\code{\link[=freeze_version]{freeze_version()}}. From the set \code{house_2026_11_26}, it also names the
+folder \verb{guidelines/}. A top-level dotfile and a top-level
 \verb{*.Rproj} file are never unknown. The rule also reads the files
 directly in \verb{vNN_results/}. There it names the run log \code{run.md}, its PDF
 \code{run.pdf} and its errors file \code{run_errors_gitexclude.md}, and no rule
@@ -368,6 +380,42 @@ warns on the folders \verb{output/} and \verb{output_fake_data/} that
 \code{\link[=make_outputs]{make_outputs()}} writes in \verb{vNN_results/<scenario>/}, or on the folder
 \verb{sims_gitexclude/} that \code{\link[=save_results]{save_results()}} writes there.
 }
+
+A checklist file \verb{guidelines/<x>.yml} holds one reporting guideline, in
+the checklist schema of the methods repository. Copy the file from there.
+\code{guidelines_valid} fails the file unless each of these is true:
+\itemize{
+\item The file is valid YAML, and a map.
+\item It has no key other than \code{id}, \code{title}, \code{version}, \code{source},
+\code{citation}, \code{designs}, \code{design} and \code{items}.
+\item \code{id} and \code{title} are each one string. \code{id} has only the characters
+\code{a-z}, \code{0-9} and \code{-}, and no other file has the same \code{id}.
+\item \code{version}, \code{source} and \code{citation} MAY be missing. Each one that is
+there is one string.
+\item A key that is there has a value. \verb{version:} with nothing after it, or
+\verb{citation: ~}, fails. This holds for \code{designs} and \code{design} too, and
+for the \code{designs} of an entry.
+\item \code{designs} MAY be missing. When it is there, it is a YAML sequence of
+strings, such as \verb{[cohort]}. One string, such as \code{designs: cohort}, or a
+map fails. The same holds for the \code{designs} of an entry.
+\item \code{design} MAY be missing. When it is there, it is one of \code{designs}.
+\item \code{items} is a YAML sequence with at least one entry. A map fails.
+\item Each entry has no key other than \code{item}, \code{section}, \code{topic}, \code{kind},
+\code{designs} and \code{text}. Its \code{item}, \code{section}, \code{topic}, \code{kind} and \code{text}
+are each one string. Quote an item id such as \code{"2"}, because YAML reads
+\code{2} as a number.
+\item The \code{kind} of each entry is \code{result}, \code{prose} or \code{author}.
+\item The \code{designs} of an entry MAY be missing, and the entry then belongs to
+each design of the file. When it is there, the file has \code{designs}, and
+each value is one of them.
+\item An item id comes once per design, among the entries that \code{design}
+keeps. STROBE has three entries with the item id \code{15}, one for each
+design, so it passes.
+}
+
+A project copy MAY add the key \code{design}, such as \code{design: cohort}. pbn
+then keeps the entries whose \code{designs} include it, and the entries
+without \code{designs}.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -428,9 +476,10 @@ path for it. It cannot name a rule of \code{\link[=check_results]{check_results(
 The key \code{ignore} MAY list folders at the top level, such as \verb{archive/},
 that no rule reads: their files give no finding, not even a WARN. Use it
 for old work that nothing runs. A final \code{/} changes nothing. An entry
-MUST be one folder at the top level that the house layout does not name,
-so it cannot be \verb{manuscript/}, \verb{background/}, \verb{adhoc/} or a folder of a
-version. A folder that does not exist is no error. The locked rules still
+MUST be one folder at the top level that the house layout of the set does
+not name, so it cannot be \verb{manuscript/}, \verb{background/}, \verb{adhoc/} or a
+folder of a version. From the set \code{house_2026_11_26}, it cannot be
+\verb{guidelines/} either. A folder that does not exist is no error. The locked rules still
 read an ignored folder, so a tracked file with \code{gitexclude} in its name
 fails there too. The first line of the report counts the ignored
 folders.

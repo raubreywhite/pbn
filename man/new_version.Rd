@@ -36,6 +36,25 @@ does not exist. When it exists and no file of \code{from} changed after it,
 \item It changes the argument \code{version} of the call
 \code{pbn::initialize_project()} in \verb{<to>_run.R} from \code{from} to \code{to}. It
 changes no other text of the file.
+\item It adds an entry \verb{<to>_functions/<path>} to each list under \verb{allow:}
+of \code{pbn.yml} that has the entry \verb{<from>_functions/<path>}, so the
+copied file stays allowed. \verb{<path>} MAY be empty, as in
+\verb{<from>_functions/}. It edits two forms of a list, each with or
+without quotes around an entry and a trailing comment:
+\itemize{
+\item a flow list \verb{rule: [a, b]} on one line. The new entries go at the
+end of the list.
+\item a block list of lines \code{- a}. Each new entry goes on a new line
+after the old entry.
+}
+
+A new entry has the quotes of the old entry. A line that has no entry
+of \verb{<from>_functions/} stays as it is, so each comment stays. The step
+adds no entry that the list has already. It prints each entry that it
+adds. After the edit it reads \code{pbn.yml} again with the rules of
+\code{\link[=check_project]{check_project()}}. When the entries under \verb{allow:} are not the old
+entries and the new entries, it stops. The error gives the entries to
+add by hand. One cause is a flow list on more than one line.
 \item It adds the section \verb{## <to>} above the first section \verb{## } of
 \code{CHANGELOG.md}, with one line that names \code{from}. It creates
 \code{CHANGELOG.md} when the file does not exist. When the section is there
@@ -55,11 +74,12 @@ after it. The error names each file. Put the files back, or record the
 change as intended with \code{\link[=freeze_version]{freeze_version()}}.
 \item \verb{<from>_run.R} has no call \code{pbn::initialize_project()} whose argument
 \code{version} is the string \code{from}.
+\item \code{pbn.yml} exists, and \code{\link[=check_project]{check_project()}} cannot read its rules.
 }
 
 When a step stops after \code{new_version()} wrote something, it removes each
 file and folder that the call created, also \verb{<from>_frozen.md5}. It
-writes \code{CHANGELOG.md} back as it was. So a second call can start again.
+writes \code{CHANGELOG.md} and \code{pbn.yml} back as they were. So a second call can start again.
 }
 \examples{
 home <- file.path(tempdir(), "pbn_new_version_example")

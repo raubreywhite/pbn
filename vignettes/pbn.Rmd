@@ -899,6 +899,8 @@ stopifnot(!any(found$status %in% c("WARN", "FAIL")), file.exists(file.path(new_h
 
 `new_version()` writes no file that is already there, and it stops when a file of the frozen version changed after `freeze_version()`.
 
+A path of `v01_functions/` under `allow:` in `pbn.yml` gets a copy for `v02_functions/`, so the copied file stays allowed. `new_version()` prints each entry that it adds. It changes no other line of `pbn.yml`, so each comment stays. When it cannot edit the list, it stops and gives the entries to add by hand.
+
 ## Manuscripts
 
 `manuscript/built/vNN/` holds the manuscripts that code builds from the results of version vNN. A built manuscript MUST read the real results of its own version only. `check_project()` fails a `read_results()` call there with another scenario or another version. A call without `scenario` reads the real results:

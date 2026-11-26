@@ -215,7 +215,24 @@ write_text <- function(file, lines) {
 #' 3. It changes the argument `version` of the call
 #'    `pbn::initialize_project()` in `<to>_run.R` from `from` to `to`. It
 #'    changes no other text of the file.
-#' 4. It adds the section `## <to>` above the first section `## ` of
+#' 4. It adds an entry `<to>_functions/<path>` to each list under `allow:`
+#'    of `pbn.yml` that has the entry `<from>_functions/<path>`, so the
+#'    copied file stays allowed. `<path>` MAY be empty, as in
+#'    `<from>_functions/`. It edits two forms of a list, each with or
+#'    without quotes around an entry and a trailing comment:
+#'    - a flow list `rule: [a, b]` on one line. The new entries go at the
+#'      end of the list.
+#'    - a block list of lines `- a`. Each new entry goes on a new line
+#'      after the old entry.
+#'
+#'    A new entry has the quotes of the old entry. A line that has no entry
+#'    of `<from>_functions/` stays as it is, so each comment stays. The step
+#'    adds no entry that the list has already. It prints each entry that it
+#'    adds. After the edit it reads `pbn.yml` again with the rules of
+#'    [check_project()]. When the entries under `allow:` are not the old
+#'    entries and the new entries, it stops. The error gives the entries to
+#'    add by hand. One cause is a flow list on more than one line.
+#' 5. It adds the section `## <to>` above the first section `## ` of
 #'    `CHANGELOG.md`, with one line that names `from`. It creates
 #'    `CHANGELOG.md` when the file does not exist. When the section is there
 #'    already, it leaves the file as it is, and its message says so.
@@ -232,10 +249,11 @@ write_text <- function(file, lines) {
 #'   change as intended with [freeze_version()].
 #' - `<from>_run.R` has no call `pbn::initialize_project()` whose argument
 #'   `version` is the string `from`.
+#' - `pbn.yml` exists, and [check_project()] cannot read its rules.
 #'
 #' When a step stops after `new_version()` wrote something, it removes each
 #' file and folder that the call created, also `<from>_frozen.md5`. It
-#' writes `CHANGELOG.md` back as it was. So a second call can start again.
+#' writes `CHANGELOG.md` and `pbn.yml` back as they were. So a second call can start again.
 #' @return Invisibly, `to`.
 #' @examples
 #' home <- file.path(tempdir(), "pbn_new_version_example")
@@ -289,18 +307,21 @@ new_version <- function(from = "v01", to = NULL, home = ".") {
   check_newest(home, to)
   freeze <- check_frozen_from(home, from)
   run_lines <- run_script_with_version(file.path(home, run), from, to)
+  allow <- allow_to_add(home, from, to)
 
   changelog <- file.path(home, "CHANGELOG.md")
-  old_changelog <- if (file.exists(changelog)) {
-    readBin(changelog, "raw", file.size(changelog))
-  }
+  old_changelog <- read_bytes(changelog)
+  yml <- file.path(home, rules_file)
+  old_yml <- read_bytes(yml)
   created <- new_paths(
     home,
     c(targets[1:2], paste0(from, "_frozen.md5"), "CHANGELOG.md")
   )
   done <- FALSE
   on.exit(
-    if (!done) undo_new_version(home, created, changelog, old_changelog),
+    if (!done) {
+      undo_new_version(home, created, changelog, old_changelog, yml, old_yml)
+    },
     add = TRUE
   )
   if (freeze) {
@@ -308,6 +329,7 @@ new_version <- function(from = "v01", to = NULL, home = ".") {
   }
   write_text(file.path(home, targets[1]), run_lines)
   copy_folder(file.path(home, folder), file.path(home, targets[2]))
+  add_allow_entries(home, allow, from)
   added <- add_changelog_section(changelog, from, to)
   done <- TRUE
   message(
@@ -328,7 +350,24 @@ new_version <- function(from = "v01", to = NULL, home = ".") {
     to,
     if (added) " to CHANGELOG.md." else "."
   )
+  for (i in seq_len(nrow(allow$add))) {
+    message(
+      "new_version(): added ",
+      allow$add$new[i],
+      " to allow: ",
+      allow$add$rule[i],
+      " in pbn.yml."
+    )
+  }
   return(invisible(to))
+}
+
+# The bytes of the file `file`, or NULL when it does not exist.
+read_bytes <- function(file) {
+  if (!file.exists(file)) {
+    return(NULL)
+  }
+  return(readBin(file, "raw", file.size(file)))
 }
 
 # The version after `version`, "v01" to "v02". Stops after "v99".
@@ -345,11 +384,22 @@ next_version <- function(version) {
 
 # Removes what a call of new_version() that stopped part way created: the
 # paths `created` of new_paths() under `home`. Writes the bytes
-# `old_changelog` back to the file `changelog` when it existed before.
-undo_new_version <- function(home, created, changelog, old_changelog) {
+# `old_changelog` back to the file `changelog` when it existed before, and
+# the bytes `old_yml` back to the file `yml`, pbn.yml, when they differ.
+undo_new_version <- function(
+  home,
+  created,
+  changelog,
+  old_changelog,
+  yml = NULL,
+  old_yml = NULL
+) {
   remove_created(home, created)
   if (!is.null(old_changelog)) {
     writeBin(old_changelog, changelog)
+  }
+  if (!is.null(old_yml) && !identical(read_bytes(yml), old_yml)) {
+    writeBin(old_yml, yml)
   }
   return(invisible(created))
 }
@@ -563,4 +613,275 @@ add_changelog_section <- function(file, from, to) {
   }
   write_text(file, lines)
   return(TRUE)
+}
+
+# The allow entries of pbn.yml in `home` that new_version() adds when it
+# copies `<from>_functions/` to `<to>_functions/`. A list with `old`, the
+# entries of read_rules() before the edit, and `add`, a data.frame with the
+# columns `rule`, `written` (the old entry as pbn.yml writes it) and `new`.
+# `add` has one row for each entry that starts with `<from>_functions/` and
+# whose new entry the rule does not have yet. No pbn.yml gives no rows.
+allow_to_add <- function(home, from, to) {
+  none <- data.frame(
+    rule = character(0),
+    written = character(0),
+    new = character(0)
+  )
+  if (!file.exists(file.path(home, rules_file))) {
+    return(list(old = NULL, add = none))
+  }
+  old <- read_rules(home)$allow
+  prefix <- paste0(from, "_functions/")
+  hit <- old[startsWith(old$written, prefix), , drop = FALSE]
+  add <- data.frame(
+    rule = hit$rule,
+    written = hit$written,
+    new = paste0(
+      to,
+      "_functions/",
+      substring(hit$written, nchar(prefix) + 1),
+      recycle0 = TRUE
+    )
+  )
+  key <- paste(add$rule, sub("/$", "", add$new), sep = "\n")
+  keep <- !key %in% paste(old$rule, old$path, sep = "\n") & !duplicated(key)
+  return(list(old = old, add = add[keep, , drop = FALSE]))
+}
+
+# Adds the entries `allow$add` of allow_to_add() to the pbn.yml in `home`.
+# It edits the text, so each comment and each other line stays. Then it
+# reads pbn.yml again, and stops when the entries are not the old ones and
+# the new ones, or when a line changed that is not an entry of
+# `<from>_functions/`. The error gives the entries to add by hand.
+add_allow_entries <- function(home, allow, from) {
+  if (nrow(allow$add) == 0) {
+    return(invisible(FALSE))
+  }
+  file <- file.path(home, rules_file)
+  text <- rawToChar(read_bytes(file))
+  Encoding(text) <- "UTF-8"
+  eol <- if (grepl("\r\n", text, fixed = TRUE)) "\r\n" else "\n"
+  old_lines <- strsplit(text, eol, fixed = TRUE)[[1]]
+  edit <- allow_lines_with(old_lines, allow$add)
+  new_text <- paste0(
+    paste(edit$lines, collapse = eol),
+    if (endsWith(text, eol)) eol
+  )
+  writeBin(charToRaw(enc2utf8(new_text)), file)
+  if (!allow_edit_ok(home, old_lines, edit$inserted, allow, from, eol)) {
+    stop(
+      "new_version() could not add these entries under allow: in pbn.yml. ",
+      "pbn.yml MAY have a form that new_version() does not edit, such as a ",
+      "flow list on more than one line. new_version() wrote pbn.yml back ",
+      "and removed what it created. Add the entries by hand, and call ",
+      "new_version() again:\n",
+      paste0("  ", allow$add$rule, ": ", allow$add$new, collapse = "\n"),
+      call. = FALSE
+    )
+  }
+  return(invisible(TRUE))
+}
+
+# TRUE when the pbn.yml in `home`, after add_allow_entries() wrote it, has
+# the entries of `allow$old` and `allow$add` under allow, and no others, and
+# when each line of `old_lines` is there unchanged, except an entry line of
+# allow_entry_lines() that names `<from>_functions/`. `inserted` marks the
+# lines that the edit added.
+allow_edit_ok <- function(home, old_lines, inserted, allow, from, eol) {
+  new <- tryCatch(read_rules(home)$allow, error = function(e) return(NULL))
+  if (is.null(new)) {
+    return(FALSE)
+  }
+  want <- c(
+    paste(allow$old$rule, allow$old$written, sep = "\n"),
+    paste(allow$add$rule, allow$add$new, sep = "\n")
+  )
+  got <- paste(new$rule, new$written, sep = "\n")
+  if (!identical(sort(want, method = "radix"), sort(got, method = "radix"))) {
+    return(FALSE)
+  }
+  text <- rawToChar(read_bytes(file.path(home, rules_file)))
+  Encoding(text) <- "UTF-8"
+  disk <- strsplit(text, eol, fixed = TRUE)[[1]]
+  if (length(disk) != length(inserted)) {
+    return(FALSE)
+  }
+  kept <- disk[!inserted]
+  if (length(kept) != length(old_lines)) {
+    return(FALSE)
+  }
+  may_change <- allow_entry_lines(old_lines) &
+    grepl(paste0(from, "_functions/"), old_lines, fixed = TRUE)
+  return(all(may_change[kept != old_lines]))
+}
+
+# TRUE for each line of `lines` that is inside the key allow of pbn.yml:
+# the lines after "allow:" up to the next key at the top level.
+allow_section <- function(lines) {
+  n <- length(lines)
+  at <- seq_len(n)
+  start <- which(grepl("^allow:[[:space:]]*(#.*)?$", lines))
+  if (length(start) != 1) {
+    return(rep(FALSE, n))
+  }
+  after <- which(at > start & grepl("^[^[:space:]#]", lines))
+  end <- if (length(after) > 0) after[1] - 1 else n
+  return(at > start & at <= end)
+}
+
+# TRUE for each line of `lines` that holds entries of a list under the key
+# allow of pbn.yml: a line "rule: [...]" of a flow list, or a line "- entry"
+# of a block list after a rule.
+allow_entry_lines <- function(lines) {
+  inside <- allow_section(lines)
+  rule <- inside & grepl("^[[:space:]]+[A-Za-z0-9_]+:", lines)
+  flow <- rule & grepl("^[[:space:]]+[A-Za-z0-9_]+:[[:space:]]*\\[", lines)
+  item <- inside &
+    grepl("^[[:space:]]*-[[:space:]]+", lines) &
+    cumsum(rule) > 0
+  return(flow | item)
+}
+
+# The lines `lines` of pbn.yml with the entries `add` of allow_to_add()
+# under the key allow. A list with `lines` and `inserted`, TRUE for each
+# line that is new. A flow list "rule: [a, b]" on one line gets the new
+# entries at its end. A block list gets each new entry "- new" on the line
+# after the old entry. A new entry has the quotes of the old one. A form
+# that this does not know stays as it is.
+allow_lines_with <- function(lines, add) {
+  n <- length(lines)
+  at <- seq_len(n)
+  inside <- allow_section(lines)
+  used <- rep(FALSE, nrow(add))
+  out <- character(0)
+  inserted <- logical(0)
+  rule <- NA_character_
+  for (i in at) {
+    line <- lines[i]
+    extra <- character(0)
+    key <- regmatches(
+      line,
+      regexec("^[[:space:]]*([A-Za-z0-9_]+):[[:space:]]*(.*)$", line)
+    )[[1]]
+    item <- regmatches(line, regexec("^([[:space:]]*)-[[:space:]]+(.*)$", line))[[1]]
+    if (inside[i] && length(key) == 3) {
+      rule <- key[2]
+      mine <- which(add$rule == rule & !used)
+      flow <- flow_list_with(
+        line,
+        nchar(line) - nchar(key[3]) + 1,
+        add[mine, , drop = FALSE]
+      )
+      line <- flow$line
+      used[mine] <- flow$used
+    } else if (inside[i] && length(item) == 3 && !is.na(rule)) {
+      v <- yaml_scalar(item[3], flow = FALSE)
+      j <- if (!is.null(v)) {
+        which(add$rule == rule & add$written == v$value & !used)[1]
+      } else {
+        NA
+      }
+      if (!is.na(j)) {
+        extra <- paste0(item[2], "- ", yaml_quoted(add$new[j], v$quote))
+        used[j] <- TRUE
+      }
+    }
+    out <- c(out, line, extra)
+    inserted <- c(inserted, FALSE, rep(TRUE, length(extra)))
+  }
+  return(list(lines = out, inserted = inserted))
+}
+
+# The line `line` with the entries `add$new` at the end of the flow list
+# that starts at the character `at`, one for each entry of the list that
+# is in `add$written`. A list with `line` and `used`, TRUE for each row of
+# `add` that the line got. A list that does not end on the line, or holds
+# a list or a map, stays as it is.
+flow_list_with <- function(line, at, add) {
+  same <- list(line = line, used = rep(FALSE, nrow(add)))
+  if (substr(line, at, at) != "[") {
+    return(same)
+  }
+  skip_space <- function(pos) {
+    rest <- substring(line, pos)
+    return(pos + attr(regexpr("^[[:space:]]*", rest), "match.length"))
+  }
+  pos <- skip_space(at + 1)
+  items <- list()
+  last_end <- NA
+  while (!startsWith(substring(line, pos), "]")) {
+    v <- yaml_scalar(substring(line, pos), flow = TRUE)
+    if (is.null(v)) {
+      return(same)
+    }
+    items <- c(items, list(v))
+    pos <- pos + v$len
+    last_end <- pos - 1
+    pos <- skip_space(pos)
+    if (startsWith(substring(line, pos), ",")) {
+      pos <- skip_space(pos + 1)
+    } else if (!startsWith(substring(line, pos), "]")) {
+      return(same)
+    }
+  }
+  if (!grepl("^\\][[:space:]]*(#.*)?$", substring(line, pos))) {
+    return(same)
+  }
+  used <- same$used
+  new <- character(0)
+  for (v in items) {
+    j <- which(add$written == v$value & !used)[1]
+    if (!is.na(j)) {
+      new <- c(new, yaml_quoted(add$new[j], v$quote))
+      used[j] <- TRUE
+    }
+  }
+  if (length(new) == 0) {
+    return(same)
+  }
+  line <- paste0(
+    substr(line, 1, last_end),
+    paste0(", ", new, collapse = ""),
+    substring(line, last_end + 1)
+  )
+  return(list(line = line, used = used))
+}
+
+# The scalar at the start of the text `text` of a line of YAML: a list with
+# `value`, `quote` ("'", "\"" or "") and `len`, the number of characters it
+# takes. `flow` is TRUE inside a flow list, where "," and "]" end a plain
+# scalar. NULL when there is no scalar. A double-quoted value keeps its
+# escapes, so it matches no entry, and the check after the edit stops.
+yaml_scalar <- function(text, flow) {
+  q <- substr(text, 1, 1)
+  if (q == "'" || q == "\"") {
+    pattern <- if (q == "'") "^'([^']|'')*'" else "^\"([^\"\\\\]|\\\\.)*\""
+    m <- regmatches(text, regexpr(pattern, text))
+    if (length(m) == 0) {
+      return(NULL)
+    }
+    value <- substr(m, 2, nchar(m) - 1)
+    if (q == "'") {
+      value <- gsub("''", "'", value, fixed = TRUE)
+    }
+    return(list(value = value, quote = q, len = nchar(m)))
+  }
+  m <- if (flow) {
+    regmatches(text, regexpr("^[^],[{}#]*", text))
+  } else {
+    sub("[[:space:]]+#.*$", "", text)
+  }
+  m <- sub("[[:space:]]+$", "", m)
+  if (length(m) == 0 || !nzchar(m)) {
+    return(NULL)
+  }
+  return(list(value = m, quote = "", len = nchar(m)))
+}
+
+# The entry `x` of YAML with the quote `quote`: "'", "\"" or "" for none.
+yaml_quoted <- function(x, quote) {
+  if (quote == "'") {
+    x <- gsub("'", "''", x, fixed = TRUE)
+  }
+  return(paste0(quote, x, quote))
 }

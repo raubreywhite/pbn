@@ -767,7 +767,7 @@ From the set `house_2026_11_27`, the rule `display_numbering` of `check_project(
 - `fig_N_<name>_external.txt` or `tab_sN_<name>_external.txt` for an item that the output function does not make, such as a flow chart.
 - `nonum_<name>` for an output without a number.
 
-When the project has a manuscript, the rule also checks it. In each series, the first citations MUST come in the order 1, 2, 3. The four series are the figures, the tables, the supplementary figures and the supplementary tables. The numbered items of the outputs MUST be the items of the manuscript. `?check_project` gives the details. This project is on the set `house_2026_11_25`, so its figure `outcome_by_group.png` passes. On `house_2026_11_27` it would be `fig_1_outcome_by_group.png`.
+When the project has a manuscript, the rule also checks it. In each series, the first citations MUST come in the order 1, 2, 3. The four series are the figures, the tables, the supplementary figures and the supplementary tables. A list of three or more citations MUST use the Oxford comma, as in "Figures 1, 2, and 3". The numbered items of the outputs MUST be the items of the manuscript. `?check_project` gives the details. This project is on the set `house_2026_11_25`, so its figure `outcome_by_group.png` passes. On `house_2026_11_27` it would be `fig_1_outcome_by_group.png`.
 
 ## Checking the project
 

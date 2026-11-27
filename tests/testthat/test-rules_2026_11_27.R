@@ -603,29 +603,54 @@ test_that("a list needs the plural word, and a number of a list with % or a deci
     display_cited_keys("Figure 1-3, Figs. 4 & 5, Tables 1, 2.5 and 3"),
     c("fig_1", "fig_2", "fig_3", "fig_4", "fig_5", "tab_1")
   )
-  # A number after a comma with prose after it is not a citation.
+})
+
+test_that("a list of citations follows the Oxford comma: two items with and, or three or more that end in , and", {
   expect_identical(
-    display_cited_keys("Figures 1 and 2, 25 participants were"),
+    display_cited_keys("Figures 1 and 2, 25 and 30 participants were enrolled"),
     c("fig_1", "fig_2")
   )
   expect_identical(
-    display_cited_keys(
-      "Figures 1, 2 and 3. Figures 4, 5, 6) Figures S1, S2 and S4. Tables 1, 2."
-    ),
-    c(
-      "fig_1",
-      "fig_2",
-      "fig_3",
-      "fig_4",
-      "fig_5",
-      "fig_6",
-      "fig_s1",
-      "fig_s2",
-      "fig_s4",
-      "tab_1",
-      "tab_2"
-    )
+    display_cited_keys("Figures 1, 2, and 3. Figures S1, S2, and S4."),
+    c("fig_1", "fig_2", "fig_3", "fig_s1", "fig_s2", "fig_s4")
   )
+  expect_identical(
+    display_cited_keys("Figures 1 and 2 show it. Tables 1-2, 4, & 6\u20137."),
+    c("fig_1", "fig_2", "tab_1", "tab_2", "tab_4", "tab_6", "tab_7")
+  )
+  # Without the Oxford comma the items still count.
+  expect_identical(
+    display_cited_keys("Figures 1, 2 and 3, and Tables 1, 2, 3 & 4"),
+    c("fig_1", "fig_2", "fig_3", "tab_1", "tab_2", "tab_3", "tab_4")
+  )
+})
+
+test_that("a list without the Oxford comma gives one finding, and its items count as citations", {
+  p <- local_project_27()
+  paper <- "manuscript/built/v01/paper.md"
+  write_real_items(p$home, figures = c("fig_1", "fig_2", "fig_3"))
+  write_paper(p$home, "Figures 1, 2 and 3 show the gaps.")
+  expect_identical(
+    display_rows(p$home),
+    fail_rows(paste0(
+      paper,
+      ": the list \"Figures 1, 2 and 3\" MUST use the Oxford comma: ",
+      "\"Figures 1, 2, and 3\""
+    ))
+  )
+  write_paper(p$home, "Figures 1, 2, and 3 show the gaps.")
+  expect_identical(display_rows(p$home), pass_match())
+})
+
+test_that("a comma after one item that starts no Oxford list ends the citation, and is no finding", {
+  expect_identical(
+    display_cited_keys("Figures 1, 25 participants were seen."),
+    "fig_1"
+  )
+  p <- local_project_27()
+  write_real_items(p$home, figures = "fig_1")
+  write_paper(p$home, "Figures 1, 25 participants were seen.")
+  expect_identical(display_rows(p$home), pass_match())
 })
 
 test_that("a caption in Markdown emphasis or in the text of an image is a caption", {

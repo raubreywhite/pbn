@@ -17,21 +17,31 @@ display_figure_data_file <- "data_behind_figures.xlsx"
 display_table_sheet_pattern <- "^tab_s?[1-9][0-9]*$"
 display_figure_sheet_pattern <- "^fig_s?[1-9][0-9]*_"
 
-# A citation: an optional "Supplementary", the word, and a number, a range
-# or a list, such as "Figure 2", "Tables 1-3", "Figures S1, S2 and S4" or
-# "Supplementary Figures 1 and 2". A list needs the plural word, so that
-# "Table 1, 25 persons" cites Table 1 only. A number of a list is not
-# followed by % or a decimal part. A number after a comma also needs another
-# comma, "and", "&", a dash, a closing mark or the end of the text after it,
-# so that "Figures 1 and 2, 25 persons" cites Figures 1 and 2 only.
+# A citation: an optional "Supplementary", the word, and a number or a
+# range, such as "Figure 2", "Tables 1-3" or "Supplementary Figure 1". After
+# the plural word, a list follows the Oxford comma: two items, "Figures 1
+# and 2", or three or more, "Figures 1, 2, and 3". A list without the Oxford
+# comma, "Figures 1, 2 and 3", counts too, and display_oxford_rows() fails
+# it. A comma after one item ends the citation, so "Figures 1 and 2, 25 and
+# 30 persons" cites Figures 1 and 2 only. A number is not followed by % or a
+# decimal part.
 display_number <- "S?[0-9]+[A-Za-z]?(?![0-9]|\\s*%|[.,][0-9])"
 display_range_part <- paste0("\\s*[-\u2013\u2014]\\s*", display_number)
+display_item <- paste0(display_number, "(?:", display_range_part, ")?")
+display_comma_items <- paste0("(?:\\s*,\\s*", display_item, ")+")
 display_list_part <- paste0(
-  "(?:(?:\\s*,\\s*and\\s+|\\s+and\\s+|\\s*&\\s*)",
-  display_number,
-  "|\\s*,\\s*",
-  display_number,
-  "(?=\\s*(?:,|and\\b|&|[-\u2013\u2014]|[)\\].;:]|$)))"
+  "(?:",
+  display_comma_items,
+  "\\s*,\\s*(?:and\\s+|&\\s*)",
+  display_item,
+  "|",
+  display_comma_items,
+  "(?:\\s+and\\s+|\\s*&\\s*)",
+  display_item,
+  "|",
+  "(?:\\s+and\\s+|\\s*&\\s*)",
+  display_item,
+  ")?"
 )
 display_supplementary <- "(?:([Ss]upplementary)\\s+)?"
 display_cite_pattern <- paste0(
@@ -39,18 +49,11 @@ display_cite_pattern <- paste0(
   display_supplementary,
   "(?:",
   "(?:[Ff]igures|[Ff]igs\\.|[Tt]ables)\\s+",
-  display_number,
-  "(?:",
-  display_range_part,
-  "|",
+  display_item,
   display_list_part,
-  ")*",
   "|",
   "(?:[Ff]igure|[Ff]ig\\.?|[Tt]able)\\s+",
-  display_number,
-  "(?:",
-  display_range_part,
-  ")?",
+  display_item,
   ")\\b"
 )
 # A caption: a paragraph that starts with "Figure 2." or "Table S1:", also
@@ -475,6 +478,7 @@ display_range <- function(a, b) {
 display_manuscript_text <- function(path, manuscript) {
   cites <- list()
   captions <- list()
+  oxford <- list()
   unread <- character(0)
   for (f in manuscript) {
     paragraphs <- display_paragraphs(path, f)
@@ -491,6 +495,7 @@ display_manuscript_text <- function(path, manuscript) {
       }
       keys <- display_cited_keys(body)
       keys <- keys[is.na(cap) | keys != cap]
+      oxford[[length(oxford) + 1]] <- display_oxford_rows(f, body)
       cites[[length(cites) + 1]] <- data.frame(
         file = rep(f, length(keys)),
         key = keys
@@ -504,14 +509,43 @@ display_manuscript_text <- function(path, manuscript) {
   return(list(
     cites = do.call(rbind, c(list(empty), cites)),
     captions = do.call(rbind, c(list(empty), captions)),
-    rows = display_row(
-      unread,
-      paste0(
+    rows = rbind(
+      display_row(
         unread,
-        ": R cannot read its citations, because it is not a .docx file ",
-        "with word/document.xml",
-        recycle0 = TRUE
-      )
+        paste0(
+          unread,
+          ": R cannot read its citations, because it is not a .docx file ",
+          "with word/document.xml",
+          recycle0 = TRUE
+        )
+      ),
+      bind_rows(oxford)
+    )
+  ))
+}
+
+# A finding of the file `file` for each list of the text `x` without the
+# Oxford comma, such as "Figures 1, 2 and 3". Such a list has a comma, and
+# no comma before its last "and" or "&".
+display_oxford_rows <- function(file, x) {
+  hits <- regmatches(x, gregexpr(display_cite_pattern, x, perl = TRUE))[[1]]
+  bad <- hits[grepl(",", hits) & !grepl(",\\s*(and\\s|&)", hits, perl = TRUE)]
+  fixed <- sub(
+    "\\s*(and|&)\\s*(?=[^,]*$)",
+    ", \\1 ",
+    bad,
+    perl = TRUE
+  )
+  return(display_row(
+    rep(file, length(bad)),
+    paste0(
+      file,
+      ": the list \"",
+      bad,
+      "\" MUST use the Oxford comma: \"",
+      fixed,
+      "\"",
+      recycle0 = TRUE
     )
   ))
 }

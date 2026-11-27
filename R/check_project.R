@@ -410,10 +410,13 @@
 #'   files `manuscript/built/vNN/*.md`. Without a manuscript, the rule checks
 #'   the names only. A citation is "Figure 1", "Fig. 1", "Table 1", "Figure
 #'   S1" or "Supplementary Figure 1", which is Figure S1. A range such as
-#'   "Tables 1-3" cites each number of it. A list needs the plural word, such
-#'   as "Figures 1 and 2". A number after a comma needs another separator, a
-#'   closing mark or the end of the text after it. So "Figures 1 and 2, 25
-#'   persons" cites Figures 1 and 2 only. The text of a tracked deletion and
+#'   "Tables 1-3" cites each number of it. A list needs the plural word, and
+#'   it follows the Oxford comma. It has two items, as in "Figures 1 and 2",
+#'   or three or more that end in ", and", as in "Figures 1, 2, and 3". A
+#'   range MAY be an item. A list such as "Figures 1, 2 and 3" fails, and its
+#'   items still count as citations. A comma after one item ends the
+#'   citation, so "Figures 1 and 2, 25 and 30 persons" cites Figures 1 and 2
+#'   only. The text of a tracked deletion and
 #'   of the old place of moved text in a `.docx` file does not count. There
 #'   are four series: the figures, the tables, the supplementary figures and
 #'   the supplementary tables. In each series, the first citations MUST come

@@ -128,6 +128,18 @@ read_guideline_file <- function(home, file) {
 
 # The problems of the top-level keys of the parsed checklist file `y`.
 guideline_top_problems <- function(y) {
+  return(c(
+    guideline_key_problems(y),
+    guideline_optional_problems(y),
+    guideline_design_problems(y),
+    guideline_items_problems(y)
+  ))
+}
+
+# The problems of the keys of the parsed checklist file `y`: a key outside
+# the schema, a missing id or title, and an id with another character than
+# a-z, 0-9 and -.
+guideline_key_problems <- function(y) {
   out <- character(0)
   unknown <- setdiff(names(y), guideline_keys)
   if (length(unknown) > 0) {
@@ -144,6 +156,14 @@ guideline_top_problems <- function(y) {
       paste0("the id ", y[["id"]], " has a character other than a-z, 0-9 and -")
     )
   }
+  return(out)
+}
+
+# The problems of the optional keys of the parsed checklist file `y`: a key
+# that is present but empty, and a version, source or citation that is not
+# one string.
+guideline_optional_problems <- function(y) {
+  out <- character(0)
   # A key with no value, such as "version:" or "citation: ~", is NULL in
   # `y` but is in names(y). It fails, and is not treated as a missing key.
   empty <- names(y)[vapply(y, is.null, logical(1))]
@@ -155,6 +175,13 @@ guideline_top_problems <- function(y) {
       out <- c(out, paste0("the key ", key, " is not one string"))
     }
   }
+  return(out)
+}
+
+# The problems of the keys designs and design of the parsed checklist file
+# `y`.
+guideline_design_problems <- function(y) {
+  out <- character(0)
   designs <- y[["designs"]]
   if (!is.null(designs) && !is_string_list(designs)) {
     out <- c(out, "the key designs is not a list of strings")
@@ -168,13 +195,19 @@ guideline_top_problems <- function(y) {
   ) {
     out <- c(out, "the key design is not one of the key designs")
   }
+  return(out)
+}
+
+# The problem of the key items of the parsed checklist file `y`, or nothing.
+guideline_items_problems <- function(y) {
   items <- y[["items"]]
   if (!is.list(items) || length(items) == 0) {
-    out <- c(out, "the key items is missing or empty")
-  } else if (!is.null(names(items))) {
-    out <- c(out, "the key items is not a YAML sequence of entries")
+    return("the key items is missing or empty")
   }
-  return(out)
+  if (!is.null(names(items))) {
+    return("the key items is not a YAML sequence of entries")
+  }
+  return(character(0))
 }
 
 # The entries of the key items of the parsed checklist file `y` that the key
@@ -196,45 +229,63 @@ guideline_entries <- function(y) {
   rows <- list()
   for (i in seq_along(entries)) {
     e <- entries[[i]]
-    label <- if (is.list(e) && is_nonempty_string(e[["item"]])) {
-      paste0("item ", e[["item"]])
-    } else {
-      paste0("entry ", i)
-    }
     found <- guideline_entry_problems(e, all_designs)
-    problems <- c(problems, paste0(label, ": ", found, recycle0 = TRUE))
-    if (length(found) > 0) {
-      next
-    }
-    d <- if (is.null(e[["designs"]])) all_designs else unlist(e[["designs"]])
-    if (!is.null(design) && !design %in% d) {
-      next
-    }
-    rows[[length(rows) + 1]] <- data.frame(
-      item = e[["item"]],
-      section = e[["section"]],
-      topic = e[["topic"]],
-      kind = e[["kind"]],
-      text = e[["text"]],
-      designs = if (is.null(design)) paste(d, collapse = ", ") else design
+    problems <- c(
+      problems,
+      paste0(guideline_entry_label(e, i), ": ", found, recycle0 = TRUE)
     )
+    if (length(found) == 0) {
+      rows[[length(rows) + 1]] <- guideline_entry_row(e, all_designs, design)
+    }
   }
-  items <- if (length(rows) == 0) {
-    empty_guidelines()[, c(
+  items <- guideline_entry_rows(rows)
+  return(list(
+    problems = c(problems, guideline_duplicates(items)),
+    items = items
+  ))
+}
+
+# The label of the entry `e`, number `i` of items, in a problem: "item
+# <item>" when it has an item id, and else "entry <i>".
+guideline_entry_label <- function(e, i) {
+  if (is.list(e) && is_nonempty_string(e[["item"]])) {
+    return(paste0("item ", e[["item"]]))
+  }
+  return(paste0("entry ", i))
+}
+
+# The row of items of the valid entry `e`, or NULL when the key design
+# `design` of the file, NULL for none, leaves it out. `all_designs` holds
+# the key designs of the file, and an entry without designs has them all.
+guideline_entry_row <- function(e, all_designs, design) {
+  d <- if (is.null(e[["designs"]])) all_designs else unlist(e[["designs"]])
+  if (!is.null(design) && !design %in% d) {
+    return(NULL)
+  }
+  return(data.frame(
+    item = e[["item"]],
+    section = e[["section"]],
+    topic = e[["topic"]],
+    kind = e[["kind"]],
+    text = e[["text"]],
+    designs = if (is.null(design)) paste(d, collapse = ", ") else design
+  ))
+}
+
+# The rows `rows` of guideline_entry_row() as one data.frame, with the
+# columns of an empty one when there is no row.
+guideline_entry_rows <- function(rows) {
+  if (length(rows) == 0) {
+    return(empty_guidelines()[, c(
       "item",
       "section",
       "topic",
       "kind",
       "text",
       "designs"
-    )]
-  } else {
-    do.call(rbind, rows)
+    )])
   }
-  return(list(
-    problems = c(problems, guideline_duplicates(items)),
-    items = items
-  ))
+  return(do.call(rbind, rows))
 }
 
 # The problems of the entry `e` of items. `all_designs` holds the key designs
@@ -243,6 +294,15 @@ guideline_entry_problems <- function(e, all_designs) {
   if (!is.list(e) || is.null(names(e))) {
     return("it is not a YAML map")
   }
+  return(c(
+    guideline_entry_key_problems(e),
+    guideline_entry_design_problems(e, all_designs)
+  ))
+}
+
+# The problems of the keys of the entry `e`, a YAML map: a key outside the
+# keys of an item, a missing key, and an unknown kind.
+guideline_entry_key_problems <- function(e) {
   out <- character(0)
   unknown <- setdiff(names(e), guideline_item_keys)
   if (length(unknown) > 0) {
@@ -259,6 +319,13 @@ guideline_entry_problems <- function(e, all_designs) {
       paste0("the kind ", e[["kind"]], " is not result, prose or author")
     )
   }
+  return(out)
+}
+
+# The problems of the key designs of the entry `e`, a YAML map.
+# `all_designs` holds the key designs of the file.
+guideline_entry_design_problems <- function(e, all_designs) {
+  out <- character(0)
   if ("designs" %in% names(e) && is.null(e[["designs"]])) {
     out <- c(out, "the key designs is present but empty")
   }

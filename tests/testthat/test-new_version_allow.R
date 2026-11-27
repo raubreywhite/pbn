@@ -448,3 +448,18 @@ test_that("allow_edit_ok() is FALSE when a line outside allow that names v01_fun
   bad[5] <- "    limit: 900 # v01_functions/big.R is long"
   expect_false(edit_ok(x, bad))
 })
+
+test_that("flow_list_with() adds each matching entry with the quote of its match, and leaves a list it cannot read as it was", {
+  add <- data.frame(written = c("x", "y", "z"), new = c("X", "Y", "Z"))
+  expect_identical(
+    flow_list_with("a: [x, 'y', \"z\"] # c", 4, add),
+    list(line = "a: [x, 'y', \"z\", X, 'Y', \"Z\"] # c", used = c(TRUE, TRUE, TRUE))
+  )
+  for (line in c("a: [x, y", "a: [x, {y: 1}]", "a: []", "a: [q]", "a: [x]  junk")) {
+    expect_identical(
+      flow_list_with(line, 4, add),
+      list(line = line, used = c(FALSE, FALSE, FALSE)),
+      info = line
+    )
+  }
+})

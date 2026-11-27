@@ -624,3 +624,30 @@ test_that("the NAMESPACE file exports make_checklists", {
   expect_true("make_checklists" %in% pbn_exports)
   expect_identical(new_exports[["make_checklists"]], "house_2026_11_26")
 })
+
+test_that("tagged_strings() stops on a blocks.R without a list blocks, and skips a plain block and a pbn::block() without a wanted item", {
+  home <- withr::local_tempdir()
+  dir.create(file.path(home, "v01_functions"))
+  file <- file.path(home, "v01_functions", "blocks.R")
+  items <- data.frame(id = "s", item = "1", kind = "result")
+  writeLines("blocks <- list(", file)
+  expect_error(
+    tagged_strings(home, "v01", items),
+    paste0(
+      "pbn::make_checklists() cannot read the list blocks of ",
+      file,
+      ". It needs one assignment blocks <- list(...) in a file that parses."
+    ),
+    fixed = TRUE
+  )
+  writeLines(
+    c(
+      "blocks <- list(",
+      "  \"A\" = function(results) 1,",
+      "  \"B\" = pbn::block(function(results) data.frame(p = 0.5), format = \"p\", items = c(\"t:9\"))",
+      ")"
+    ),
+    file
+  )
+  expect_identical(tagged_strings(home, "v01", items), list())
+})

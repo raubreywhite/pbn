@@ -862,3 +862,11 @@ test_that("cfg_names() finds CFG$x and CFG[[\"x\"]], and gives NA for any other 
   expect_identical(cfg_names(function() get("CFG")$x), NA_character_)
   expect_identical(cfg_names(function(d) d), character(0))
 })
+
+test_that("cfg_names() skips o@CFG, takes CFG$\"a b\" and the first element of CFG$a$b, and reads the defaults of the arguments", {
+  expect_identical(cfg_names(function(o) o@CFG), character(0))
+  expect_identical(cfg_names(function() CFG$"a b"), "a b")
+  expect_identical(cfg_names(function() CFG$a$b), "a")
+  expect_identical(cfg_names(function(x = CFG[["k"]]) x), "k")
+  expect_identical(cfg_names(function() "CFG"), NA_character_)
+})

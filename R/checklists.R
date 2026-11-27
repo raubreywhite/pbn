@@ -337,6 +337,34 @@ tagged_strings <- function(home, version, items) {
   if (length(wanted) == 0 || !file.exists(file)) {
     return(list())
   }
+  elements <- checklist_block_elements(file)
+  out <- list()
+  from <- NULL
+  for (name in names(elements)) {
+    e <- elements[[name]]
+    tags <- checklist_block_tags(name, e, wanted, file)
+    if (length(tags) == 0) {
+      next
+    }
+    # The values and the formatters are read once, at the first block that
+    # names a wanted item.
+    if (is.null(from)) {
+      from <- list(
+        saved = read_real_blocks(home, version),
+        env = formatters_of(home, version)
+      )
+    }
+    value <- checklist_block_value(name, e, from, home, version)
+    for (tag in tags) {
+      out[[tag]] <- c(out[[tag]], formatted_strings(value))
+    }
+  }
+  return(out)
+}
+
+# The elements of the list blocks of the file `file`, read without running
+# it, see blocks_elements_of_file(). Stops when the file has no such list.
+checklist_block_elements <- function(file) {
   elements <- blocks_elements_of_file(file)
   if (is.null(elements)) {
     stop(
@@ -346,48 +374,49 @@ tagged_strings <- function(home, version, items) {
       call. = FALSE
     )
   }
-  out <- list()
-  saved <- NULL
-  env <- NULL
-  for (name in names(elements)) {
-    e <- elements[[name]]
-    if (!e$is_block) {
-      next
-    }
-    if (is.null(e$items) || !is_formatter_name(e$format)) {
-      stop(
-        "The block \"",
-        name,
-        "\" of ",
-        file,
-        " needs a string format and a literal items = c(\"<id>:<item>\", ",
-        "...), so that pbn::make_checklists() reads its items.",
-        call. = FALSE
-      )
-    }
-    tags <- intersect(e$items, wanted)
-    if (length(tags) == 0) {
-      next
-    }
-    if (is.null(saved)) {
-      saved <- read_real_blocks(home, version)
-      env <- formatters_of(home, version)
-    }
-    if (!name %in% names(saved)) {
-      stop(
-        blocks_source_file(version, home),
-        " holds no block \"",
-        name,
-        "\". Write it again with pbn::update_blocks().",
-        call. = FALSE
-      )
-    }
-    value <- format_block(name, list(format = e$format), saved[[name]], env)
-    for (tag in tags) {
-      out[[tag]] <- c(out[[tag]], formatted_strings(value))
-    }
+  return(elements)
+}
+
+# The tags of `wanted` that the element `e` of the file `file`, the block
+# `name`, names. Nothing for an element that is not a pbn::block(). Stops on
+# a pbn::block() without a string format or a literal items.
+checklist_block_tags <- function(name, e, wanted, file) {
+  if (!e$is_block) {
+    return(character(0))
   }
-  return(out)
+  if (is.null(e$items) || !is_formatter_name(e$format)) {
+    stop(
+      "The block \"",
+      name,
+      "\" of ",
+      file,
+      " needs a string format and a literal items = c(\"<id>:<item>\", ",
+      "...), so that pbn::make_checklists() reads its items.",
+      call. = FALSE
+    )
+  }
+  return(intersect(e$items, wanted))
+}
+
+# The formatted value of the block `name`, the element `e`. `from` is a
+# list with `saved`, the raw values, and `env`, the project formatters.
+# Stops when the raw values of `version` in `home` hold no such block.
+checklist_block_value <- function(name, e, from, home, version) {
+  if (!name %in% names(from$saved)) {
+    stop(
+      blocks_source_file(version, home),
+      " holds no block \"",
+      name,
+      "\". Write it again with pbn::update_blocks().",
+      call. = FALSE
+    )
+  }
+  return(format_block(
+    name,
+    list(format = e$format),
+    from$saved[[name]],
+    from$env
+  ))
 }
 
 # The raw values of the blocks of `version` in `home`, from

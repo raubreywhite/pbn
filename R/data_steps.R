@@ -192,32 +192,67 @@ cfg_names <- function(f) {
 # cfg_names() of the code `x`, a call, a pairlist of arguments, a symbol or a
 # constant.
 cfg_names_code <- function(x) {
-  if (is.symbol(x)) {
-    return(if (identical(as.character(x), "CFG")) NA_character_ else character(0))
-  }
-  if (is.character(x)) {
-    return(if ("CFG" %in% x) NA_character_ else character(0))
+  if (is.symbol(x) || is.character(x)) {
+    return(cfg_names_leaf(x))
   }
   if (!is.call(x) && !is.pairlist(x)) {
     return(character(0))
   }
-  if (is.call(x) && length(x) == 3 && is.symbol(x[[2]]) &&
-    identical(as.character(x[[2]]), "CFG") &&
-    (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("[[")))) {
-    el <- x[[3]]
-    if (is.symbol(el) && identical(x[[1]], as.name("$"))) {
-      return(as.character(el))
-    }
-    if (is.character(el) && length(el) == 1) {
-      return(el)
-    }
-    return(NA_character_)
+  if (is_cfg_element(x)) {
+    return(cfg_element_name(x))
   }
   # The name after $ or @, as in d$CFG, is no use of CFG.
-  if (is.call(x) && length(x) == 3 &&
-    (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("@")))) {
+  if (is_member_access(x)) {
     return(cfg_names_code(x[[2]]))
   }
+  return(cfg_names_parts(x))
+}
+
+# cfg_names() of the symbol or the strings `x`: NA when it is CFG or holds
+# "CFG", and else nothing.
+cfg_names_leaf <- function(x) {
+  if (is.symbol(x)) {
+    return(if (identical(as.character(x), "CFG")) NA_character_ else character(0))
+  }
+  return(if ("CFG" %in% x) NA_character_ else character(0))
+}
+
+# TRUE when the code `x` is CFG$<element> or CFG[[<element>]].
+is_cfg_element <- function(x) {
+  return(
+    is.call(x) &&
+      length(x) == 3 &&
+      is.symbol(x[[2]]) &&
+      identical(as.character(x[[2]]), "CFG") &&
+      (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("[[")))
+  )
+}
+
+# The name of the element of the code `x`, CFG$<element> or
+# CFG[[<element>]]: the symbol after $ or one string after $ or [[. NA for
+# any other element, such as CFG[[k]].
+cfg_element_name <- function(x) {
+  el <- x[[3]]
+  if (is.symbol(el) && identical(x[[1]], as.name("$"))) {
+    return(as.character(el))
+  }
+  if (is.character(el) && length(el) == 1) {
+    return(el)
+  }
+  return(NA_character_)
+}
+
+# TRUE when the code `x` is a call of $ or @ with two arguments.
+is_member_access <- function(x) {
+  return(
+    is.call(x) &&
+      length(x) == 3 &&
+      (identical(x[[1]], as.name("$")) || identical(x[[1]], as.name("@")))
+  )
+}
+
+# cfg_names() of each part of the call or the pairlist `x`, in order.
+cfg_names_parts <- function(x) {
   out <- character(0)
   for (i in seq_along(x)) {
     # The empty symbol of an argument without a default cannot be passed on.

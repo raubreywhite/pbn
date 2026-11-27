@@ -1157,3 +1157,126 @@ test_that("under house_2026_11_25 the same projects give no row of manual_has_su
   }
   expect_false(any(supplement_rules %in% names(read_house_set("house_2026_11_25"))))
 })
+
+# An entry of items with the item id `item`, the kind `kind` and the other
+# keys `...`.
+schema_entry <- function(item, kind = "result", ...) {
+  return(list(
+    item = item,
+    section = "S",
+    topic = "T",
+    kind = kind,
+    text = "x",
+    ...
+  ))
+}
+
+test_that("guideline_top_problems() lists the problems of the top-level keys in the order of the schema checks", {
+  bad <- list(
+    id = "Bad_ID",
+    extra = 1,
+    version = 2,
+    citation = NULL,
+    designs = list("a", 1),
+    design = "z",
+    items = list(a = 1)
+  )
+  expect_identical(
+    guideline_top_problems(bad),
+    c(
+      "the key extra is not a key of the schema",
+      "the key title is missing or not one string",
+      "the id Bad_ID has a character other than a-z, 0-9 and -",
+      "the key citation is present but empty",
+      "the key version is not one string",
+      "the key designs is not a list of strings",
+      "the key design is not one of the key designs",
+      "the key items is not a YAML sequence of entries"
+    )
+  )
+  expect_identical(
+    guideline_top_problems(list(id = "ok", title = "T", items = list())),
+    "the key items is missing or empty"
+  )
+  ok <- list(
+    id = "ok",
+    title = "T",
+    designs = list("a", "b"),
+    design = "a",
+    items = list(schema_entry("1"))
+  )
+  expect_identical(guideline_top_problems(ok), character(0))
+})
+
+test_that("guideline_entries() labels each problem of an entry, keeps the valid entries of the design, and finds an item id that comes twice", {
+  y <- list(
+    id = "ok",
+    title = "T",
+    designs = list("a", "b"),
+    items = list(
+      schema_entry("1"),
+      schema_entry("2", kind = "maybe", foo = 1),
+      "scalar",
+      schema_entry("4", designs = list("c")),
+      schema_entry("5", designs = NULL),
+      schema_entry("6", designs = "b"),
+      schema_entry("1"),
+      schema_entry("7", designs = list("b"))
+    )
+  )
+  problems <- c(
+    "item 2: the key foo is not a key of an item",
+    "item 2: the kind maybe is not result, prose or author",
+    "entry 3: it is not a YAML map",
+    "item 4: the key designs holds a value that the file does not",
+    "item 5: the key designs is present but empty",
+    "item 6: the key designs is not a list of strings"
+  )
+  rows <- function(designs) {
+    n <- length(designs)
+    return(data.frame(
+      item = c("1", "1", "7")[seq_len(n)],
+      section = rep("S", n),
+      topic = rep("T", n),
+      kind = rep("result", n),
+      text = rep("x", n),
+      designs = designs
+    ))
+  }
+  expect_identical(
+    guideline_entries(y),
+    list(
+      problems = c(
+        problems,
+        "item 1: the item id comes more than once for the design a",
+        "item 1: the item id comes more than once for the design b"
+      ),
+      items = rows(c("a, b", "a, b", "b"))
+    )
+  )
+  y$design <- "a"
+  expect_identical(
+    guideline_entries(y),
+    list(
+      problems = c(
+        problems,
+        "item 1: the item id comes more than once for the design a"
+      ),
+      items = rows(c("a", "a"))
+    )
+  )
+  none <- guideline_entries(list(
+    id = "ok",
+    title = "T",
+    items = list(schema_entry("1", designs = list("a")))
+  ))
+  expect_identical(
+    none$problems,
+    "item 1: it has the key designs, and the file has none"
+  )
+  expect_identical(nrow(none$items), 0L)
+  expect_identical(
+    names(none$items),
+    c("item", "section", "topic", "kind", "text", "designs")
+  )
+})

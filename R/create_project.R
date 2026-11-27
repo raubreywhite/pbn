@@ -802,32 +802,65 @@ flow_list_with <- function(line, at, add) {
   if (substr(line, at, at) != "[") {
     return(same)
   }
-  skip_space <- function(pos) {
-    rest <- substring(line, pos)
-    return(pos + attr(regexpr("^[[:space:]]*", rest), "match.length"))
+  flow <- flow_list_items(line, at)
+  if (is.null(flow)) {
+    return(same)
   }
-  pos <- skip_space(at + 1)
+  got <- flow_list_new(flow$items, add)
+  if (length(got$new) == 0) {
+    return(same)
+  }
+  line <- paste0(
+    substr(line, 1, flow$last_end),
+    paste0(", ", got$new, collapse = ""),
+    substring(line, flow$last_end + 1)
+  )
+  return(list(line = line, used = got$used))
+}
+
+# The position of the first character at or after `pos` in `line` that is
+# not white space.
+skip_yaml_space <- function(line, pos) {
+  rest <- substring(line, pos)
+  return(pos + attr(regexpr("^[[:space:]]*", rest), "match.length"))
+}
+
+# The scalars of the flow list that starts with the "[" at the character
+# `at` of `line`: a list with `items`, each a value of yaml_scalar(), and
+# `last_end`, the character where the last scalar ends. NULL when the list
+# does not end on the line, holds a list or a map, or has more than a
+# comment after it.
+flow_list_items <- function(line, at) {
+  pos <- skip_yaml_space(line, at + 1)
   items <- list()
   last_end <- NA
   while (!startsWith(substring(line, pos), "]")) {
     v <- yaml_scalar(substring(line, pos), flow = TRUE)
     if (is.null(v)) {
-      return(same)
+      return(NULL)
     }
     items <- c(items, list(v))
     pos <- pos + v$len
     last_end <- pos - 1
-    pos <- skip_space(pos)
+    pos <- skip_yaml_space(line, pos)
     if (startsWith(substring(line, pos), ",")) {
-      pos <- skip_space(pos + 1)
+      pos <- skip_yaml_space(line, pos + 1)
     } else if (!startsWith(substring(line, pos), "]")) {
-      return(same)
+      return(NULL)
     }
   }
   if (!grepl("^\\][[:space:]]*(#.*)?$", substring(line, pos))) {
-    return(same)
+    return(NULL)
   }
-  used <- same$used
+  return(list(items = items, last_end = last_end))
+}
+
+# The entries to add after the scalars `items` of a flow list: a list with
+# `new`, each entry of `add$new` whose `add$written` is a scalar of the
+# list, quoted as that scalar, and `used`, TRUE for each row of `add` that
+# it took.
+flow_list_new <- function(items, add) {
+  used <- rep(FALSE, nrow(add))
   new <- character(0)
   for (v in items) {
     j <- which(add$written == v$value & !used)[1]
@@ -836,15 +869,7 @@ flow_list_with <- function(line, at, add) {
       used[j] <- TRUE
     }
   }
-  if (length(new) == 0) {
-    return(same)
-  }
-  line <- paste0(
-    substr(line, 1, last_end),
-    paste0(", ", new, collapse = ""),
-    substring(line, last_end + 1)
-  )
-  return(list(line = line, used = used))
+  return(list(new = new, used = used))
 }
 
 # The scalar at the start of the text `text` of a line of YAML: a list with

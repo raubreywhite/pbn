@@ -43,8 +43,11 @@ After \code{\link[=initialize_project]{initialize_project()}} of \code{version} 
 \verb{<version>_functions/blocks.R} without running it. It then needs a call
 \code{pbn::block()} with a string \code{format} for the block \code{name}, and it
 evaluates only the function assignments of
-\verb{<version>_functions/formatters.R}. The default \code{home} is then the
-working folder. The default \code{version} needs \code{\link[=initialize_project]{initialize_project()}}.
+\verb{<version>_functions/formatters.R}. Their parent environment holds the
+top-level assignments of the other \code{.R} files of the functions folder,
+such as \code{CFG}, in the order that \code{\link[=initialize_project]{initialize_project()}} sources them.
+A top-level call that is not an assignment, such as \code{cat()}, does not
+run. The default \code{home} is then the working folder. The default \code{version} needs \code{\link[=initialize_project]{initialize_project()}}.
 
 \code{txt()} stops when the block, the row, the column or \code{blocks.qs2} is
 missing. It also stops when the block is not a \code{pbn::block()}, or when

@@ -54,7 +54,9 @@
 #'
 #' A project formatter is a function in `<version>_functions/formatters.R`.
 #' It wins over a house formatter of the same name. That file MUST hold only
-#' assignments of a name to `function(...)`. pbn leaves it out of
+#' assignments of a name to `function(...)`. A project formatter sees `CFG`
+#' and the functions of the functions folder, in [show_block()], in [txt()]
+#' and in the file of [to_one_file()]. pbn leaves it out of
 #' `manifest$source_md5` under the same conditions as `blocks.R`, see
 #' [save_results()]. So a change of a formatter keeps the results current.
 #' The rule `blocks_list` of [check_project()] fails a use of a name of
@@ -114,8 +116,11 @@ block <- function(fn, format, items = character(0)) {
 #' `<version>_functions/blocks.R` without running it. It then needs a call
 #' `pbn::block()` with a string `format` for the block `name`, and it
 #' evaluates only the function assignments of
-#' `<version>_functions/formatters.R`. The default `home` is then the
-#' working folder. The default `version` needs [initialize_project()].
+#' `<version>_functions/formatters.R`. Their parent environment holds the
+#' top-level assignments of the other `.R` files of the functions folder,
+#' such as `CFG`, in the order that [initialize_project()] sources them.
+#' A top-level call that is not an assignment, such as `cat()`, does not
+#' run. The default `home` is then the working folder. The default `version` needs [initialize_project()].
 #'
 #' `txt()` stops when the block, the row, the column or `blocks.qs2` is
 #' missing. It also stops when the block is not a `pbn::block()`, or when
@@ -277,30 +282,47 @@ formatters_file <- function(version) {
 
 # The environment of the project formatters for show_block() and txt(). In
 # the run of the file of to_one_file() there is no functions folder, so it
-# is the environment `env` of the sourced code. Else it is a new
+# is the environment `env` of the sourced code, where the file evaluates
+# formatters.R with CFG and the functions folder. Else it is a new
 # environment with the functions of formatters_file() of `version` in
 # `home`, read at this call, so that a change of a formatter shows without
-# a new initialize_project(). The rule blocks_list makes the two the same
-# for a project that passes it.
+# a new initialize_project(). Its parent is `env`, the environment that
+# initialize_project() sourced the functions folder into, or without a
+# session the value of functions_env(). So a formatter sees CFG and the
+# functions folder in every mode. The rule blocks_list makes the modes the
+# same for a project that passes it.
 formatters_of <- function(home, version, env = NULL, generated = FALSE) {
   if (generated) {
     return(env)
   }
-  return(formatter_env(file.path(home, formatters_file(version))))
+  if (!is.environment(env)) {
+    env <- functions_env(home, version)
+  }
+  return(formatter_env(file.path(home, formatters_file(version)), env))
 }
 
-# A new environment with the functions that the file `file` assigns at its
-# top level, evaluated there and in no other place. Its parent is the base
-# environment, so a formatter names the package of each other function.
-# Empty when the file does not exist. Stops when the file does not parse or
-# holds a top-level expression that is not an assignment of a name to
-# function(...).
-formatter_env <- function(file) {
-  env <- new.env(parent = baseenv())
-  if (!file.exists(file)) {
-    return(env)
+# A new environment, whose parent is the global environment, with CFG and
+# the functions of the functions folder of `version` in `home`, for txt()
+# without a session. It evaluates each .R file of the folder in the order of
+# org, as initialize_project() sources them, without blocks.R and
+# formatters.R. Of each file it evaluates the top-level assignments with <-
+# or = only, so a top-level call such as cat() or library() does not run.
+functions_env <- function(home, version) {
+  env <- new.env(parent = globalenv())
+  skip <- c(blocks_file(version), formatters_file(version))
+  for (f in setdiff(sourcing_order(home, version), skip)) {
+    for (e in parse_or_stop(file.path(home, f))) {
+      if (is.call(e) && as.character(e[[1]])[1] %in% c("<-", "=")) {
+        eval(e, envir = env)
+      }
+    }
   }
-  exprs <- tryCatch(
+  return(env)
+}
+
+# The expressions of the R file `file`, or a stop that names the file.
+parse_or_stop <- function(file) {
+  return(tryCatch(
     parse(file, keep.source = FALSE, encoding = "UTF-8"),
     error = function(e) {
       stop(
@@ -310,8 +332,20 @@ formatter_env <- function(file) {
         call. = FALSE
       )
     }
-  )
-  for (e in exprs) {
+  ))
+}
+
+# A new environment with the functions that the file `file` assigns at its
+# top level, evaluated there and in no other place. Its parent is `parent`,
+# the environment with CFG and the functions folder. Empty when the file does
+# not exist. Stops when the file does not parse or holds a top-level
+# expression that is not an assignment of a name to function(...).
+formatter_env <- function(file, parent) {
+  env <- new.env(parent = parent)
+  if (!file.exists(file)) {
+    return(env)
+  }
+  for (e in parse_or_stop(file)) {
     if (!is_function_assignment(e) || !as.character(e[[1]]) %in% c("<-", "=")) {
       stop(
         file,

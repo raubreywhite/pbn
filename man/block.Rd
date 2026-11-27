@@ -68,7 +68,9 @@ in a column that the formatter needs gives \code{NA}.
 
 A project formatter is a function in \verb{<version>_functions/formatters.R}.
 It wins over a house formatter of the same name. That file MUST hold only
-assignments of a name to \verb{function(...)}. pbn leaves it out of
+assignments of a name to \verb{function(...)}. A project formatter sees \code{CFG}
+and the functions of the functions folder, in \code{\link[=show_block]{show_block()}}, in \code{\link[=txt]{txt()}}
+and in the file of \code{\link[=to_one_file]{to_one_file()}}. pbn leaves it out of
 \code{manifest$source_md5} under the same conditions as \code{blocks.R}, see
 \code{\link[=save_results]{save_results()}}. So a change of a formatter keeps the results current.
 The rule \code{blocks_list} of \code{\link[=check_project]{check_project()}} fails a use of a name of

@@ -261,6 +261,92 @@ test_that("txt() returns the project formatter's string when formatters.R define
   })
 })
 
+# A block whose project formatter reads CFG and calls double_it() of the
+# functions folder of local_project().
+cfg_block <- c(
+  "  \"Outcome\" = pbn::block(",
+  "    function(results) data.frame(n = 3),",
+  "    format = \"cfg_n\"",
+  "  )"
+)
+# The value of `expr`, or the message of its error, so that an assertion on
+# it fails, and does not stop the test.
+value_or_error <- function(expr) {
+  return(tryCatch(expr, error = function(e) return(conditionMessage(e))))
+}
+
+cfg_formatter <- c(
+  "cfg_n <- function(x) {",
+  "  return(paste0(CFG$outcomes[1], \" \", double_it(x$n)))",
+  "}"
+)
+
+test_that("a project formatter that reads CFG and a function of the functions folder gives one string through txt() from the files, show_block() and the file of to_one_file()", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  write_new_blocks(p, cfg_block, cfg_formatter)
+  run <- save_run(p, only = c("real", "known"))
+  expect_false(inherits(run$err, "error"))
+  # Without a session, txt() reads blocks.R and formatters.R as files.
+  local_clean_state()
+  expect_identical(
+    value_or_error(txt("Outcome", version = "v01", home = p$home)),
+    "y 6"
+  )
+  # After initialize_project().
+  init(p)
+  out <- value_or_error(utils::capture.output(show_block("Outcome")))
+  expect_identical(sum(trimws(out) == "y 6"), 1L, info = paste(out, collapse = "\n"))
+  # In the run of the file of to_one_file(), on a copy of the data.
+  server <- file.path(p$root, "server")
+  data <- file.path(p$root, "server_data")
+  dir.create(server)
+  dir.create(data)
+  file.copy(
+    list.files(p$data_default, full.names = TRUE),
+    data,
+    copy.date = TRUE
+  )
+  init(p, one_file_home = server, one_file_folders = c(main = data))
+  utils::capture.output(to_one_file())
+  got <- file.path(p$root, "one_file_txt.txt")
+  script <- file.path(p$root, "run_one_file.R")
+  writeLines(
+    c(
+      readLines(file.path(p$home, "v01_one_file.R")),
+      paste0("writeLines(pbn::txt(\"Outcome\"), ", encodeString(got, quote = "\""), ")")
+    ),
+    script
+  )
+  res <- callr::rscript(
+    script,
+    wd = server,
+    show = FALSE,
+    stderr = "2>&1",
+    fail_on_status = FALSE
+  )
+  expect_identical(res$status, 0L, info = res$stdout)
+  expect_identical(readLines(got), "y 6")
+})
+
+test_that("txt() from the files evaluates only the top-level assignments of the functions folder, so a top-level call there does not run", {
+  p <- local_project()
+  write_new_blocks(p, cfg_block, cfg_formatter)
+  run <- save_run(p, only = c("real", "known"))
+  expect_false(inherits(run$err, "error"))
+  write_lines(
+    p$home,
+    "v01_functions/side.R",
+    c("side_value <- 1", "cat(\"SIDE\\n\")")
+  )
+  local_clean_state()
+  out <- utils::capture.output(
+    value <- value_or_error(txt("Outcome", version = "v01", home = p$home))
+  )
+  expect_identical(out, character(0))
+  expect_identical(value, "y 6")
+})
+
 test_that("txt() formats at each call, and stops on a missing block, row, column or blocks.qs2", {
   p <- local_project()
   write_new_blocks(

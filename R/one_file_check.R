@@ -75,8 +75,14 @@
 #' The comparison also leaves `<version>_functions/blocks.R` and
 #' `<version>_functions/formatters.R` out of `source_md5`, also for results
 #' of an older pbn that hold them. Every other
-#' element MUST be identical, also `source_md5`, `data_files` and
-#' `cache_key`. So the results do not depend on the place of the project
+#' element MUST be the same, also `source_md5`, `data_files` and
+#' `cache_key`. Two doubles are the same when they differ by at most
+#' `sqrt(.Machine$double.eps)`, about 1.5e-8, of the larger absolute value.
+#' That is the default tolerance of [all.equal()]. Below that size, the limit
+#' is that absolute difference. The same model in two R sessions MAY differ
+#' in the last digits, and no printed number shows it. Every other value
+#' MUST be identical, also a double with a class, such as a `Date` or a
+#' `POSIXct`. The attributes MUST be identical too, in any order. So the results do not depend on the place of the project
 #' and of its folders. The copies keep the modification times of the files,
 #' with `file.copy(copy.date = TRUE)`. That is why `data_files` and the cache
 #' key agree. pbn reads no content of a data file, so a copy with new times
@@ -475,10 +481,19 @@ comparable_results <- function(x) {
   return(x)
 }
 
+# The relative tolerance of first_difference() for doubles, that of
+# all.equal(). The same computation in two R sessions MAY differ in the last
+# digits, for example through the order of a sum.
+one_file_tolerance <- sqrt(.Machine$double.eps)
+
 # The first place where `a`, of the project, and `b`, of the file of
 # to_one_file(), differ, as text that starts with the path `path`, or NULL
-# when they are identical. Lists and data.frames are compared element by
-# element, and an atomic vector value by value.
+# when they are the same. Lists and data.frames are compared element by
+# element, and an atomic vector value by value. Two doubles are the same when
+# they differ by at most one_file_tolerance of the larger absolute value, or
+# by at most one_file_tolerance when that value is below one_file_tolerance.
+# Every other value MUST be identical, also a double with a class, and so
+# MUST the attributes.
 first_difference <- function(a, b, path) {
   if (identical(a, b)) {
     return(NULL)
@@ -496,8 +511,8 @@ first_difference <- function(a, b, path) {
   return(paste0(path, " differs in its type or its length."))
 }
 
-# The first difference of the lists `a` and `b`, which differ, element by
-# element, as first_difference() gives it.
+# The first difference of the lists `a` and `b`, which are not identical,
+# element by element, as first_difference() gives it.
 list_difference <- function(a, b, path) {
   if (!identical(names(a), names(b)) || length(a) != length(b)) {
     return(paste0(path, " has other names or another length."))
@@ -514,19 +529,28 @@ list_difference <- function(a, b, path) {
       return(found)
     }
   }
-  return(paste0(path, " has other attributes."))
+  return(attributes_difference(a, b, path))
 }
 
 # The first value that differs in the atomic vectors `a` and `b` of the same
-# class and length, which differ, as first_difference() gives it.
+# class and length, which are not identical, as first_difference() gives it.
 value_difference <- function(a, b, path) {
   same <- vapply(
     seq_along(a),
     function(i) return(identical(a[i], b[i])),
     logical(1)
   )
+  # A double with a class, such as a Date or a POSIXct, MUST be identical.
+  if (is.double(a) && is.double(b) && !is.object(a)) {
+    x <- as.vector(a)
+    y <- as.vector(b)
+    ok <- is.finite(x) & is.finite(y)
+    size <- pmax(abs(x), abs(y))
+    limit <- one_file_tolerance * ifelse(size < one_file_tolerance, 1, size)
+    same <- same | (ok & abs(x - y) <= limit)
+  }
   if (all(same)) {
-    return(paste0(path, " has other attributes."))
+    return(attributes_difference(a, b, path))
   }
   i <- which(!same)[1]
   return(paste0(
@@ -539,4 +563,18 @@ value_difference <- function(a, b, path) {
     format(b[i], digits = 15),
     " in the file of pbn::to_one_file()."
   ))
+}
+
+# NULL when the attributes of `a` and `b` are identical, or else the text
+# that they differ. As for identical(), the order of the attributes does not
+# count.
+attributes_difference <- function(a, b, path) {
+  x <- attributes(a)
+  y <- attributes(b)
+  if (!is.null(x)) x <- x[order(names(x), method = "radix")]
+  if (!is.null(y)) y <- y[order(names(y), method = "radix")]
+  if (identical(x, y)) {
+    return(NULL)
+  }
+  return(paste0(path, " has other attributes."))
 }

@@ -91,8 +91,14 @@ checks it on the real results of the project.
 The comparison also leaves \verb{<version>_functions/blocks.R} and
 \verb{<version>_functions/formatters.R} out of \code{source_md5}, also for results
 of an older pbn that hold them. Every other
-element MUST be identical, also \code{source_md5}, \code{data_files} and
-\code{cache_key}. So the results do not depend on the place of the project
+element MUST be the same, also \code{source_md5}, \code{data_files} and
+\code{cache_key}. Two doubles are the same when they differ by at most
+\code{sqrt(.Machine$double.eps)}, about 1.5e-8, of the larger absolute value.
+That is the default tolerance of \code{\link[=all.equal]{all.equal()}}. Below that size, the limit
+is that absolute difference. The same model in two R sessions MAY differ
+in the last digits, and no printed number shows it. Every other value
+MUST be identical, also a double with a class, such as a \code{Date} or a
+\code{POSIXct}. The attributes MUST be identical too, in any order. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,
 with \code{file.copy(copy.date = TRUE)}. That is why \code{data_files} and the cache
 key agree. pbn reads no content of a data file, so a copy with new times

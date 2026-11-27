@@ -54,6 +54,7 @@ reference:
     - read_results
     - check_results
     - render_run
+    - update_blocks
 
 - title: "Checks of fake scenarios"
   contents:
@@ -64,6 +65,9 @@ reference:
   contents:
     - make_outputs
     - stamp_fake
+    - block
+    - txt
+    - make_checklists
 
 - title: "Running on an air-gapped server"
   contents:

@@ -224,7 +224,8 @@ md_lines <- function(file) {
 # `heading`, that text for a paragraph whose style starts with Heading and
 # NA for the others. Each pattern has (?s), so that `.` matches a newline:
 # the XML of a paragraph MAY span lines, as in a pretty-printed
-# document.xml.
+# document.xml. The text of a tracked deletion <w:del> and of the old place
+# of moved text <w:moveFrom> is not read, also when it is in <w:t>.
 docx_lines <- function(file) {
   tmp <- tempfile("pbn_docx")
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -239,6 +240,13 @@ docx_lines <- function(file) {
   xml <- paste(
     readLines(xml_file, warn = FALSE, encoding = "UTF-8"),
     collapse = "\n"
+  )
+  # A self-closing <w:del/> marks a deleted paragraph mark, and holds no text.
+  xml <- gsub(
+    "(?s)<w:(del|moveFrom)(\\s[^>]*[^/>])?>.*?</w:\\1>",
+    "",
+    xml,
+    perl = TRUE
   )
   paragraphs <- regmatches(
     xml,

@@ -411,12 +411,16 @@
 #'   the names only. A citation is "Figure 1", "Fig. 1", "Table 1", "Figure
 #'   S1" or "Supplementary Figure 1", which is Figure S1. A range such as
 #'   "Tables 1-3" cites each number of it. A list needs the plural word, such
-#'   as "Figures 1 and 2". The text of a tracked deletion of a `.docx` file does not count. There are
-#'   four series: the figures, the tables, the supplementary figures and the
-#'   supplementary tables. In each series, the first citations MUST come in
-#'   the order 1, 2, 3, with no gap. A paragraph that starts with "Figure 2."
-#'   or "Table S1:" is a caption. The text MUST cite each captioned item
-#'   outside its own caption.
+#'   as "Figures 1 and 2". A number after a comma needs another separator, a
+#'   closing mark or the end of the text after it. So "Figures 1 and 2, 25
+#'   persons" cites Figures 1 and 2 only. The text of a tracked deletion and
+#'   of the old place of moved text in a `.docx` file does not count. There
+#'   are four series: the figures, the tables, the supplementary figures and
+#'   the supplementary tables. In each series, the first citations MUST come
+#'   in the order 1, 2, 3, with no gap. A paragraph that starts with "Figure
+#'   2." or "Table S1:" is a caption. So is "**Figure 2.**" in Markdown
+#'   emphasis, and "![Figure 2. The gap](fig.png)", the text of an image. The
+#'   text MUST cite each captioned item outside its own caption.
 #'
 #'   The numbered items of the outputs are the figure files, the sheets
 #'   `tab_` of `tables.xlsx` and the `_external.txt` items of

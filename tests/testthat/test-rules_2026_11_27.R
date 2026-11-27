@@ -442,6 +442,25 @@ test_that("a citation in a tracked deletion does not count, a citation in a trac
   )
   write_docx_body(p$home, main, deleted)
   expect_identical(display_rows(p$home), pass_match())
+  # The text of a deletion and of moved text in <w:t> does not count either.
+  # A self-closing <w:del/> of a deleted paragraph mark holds no text, so the
+  # text after it counts.
+  in_t <- paste0(
+    "<w:p><w:pPr><w:rPr><w:del w:id=\"3\" w:author=\"A\"/></w:rPr></w:pPr>",
+    "<w:r><w:t xml:space=\"preserve\">See </w:t></w:r>",
+    "<w:del w:id=\"1\" w:author=\"A\"><w:r>",
+    "<w:t xml:space=\"preserve\">Figure 2 and </w:t></w:r></w:del>",
+    "<w:moveFrom w:id=\"4\" w:author=\"A\"><w:r>",
+    "<w:t xml:space=\"preserve\">Figure 2, </w:t></w:r></w:moveFrom>",
+    "<w:r><w:t xml:space=\"preserve\">Figure 1, then Figure 2</w:t></w:r>",
+    "</w:p>"
+  )
+  write_docx_body(p$home, main, in_t)
+  expect_identical(
+    docx_lines(file.path(p$home, main))$text,
+    "See Figure 1, then Figure 2"
+  )
+  expect_identical(display_rows(p$home), pass_match())
   # Without the deletion, Figure 2 comes first.
   write_docx_body(
     p$home,
@@ -584,6 +603,65 @@ test_that("a list needs the plural word, and a number of a list with % or a deci
     display_cited_keys("Figure 1-3, Figs. 4 & 5, Tables 1, 2.5 and 3"),
     c("fig_1", "fig_2", "fig_3", "fig_4", "fig_5", "tab_1")
   )
+  # A number after a comma with prose after it is not a citation.
+  expect_identical(
+    display_cited_keys("Figures 1 and 2, 25 participants were"),
+    c("fig_1", "fig_2")
+  )
+  expect_identical(
+    display_cited_keys(
+      "Figures 1, 2 and 3. Figures 4, 5, 6) Figures S1, S2 and S4. Tables 1, 2."
+    ),
+    c(
+      "fig_1",
+      "fig_2",
+      "fig_3",
+      "fig_4",
+      "fig_5",
+      "fig_6",
+      "fig_s1",
+      "fig_s2",
+      "fig_s4",
+      "tab_1",
+      "tab_2"
+    )
+  )
+})
+
+test_that("a caption in Markdown emphasis or in the text of an image is a caption", {
+  for (x in c(
+    "**Figure 1.** The gap.",
+    "*Figure 1.* The gap.",
+    "__Figure 1__. The gap.",
+    "![Figure 1. The gap](fig_1_gap.png)"
+  )) {
+    expect_identical(display_caption_key(x), "fig_1", info = x)
+  }
+  expect_identical(
+    display_caption_key("Figure 1 shows the gap."),
+    NA_character_
+  )
+
+  p <- local_project_27()
+  write_real_items(p$home, figures = c("fig_1", "fig_2"))
+  paper <- "manuscript/built/v01/paper.md"
+  for (caption in c(
+    "**Figure 2.** The centiles.",
+    "![Figure 2. The centiles](fig_2_x.png)"
+  )) {
+    write_paper(p$home, c("Figure 1 shows the gap.", "", caption))
+    expect_identical(
+      display_rows(p$home),
+      fail_rows(paste0(
+        paper,
+        ": Figure 2 has a caption, but the text cites it nowhere outside its ",
+        "caption"
+      )),
+      info = caption
+    )
+    write_paper(p$home, c("Figures 1 and 2 show the gap.", "", caption))
+    expect_identical(display_rows(p$home), pass_match(), info = caption)
+  }
 })
 
 test_that("without vNN_results/real/output/ the manuscript matches the fake output, and the PASS line names its folder", {

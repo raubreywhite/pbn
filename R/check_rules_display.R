@@ -21,12 +21,17 @@ display_figure_sheet_pattern <- "^fig_s?[1-9][0-9]*_"
 # or a list, such as "Figure 2", "Tables 1-3", "Figures S1, S2 and S4" or
 # "Supplementary Figures 1 and 2". A list needs the plural word, so that
 # "Table 1, 25 persons" cites Table 1 only. A number of a list is not
-# followed by % or a decimal part.
+# followed by % or a decimal part. A number after a comma also needs another
+# comma, "and", "&", a dash, a closing mark or the end of the text after it,
+# so that "Figures 1 and 2, 25 persons" cites Figures 1 and 2 only.
 display_number <- "S?[0-9]+[A-Za-z]?(?![0-9]|\\s*%|[.,][0-9])"
 display_range_part <- paste0("\\s*[-\u2013\u2014]\\s*", display_number)
 display_list_part <- paste0(
-  "(?:\\s*,\\s*(?:and\\s+)?|\\s+and\\s+|\\s*&\\s*)",
-  display_number
+  "(?:(?:\\s*,\\s*and\\s+|\\s+and\\s+|\\s*&\\s*)",
+  display_number,
+  "|\\s*,\\s*",
+  display_number,
+  "(?=\\s*(?:,|and\\b|&|[-\u2013\u2014]|[)\\].;:]|$)))"
 )
 display_supplementary <- "(?:([Ss]upplementary)\\s+)?"
 display_cite_pattern <- paste0(
@@ -48,8 +53,13 @@ display_cite_pattern <- paste0(
   ")?",
   ")\\b"
 )
+# A caption: a paragraph that starts with "Figure 2." or "Table S1:", also
+# in Markdown emphasis, such as "**Figure 2.**", or as the text of an image,
+# such as "![Figure 2. The gap](fig.png)".
 display_caption_pattern <- paste0(
-  "^\\s*(?:([Ss]upplementary)\\s+)?(Figure|Table)\\s+(S?[0-9]+)[.:]"
+  "^\\s*(?:!\\[\\s*)?(?:\\*{1,2}|_{1,2})?",
+  "(?:([Ss]upplementary)\\s+)?(Figure|Table)\\s+(S?[0-9]+)",
+  "(?:\\*{1,2}|_{1,2})?[.:](?:\\*{1,2}|_{1,2})?"
 )
 
 # The rule display_numbering. It checks the names of the outputs of the

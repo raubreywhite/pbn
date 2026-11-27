@@ -1070,6 +1070,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     real_results_are_fake = "run the scenario \"real\" again with pbn::initialize_project(fake_real_data = FALSE)",
     guidelines_valid = "correct the file to the checklist schema of ?check_project",
     guidelines_covered = "name the item in items of a pbn::block() in vNN_functions/blocks.R, or correct the item of the block to one of guidelines/*.yml",
+    display_numbering = "rename the output file or the sheet by the scheme of ?check_project, or renumber the figures and the tables of the output function and of the manuscript in the order of their first citation",
     unknown_path = "move it into a folder of the layout, such as adhoc/, or delete it"
   )
   expect_identical(

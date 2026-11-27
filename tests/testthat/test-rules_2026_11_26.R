@@ -145,9 +145,9 @@ test_that("house_2026_11_26 is house_2026_11_25 with built_reads_source, manual_
     function(r) return(identical(r$locked, FALSE)),
     logical(1)
   )))
-  expect_identical(starter_line(), "extends: house_2026_11_26")
-  # create_project() names house_2026_11_26: its template passes the set.
-  expect_identical(create_project_set, "house_2026_11_26")
+  expect_identical(starter_line(), "extends: house_2026_11_27")
+  # create_project() names house_2026_11_27: its template passes the set.
+  expect_identical(create_project_set, "house_2026_11_27")
 })
 
 test_that("valid checklist files pass guidelines_valid, guidelines_covered WARNs each result item without a block, and guidelines/ is a known path", {

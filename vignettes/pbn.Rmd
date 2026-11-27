@@ -758,6 +758,17 @@ A table or a text file of fake data has the name prefix and the folder name only
 
 A script with output code after the run that is not in a function MAY use `pbn::end_unless_real(scenarios)` after `save_results()`. It ends the script when the run had no real data.
 
+### The names of the output
+
+From the set `house_2026_11_27`, the rule `display_numbering` of `check_project()` reads each output name without the prefix `fake_data_`. Each name MUST be one of these:
+
+- `fig_N_<name>` for Figure N, and `fig_sN_<name>` for Figure SN. Its plotted data goes in a sheet `fig_N_<name>` of `data_behind_figures.xlsx`.
+- `tables.xlsx`, with one sheet `tab_N` or `tab_sN` for each numbered table. A file `tab_N_<name>.csv` fails.
+- `fig_N_<name>_external.txt` or `tab_sN_<name>_external.txt` for an item that the output function does not make, such as a flow chart.
+- `nonum_<name>` for an output without a number.
+
+When the project has a manuscript, the rule also checks it. In each series, the first citations MUST come in the order 1, 2, 3. The four series are the figures, the tables, the supplementary figures and the supplementary tables. The numbered items of the outputs MUST be the items of the manuscript. `?check_project` gives the details. This project is on the set `house_2026_11_25`, so its figure `outcome_by_group.png` passes. On `house_2026_11_27` it would be `fig_1_outcome_by_group.png`.
+
 ## Checking the project
 
 `check_project.R` holds one line.

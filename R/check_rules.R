@@ -1099,6 +1099,18 @@ project_rules <- function() {
       "every result item of guidelines/*.yml has a block, and every item of a block is in guidelines/*.yml",
       "name the item in items of a pbn::block() in vNN_functions/blocks.R, or correct the item of the block to one of guidelines/*.yml"
     ),
+    display_numbering = list(
+      rule_display_numbering,
+      paste(
+        "every output name and sheet name has a number or nonum_, and the",
+        "manuscript cites each series in the order 1, 2, 3"
+      ),
+      paste(
+        "rename the output file or the sheet by the scheme of ?check_project,",
+        "or renumber the figures and the tables of the output function and",
+        "of the manuscript in the order of their first citation"
+      )
+    ),
     unknown_path = list(
       rule_unknown_path,
       "the house layout names every top-level path",

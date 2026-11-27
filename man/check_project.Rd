@@ -37,8 +37,10 @@ the tracked files, and the untracked files that git does not ignore.
 Both lists leave out \code{.DS_Store}, \code{.Rhistory}, \code{.RData}, the Word lock
 files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
-The rules, with their level in the set \code{house_2026_11_26}, are below.
-The set \code{house_2026_11_25} has the same rules at the same levels, without
+The rules, with their level in the set \code{house_2026_11_27}, are below.
+The set \code{house_2026_11_26} has the same rules at the same levels, without
+\code{display_numbering}.
+The set \code{house_2026_11_25} also does not have
 \code{built_reads_source}, \code{manual_has_supplement}, \code{manual_si_has_main},
 \code{guidelines_valid} and \code{guidelines_covered}. The set \code{house_2026_11_20}
 also does not have \code{no_plot_title}, \code{no_plot_subtitle} and
@@ -411,6 +413,53 @@ rule reads the literal \code{items} of each \code{\link[=block]{block()}} in the
 the newest functions folder, without running code. A tag of a file
 that fails \code{guidelines_valid} gives no WARN. \code{\link[=make_checklists]{make_checklists()}} then
 checks the manuscript text against the formatted strings of the blocks.
+\item \code{display_numbering} (FAIL): the numbered figures and tables of the
+outputs, of the manuscript and of its citations do not agree. The rule
+reads the output folders \verb{vNN_results/<scenario>/output/} and
+\verb{vNN_results/<scenario>/output_fake_data/} of the newest run version.
+It reads each name there without the prefix \code{fake_data_}. Each name
+MUST be one of these:
+\itemize{
+\item \verb{fig_N_<name>} or \verb{fig_sN_<name>}, a figure, with any extension. \code{N}
+is a whole number from 1, and \code{s} marks a supplementary figure.
+\item \code{tables.xlsx}, with one sheet \code{tab_N} or \code{tab_sN} for each numbered
+table.
+\item \code{data_behind_figures.xlsx}, with the plotted data in sheets
+\verb{fig_N_<name>} or \verb{fig_sN_<name>}. A figure MAY have more than one
+sheet.
+\item \verb{fig_N_<name>_external.txt}, \verb{fig_sN_<name>_external.txt},
+\verb{tab_N_<name>_external.txt} or \verb{tab_sN_<name>_external.txt}, an item
+that the output function does not make, such as a flow chart.
+\item \verb{nonum_<name>}, anything else.
+}
+
+A sheet \verb{nonum_<name>} passes in both workbooks. A file \verb{tab_N_<name>}
+that does not end with \verb{_external.txt} fails, because tables go in
+\code{tables.xlsx}. Each figure file other than an \verb{_external.txt} item MUST
+have a sheet of its number in \code{data_behind_figures.xlsx} of its
+folder. Each sheet \code{fig_N_} MUST have a figure file of its number there.
+
+The manuscript is the newest version \code{NN} of
+\verb{manuscript/manual/vNN_<INITIALS>.docx}, then its \verb{_si} files, and the
+files \verb{manuscript/built/vNN/*.md}. Without a manuscript, the rule checks
+the names only. A citation is "Figure 1", "Fig. 1", "Table 1", "Figure
+S1" or "Supplementary Figure 1", which is Figure S1. A range such as
+"Tables 1-3" cites each number of it. A list needs the plural word, such
+as "Figures 1 and 2". The text of a tracked deletion of a \code{.docx} file does not count. There are
+four series: the figures, the tables, the supplementary figures and the
+supplementary tables. In each series, the first citations MUST come in
+the order 1, 2, 3, with no gap. A paragraph that starts with "Figure 2."
+or "Table S1:" is a caption. The text MUST cite each captioned item
+outside its own caption.
+
+The numbered items of the outputs are the figure files, the sheets
+\code{tab_} of \code{tables.xlsx} and the \verb{_external.txt} items of
+\verb{vNN_results/real/output/}. Without that folder, they are the items of
+the first \verb{output_fake_data/} folder of the version in name order, such
+as \verb{fake/output_fake_data/} of a one-file project. Each numbered item
+MUST be cited or captioned in the manuscript. Each item of the
+manuscript MUST be a numbered item of the outputs. The PASS line names
+the folder.
 \item \code{unknown_path} (WARN): the house layout does not name a top-level file or
 folder. The layout names \code{vNN_run.R}, \verb{vNN_functions/}, \verb{vNN_results/},
 \verb{vNN_cache_gitexclude/}, \verb{vNN_test/}, \code{vNN_check_functions.R},

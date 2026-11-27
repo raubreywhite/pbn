@@ -22,8 +22,10 @@
 #' Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 #' files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 #'
-#' The rules, with their level in the set `house_2026_11_26`, are below.
-#' The set `house_2026_11_25` has the same rules at the same levels, without
+#' The rules, with their level in the set `house_2026_11_27`, are below.
+#' The set `house_2026_11_26` has the same rules at the same levels, without
+#' `display_numbering`.
+#' The set `house_2026_11_25` also does not have
 #' `built_reads_source`, `manual_has_supplement`, `manual_si_has_main`,
 #' `guidelines_valid` and `guidelines_covered`. The set `house_2026_11_20`
 #' also does not have `no_plot_title`, `no_plot_subtitle` and
@@ -379,6 +381,51 @@
 #'   the newest functions folder, without running code. A tag of a file
 #'   that fails `guidelines_valid` gives no WARN. [make_checklists()] then
 #'   checks the manuscript text against the formatted strings of the blocks.
+#' - `display_numbering` (FAIL): the numbered figures and tables of the
+#'   outputs, of the manuscript and of its citations do not agree. The rule
+#'   reads the output folders `vNN_results/<scenario>/output/` and
+#'   `vNN_results/<scenario>/output_fake_data/` of the newest run version.
+#'   It reads each name there without the prefix `fake_data_`. Each name
+#'   MUST be one of these:
+#'   - `fig_N_<name>` or `fig_sN_<name>`, a figure, with any extension. `N`
+#'     is a whole number from 1, and `s` marks a supplementary figure.
+#'   - `tables.xlsx`, with one sheet `tab_N` or `tab_sN` for each numbered
+#'     table.
+#'   - `data_behind_figures.xlsx`, with the plotted data in sheets
+#'     `fig_N_<name>` or `fig_sN_<name>`. A figure MAY have more than one
+#'     sheet.
+#'   - `fig_N_<name>_external.txt`, `fig_sN_<name>_external.txt`,
+#'     `tab_N_<name>_external.txt` or `tab_sN_<name>_external.txt`, an item
+#'     that the output function does not make, such as a flow chart.
+#'   - `nonum_<name>`, anything else.
+#'
+#'   A sheet `nonum_<name>` passes in both workbooks. A file `tab_N_<name>`
+#'   that does not end with `_external.txt` fails, because tables go in
+#'   `tables.xlsx`. Each figure file other than an `_external.txt` item MUST
+#'   have a sheet of its number in `data_behind_figures.xlsx` of its
+#'   folder. Each sheet `fig_N_` MUST have a figure file of its number there.
+#'
+#'   The manuscript is the newest version `NN` of
+#'   `manuscript/manual/vNN_<INITIALS>.docx`, then its `_si` files, and the
+#'   files `manuscript/built/vNN/*.md`. Without a manuscript, the rule checks
+#'   the names only. A citation is "Figure 1", "Fig. 1", "Table 1", "Figure
+#'   S1" or "Supplementary Figure 1", which is Figure S1. A range such as
+#'   "Tables 1-3" cites each number of it. A list needs the plural word, such
+#'   as "Figures 1 and 2". The text of a tracked deletion of a `.docx` file does not count. There are
+#'   four series: the figures, the tables, the supplementary figures and the
+#'   supplementary tables. In each series, the first citations MUST come in
+#'   the order 1, 2, 3, with no gap. A paragraph that starts with "Figure 2."
+#'   or "Table S1:" is a caption. The text MUST cite each captioned item
+#'   outside its own caption.
+#'
+#'   The numbered items of the outputs are the figure files, the sheets
+#'   `tab_` of `tables.xlsx` and the `_external.txt` items of
+#'   `vNN_results/real/output/`. Without that folder, they are the items of
+#'   the first `output_fake_data/` folder of the version in name order, such
+#'   as `fake/output_fake_data/` of a one-file project. Each numbered item
+#'   MUST be cited or captioned in the manuscript. Each item of the
+#'   manuscript MUST be a numbered item of the outputs. The PASS line names
+#'   the folder.
 #' - `unknown_path` (WARN): the house layout does not name a top-level file or
 #'   folder. The layout names `vNN_run.R`, `vNN_functions/`, `vNN_results/`,
 #'   `vNN_cache_gitexclude/`, `vNN_test/`, `vNN_check_functions.R`,

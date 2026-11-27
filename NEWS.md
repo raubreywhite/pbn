@@ -1,3 +1,10 @@
+# pbn 2026.12.13
+
+- New rule set `house_2026_11_27`: the set `house_2026_11_26` with the rule `display_numbering` at `fail`. A project on an older set sees no change. The line for a new `pbn.yml` and `create_project()` now name `house_2026_11_27`.
+- New rule `display_numbering` fails an output name of the newest run version without `fig_N_`, `fig_sN_`, `nonum_` or `_external.txt`, other than `tables.xlsx` and `data_behind_figures.xlsx`. It also fails a bad sheet name of these two workbooks, and a figure file without a sheet of its data.
+- `display_numbering` also checks the newest manuscript. In each series, the first citations MUST come in the order 1, 2, 3. Each caption needs a citation, and the numbered items MUST match those of the real output, or of the fake output without it.
+- The output function of `create_project()` writes `nonum_risk_difference.csv`, so that a new project passes `display_numbering`.
+
 # pbn 2026.12.12
 
 - Fix: `check_one_file()` takes two doubles of the results as the same when they differ by at most `sqrt(.Machine$double.eps)` of the larger absolute value, the default tolerance of `all.equal()`. Before, it compared them exactly, so an estimate that differed in the tenth significant digit between two R sessions gave FAIL. Every other value MUST still be identical, such as an integer, a string, a `Date`, a `POSIXct` or an attribute.

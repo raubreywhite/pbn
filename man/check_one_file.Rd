@@ -52,6 +52,10 @@ leaves out, see \code{source_md5} of \code{\link[=save_results]{save_results()}}
 When they differ, the results of the project are older than its code.
 It prints FAIL with the changed files and says to run
 \verb{<version>_run.R} again. It runs nothing.
+\item It reads \code{manifest$failed_fake_checks} of the real results. When it
+names a fake scenario with a failed assertion, it prints FAIL with the
+scenario and its \code{check.csv}, as \code{\link[=read_results]{read_results()}} does. It runs
+nothing.
 \item It makes a temporary folder with an empty project folder, and a copy of
 each folder of the project with all its files. The empty project folder
 stands for the server, where there is no functions folder and no
@@ -71,7 +75,7 @@ the line \verb{FAKE REAL DATA}. A block that stops on either results, or
 that prints other text, is a FAIL that names the block.
 }
 
-Four fields of the manifest MAY differ, and the comparison leaves them
+Five fields of the manifest MAY differ, and the comparison leaves them
 out:
 \itemize{
 \item \code{run_date}, the date of the run.
@@ -80,6 +84,8 @@ packages than the R session of the normal run.
 \item the column \code{from_cache} of \code{data_cache}, because the copy has no cache.
 \item \code{fake_real_data}, because the file never runs on fake real data. See
 \code{\link[=initialize_project]{initialize_project()}}.
+\item \code{failed_fake_checks}, because the file runs no fake scenario. Step 4
+checks it on the real results of the project.
 }
 
 The comparison also leaves \verb{<version>_functions/blocks.R} and

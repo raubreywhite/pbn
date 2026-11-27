@@ -265,8 +265,9 @@ test_that("check_one_file prints PASS for the file of the project, and the first
     paste0(
       "PASS: the file of pbn::to_one_file() gives the real results of the ",
       "project, apart from manifest$run_date, manifest$packages, ",
-      "manifest$data_cache$from_cache and manifest$fake_real_data. Each ",
-      "page of the 2 blocks prints the same for both."
+      "manifest$data_cache$from_cache, manifest$fake_real_data and ",
+      "manifest$failed_fake_checks. Each page of the 2 blocks prints the ",
+      "same for both."
     )
   )
   expect_true(ok)
@@ -922,4 +923,67 @@ test_that("check_one_file gives PASS for blocks of pbn::block() with a project f
   expect_true(ok)
   prints <- block_prints(p$home)
   expect_identical(prints$blocks$Rows$text[4], "rows: 6")
+})
+
+# The FAIL line of check_one_file() for the real results of the project `p`,
+# whose run had the fake scenario null with a failed assertion.
+failed_null_refusal <- function(p) {
+  root <- file.path(p$home, "v01_results")
+  file <- file.path(root, "real", "results.qs2")
+  return(paste0(
+    "FAIL: manifest$failed_fake_checks of ",
+    file,
+    " names a fake scenario with a failed assertion: \"null\". Its ",
+    "assertions are in ",
+    file.path(root, "null", "check.csv"),
+    ". Correct the analysis, and run the scenario \"real\" again with the ",
+    "fake scenarios. To look at the results for debugging, read them with ",
+    "qs2::qs_read(\"",
+    file,
+    "\")."
+  ))
+}
+
+# Runs the project `p` with a failed assertion in the fake scenario null,
+# writes the file of to_one_file(), and returns what check_one_file() prints
+# and returns.
+check_failed_null <- function(p, env = parent.frame()) {
+  write_lines(
+    p$home,
+    "v01_functions/expect_null.R",
+    sub("abs(b) < 1", "abs(b) > 100", expect_null_lines(), fixed = TRUE)
+  )
+  res <- run_script(p$home)
+  testthat::expect_identical(res$status, 1L, info = res$stdout)
+  init_server(p, env = env)
+  utils::capture.output(to_one_file())
+  out <- utils::capture.output(ok <- check_one_file())
+  return(list(out = out, ok = ok))
+}
+
+test_that("check_one_file refuses real results whose fake scenario failed, in a project without blocks, and runs nothing", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  add_one_file_files(p)
+  unlink(file.path(p$home, "v01_functions", "blocks.R"))
+  got <- check_failed_null(p)
+  expect_identical(got$out, failed_null_refusal(p))
+  expect_false(got$ok)
+})
+
+test_that("check_one_file refuses real results whose fake scenario failed, in a project with blocks", {
+  skip_if_pbn_not_installed()
+  p <- local_project()
+  add_one_file_files(p)
+  got <- check_failed_null(p)
+  expect_identical(got$out, failed_null_refusal(p))
+  expect_false(got$ok)
+})
+
+test_that("the comparison of check_one_file leaves failed_fake_checks out, so character(0) and no element compare as equal", {
+  with <- list(
+    manifest = list(version = "v01", failed_fake_checks = character(0))
+  )
+  without <- list(manifest = list(version = "v01"))
+  expect_identical(comparable_results(with), comparable_results(without))
 })

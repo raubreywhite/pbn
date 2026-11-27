@@ -218,7 +218,8 @@ test_that("check_one_file passes a project whose labels are not ASCII, and compa
     paste0(
       "PASS: the file of pbn::to_one_file() gives the real results of the ",
       "project, apart from manifest$run_date, manifest$packages, ",
-      "manifest$data_cache$from_cache and manifest$fake_real_data. Each ",
+      "manifest$data_cache$from_cache, manifest$fake_real_data and ",
+      "manifest$failed_fake_checks. Each ",
       "page of the 3 blocks prints the same for both."
     )
   )

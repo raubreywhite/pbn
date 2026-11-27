@@ -39,25 +39,29 @@
 #'    When they differ, the results of the project are older than its code.
 #'    It prints FAIL with the changed files and says to run
 #'    `<version>_run.R` again. It runs nothing.
-#' 4. It makes a temporary folder with an empty project folder, and a copy of
+#' 4. It reads `manifest$failed_fake_checks` of the real results. When it
+#'    names a fake scenario with a failed assertion, it prints FAIL with the
+#'    scenario and its `check.csv`, as [read_results()] does. It runs
+#'    nothing.
+#' 5. It makes a temporary folder with an empty project folder, and a copy of
 #'    each folder of the project with all its files. The empty project folder
 #'    stands for the server, where there is no functions folder and no
 #'    `pbn.yml`.
-#' 5. It writes a copy of the file of the project to the temporary folder. In
+#' 6. It writes a copy of the file of the project to the temporary folder. In
 #'    the copy, each line with a path of the server gets the temporary path.
 #'    These are the lines where [to_one_file()] with the temporary paths
 #'    writes another line. It runs the copy with `Rscript` in a new R session.
 #'    So the check runs the file that goes into git.
-#' 6. It compares `results.qs2` and `results_gitexclude.qs2` of the real
+#' 7. It compares `results.qs2` and `results_gitexclude.qs2` of the real
 #'    results of the run with those of the project, element by element.
-#' 7. It calls each block of [show_block()] on the real results of the
+#' 8. It calls each block of [show_block()] on the real results of the
 #'    project and on those of the run, in one more new R session. That
 #'    session attaches no package of the run script. It compares what
 #'    [show_block()] prints for each page of each block, as text, without
 #'    the line `FAKE REAL DATA`. A block that stops on either results, or
 #'    that prints other text, is a FAIL that names the block.
 #'
-#' Four fields of the manifest MAY differ, and the comparison leaves them
+#' Five fields of the manifest MAY differ, and the comparison leaves them
 #' out:
 #' - `run_date`, the date of the run.
 #' - `packages`, the loaded packages, because the new R session loads other
@@ -65,6 +69,8 @@
 #' - the column `from_cache` of `data_cache`, because the copy has no cache.
 #' - `fake_real_data`, because the file never runs on fake real data. See
 #'   [initialize_project()].
+#' - `failed_fake_checks`, because the file runs no fake scenario. Step 4
+#'   checks it on the real results of the project.
 #'
 #' The comparison also leaves `<version>_functions/blocks.R` and
 #' `<version>_functions/formatters.R` out of `source_md5`, also for results
@@ -121,6 +127,18 @@ check_one_file <- function(...) {
   stale <- stale_results(local, version)
   if (!is.null(stale)) {
     cat("FAIL: ", stale, "\n", sep = "")
+    return(invisible(FALSE))
+  }
+  failed <- tryCatch(
+    check_run_of_real(
+      local,
+      file.path(local, "results.qs2"),
+      results_manifest(local)
+    ),
+    error = function(e) return(conditionMessage(e))
+  )
+  if (is.character(failed)) {
+    cat("FAIL: ", failed, "\n", sep = "")
     return(invisible(FALSE))
   }
   tmp <- tempfile("pbn_one_file_")
@@ -325,7 +343,8 @@ one_file_verdict <- function(found, tmp, n_blocks = NULL) {
     cat(
       "PASS: the file of pbn::to_one_file() gives the real results of the ",
       "project, apart from manifest$run_date, manifest$packages, ",
-      "manifest$data_cache$from_cache and manifest$fake_real_data. ",
+      "manifest$data_cache$from_cache, manifest$fake_real_data and ",
+      "manifest$failed_fake_checks. ",
       if (is.null(n_blocks) || n_blocks == 0) {
         "The project has no blocks."
       } else {
@@ -439,6 +458,9 @@ comparable_results <- function(x) {
   x$manifest$run_date <- NULL
   x$manifest$packages <- NULL
   x$manifest$fake_real_data <- NULL
+  # check_one_file() refuses real results with a failed fake scenario
+  # before the run, and the file runs no fake scenario.
+  x$manifest$failed_fake_checks <- NULL
   # A manifest of an older pbn holds the md5 of the blocks. They and the
   # formatters only print results, so they never count.
   if (!is.null(x$manifest$source_md5)) {

@@ -27,6 +27,7 @@
 - `initialize_project()` stops on `one_file_home` together with `fake_real_data = TRUE`, and `scenarios()` refuses a scenario named `fake`.
 - `manuscript/draft/vNN_<INITIALS>.docx` and `vNN_<INITIALS>_si.docx` hold the drafts of an agent, outside the version counter. `lower_case_names` passes their initials, as in `manuscript/manual/`.
 - Behaviour change: `initialize_project()` drops a final `/` or `\` of `home` and of each path of `folders`, `one_file_home` and `one_file_folders`. So pbn builds no path with `//`, such as `N:/project//v05_results`. A root such as `N:/` or `/` stays as it is. A file of `to_one_file()` with a final `/` in a path of the server is then older than the run script for `check_one_file()`. Run `to_one_file()` again.
+- `check_one_file()` refuses real results whose `manifest$failed_fake_checks` names a fake scenario with a failed assertion. It names the scenario and its `check.csv`, and runs nothing. The comparison then leaves `failed_fake_checks` out. Before, a project without blocks got the FAIL of a manifest difference only.
 
 # pbn 2026.12.11
 

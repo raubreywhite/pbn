@@ -234,7 +234,7 @@ test_that("check_one_file passes a project on fake real data: the fresh run has 
   out <- utils::capture.output(ok <- check_one_file())
   expect_match(
     out,
-    "^PASS: .* manifest\\$fake_real_data\\. Each page of the 2 blocks prints the same for both\\.$"
+    "^PASS: .* manifest\\$fake_real_data and manifest\\$failed_fake_checks\\. Each page of the 2 blocks prints the same for both\\.$"
   )
   expect_true(ok)
 })

@@ -1,5 +1,35 @@
 # Changelog
 
+## pbn 2026.12.13
+
+- New rule set `house_2026_11_27`: the set `house_2026_11_26` with the
+  rule `display_numbering` at `fail`. A project on an older set sees no
+  change. The line for a new `pbn.yml` and
+  [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  now name `house_2026_11_27`.
+- New rule `display_numbering` fails an output name of the newest run
+  version without `fig_N_`, `fig_sN_`, `nonum_` or `_external.txt`,
+  other than `tables.xlsx` and `data_behind_figures.xlsx`. It also fails
+  a bad sheet name of these two workbooks, and a figure file without a
+  sheet of its data.
+- `display_numbering` also checks the newest manuscript. In each series,
+  the first citations MUST come in the order 1, 2, 3. Each caption needs
+  a citation, and the numbered items MUST match those of the real
+  output, or of the fake output without it.
+- A list of citations follows the Oxford comma: “Figures 1 and 2”, or
+  “Figures 1, 2, and 3”. `display_numbering` fails “Figures 1, 2 and 3”,
+  and a comma after one item ends the citation, so “Figures 1 and 2, 25
+  and 30 persons” cites two figures.
+- `docx_lines()`, which
+  [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md)
+  and `display_numbering` use, no longer reads the text of a tracked
+  deletion `<w:del>` or of moved text `<w:moveFrom>` of a `.docx` file.
+  Before, such text in `<w:t>` counted.
+- The output function of
+  [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  writes `nonum_risk_difference.csv`, so that a new project passes
+  `display_numbering`.
+
 ## pbn 2026.12.12
 
 - Fix:

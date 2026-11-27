@@ -11,7 +11,7 @@ it quits with status 1 when any rule fails."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,8 +89,10 @@ the tracked files, and the untracked files that git does not ignore.</p></li>
 <li><p>Otherwise, the list is every file and folder on disk.</p></li>
 </ul><p>Both lists leave out <code>.DS_Store</code>, <code>.Rhistory</code>, <code>.RData</code>, the Word lock
 files <code>~$*</code>, and everything in <code>.git/</code> or <code>.Rproj.user/</code>.</p>
-<p>The rules, with their level in the set <code>house_2026_11_26</code>, are below.
-The set <code>house_2026_11_25</code> has the same rules at the same levels, without
+<p>The rules, with their level in the set <code>house_2026_11_27</code>, are below.
+The set <code>house_2026_11_26</code> has the same rules at the same levels, without
+<code>display_numbering</code>.
+The set <code>house_2026_11_25</code> also does not have
 <code>built_reads_source</code>, <code>manual_has_supplement</code>, <code>manual_si_has_main</code>,
 <code>guidelines_valid</code> and <code>guidelines_covered</code>. The set <code>house_2026_11_20</code>
 also does not have <code>no_plot_title</code>, <code>no_plot_subtitle</code> and
@@ -423,6 +425,54 @@ rule reads the literal <code>items</code> of each <code><a href="block.html">blo
 the newest functions folder, without running code. A tag of a file
 that fails <code>guidelines_valid</code> gives no WARN. <code><a href="make_checklists.html">make_checklists()</a></code> then
 checks the manuscript text against the formatted strings of the blocks.</p></li>
+<li><p><code>display_numbering</code> (FAIL): the numbered figures and tables of the
+outputs, of the manuscript and of its citations do not agree. The rule
+reads the output folders <code>vNN_results/&lt;scenario&gt;/output/</code> and
+<code>vNN_results/&lt;scenario&gt;/output_fake_data/</code> of the newest run version.
+It reads each name there without the prefix <code>fake_data_</code>. Each name
+MUST be one of these:</p><ul><li><p><code>fig_N_&lt;name&gt;</code> or <code>fig_sN_&lt;name&gt;</code>, a figure, with any extension. <code>N</code>
+is a whole number from 1, and <code>s</code> marks a supplementary figure.</p></li>
+<li><p><code>tables.xlsx</code>, with one sheet <code>tab_N</code> or <code>tab_sN</code> for each numbered
+table.</p></li>
+<li><p><code>data_behind_figures.xlsx</code>, with the plotted data in sheets
+<code>fig_N_&lt;name&gt;</code> or <code>fig_sN_&lt;name&gt;</code>. A figure MAY have more than one
+sheet.</p></li>
+<li><p><code>fig_N_&lt;name&gt;_external.txt</code>, <code>fig_sN_&lt;name&gt;_external.txt</code>,
+<code>tab_N_&lt;name&gt;_external.txt</code> or <code>tab_sN_&lt;name&gt;_external.txt</code>, an item
+that the output function does not make, such as a flow chart.</p></li>
+<li><p><code>nonum_&lt;name&gt;</code>, anything else.</p></li>
+</ul><p>A sheet <code>nonum_&lt;name&gt;</code> passes in both workbooks. A file <code>tab_N_&lt;name&gt;</code>
+that does not end with <code>_external.txt</code> fails, because tables go in
+<code>tables.xlsx</code>. Each figure file other than an <code>_external.txt</code> item MUST
+have a sheet of its number in <code>data_behind_figures.xlsx</code> of its
+folder. Each sheet <code>fig_N_</code> MUST have a figure file of its number there.</p>
+<p>The manuscript is the newest version <code>NN</code> of
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code>, then its <code>_si</code> files, and the
+files <code>manuscript/built/vNN/*.md</code>. Without a manuscript, the rule checks
+the names only. A citation is "Figure 1", "Fig. 1", "Table 1", "Figure
+S1" or "Supplementary Figure 1", which is Figure S1. A range such as
+"Tables 1-3" cites each number of it. A list needs the plural word, and
+it follows the Oxford comma. It has two items, as in "Figures 1 and 2",
+or three or more that end in ", and", as in "Figures 1, 2, and 3". A
+range MAY be an item. A list such as "Figures 1, 2 and 3" fails, and its
+items still count as citations. A comma after one item ends the
+citation, so "Figures 1 and 2, 25 and 30 persons" cites Figures 1 and 2
+only. The text of a tracked deletion and
+of the old place of moved text in a <code>.docx</code> file does not count. There
+are four series: the figures, the tables, the supplementary figures and
+the supplementary tables. In each series, the first citations MUST come
+in the order 1, 2, 3, with no gap. A paragraph that starts with "Figure
+2." or "Table S1:" is a caption. So is "<strong>Figure 2.</strong>" in Markdown
+emphasis, and "<img src="figures/fig.png" alt="">", the text of an image. The
+text MUST cite each captioned item outside its own caption.</p>
+<p>The numbered items of the outputs are the figure files, the sheets
+<code>tab_</code> of <code>tables.xlsx</code> and the <code>_external.txt</code> items of
+<code>vNN_results/real/output/</code>. Without that folder, they are the items of
+the first <code>output_fake_data/</code> folder of the version in name order, such
+as <code>fake/output_fake_data/</code> of a one-file project. Each numbered item
+MUST be cited or captioned in the manuscript. Each item of the
+manuscript MUST be a numbered item of the outputs. The PASS line names
+the folder.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code>,

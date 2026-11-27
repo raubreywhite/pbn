@@ -123,11 +123,11 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_new_version_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/Rtmp7A8O6t/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/RtmplJZIza/pbn_new_version_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::new_version("v01", home = home)
 #> new_version(): v01 is now frozen in v01_frozen.md5. Wrote v02_run.R and v02_functions/. Added the section ## v02 to CHANGELOG.md.
 pbn::check_project(home)
-#> Rules: house_2026_11_26, 0 overrides, 0 allowed paths (pbn.yml)
+#> Rules: house_2026_11_27, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
@@ -162,8 +162,9 @@ pbn::check_project(home)
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  guidelines_valid  every guidelines/*.yml follows the checklist schema
 #> PASS  guidelines_covered  every result item of guidelines/*.yml has a block, and every item of a block is in guidelines/*.yml
+#> PASS  display_numbering  every output name and sheet name has a number or nonum_, and there is no manuscript to match
 #> PASS  unknown_path  the house layout names every top-level path
-#> 35 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 36 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

@@ -11,7 +11,7 @@ verify() gives a PASS on the fake scenarios without the real data."><meta proper
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.13</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,7 @@ for <code><a href="initialize_project.html">initialize_project()</a></code>. The
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
-    <p><code>create_project()</code> writes these files:</p><ul><li><p><code>pbn.yml</code>, with the line <code>extends: house_2026_11_26</code>.</p></li>
+    <p><code>create_project()</code> writes these files:</p><ul><li><p><code>pbn.yml</code>, with the line <code>extends: house_2026_11_27</code>.</p></li>
 <li><p><code>v01_run.R</code>, the run script. Its data steps are <code>raw</code>, <code>clean</code> and
 <code>cohort</code>, and it has one analysis kind, <code>risk_difference</code>.</p></li>
 <li><p><code>v01_functions/</code>, with <code>_cfg.R</code>, the data steps <code>data_raw.R</code>,
@@ -131,9 +131,9 @@ folder that the call created. So a second call can start again.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_create_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">create_project</span><span class="op">(</span>home <span class="op">=</span> <span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/Rtmp7A8O6t/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> create_project(): wrote 14 files in /tmp/RtmplJZIza/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.</span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu"><a href="check_project.html">check_project</a></span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_26, 0 overrides, 0 allowed paths (pbn.yml)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_27, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
@@ -168,8 +168,9 @@ folder that the call created. So a second call can start again.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  guidelines_valid  every guidelines/*.yml follows the checklist schema</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  guidelines_covered  every result item of guidelines/*.yml has a block, and every item of a block is in guidelines/*.yml</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  display_numbering  every output name and sheet name has a number or nonum_, and there is no manuscript to match</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 35 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 36 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

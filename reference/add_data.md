@@ -258,9 +258,13 @@ is the md5 of these parts:
   `utils.R` counts. A function that only an analysis calls does not
   change the key.
 
-- `CFG$data`, when `CFG` has the element `data`. Put the config that the
-  data code reads there. A change in another element of `CFG` does not
-  change the key.
+- `CFG$data`, when `CFG` has the element `data`.
+
+- each other element of `CFG` that `fn`, a step or a function of the
+  part above reads as `CFG$x` or `CFG[["x"]]`. When that code uses `CFG`
+  in any other way, for example `CFG[[k]]`, `cfg = CFG` or `f(CFG)`,
+  each element of `CFG` counts. Otherwise, an element that only an
+  analysis reads does not change the key.
 
 - the versions of R and pbn. The version of R covers the base packages.
 
@@ -295,9 +299,9 @@ leave the key the same, and the run reads the old data:
 - a function whose name the data code builds when it runs, for example
   `get(paste0("f", 1))`.
 
-- an object of the folder that is neither a function nor `CFG$data`.
-  Examples are a lookup vector in `utils.R` and a function inside a
-  list.
+- an object of the folder that is neither a function nor an element of
+  `CFG`. Examples are a lookup vector in `utils.R` and a function inside
+  a list.
 
 When the key is the same,
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) reads
@@ -312,16 +316,17 @@ For each scenario and simulation,
 one line with [`cat()`](https://rdrr.io/r/base/cat.html). The line says
 that the data came from the cache, with the date and time of the cache
 file. Or it says that pbn computed it, and why. The reason names each
-changed `data_*.R` file, `CFG$data`, or the settings. It names changed
-raw data with its folders, for example "the raw data in the folder
-lookup". It names a changed `fn` as "the data function of add_data()",
-and each changed step as, for example, "the function given as `clean`".
-It names each changed function that the data calls, for example "the
-function `lower_names`". It can also name the kind of random number
-generator, or each package with another version. With `workers = 1`, the
-line comes before the data function runs. With more workers,
-[`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) prints
-the lines after the run, in the order of the plan.
+changed `data_*.R` file, `CFG$data`, each changed element of `CFG` that
+the data code reads, such as `CFG$ncc`, or the settings. It names
+changed raw data with its folders, for example "the raw data in the
+folder lookup". It names a changed `fn` as "the data function of
+add_data()", and each changed step as, for example, "the function given
+as `clean`". It names each changed function that the data calls, for
+example "the function `lower_names`". It can also name the kind of
+random number generator, or each package with another version. With
+`workers = 1`, the line comes before the data function runs. With more
+workers, [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md)
+prints the lines after the run, in the order of the plan.
 
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) writes
 each file to a temporary file in the same folder, and renames it. plnr

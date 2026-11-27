@@ -13,7 +13,7 @@ their names start with fake_data_."><meta property="og:image" content="https://w
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -88,10 +88,12 @@ row for each file written. <code>file</code> is relative to the project folder.<
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Call <code><a href="initialize_project.html">initialize_project()</a></code> first. For each scenario of <code>scenarios</code>,
 <code>make_outputs()</code> does this:</p><ul><li><p><code>"real"</code>: it calls <code>fn(results, dir)</code> with
-<code>dir = &lt;version&gt;_results/real/output/</code>. The output is fake output when
+<code>dir = &lt;version&gt;_results/real/output/</code>. In a one-file project, the
+folder is <code>fake/</code> in the place of <code>real/</code>, see the section The folder
+fake/ of <code><a href="initialize_project.html">initialize_project()</a></code>. The output is fake output when
 the manifest of the real results on the disk has <code>fake_real_data</code>
-<code>TRUE</code>. It then goes to <code>real/output_fake_data/</code>, as for a fake
-scenario below. The
+<code>TRUE</code>. It then goes to <code>output_fake_data/</code> of that folder, as for a
+fake scenario below. The
 manifest decides, and never the argument <code>fake_real_data</code> of
 <code><a href="initialize_project.html">initialize_project()</a></code> in this R session. <code>make_outputs()</code> deletes the
 other of the two folders of <code>"real"</code> with one printed line, so no
@@ -109,8 +111,14 @@ scenario that it writes, so no output of an earlier run stays beside new
 results. Before it calls <code>fn</code>, <code>make_outputs()</code> deletes the folder <code>dir</code>
 and creates it again. So no file of an earlier run stays. Keep no other file
 in that folder. It stops when the folder is still there afterwards, for
-example because another program holds a file open on Windows. After each
-scenario, it prints one line with the folder and the number of files.</p>
+example because another program holds a file open on Windows. It tries
+to create the folder 8 times, with pauses that double from 0.5 seconds to
+8, about 30 seconds in all, because a network drive of Windows keeps a
+folder that was just deleted "pending delete" while another program holds
+it. The folder counts as created only when pbn can write a file into it.
+It stops after the eighth try, and the error names the folder and what R
+said. After each scenario, it prints one line with the folder
+and the number of files.</p>
 <p>After <code><a href="save_results.html">save_results()</a></code> in the same R session, <code>make_outputs()</code> adds its
 files, its seconds and the number of warnings of <code>fn</code> for each scenario to
 the run log <code>&lt;version&gt;_results/run.md</code>. A warning still reaches the

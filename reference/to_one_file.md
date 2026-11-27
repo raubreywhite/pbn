@@ -132,8 +132,8 @@ The file has LF line ends. pbn does not cut long lines, and it prints
 the length of the longest line. The file keeps the `workers` of
 [`pbn::run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) of
 the run script, and its header says how to change it. The paths go into
-the file as they are given, so give `/` in a path for Windows too, for
-example `"N:/durable/project"`.
+the file as they are given, without a final `/` or `\`, so give `/` in a
+path for Windows too, for example `"N:/durable/project"`.
 
 The file is always `<version>_one_file.R` in the folder of the project
 of the last
@@ -165,4 +165,5 @@ paths of the server by design.
 
 Other one file:
 [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md),
+[`export_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md),
 [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)

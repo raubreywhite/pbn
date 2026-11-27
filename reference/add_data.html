@@ -13,7 +13,7 @@ each analysis of that scenario and simulation."><meta property="og:image" conten
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -262,9 +262,12 @@ the code. That includes an argument such as <code>lapply(x, f)</code>, a formula
 and a string such as <code>do.call("f", args)</code>.
 So a helper in <code>utils.R</code> counts. A function that only an analysis calls
 does not change the key.</p></li>
-<li><p><code>CFG$data</code>, when <code>CFG</code> has the element <code>data</code>. Put the config that the
-data code reads there. A change in another element of <code>CFG</code> does not
-change the key.</p></li>
+<li><p><code>CFG$data</code>, when <code>CFG</code> has the element <code>data</code>.</p></li>
+<li><p>each other element of <code>CFG</code> that <code>fn</code>, a step or a function of the part
+above reads as <code>CFG$x</code> or <code>CFG[["x"]]</code>. When that code uses <code>CFG</code> in any
+other way, for example <code>CFG[[k]]</code>, <code>cfg = CFG</code> or <code>f(CFG)</code>, each element
+of <code>CFG</code> counts. Otherwise, an element that only an analysis reads does
+not change the key.</p></li>
 <li><p>the versions of R and pbn. The version of R covers the base packages.</p></li>
 <li><p>the three parts of <code><a href="https://rdrr.io/r/base/Random.html" class="external-link">RNGkind()</a></code>.</p></li>
 </ul><p>The key file also records the version of each package that was loaded in
@@ -287,7 +290,8 @@ so a change that keeps both is not found.</p>
 <p>The key holds no other part of <code>&lt;version&gt;_functions/</code>. These changes
 leave the key the same, and the run reads the old data:</p><ul><li><p>a function whose name the data code builds when it runs, for example
 <code>get(paste0("f", 1))</code>.</p></li>
-<li><p>an object of the folder that is neither a function nor <code>CFG$data</code>.
+<li><p>an object of the folder that is neither a function nor an element of
+<code>CFG</code>.
 Examples are a lookup vector in <code>utils.R</code> and a function inside a list.</p></li>
 </ul><p>When the key is the same, <code><a href="run_plan.html">run_plan()</a></code> reads the value from the cache and
 does not call <code>fn</code> or a step. Each analysis sets its own seed, so its
@@ -297,7 +301,8 @@ delete the folder <code>&lt;version&gt;_cache_gitexclude/</code>. No argument do
 <p>For each scenario and simulation, <code><a href="run_plan.html">run_plan()</a></code> prints one line with
 <code><a href="https://rdrr.io/r/base/cat.html" class="external-link">cat()</a></code>. The line says that the data came from the cache, with the date
 and time of the cache file. Or it says that pbn computed it, and why.
-The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>, or the
+The reason names each changed <code>data_*.R</code> file, <code>CFG$data</code>, each changed
+element of <code>CFG</code> that the data code reads, such as <code>CFG$ncc</code>, or the
 settings. It names changed raw data with its folders, for example "the
 raw data in the folder lookup". It names a changed <code>fn</code> as "the data function of
 add_data()", and each changed step as, for example, "the function given

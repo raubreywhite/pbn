@@ -64,8 +64,9 @@ The verdict is FAIL when one of these is true:
   fails.
 
 Else the verdict is PASS. The last line names each reason of a FAIL. A
-PASS of a run that did not write `<version>_results/real/results.qs2`
-has the last line
+PASS of a run that did not write `<version>_results/real/results.qs2`,
+or `<version>_results/fake/results.qs2` in a one-file project, has the
+last line
 `` Verdict: PASS on the fake scenarios only. The scenario `real` did not run. ``
 It covers the fake data only. Its verdict is still PASS. In a
 non-interactive R session, `verify()` quits R with status 1 after a

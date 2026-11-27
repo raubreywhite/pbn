@@ -11,7 +11,7 @@ writes. The default reads the real results."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -99,6 +99,9 @@ error says to run the scenario with <code><a href="run_plan.html">run_plan()</a>
 For a scenario with 1 simulation, <code>sim = 1</code> reads its <code>results.qs2</code>, the
 results of that simulation.
 The section The files of <code><a href="save_results.html">save_results()</a></code> shows each file.</p>
+<p>In a one-file project, <code>&lt;scenario&gt;</code> is <code>fake</code> for the scenario <code>"real"</code>.
+So <code>read_results(version)</code> there reads <code>&lt;version&gt;_results/fake/</code>. The
+section The folder fake/ of <code><a href="initialize_project.html">initialize_project()</a></code> gives the rule.</p>
 <p><code>read_results()</code> stops when <code>&lt;home&gt;/&lt;version&gt;_results/&lt;scenario&gt;/check.csv</code>
 exists and holds a value of <code>pass</code> that is not <code>TRUE</code>, also when it reads
 one simulation. It also stops when that file holds no assertion, or has

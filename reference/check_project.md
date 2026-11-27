@@ -42,9 +42,13 @@ Every rule reads one list of files and their folders:
 Both lists leave out `.DS_Store`, `.Rhistory`, `.RData`, the Word lock
 files `~$*`, and everything in `.git/` or `.Rproj.user/`.
 
-The rules, with their level in the set `house_2026_11_20`, are below.
-The set `house_2026_11_19` has the same rules at the same levels,
-without `built_reads_own_version`, `built_has_run` and
+The rules, with their level in the set `house_2026_11_26`, are below.
+The set `house_2026_11_25` has the same rules at the same levels,
+without `built_reads_source`, `manual_has_supplement`,
+`manual_si_has_main`, `guidelines_valid` and `guidelines_covered`. The
+set `house_2026_11_20` also does not have `no_plot_title`,
+`no_plot_subtitle` and `no_plot_caption`. The set `house_2026_11_19`
+also does not have `built_reads_own_version`, `built_has_run` and
 `manual_not_ahead`. The set `house_2026_11_17` also does not have
 `frozen_versions_unchanged`, `readme_and_changelog`,
 `changelog_with_code`, `comment_share`, `no_cross_version_reads` and
@@ -57,7 +61,8 @@ prints no line.
   `DESCRIPTION`, a top-level dotfile, a top-level `*.Rproj` file, file
   extensions, and the initials in
   `manuscript/manual/vNN_<INITIALS>.docx` and
-  `manuscript/manual/vNN_<INITIALS>_<suffix>.docx`.
+  `manuscript/manual/vNN_<INITIALS>_<suffix>.docx`, and in the drafts of
+  an agent with the same names in `manuscript/draft/`.
 
 - `run_script_initialises` (FAIL): a `vNN_run.R` at the top level has no
   call
@@ -173,7 +178,30 @@ prints no line.
   `manuscript_reads_real` does, and it fails a file that R cannot parse.
   It does not read a file in `manuscript/built/` outside a folder
   `vNN/`, or a file of another language, such as `.py`. The detail lists
-  each call that fails.
+  each call that fails. From the set `house_2026_11_26`, the rule also
+  reads each [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) call
+  and each
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  call.
+
+- `built_reads_source` (FAIL): a file in `manuscript/built/vNN/` does
+  not read the numbers of its source. A version is one-file when its
+  `vNN_run.R` gives `one_file_home` in a top-level call
+  [`pbn::initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  pbn parses the run script and runs nothing. In a one-file version, a
+  file fails without a
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  or [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) call, and on
+  a
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  call. Each file there also fails while `vNN_results/real/blocks.qs2`
+  does not exist, or has the attribute `pbn_fake` of
+  [`import_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md),
+  because the numbers are then fake. In another version, a file fails on
+  a
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  call. The rule reads the code as `manuscript_reads_real` does. It does
+  not read a file outside a folder `vNN/`.
 
 - `built_has_run` (FAIL): a folder `manuscript/built/vNN/` has no
   `vNN_run.R` at the top level. In a git repository, an empty folder is
@@ -190,6 +218,21 @@ prints no line.
   with `PP` = `NN` + 1. The rule does not read a name that
   `manual_manuscript_names` fails. Without a `vNN_run.R`, the rule has
   nothing to compare. It then prints one PASS line that says so.
+
+- `manual_has_supplement` (FAIL): a main file
+  `manuscript/manual/vNN_<INITIALS>.docx` has no supplement
+  `manuscript/manual/vMM_<INITIALS>_si.docx` with `MM` at or below `NN`.
+  The initials of the supplement MAY differ. The supplement suffix is
+  exactly `si`, so a file with another suffix is neither a main file nor
+  a supplement. The rule reads `manuscript/manual/` only, so a draft in
+  `manuscript/draft/` does not count. A project without a supplement
+  turns the rule off with `rules: manual_has_supplement: off` in
+  `pbn.yml`.
+
+- `manual_si_has_main` (FAIL): a supplement
+  `manuscript/manual/vNN_<INITIALS>_si.docx` has no main file
+  `manuscript/manual/vNN_<INITIALS>.docx` with the same version and the
+  same initials. The detail names the main file to add.
 
 - `fake_data_names` (FAIL): a file in a folder `output_fake_data/` has a
   name without the prefix `fake_data_`, or a file with the prefix is in
@@ -368,6 +411,58 @@ prints no line.
   `<file>:<line>: file.path("<the first argument, cut at 40 characters>", ...)`.
   A path under `allow` allows each finding of one file.
 
+- `no_plot_title` (FAIL): an `.R` file of `loc_per_file` gives a figure
+  a title. A figure has no title, no subtitle and no caption, because
+  its legend belongs in the manuscript. The rule fails each of these:
+
+  - a call `ggtitle()` with a value of its first argument `label`.
+
+  - an argument `title` of `labs()`.
+
+  - an argument `title` of `plot_annotation()`, by name or as its first
+    argument.
+
+  - an assignment to `<x>$labels$title`.
+
+  A call MAY have the prefix `ggplot2::` for `ggtitle()` and `labs()`,
+  and `patchwork::` for `plot_annotation()`. A call of the same name
+  from another package passes. R matches the arguments of a call as it
+  does in a run: by name, by a part of a name and by position. These
+  pass:
+
+  - the value `NULL`, as in `labs(title = NULL)`, which removes the
+    title.
+
+  - the other arguments, as in
+    `labs(x = "Age", colour = "Group", tag = "A")` and
+    `plot_annotation(tag_levels = "A")`.
+
+  - a theme element, as in `theme(plot.title = element_text())`.
+
+  - an argument `title` or `caption` of another function, as in
+    `knitr::kable(d, caption = "x")`.
+
+  - a call that R cannot match, as one with an argument that the
+    function does not have, and a title that
+    [`do.call()`](https://rdrr.io/r/base/do.call.html) or a `...`
+    passes. The rule misses these.
+
+  The rule parses each file and runs no code of it. It skips a file that
+  R cannot parse. The detail is
+  `<file>:<line>: <call>(<argument> = ...)`, for example
+  `v01_functions/output.R:12: ggplot2::labs(title = ...)`, or
+  `<file>:<line>: <target> <- ...`. A path under `allow` allows each
+  finding of one file.
+
+- `no_plot_subtitle` (FAIL): as `no_plot_title`, for a subtitle: the
+  argument `subtitle` of `ggtitle()`, by name or as its second argument,
+  the argument `subtitle` of `labs()` and of `plot_annotation()`, and an
+  assignment to `<x>$labels$subtitle`.
+
+- `no_plot_caption` (FAIL): as `no_plot_title`, for a caption: the
+  argument `caption` of `labs()` and of `plot_annotation()`, and an
+  assignment to `<x>$labels$caption`.
+
 - `blocks_list` (FAIL): for each functions folder, one of these is true:
 
   - a file other than `vNN_functions/blocks.R` assigns `blocks` at its
@@ -406,6 +501,31 @@ prints no line.
   `manifest$source_md5` when one fails, also when this rule is `warn` or
   `off`.
 
+  From the set `house_2026_11_26`, the rule also fails each of these:
+
+  - an element of `blocks` that is not a call
+    `pbn::block(fn, format, items)`.
+
+  - a `format` that is not one string, or that names no house formatter
+    and no function of `formatters.R`.
+
+  - an `items` that is not a literal `c("<id>:<item>", ...)` of strings.
+
+  - a top-level expression of `vNN_functions/formatters.R` that does not
+    assign a name to `function(...)`.
+
+  - a name of `formatters.R` that a file other than `blocks.R` uses or
+    assigns.
+
+  The rule does not run the blocks, so it does not see their raw values.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md),
+  [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md),
+  [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) check each
+  raw value as [`block()`](https://www.rwhite.no/pbn/reference/block.md)
+  says.
+
 - `real_results_are_fake` (WARN): a file `vNN_results/real/results.qs2`
   holds `manifest$fake_real_data` `TRUE`. Its run had
   `fake_real_data = TRUE` of
@@ -414,6 +534,24 @@ prints no line.
   file is in the list of files. In a git repository, a real results file
   that git ignores is not in the list, so the rule does not see it.
 
+- `guidelines_valid` (FAIL): a file `guidelines/<x>.yml` breaks the
+  checklist schema below. Each such file gives one FAIL, and its detail
+  names its first 3 problems and counts the rest. The rule reads each
+  `.yml` file directly in `guidelines/`. It does not read a file in a
+  folder under `guidelines/`, or a file with another extension, such as
+  `.yaml`.
+
+- `guidelines_covered` (WARN): a result item of a valid file
+  `guidelines/<x>.yml` has no block, or a block names an item that no
+  valid file has. Each such item and each such tag gives one WARN. The
+  rule reads the literal `items` of each
+  [`block()`](https://www.rwhite.no/pbn/reference/block.md) in the
+  `blocks.R` of the newest functions folder, without running code. A tag
+  of a file that fails `guidelines_valid` gives no WARN.
+  [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md)
+  then checks the manuscript text against the formatted strings of the
+  blocks.
+
 - `unknown_path` (WARN): the house layout does not name a top-level file
   or folder. The layout names `vNN_run.R`, `vNN_functions/`,
   `vNN_results/`, `vNN_cache_gitexclude/`, `vNN_test/`,
@@ -421,17 +559,64 @@ prints no line.
   `pbn.yml`, among others. From the set `house_2026_11_19`, it also
   names `vNN_frozen.md5` of
   [`freeze_version()`](https://www.rwhite.no/pbn/reference/freeze_version.md).
-  A top-level dotfile and a top-level `*.Rproj` file are never unknown.
-  The rule also reads the files directly in `vNN_results/`. There it
-  names the run log `run.md`, its PDF `run.pdf` and its errors file
-  `run_errors_gitexclude.md`, and no rule needs them. It reads no
-  deeper, so it never warns on the folders `output/` and
-  `output_fake_data/` that
+  From the set `house_2026_11_26`, it also names the folder
+  `guidelines/`. A top-level dotfile and a top-level `*.Rproj` file are
+  never unknown. The rule also reads the files directly in
+  `vNN_results/`. There it names the run log `run.md`, its PDF `run.pdf`
+  and its errors file `run_errors_gitexclude.md`, and no rule needs
+  them. It reads no deeper, so it never warns on the folders `output/`
+  and `output_fake_data/` that
   [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
   writes in `vNN_results/<scenario>/`, or on the folder
   `sims_gitexclude/` that
   [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
   writes there.
+
+A checklist file `guidelines/<x>.yml` holds one reporting guideline, in
+the checklist schema of the methods repository. Copy the file from
+there. `guidelines_valid` fails the file unless each of these is true:
+
+- The file is valid YAML, and a map.
+
+- It has no key other than `id`, `title`, `version`, `source`,
+  `citation`, `designs`, `design` and `items`.
+
+- `id` and `title` are each one string. `id` has only the characters
+  `a-z`, `0-9` and `-`, and no other file has the same `id`.
+
+- `version`, `source` and `citation` MAY be missing. Each one that is
+  there is one string.
+
+- A key that is there has a value. `version:` with nothing after it, or
+  `citation: ~`, fails. This holds for `designs` and `design` too, and
+  for the `designs` of an entry.
+
+- `designs` MAY be missing. When it is there, it is a YAML sequence of
+  strings, such as `[cohort]`. One string, such as `designs: cohort`, or
+  a map fails. The same holds for the `designs` of an entry.
+
+- `design` MAY be missing. When it is there, it is one of `designs`.
+
+- `items` is a YAML sequence with at least one entry. A map fails.
+
+- Each entry has no key other than `item`, `section`, `topic`, `kind`,
+  `designs` and `text`. Its `item`, `section`, `topic`, `kind` and
+  `text` are each one string. Quote an item id such as `"2"`, because
+  YAML reads `2` as a number.
+
+- The `kind` of each entry is `result`, `prose` or `author`.
+
+- The `designs` of an entry MAY be missing, and the entry then belongs
+  to each design of the file. When it is there, the file has `designs`,
+  and each value is one of them.
+
+- An item id comes once per design, among the entries that `design`
+  keeps. STROBE has three entries with the item id `15`, one for each
+  design, so it passes.
+
+A project copy MAY add the key `design`, such as `design: cohort`. pbn
+then keeps the entries whose `designs` include it, and the entries
+without `designs`.
 
 The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.
@@ -439,9 +624,10 @@ and the symbols.
 `vNN_one_file.R` at the top level is the file of
 [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
 It holds the paths of a server by design, and pbn writes it. So
-`loc_per_file`, `cyclomatic_complexity`, `no_local_assign` and
-`no_absolute_paths` do not read it, and no rule takes it for a run
-script. Put it in git: it is what ran on the server.
+`loc_per_file`, `cyclomatic_complexity`, `no_local_assign`,
+`no_absolute_paths`, `no_plot_title`, `no_plot_subtitle` and
+`no_plot_caption` do not read it, and no rule takes it for a run script.
+Put it in git: it is what ran on the server.
 
 ## The file pbn.yml
 
@@ -449,14 +635,14 @@ Each project MUST have the file `pbn.yml` in its top folder `path`. pbn
 reads no other file. A file `pbn.yaml` stops `check_project()` with the
 advice to rename it. The smallest `pbn.yml` is one line:
 
-    extends: house_2026_11_20
+    extends: house_2026_11_25
 
 The key `extends` names a house rule set. A set is a dated file in the
 folder `rules/` of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never
 chooses a set for a project. So a new version of pbn does not change the
 rules of a project. To read the set, run
-`readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))`.
+`readLines(system.file("rules", "house_2026_11_25.yml", package = "pbn"))`.
 
 The set gives each rule one of three levels:
 
@@ -496,17 +682,18 @@ either.
 The key `ignore` MAY list folders at the top level, such as `archive/`,
 that no rule reads: their files give no finding, not even a WARN. Use it
 for old work that nothing runs. A final `/` changes nothing. An entry
-MUST be one folder at the top level that the house layout does not name,
-so it cannot be `manuscript/`, `background/`, `adhoc/` or a folder of a
-version. A folder that does not exist is no error. The locked rules
-still read an ignored folder, so a tracked file with `gitexclude` in its
-name fails there too. The first line of the report counts the ignored
-folders.
+MUST be one folder at the top level that the house layout of the set
+does not name, so it cannot be `manuscript/`, `background/`, `adhoc/` or
+a folder of a version. From the set `house_2026_11_26`, it cannot be
+`guidelines/` either. A folder that does not exist is no error. The
+locked rules still read an ignored folder, so a tracked file with
+`gitexclude` in its name fails there too. The first line of the report
+counts the ignored folders.
 
 This `pbn.yml` changes two rules, allows three paths and ignores one
 folder:
 
-    extends: house_2026_11_20
+    extends: house_2026_11_25
     rules:
       cyclomatic_complexity: {limit: 25}
       unknown_path: off
@@ -569,7 +756,7 @@ Other checks:
 ``` r
 home <- file.path(tempdir(), "pbn_check_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines(
   'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))',
   file.path(home, "v01_run.R")
@@ -577,7 +764,7 @@ writeLines(
 writeLines("# A fake project", file.path(home, "README.md"))
 writeLines(c("# Changelog", "", "## v01"), file.path(home, "CHANGELOG.md"))
 pbn::check_project(home)
-#> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)
+#> Rules: house_2026_11_25, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
@@ -602,10 +789,13 @@ pbn::check_project(home)
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
 #> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()
 #> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()
+#> PASS  no_plot_title  no .R file gives a figure a title
+#> PASS  no_plot_subtitle  no .R file gives a figure a subtitle
+#> PASS  no_plot_caption  no .R file gives a figure a caption
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
 #> PASS  unknown_path  the house layout names every top-level path
-#> 27 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 30 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

@@ -11,7 +11,7 @@ there and runs it from the top to the end."><meta property="og:image" content="h
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -151,8 +151,9 @@ it on its last line.</p></li>
 </ul><p>The file has LF line ends. pbn does not cut long lines, and it prints the
 length of the longest line. The file keeps the <code>workers</code> of
 <code><a href="run_plan.html">pbn::run_plan()</a></code> of the run script, and its header says how to change
-it. The paths go into the file as they are given, so give <code>/</code> in a path
-for Windows too, for example <code>"N:/durable/project"</code>.</p>
+it. The paths go into the file as they are given, without a final <code>/</code> or
+<code>\</code>, so give <code>/</code> in a path for Windows too, for example
+<code>"N:/durable/project"</code>.</p>
 <p>The file is always <code>&lt;version&gt;_one_file.R</code> in the folder of the project of
 the last <code><a href="initialize_project.html">initialize_project()</a></code> of this R session. The printed line names
 that folder.</p>
@@ -171,6 +172,7 @@ paths of the server by design.</p>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, section "Running on an air-gapped server".</p>
 <p>Other one file:
 <code><a href="check_one_file.html">check_one_file()</a></code>,
+<code><a href="export_blocks.html">export_blocks()</a></code>,
 <code><a href="show_blocks.html">show_blocks()</a></code></p></div>
     </div>
 

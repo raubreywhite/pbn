@@ -143,7 +143,7 @@ cat(grep("^FAIL|PASS, ", strsplit(checked$stdout, "\r?\n")[[1]], value = TRUE), 
 #> FAIL  no_local_copy_of_pbn_function  v01_functions/data_folder.R: defines folder, a pbn export. Fix: rename the function, or use the pbn export and correct any fault in pbn.
 #> FAIL  no_environment_variables  v01_functions/data_folder.R: Sys.getenv on line 2. Fix: put the value in CFG, and the folder of data in the argument folders of pbn::initialize_project().
 #> FAIL  no_absolute_paths  v01_functions/data_raw.R:3: "/home/ana/project/data/d.csv". Fix: start a path to data from pbn::folder(), and a path for output from the argument dir of the output function of pbn::make_outputs().
-#> 24 PASS, 0 WARN, 3 FAIL, 0 OFF
+#> 27 PASS, 0 WARN, 3 FAIL, 0 OFF
 writeLines(raw_code, raw_file)
 unlink(file.path(home, "v01_functions", "data_folder.R"))
 ```
@@ -228,10 +228,10 @@ failed assertion:
 ``` r
 pbn::read_results("v01", scenario = "confounded", home = home)
 #> Error:
-#> ! /tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/confounded/results.qs2").
+#> ! /tmp/RtmpWguowY/pbn_agents/project/v01_results/confounded/check.csv holds an assertion that did not pass, so read_results() does not read /tmp/RtmpWguowY/pbn_agents/project/v01_results/confounded/results.qs2. Fix the analysis and run it again. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpWguowY/pbn_agents/project/v01_results/confounded/results.qs2").
 pbn::read_results("v01", home = home)
 #> Error:
-#> ! manifest$failed_fake_checks of /tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpIv8w2Z/pbn_agents/project/v01_results/real/results.qs2").
+#> ! manifest$failed_fake_checks of /tmp/RtmpWguowY/pbn_agents/project/v01_results/real/results.qs2 names a fake scenario with a failed assertion: "confounded". Its assertions are in /tmp/RtmpWguowY/pbn_agents/project/v01_results/confounded/check.csv. Correct the analysis, and run the scenario "real" again with the fake scenarios. To look at the results for debugging, read them with qs2::qs_read("/tmp/RtmpWguowY/pbn_agents/project/v01_results/real/results.qs2").
 ```
 
 [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
@@ -294,13 +294,21 @@ This project uses the R package pbn. Before you change any code, read how to use
 - Do not change `pbn.yml`. Ask.
 - Do not freeze a version or start a new one. Ask.
 
+## Results
+
+- In a one-file project, the run on this computer writes the scenario `real` to `vNN_results/fake/`. A one-file project is one whose `vNN_run.R` gives `one_file_home` to `pbn::initialize_project()`.
+- `fake/` stands in for the real results, and its numbers are fake. It is not one of the fake scenarios, which have planted effects.
+- `vNN_results/real/` holds only the real results that come back from the server. In a one-file project, that is `export_blocks.txt`, which a person saves, and the `blocks.qs2` that `pbn::import_blocks()` writes from it. Write nothing else into it.
+
 ## Manuscripts
 
+- Save your own draft as `manuscript/draft/vNN_<INITIALS>.docx`, and its supporting information as `manuscript/draft/vNN_<INITIALS>_si.docx`. NN is the version it starts from. A draft is outside the version counter, so you MAY overwrite it.
 - A hand edit, by a person or by an agent for a person, is saved as `manuscript/manual/v(NN+1)_<INITIALS>.docx`. NN is the version it starts from. INITIALS are those of the person responsible.
 - Never edit or overwrite a file that is already in `manuscript/manual/` or `manuscript/built/`. Save a new file.
 - Add a `## v(NN+1)` section to `CHANGELOG.md` with the file name, who edited it, the version it starts from, and what changed.
 - `verify()` then fails on `manual_not_ahead` until a person starts the next run version. Do not start it; ask.
-- A built manuscript reads `read_results()` of its own version only.
+- A built manuscript reads its own version only. In a one-file project it reads `pbn::read_blocks()` or `pbn::txt()`, and in another project `read_results()` or `pbn::txt()`.
+- A one-file project has fake numbers until `pbn::import_blocks()` writes `vNN_results/real/blocks.qs2` from real pages. Until then, save its manuscript in `manuscript/draft/`.
 ```
 
 The template points the agent to
@@ -324,6 +332,20 @@ pbn supports two more practices:
   [`pbn::to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
   writes one R script that runs the scenario `real` on a server without
   a network.
+
+Two folders keep the work of an agent apart from the numbers that count:
+
+- **`manuscript/draft/`** holds the drafts of an agent,
+  `vNN_<INITIALS>.docx` and `vNN_<INITIALS>_si.docx`. A draft is outside
+  the version counter, so a rebuild overwrites it and costs no manual
+  version.
+- **`vNN_results/fake/`** holds the scenario `real` of a one-file
+  project on this computer. A one-file project is one whose run script
+  gives `one_file_home`, and its data on this computer are fake.
+  `vNN_results/real/` then holds only the real results that come back
+  from the server, so they can stay beside the local run. `fake/` stands
+  in for the real results. It is not one of the fake scenarios, which
+  have planted effects and an `expect_` function.
 
 ## What the checks do not catch
 

@@ -11,7 +11,7 @@ the rows of the scenarios in only. The real data is the scenario
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -85,7 +85,9 @@ chosen scenario in the order of <code>cfg$scenarios</code>. <code>sims</code> is
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p><code>cfg$scenarios</code> MUST be a data.frame with these columns:</p><ul><li><p><code>scenario</code>: unique names that match <code>^[a-z0-9_]+$</code>. One name MUST be
-<code>"real"</code>.</p></li>
+<code>"real"</code>. A name MUST NOT be <code>"fake"</code>, because in a one-file project the
+folder <code>fake/</code> holds <code>"real"</code>, see the section The folder fake/ of
+<code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
 <li><p><code>sims</code>: the number of simulations of the scenario, a whole number of 1 or
 more.</p></li>
 <li><p><code>output</code>: optional. <code>TRUE</code> or <code>FALSE</code> on each row, and <code>FALSE</code> for

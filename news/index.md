@@ -1,5 +1,250 @@
 # Changelog
 
+## pbn 2026.12.12
+
+- Fix:
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  takes two doubles of the results as the same when they differ by at
+  most `sqrt(.Machine$double.eps)` of the larger absolute value, the
+  default tolerance of
+  [`all.equal()`](https://rdrr.io/r/base/all.equal.html). Before, it
+  compared them exactly, so an estimate that differed in the tenth
+  significant digit between two R sessions gave FAIL. Every other value
+  MUST still be identical, such as an integer, a string, a `Date`, a
+  `POSIXct` or an attribute.
+- Fix: the cache key of the data holds each element of `CFG` that the
+  data code reads as `CFG$x` or `CFG[["x"]]`, beside `CFG$data`. The
+  data code is `fn` or each step, and each function of the functions
+  folder that it calls. Before, a change of such an element, for example
+  `CFG$ncc$id`, left the old data in use without a warning. When the
+  data code uses `CFG` in another way, such as `cfg = CFG`, each element
+  of `CFG` is in the key. Otherwise, an element that only an analysis
+  reads still leaves the cache in use. The cache line names a changed
+  element, for example “CFG\$ncc changed”. `fake_md5` holds code only,
+  as before.
+- [`new_version()`](https://www.rwhite.no/pbn/reference/new_version.md)
+  adds `<to>_functions/<path>` to each list under `allow:` of `pbn.yml`
+  that has `<from>_functions/<path>`, and prints each entry it adds.
+  Before, the new version failed
+  [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
+  until a person added the entries by hand. It keeps each comment, and
+  stops on a form it cannot edit, such as a flow list on more than one
+  line.
+- Behaviour change: after the assertions pass,
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
+  calls each block of `blocks` on simulation 1 of each scenario and
+  writes the values to `<version>_results/<scenario>/blocks.qs2`. A
+  block that fails stops the run with an error that names the block and
+  the scenario, so
+  [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) gives
+  FAIL. Before, a failed block passed a full run, and only
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  found it.
+- New rule set `house_2026_11_25`: the set `house_2026_11_20` with three
+  new rules at `fail`. A figure has no title, no subtitle and no
+  caption, because its legend belongs in the manuscript. A project on an
+  older set sees no change.
+- New rule `no_plot_title` fails `ggtitle()`, the argument `title` of
+  `labs()` and of `plot_annotation()`, and an assignment to
+  `<x>$labels$title`, in each `.R` file that `no_absolute_paths` reads.
+  The value `NULL` passes, and so do the other arguments, such as `x`,
+  `tag` and `tag_levels`, and a theme element such as `plot.title`.
+- New rule `no_plot_subtitle` fails the argument `subtitle` of
+  `ggtitle()`, `labs()` and `plot_annotation()`, and an assignment to
+  `<x>$labels$subtitle`.
+- New rule `no_plot_caption` fails the argument `caption` of `labs()`
+  and `plot_annotation()`, and an assignment to `<x>$labels$caption`.
+- New rule set `house_2026_11_26`: the set `house_2026_11_25` with the
+  rules `guidelines_valid` at `fail` and `guidelines_covered` at `warn`,
+  and the folder `guidelines/` in the house layout. A project on an
+  older set sees no change. The line for a new `pbn.yml` and
+  [`create_project()`](https://www.rwhite.no/pbn/reference/create_project.md)
+  now name `house_2026_11_26`.
+- `house_2026_11_26` also has the rules `manual_has_supplement` and
+  `manual_si_has_main` at `fail`. A main file
+  `manuscript/manual/vNN_<INITIALS>.docx` needs an `_si` file of any
+  initials with a version at or below NN. Each `_si` file needs the main
+  file of the same version and the same initials. A project without a
+  supplement sets `rules: manual_has_supplement: off`.
+- New rule `guidelines_valid` fails each file `guidelines/<x>.yml` that
+  breaks the checklist schema of the methods repository, also a file
+  that does not parse.
+  [`?check_project`](https://www.rwhite.no/pbn/reference/check_project.md)
+  lists the schema. A project copy MAY set `design: cohort` to keep the
+  entries of that design.
+- New rule `guidelines_covered` warns about each result item of
+  `guidelines/*.yml` that no
+  [`block()`](https://www.rwhite.no/pbn/reference/block.md) names, and
+  about each item of a block that no checklist has. It reads the literal
+  `items` of the newest `vNN_functions/blocks.R` without running code.
+- New `make_checklists(version, manuscript)` writes
+  `manuscript/built/<version>/checklist_<id>.md` for each checklist. A
+  result item is `numbers found` only when the `.md` or `.docx`
+  manuscript holds each formatted string of its blocks. A reader still
+  confirms each item.
+- New `block(fn, format, items)` declares one block that returns numbers
+  and names its formatter and its checklist items. The set
+  `house_2026_11_26` needs it for each block. An older set keeps plain
+  functions as before.
+- pbn has five house formatters: `ci`, `p`, `effect`, `n_pct` and
+  `mean_sd`. A function of `<version>_functions/formatters.R` wins over
+  a house formatter of the same name.
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and
+  [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  print the formatted value.
+- New `txt(name, row, col, version)` returns one formatted string from
+  the real `blocks.qs2`, for the manuscript. New
+  [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md)
+  writes `blocks.qs2` again from the saved results, without a run.
+- New
+  [`export_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  prints the raw value of each block on the server as
+  [`dput()`](https://rdrr.io/r/base/dput.html) text, in pages of at most
+  35 lines. Each header line holds an md5 of the text of its page. On
+  fake real data, each header line ends with the token `fake`. New
+  [`import_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  reads the captured pages into `vNN_results/real/blocks.qs2`, with the
+  attribute `pbn_fake = TRUE` for fake pages. It stops on a page whose
+  md5 differs, on a missing page, on a page twice with other text, and
+  on mixed tokens.
+- New `read_blocks(version)` returns `vNN_results/real/blocks.qs2`.
+  Without it, it returns the `blocks.qs2` of the scenario `real` of this
+  computer with a warning that the numbers are fake. In a one-file
+  project that file is in `fake/`. Behaviour change:
+  [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) and
+  [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md)
+  read the blocks in the same way, so a one-file project gets the
+  imported numbers of `real/`.
+- A document that knitr renders and that reads fake values with
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md),
+  [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) or
+  [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md)
+  starts with the line **FAKE DATA**.
+- New rule `built_reads_source` in `house_2026_11_26`, at `fail`. In a
+  one-file version, a file in `manuscript/built/vNN/` fails without a
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  or [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) call, and on
+  a
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+  call. It also fails while `vNN_results/real/blocks.qs2` is missing or
+  has `pbn_fake = TRUE`. In another version, it fails on a
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  call. `built_reads_own_version` also reads each
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  call.
+- Each page of
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  has the line `<version>, run <run date>` under the page line, so a
+  screenshot shows its version and its run date. A page with a line
+  wider than 270 characters ends with a warning that names the block and
+  the width of the widest line.
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md),
+  [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md),
+  [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) stop on a
+  raw value of a
+  [`block()`](https://www.rwhite.no/pbn/reference/block.md) with a
+  formatted number in a label cell. Examples are `0.80` and `n = 3`. A
+  comparison in a label, such as `Education < 16 years`, passes. The
+  error names the block, the column and the cell. `blocks.qs2` holds the
+  raw values.
+- For `house_2026_11_26`,
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  leaves `formatters.R` out of `manifest$source_md5` under the
+  conditions of `blocks.R`. The rule `blocks_list` fails a plain
+  function and a
+  [`block()`](https://www.rwhite.no/pbn/reference/block.md) whose format
+  or items are not literal. It also fails a use of the names of
+  `formatters.R` outside `blocks.R`.
+- For `house_2026_11_26`, `built_reads_own_version` and
+  `manuscript_reads_real` also read each
+  [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) call of a
+  manuscript.
+- Fix:
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
+  stops when it cannot create the output folder that it emptied. Before,
+  it ignored a failed
+  [`dir.create()`](https://rdrr.io/r/base/files2.html), and the output
+  function then wrote into a folder that was not there. It tries 8
+  times, with pauses that double from 0.5 seconds to 8, about 30 seconds
+  in all, because a network drive of Windows keeps a folder that was
+  just deleted “pending delete” while another program holds it: on TSD,
+  [`dir.create()`](https://rdrr.io/r/base/files2.html) said “already
+  exists” and the folder was gone a moment later. A folder counts as
+  created only when pbn can write a file into it. The error names the
+  folder and what R said.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md),
+  the run log and
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  create their folders in the same way.
+- Behaviour change: in a one-file project, whose run script gives
+  `one_file_home`, the scenario `real` of this computer is in
+  `<version>_results/fake/`. `real/` then holds only the real results of
+  the server.
+  [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md),
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md),
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
+  the blocks,
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  and [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) use
+  `fake/` there, and its manifest gets `fake_real_data = TRUE`. A
+  project that is not one-file keeps `real/`.
+- [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  stops on `one_file_home` together with `fake_real_data = TRUE`, and
+  [`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
+  refuses a scenario named `fake`.
+- `manuscript/draft/vNN_<INITIALS>.docx` and `vNN_<INITIALS>_si.docx`
+  hold the drafts of an agent, outside the version counter.
+  `lower_case_names` passes their initials, as in `manuscript/manual/`.
+- Behaviour change:
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  drops a final `/` or `\` of `home` and of each path of `folders`,
+  `one_file_home` and `one_file_folders`. So pbn builds no path with
+  `//`, such as `N:/project//v05_results`. A root such as `N:/` or `/`
+  stays as it is. A file of
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  with a final `/` in a path of the server is then older than the run
+  script for
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md).
+  Run
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+  again.
+- [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  refuses real results whose `manifest$failed_fake_checks` names a fake
+  scenario with a failed assertion. It names the scenario and its
+  `check.csv`, and runs nothing. The comparison then leaves
+  `failed_fake_checks` out. Before, a project without blocks got the
+  FAIL of a manifest difference only.
+- Behaviour change: a project formatter sees `CFG` and the functions of
+  the functions folder in
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+  [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) and
+  [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md),
+  as in the file of
+  [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md).
+  Before, only that file gave it more than the base environment. Without
+  a session, [`txt()`](https://www.rwhite.no/pbn/reference/txt.md)
+  evaluates the top-level assignments of the functions folder and runs
+  no other top-level call.
+- Fix:
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  and
+  [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
+  read `formatters.R` only when a block is a
+  [`pbn::block()`](https://www.rwhite.no/pbn/reference/block.md).
+  Before, a project on an older set with plain blocks stopped when its
+  `formatters.R` held other top-level code.
+- Fix: in a project that is not one-file, a run with
+  `fake_real_data = TRUE` gives `real/blocks.qs2` the attribute
+  `pbn_fake = TRUE`, also through
+  [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md).
+  So
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  and [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) treat its
+  values as fake, and a rendered document gets the line **FAKE DATA**.
+
 ## pbn 2026.12.11
 
 - A manual manuscript MAY have a suffix of one word of lower-case

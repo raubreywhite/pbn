@@ -52,6 +52,12 @@ results of that simulation. The section The files of
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
 shows each file.
 
+In a one-file project, `<scenario>` is `fake` for the scenario `"real"`.
+So `read_results(version)` there reads `<version>_results/fake/`. The
+section The folder fake/ of
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+gives the rule.
+
 `read_results()` stops when
 `<home>/<version>_results/<scenario>/check.csv` exists and holds a value
 of `pass` that is not `TRUE`, also when it reads one simulation. It also

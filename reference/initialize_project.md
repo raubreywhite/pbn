@@ -55,14 +55,16 @@ initialize_project(
 
   `TRUE` when the folders of `folders` on this computer hold fake files
   in the formats of the real data, and `FALSE`, the default, otherwise.
-  See the section Fake real data.
+  See the section Fake real data. A call with `one_file_home` MUST NOT
+  give `fake_real_data = TRUE`, and it stops.
 
 - one_file_home:
 
   The project folder on the server without a network, one string, for
   example `"N:/durable/project"`, or `NULL`, the default.
   [`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
-  writes it into its file. See the section Paths of the server.
+  writes it into its file. See the sections Paths of the server and The
+  folder fake/.
 
 - one_file_folders:
 
@@ -102,8 +104,12 @@ folders.
     `<version>_functions/`, before it sources them.
     [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
     stores them in `manifest$source_md5`, without
-    `<version>_functions/blocks.R`. The section The md5 of the run
-    script gives the text of the run script that the md5 leaves out.
+    `<version>_functions/blocks.R`. From the rule set
+    `house_2026_11_26`, it also leaves out
+    `<version>_functions/formatters.R`, see `source_md5` of
+    [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md).
+    The section The md5 of the run script gives the text of the run
+    script that the md5 leaves out.
 
 3.  It lists each file under each folder of `folders` that exists, at
     any depth, with its size and its modification time. This is the
@@ -128,6 +134,12 @@ Project code finds a folder with
 [`folder()`](https://www.rwhite.no/pbn/reference/folder.md) inside a
 function: a top-level call in a file of the functions folder runs before
 `initialize_project()` sets the folders, and it stops.
+
+`initialize_project()` drops a final `/` or `\` of `home` and of each
+path of `folders`, `one_file_home` and `one_file_folders`. So
+`"N:/durable/project/"` is `"N:/durable/project"`, and a path that pbn
+builds from it never holds `//`. A root keeps its separator: `"N:/"` and
+`"/"` stay as they are.
 
 The results folder is `<home>/<version>_results`.
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)
@@ -176,8 +188,10 @@ The real data of a project MAY be on a server only. Its folders on this
 computer MAY then hold fake files in the formats of the real data. Then
 the code that reads the real data runs here, and
 [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
-has results to compare. Give `fake_real_data = TRUE` in the run script
-of such a computer. It is about the scenario `"real"` only:
+has results to compare. In a project that is not one-file, give
+`fake_real_data = TRUE` in the run script of such a computer. A one-file
+project gets the same labels without it, see the section The folder
+fake/. It is about the scenario `"real"` only:
 
 - The manifest of the real results gets `fake_real_data = TRUE`. It is
   `FALSE` without the flag. A fake scenario has no such field.
@@ -187,10 +201,10 @@ of such a computer. It is about the scenario `"real"` only:
   the scenario `real (fake real data)`.
 
 - [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md)
-  writes the output of `"real"` as fake output, into
-  `real/output_fake_data/` with the prefix `fake_data_`, and
+  writes the output of `"real"` as fake output, into `output_fake_data/`
+  of its folder with the prefix `fake_data_`, and
   [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md)
-  marks its figures. It deletes an old `real/output/`.
+  marks its figures. It deletes an old `output/` there.
 
 - [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
   and
@@ -218,6 +232,44 @@ reads such results as usual. The file of
 never gives `fake_real_data`, because the server holds the real data.
 `fake_real_data = TRUE` together with `generated` stops.
 
+## The folder fake/
+
+A one-file project is a project whose run script `<version>_run.R` gives
+`one_file_home` in a top-level call `pbn::initialize_project()`. pbn
+finds this from the parse of the run script, and evaluates nothing. In a
+one-file project on this computer, the scenario `"real"` is in
+`<version>_results/fake/`, and not in `<version>_results/real/`:
+
+- [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md),
+  [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md),
+  [`make_outputs()`](https://www.rwhite.no/pbn/reference/make_outputs.md),
+  [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+  [`txt()`](https://www.rwhite.no/pbn/reference/txt.md),
+  [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md),
+  [`check_one_file()`](https://www.rwhite.no/pbn/reference/check_one_file.md)
+  and [`verify()`](https://www.rwhite.no/pbn/reference/verify.md) read
+  and write the scenario `"real"` in `fake/`. No function of pbn creates
+  `real/` there.
+
+- `real/` holds only the real results that come back from the server.
+
+- `one_file_home` says that the data on this computer are fake. So pbn
+  writes `fake_real_data = TRUE` into the manifest of `fake/`, and the
+  labels of the section Fake real data apply. The call MUST NOT give
+  `fake_real_data = TRUE`, and it stops.
+
+`fake/` stands in for the real results. It is not one of the fake
+scenarios of `CFG$scenarios`, which have planted effects and an
+`expect_<scenario>()` function. So
+[`scenarios()`](https://www.rwhite.no/pbn/reference/scenarios.md)
+refuses the name `fake`.
+
+The file of
+[`to_one_file()`](https://www.rwhite.no/pbn/reference/to_one_file.md)
+calls `initialize_project()` without `one_file_home`, and the server has
+no run script. So on the server the scenario `"real"` is in `real/`, as
+in a project that is not one-file.
+
 ## Paths of the server
 
 Give `one_file_home` and `one_file_folders` together, or neither. A
@@ -241,8 +293,9 @@ change the results. See the section The md5 of the run script.
 
 The paths are text only. `initialize_project()` stops on one of the two
 without the other, and on a folder of `folders` that `one_file_folders`
-does not name, or the reverse. It checks no folder on the disk,
-normalises no path and uses no path in the run. The paths never go into
+does not name, or the reverse. It checks no folder on the disk and uses
+no path in the run. It drops a final `/` or `\` of each path, as the
+section Details says, and changes nothing else. The paths never go into
 the manifest, a cache key or the run log.
 
 ## The md5 of the run script
@@ -317,7 +370,7 @@ Other project setup:
 ``` r
 home <- file.path(tempdir(), "pbn_initialize_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines(
   "CFG <- list(scenarios = data.frame(scenario = c('real', 'null'), sims = c(1, 3)))",
   file.path(home, "v01_functions", "_cfg.R")
@@ -331,11 +384,11 @@ p <- pbn::initialize_project(
   env = env
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmplyudvS/pbn_initialize_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp7A8O6t/pbn_initialize_example/v01_functions into 
 p$results
-#> [1] "/tmp/RtmplyudvS/pbn_initialize_example/v01_results"
+#> [1] "/tmp/Rtmp7A8O6t/pbn_initialize_example/v01_results"
 pbn::folder("main")
-#> [1] "/tmp/RtmplyudvS/pbn_initialize_example/data"
+#> [1] "/tmp/Rtmp7A8O6t/pbn_initialize_example/data"
 env$CFG$scenarios
 #>   scenario sims
 #> 1     real    1

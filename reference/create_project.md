@@ -32,7 +32,7 @@ Invisibly, the paths of the files that it wrote, relative to `home`.
 
 `create_project()` writes these files:
 
-- `pbn.yml`, with the line `extends: house_2026_11_20`.
+- `pbn.yml`, with the line `extends: house_2026_11_26`.
 
 - `v01_run.R`, the run script. Its data steps are `raw`, `clean` and
   `cohort`, and it has one analysis kind, `risk_difference`.
@@ -99,9 +99,9 @@ Other project setup:
 home <- file.path(tempdir(), "pbn_create_example")
 dir.create(home)
 pbn::create_project(home = home)
-#> create_project(): wrote 14 files in /tmp/RtmplyudvS/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.
+#> create_project(): wrote 14 files in /tmp/Rtmp7A8O6t/pbn_create_example. The project is at version v01. Run pbn::verify("v01") in that folder.
 pbn::check_project(home)
-#> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)
+#> Rules: house_2026_11_26, 0 overrides, 0 allowed paths (pbn.yml)
 #> PASS  lower_case_names  no capital letter in a name
 #> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version
 #> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse
@@ -114,8 +114,11 @@ pbn::check_project(home)
 #> PASS  manual_manuscript_names  every file in manuscript/manual/ is named vNN_<INITIALS>.docx or vNN_<INITIALS>_<suffix>.docx
 #> PASS  manuscript_reads_real  manuscript/built/ reads only the real results
 #> PASS  built_reads_own_version  every read_results() call in manuscript/built/vNN/ reads the version vNN
+#> PASS  built_reads_source  every manuscript in manuscript/built/vNN/ reads the numbers of its source: an imported vNN_results/real/blocks.qs2 of real pages with read_blocks() or txt() in a one-file version, and no read_blocks() in another version
 #> PASS  built_has_run  every folder manuscript/built/vNN/ has a vNN_run.R
 #> PASS  manual_not_ahead  every manuscript/manual/vNN_<INITIALS>.docx is older than the newest run version
+#> PASS  manual_has_supplement  every manuscript/manual/vNN_<INITIALS>.docx has a supplement manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM at or below NN
+#> PASS  manual_si_has_main  every manuscript/manual/vNN_<INITIALS>_si.docx has the main file manuscript/manual/vNN_<INITIALS>.docx
 #> PASS  fake_data_names  every file in an output_fake_data/ folder, and no file elsewhere, has a name that starts with fake_data_
 #> PASS  no_local_copy_of_pbn_function  no vNN_functions/ file defines a pbn export
 #> PASS  loc_per_file  no .R file has more than 1000 code lines
@@ -126,10 +129,15 @@ pbn::check_project(home)
 #> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses <<- or ->>
 #> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()
 #> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()
+#> PASS  no_plot_title  no .R file gives a figure a title
+#> PASS  no_plot_subtitle  no .R file gives a figure a subtitle
+#> PASS  no_plot_caption  no .R file gives a figure a caption
 #> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file
 #> PASS  real_results_are_fake  no real results on the disk come from fake real data
+#> PASS  guidelines_valid  every guidelines/*.yml follows the checklist schema
+#> PASS  guidelines_covered  every result item of guidelines/*.yml has a block, and every item of a block is in guidelines/*.yml
 #> PASS  unknown_path  the house layout names every top-level path
-#> 27 PASS, 0 WARN, 0 FAIL, 0 OFF
+#> 35 PASS, 0 WARN, 0 FAIL, 0 OFF
 
 unlink(home, recursive = TRUE)
 ```

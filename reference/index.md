@@ -45,6 +45,8 @@
   : Check a results object against the contract
 - [`render_run()`](https://www.rwhite.no/pbn/reference/render_run.md) :
   Render the run log to a PDF
+- [`update_blocks()`](https://www.rwhite.no/pbn/reference/update_blocks.md)
+  : Write blocks.qs2 again from the saved results
 
 ## Checks of fake scenarios
 
@@ -59,6 +61,12 @@
   : Write the output of the real data and of chosen fake scenarios
 - [`stamp_fake()`](https://www.rwhite.no/pbn/reference/stamp_fake.md) :
   Mark a figure of fake data
+- [`block()`](https://www.rwhite.no/pbn/reference/block.md) : Declare
+  one block of the manuscript, with its formatter and its items
+- [`txt()`](https://www.rwhite.no/pbn/reference/txt.md) : The formatted
+  string of one block, for the manuscript
+- [`make_checklists()`](https://www.rwhite.no/pbn/reference/make_checklists.md)
+  : Write the filled-in checklist of each reporting guideline
 
 ## Running on an air-gapped server
 
@@ -69,6 +77,10 @@
 - [`show_blocks()`](https://www.rwhite.no/pbn/reference/show_blocks.md)
   [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md) :
   Show the numbers of the manuscript, one block at a time
+- [`export_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  [`import_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  [`read_blocks()`](https://www.rwhite.no/pbn/reference/export_blocks.md)
+  : Take the blocks off a server as text, and read them back
 
 ## Checks of the layout
 

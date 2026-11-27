@@ -32,7 +32,9 @@ chosen scenario in the order of `cfg$scenarios`. `sims` is an integer.
 `cfg$scenarios` MUST be a data.frame with these columns:
 
 - `scenario`: unique names that match `^[a-z0-9_]+$`. One name MUST be
-  `"real"`.
+  `"real"`. A name MUST NOT be `"fake"`, because in a one-file project
+  the folder `fake/` holds `"real"`, see the section The folder fake/ of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
 
 - `sims`: the number of simulations of the scenario, a whole number of 1
   or more.

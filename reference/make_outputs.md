@@ -38,11 +38,14 @@ Call
 first. For each scenario of `scenarios`, `make_outputs()` does this:
 
 - `"real"`: it calls `fn(results, dir)` with
-  `dir = <version>_results/real/output/`. The output is fake output when
-  the manifest of the real results on the disk has `fake_real_data`
-  `TRUE`. It then goes to `real/output_fake_data/`, as for a fake
-  scenario below. The manifest decides, and never the argument
-  `fake_real_data` of
+  `dir = <version>_results/real/output/`. In a one-file project, the
+  folder is `fake/` in the place of `real/`, see the section The folder
+  fake/ of
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md).
+  The output is fake output when the manifest of the real results on the
+  disk has `fake_real_data` `TRUE`. It then goes to `output_fake_data/`
+  of that folder, as for a fake scenario below. The manifest decides,
+  and never the argument `fake_real_data` of
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   in this R session. `make_outputs()` deletes the other of the two
   folders of `"real"` with one printed line, so no output of an earlier
@@ -64,8 +67,14 @@ writes, so no output of an earlier run stays beside new results. Before
 it calls `fn`, `make_outputs()` deletes the folder `dir` and creates it
 again. So no file of an earlier run stays. Keep no other file in that
 folder. It stops when the folder is still there afterwards, for example
-because another program holds a file open on Windows. After each
-scenario, it prints one line with the folder and the number of files.
+because another program holds a file open on Windows. It tries to create
+the folder 8 times, with pauses that double from 0.5 seconds to 8, about
+30 seconds in all, because a network drive of Windows keeps a folder
+that was just deleted "pending delete" while another program holds it.
+The folder counts as created only when pbn can write a file into it. It
+stops after the eighth try, and the error names the folder and what R
+said. After each scenario, it prints one line with the folder and the
+number of files.
 
 After
 [`save_results()`](https://www.rwhite.no/pbn/reference/save_results.md)

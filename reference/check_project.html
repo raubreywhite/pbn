@@ -11,7 +11,7 @@ it quits with status 1 when any rule fails."><meta property="og:image" content="
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -89,10 +89,15 @@ the tracked files, and the untracked files that git does not ignore.</p></li>
 <li><p>Otherwise, the list is every file and folder on disk.</p></li>
 </ul><p>Both lists leave out <code>.DS_Store</code>, <code>.Rhistory</code>, <code>.RData</code>, the Word lock
 files <code>~$*</code>, and everything in <code>.git/</code> or <code>.Rproj.user/</code>.</p>
-<p>The rules, with their level in the set <code>house_2026_11_20</code>, are below.
-The set <code>house_2026_11_19</code> has the same rules at the same levels, without
-<code>built_reads_own_version</code>, <code>built_has_run</code> and <code>manual_not_ahead</code>. The
-set <code>house_2026_11_17</code> also does not have <code>frozen_versions_unchanged</code>,
+<p>The rules, with their level in the set <code>house_2026_11_26</code>, are below.
+The set <code>house_2026_11_25</code> has the same rules at the same levels, without
+<code>built_reads_source</code>, <code>manual_has_supplement</code>, <code>manual_si_has_main</code>,
+<code>guidelines_valid</code> and <code>guidelines_covered</code>. The set <code>house_2026_11_20</code>
+also does not have <code>no_plot_title</code>, <code>no_plot_subtitle</code> and
+<code>no_plot_caption</code>. The set
+<code>house_2026_11_19</code> also does not have <code>built_reads_own_version</code>,
+<code>built_has_run</code> and <code>manual_not_ahead</code>. The set <code>house_2026_11_17</code> also
+does not have <code>frozen_versions_unchanged</code>,
 <code>readme_and_changelog</code>, <code>changelog_with_code</code>, <code>comment_share</code>,
 <code>no_cross_version_reads</code> and <code>no_escape_hatches</code>. A rule that the set of
 the project does not have prints no line.</p><ul><li><p><code>lower_case_names</code> (FAIL): a file or folder name has a capital letter.
@@ -100,7 +105,8 @@ Everything under <code>background/</code> is not checked. These are exempt:
 <code>README.md</code>, <code>CHANGELOG.md</code>, <code>AGENTS.md</code>, <code>CLAUDE.md</code>, <code>LICENSE</code>,
 <code>DESCRIPTION</code>, a top-level dotfile, a top-level <code>*.Rproj</code> file, file
 extensions, and the initials in <code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code>
-and <code>manuscript/manual/vNN_&lt;INITIALS&gt;_&lt;suffix&gt;.docx</code>.</p></li>
+and <code>manuscript/manual/vNN_&lt;INITIALS&gt;_&lt;suffix&gt;.docx</code>, and in the drafts
+of an agent with the same names in <code>manuscript/draft/</code>.</p></li>
 <li><p><code>run_script_initialises</code> (FAIL): a <code>vNN_run.R</code> at the top level has no
 call <code><a href="initialize_project.html">pbn::initialize_project()</a></code> whose <code>version</code> argument is the string
 <code>"vNN"</code>. A call with an argument that <code><a href="initialize_project.html">initialize_project()</a></code> does not
@@ -180,7 +186,19 @@ and a call without <code>version</code> fail too. The rule reads the code as
 <code>manuscript_reads_real</code> does, and it fails a file that R cannot parse.
 It does not read a file in <code>manuscript/built/</code> outside a folder <code>vNN/</code>,
 or a file of another language, such as <code>.py</code>. The detail lists each
-call that fails.</p></li>
+call that fails. From the set <code>house_2026_11_26</code>, the rule also reads
+each <code><a href="txt.html">txt()</a></code> call and each <code><a href="export_blocks.html">read_blocks()</a></code> call.</p></li>
+<li><p><code>built_reads_source</code> (FAIL): a file in <code>manuscript/built/vNN/</code> does not
+read the numbers of its source. A version is one-file when its
+<code>vNN_run.R</code> gives <code>one_file_home</code> in a top-level call
+<code><a href="initialize_project.html">pbn::initialize_project()</a></code>. pbn parses the run script and runs
+nothing. In a one-file version, a file fails without a
+<code><a href="export_blocks.html">read_blocks()</a></code> or <code><a href="txt.html">txt()</a></code> call, and on a <code><a href="read_results.html">read_results()</a></code> call. Each
+file there also fails while <code>vNN_results/real/blocks.qs2</code> does not
+exist, or has the attribute <code>pbn_fake</code> of <code><a href="export_blocks.html">import_blocks()</a></code>, because
+the numbers are then fake. In another version, a file fails on a
+<code><a href="export_blocks.html">read_blocks()</a></code> call. The rule reads the code as <code>manuscript_reads_real</code>
+does. It does not read a file outside a folder <code>vNN/</code>.</p></li>
 <li><p><code>built_has_run</code> (FAIL): a folder <code>manuscript/built/vNN/</code> has no
 <code>vNN_run.R</code> at the top level. In a git repository, an empty folder is
 not in the list of files, so the rule does not see it. The detail is
@@ -195,6 +213,18 @@ detail is
 with <code>PP</code> = <code>NN</code> + 1. The rule does not read a name that
 <code>manual_manuscript_names</code> fails. Without a <code>vNN_run.R</code>, the rule has
 nothing to compare. It then prints one PASS line that says so.</p></li>
+<li><p><code>manual_has_supplement</code> (FAIL): a main file
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code> has no supplement
+<code>manuscript/manual/vMM_&lt;INITIALS&gt;_si.docx</code> with <code>MM</code> at or below <code>NN</code>.
+The initials of the supplement MAY differ. The supplement suffix is
+exactly <code>si</code>, so a file with another suffix is neither a main file nor a
+supplement. The rule reads <code>manuscript/manual/</code> only, so a draft in
+<code>manuscript/draft/</code> does not count. A project without a supplement turns
+the rule off with <code>rules: manual_has_supplement: off</code> in <code>pbn.yml</code>.</p></li>
+<li><p><code>manual_si_has_main</code> (FAIL): a supplement
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;_si.docx</code> has no main file
+<code>manuscript/manual/vNN_&lt;INITIALS&gt;.docx</code> with the same version and the
+same initials. The detail names the main file to add.</p></li>
 <li><p><code>fake_data_names</code> (FAIL): a file in a folder <code>output_fake_data/</code> has a
 name without the prefix <code>fake_data_</code>, or a file with the prefix is in
 another folder. <code><a href="make_outputs.html">make_outputs()</a></code> writes these folders.</p></li>
@@ -308,6 +338,37 @@ builds stays outside the rule.</p>
 <p>The detail is <code>&lt;file&gt;:&lt;line&gt;: "&lt;the string, cut at 40 characters&gt;"</code>, or
 <code>&lt;file&gt;:&lt;line&gt;: file.path("&lt;the first argument, cut at 40 characters&gt;", ...)</code>. A path under <code>allow</code> allows each finding of one
 file.</p></li>
+<li><p><code>no_plot_title</code> (FAIL): an <code>.R</code> file of <code>loc_per_file</code> gives a figure
+a title. A figure has no title, no subtitle and no caption, because its
+legend belongs in the manuscript. The rule fails each of these:</p><ul><li><p>a call <code>ggtitle()</code> with a value of its first argument <code>label</code>.</p></li>
+<li><p>an argument <code>title</code> of <code>labs()</code>.</p></li>
+<li><p>an argument <code>title</code> of <code>plot_annotation()</code>, by name or as its first
+argument.</p></li>
+<li><p>an assignment to <code>&lt;x&gt;$labels$title</code>.</p></li>
+</ul><p>A call MAY have the prefix <code>ggplot2::</code> for <code>ggtitle()</code> and <code>labs()</code>, and
+<code>patchwork::</code> for <code>plot_annotation()</code>. A call of the same name from
+another package passes. R matches the arguments of a call as it does
+in a run: by name, by a part of a name and by position. These pass:</p><ul><li><p>the value <code>NULL</code>, as in <code>labs(title = NULL)</code>, which removes the title.</p></li>
+<li><p>the other arguments, as in <code>labs(x = "Age", colour = "Group", tag = "A")</code>
+and <code>plot_annotation(tag_levels = "A")</code>.</p></li>
+<li><p>a theme element, as in <code>theme(plot.title = element_text())</code>.</p></li>
+<li><p>an argument <code>title</code> or <code>caption</code> of another function, as in
+<code>knitr::kable(d, caption = "x")</code>.</p></li>
+<li><p>a call that R cannot match, as one with an argument that the function
+does not have, and a title that <code><a href="https://rdrr.io/r/base/do.call.html" class="external-link">do.call()</a></code> or a <code>...</code> passes. The
+rule misses these.</p></li>
+</ul><p>The rule parses each file and runs no code of it. It skips a file that
+R cannot parse. The detail is <code>&lt;file&gt;:&lt;line&gt;: &lt;call&gt;(&lt;argument&gt; = ...)</code>,
+for example <code>v01_functions/output.R:12: ggplot2::labs(title = ...)</code>, or
+<code>&lt;file&gt;:&lt;line&gt;: &lt;target&gt; &lt;- ...</code>. A path under <code>allow</code> allows each
+finding of one file.</p></li>
+<li><p><code>no_plot_subtitle</code> (FAIL): as <code>no_plot_title</code>, for a subtitle: the
+argument <code>subtitle</code> of <code>ggtitle()</code>, by name or as its second argument,
+the argument <code>subtitle</code> of <code>labs()</code> and of <code>plot_annotation()</code>, and an
+assignment to <code>&lt;x&gt;$labels$subtitle</code>.</p></li>
+<li><p><code>no_plot_caption</code> (FAIL): as <code>no_plot_title</code>, for a caption: the
+argument <code>caption</code> of <code>labs()</code> and of <code>plot_annotation()</code>, and an
+assignment to <code>&lt;x&gt;$labels$caption</code>.</p></li>
 <li><p><code>blocks_list</code> (FAIL): for each functions folder, one of these is true:</p><ul><li><p>a file other than <code>vNN_functions/blocks.R</code> assigns <code>blocks</code> at its
 top level. pbn leaves <code>blocks.R</code> out of <code>manifest$source_md5</code>, so the
 blocks MUST be in that file.</p></li>
@@ -331,19 +392,44 @@ the name of an argument do not count.</p></li>
 </ul><p>The detail is <code>&lt;file&gt;:&lt;line&gt;: &lt;what&gt;</code>. A folder without <code>blocks</code> and
 without <code>blocks.R</code> passes. <code><a href="initialize_project.html">initialize_project()</a></code> makes the same checks
 of <code>blocks.R</code>, and puts it back into <code>manifest$source_md5</code> when one
-fails, also when this rule is <code>warn</code> or <code>off</code>.</p></li>
+fails, also when this rule is <code>warn</code> or <code>off</code>.</p>
+<p>From the set <code>house_2026_11_26</code>, the rule also fails each of these:</p><ul><li><p>an element of <code>blocks</code> that is not a call <code>pbn::block(fn, format, items)</code>.</p></li>
+<li><p>a <code>format</code> that is not one string, or that names no house formatter
+and no function of <code>formatters.R</code>.</p></li>
+<li><p>an <code>items</code> that is not a literal <code>c("&lt;id&gt;:&lt;item&gt;", ...)</code> of strings.</p></li>
+<li><p>a top-level expression of <code>vNN_functions/formatters.R</code> that does not
+assign a name to <code>function(...)</code>.</p></li>
+<li><p>a name of <code>formatters.R</code> that a file other than <code>blocks.R</code> uses or
+assigns.</p></li>
+</ul><p>The rule does not run the blocks, so it does not see their raw values.
+<code><a href="save_results.html">save_results()</a></code>, <code><a href="update_blocks.html">update_blocks()</a></code>, <code><a href="show_blocks.html">show_blocks()</a></code>, <code><a href="show_blocks.html">show_block()</a></code> and
+<code><a href="txt.html">txt()</a></code> check each raw value as <code><a href="block.html">block()</a></code> says.</p></li>
 <li><p><code>real_results_are_fake</code> (WARN): a file <code>vNN_results/real/results.qs2</code>
 holds <code>manifest$fake_real_data</code> <code>TRUE</code>. Its run had
 <code>fake_real_data = TRUE</code> of <code><a href="initialize_project.html">initialize_project()</a></code>, so its numbers are
 not those of the real data. It passes when no such file is in the
 list of files. In a git repository, a real results file that git
 ignores is not in the list, so the rule does not see it.</p></li>
+<li><p><code>guidelines_valid</code> (FAIL): a file <code>guidelines/&lt;x&gt;.yml</code> breaks the
+checklist schema below. Each such file gives one FAIL, and its detail
+names its first 3 problems and counts the rest. The rule reads each
+<code>.yml</code> file directly in <code>guidelines/</code>. It does not read a file in a
+folder under <code>guidelines/</code>, or a file with another extension, such as
+<code>.yaml</code>.</p></li>
+<li><p><code>guidelines_covered</code> (WARN): a result item of a valid file
+<code>guidelines/&lt;x&gt;.yml</code> has no block, or a block names an item that no
+valid file has. Each such item and each such tag gives one WARN. The
+rule reads the literal <code>items</code> of each <code><a href="block.html">block()</a></code> in the <code>blocks.R</code> of
+the newest functions folder, without running code. A tag of a file
+that fails <code>guidelines_valid</code> gives no WARN. <code><a href="make_checklists.html">make_checklists()</a></code> then
+checks the manuscript text against the formatted strings of the blocks.</p></li>
 <li><p><code>unknown_path</code> (WARN): the house layout does not name a top-level file or
 folder. The layout names <code>vNN_run.R</code>, <code>vNN_functions/</code>, <code>vNN_results/</code>,
 <code>vNN_cache_gitexclude/</code>, <code>vNN_test/</code>, <code>vNN_check_functions.R</code>,
 <code>vNN_one_file.R</code>, <code>check_project.R</code> and <code>pbn.yml</code>, among others. From
 the set <code>house_2026_11_19</code>, it also names <code>vNN_frozen.md5</code> of
-<code><a href="freeze_version.html">freeze_version()</a></code>. A top-level dotfile and a top-level
+<code><a href="freeze_version.html">freeze_version()</a></code>. From the set <code>house_2026_11_26</code>, it also names the
+folder <code>guidelines/</code>. A top-level dotfile and a top-level
 <code>*.Rproj</code> file are never unknown. The rule also reads the files
 directly in <code>vNN_results/</code>. There it names the run log <code>run.md</code>, its PDF
 <code>run.pdf</code> and its errors file <code>run_errors_gitexclude.md</code>, and no rule
@@ -351,12 +437,44 @@ needs them. It reads no deeper, so it never
 warns on the folders <code>output/</code> and <code>output_fake_data/</code> that
 <code><a href="make_outputs.html">make_outputs()</a></code> writes in <code>vNN_results/&lt;scenario&gt;/</code>, or on the folder
 <code>sims_gitexclude/</code> that <code><a href="save_results.html">save_results()</a></code> writes there.</p></li>
-</ul><p>The R parser, not a regular expression, finds the calls, the assignments
+</ul><p>A checklist file <code>guidelines/&lt;x&gt;.yml</code> holds one reporting guideline, in
+the checklist schema of the methods repository. Copy the file from there.
+<code>guidelines_valid</code> fails the file unless each of these is true:</p><ul><li><p>The file is valid YAML, and a map.</p></li>
+<li><p>It has no key other than <code>id</code>, <code>title</code>, <code>version</code>, <code>source</code>,
+<code>citation</code>, <code>designs</code>, <code>design</code> and <code>items</code>.</p></li>
+<li><p><code>id</code> and <code>title</code> are each one string. <code>id</code> has only the characters
+<code>a-z</code>, <code>0-9</code> and <code>-</code>, and no other file has the same <code>id</code>.</p></li>
+<li><p><code>version</code>, <code>source</code> and <code>citation</code> MAY be missing. Each one that is
+there is one string.</p></li>
+<li><p>A key that is there has a value. <code>version:</code> with nothing after it, or
+<code>citation: ~</code>, fails. This holds for <code>designs</code> and <code>design</code> too, and
+for the <code>designs</code> of an entry.</p></li>
+<li><p><code>designs</code> MAY be missing. When it is there, it is a YAML sequence of
+strings, such as <code>[cohort]</code>. One string, such as <code>designs: cohort</code>, or a
+map fails. The same holds for the <code>designs</code> of an entry.</p></li>
+<li><p><code>design</code> MAY be missing. When it is there, it is one of <code>designs</code>.</p></li>
+<li><p><code>items</code> is a YAML sequence with at least one entry. A map fails.</p></li>
+<li><p>Each entry has no key other than <code>item</code>, <code>section</code>, <code>topic</code>, <code>kind</code>,
+<code>designs</code> and <code>text</code>. Its <code>item</code>, <code>section</code>, <code>topic</code>, <code>kind</code> and <code>text</code>
+are each one string. Quote an item id such as <code>"2"</code>, because YAML reads
+<code>2</code> as a number.</p></li>
+<li><p>The <code>kind</code> of each entry is <code>result</code>, <code>prose</code> or <code>author</code>.</p></li>
+<li><p>The <code>designs</code> of an entry MAY be missing, and the entry then belongs to
+each design of the file. When it is there, the file has <code>designs</code>, and
+each value is one of them.</p></li>
+<li><p>An item id comes once per design, among the entries that <code>design</code>
+keeps. STROBE has three entries with the item id <code>15</code>, one for each
+design, so it passes.</p></li>
+</ul><p>A project copy MAY add the key <code>design</code>, such as <code>design: cohort</code>. pbn
+then keeps the entries whose <code>designs</code> include it, and the entries
+without <code>designs</code>.</p>
+<p>The R parser, not a regular expression, finds the calls, the assignments
 and the symbols.</p>
 <p><code>vNN_one_file.R</code> at the top level is the file of <code><a href="to_one_file.html">to_one_file()</a></code>. It holds
 the paths of a server by design, and pbn writes it. So <code>loc_per_file</code>,
-<code>cyclomatic_complexity</code>, <code>no_local_assign</code> and <code>no_absolute_paths</code> do not
-read it, and no rule takes it for a run script. Put it in git: it is what
+<code>cyclomatic_complexity</code>, <code>no_local_assign</code>, <code>no_absolute_paths</code>,
+<code>no_plot_title</code>, <code>no_plot_subtitle</code> and <code>no_plot_caption</code> do not read it,
+and no rule takes it for a run script. Put it in git: it is what
 ran on the server.</p>
     </div>
     <div class="section level2">
@@ -366,13 +484,13 @@ ran on the server.</p>
 <p>Each project MUST have the file <code>pbn.yml</code> in its top folder <code>path</code>. pbn
 reads no other file. A file <code>pbn.yaml</code> stops <code>check_project()</code> with the
 advice to rename it. The smallest <code>pbn.yml</code> is one line:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_20</span></span></code></pre><p></p></div>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_25</span></span></code></pre><p></p></div>
 <p>The key <code>extends</code> names a house rule set. A set is a dated file in the
 folder <code>rules/</code> of pbn, and pbn never changes a set after its release. A
 change to the house rules is a new set with a new date. pbn never chooses
 a set for a project. So a new version of pbn does not change the rules of
 a project. To read the set, run
-<code>readLines(system.file("rules", "house_2026_11_20.yml", package = "pbn"))</code>.</p>
+<code>readLines(system.file("rules", "house_2026_11_25.yml", package = "pbn"))</code>.</p>
 <p>The set gives each rule one of three levels:</p><ul><li><p><code>fail</code>: a finding is FAIL, and <code>check_project.R</code> ends with status 1.</p></li>
 <li><p><code>warn</code>: a finding is WARN.</p></li>
 <li><p><code>off</code>: the rule does not run, and its one line is OFF.</p></li>
@@ -398,15 +516,16 @@ path for it. It cannot name a rule of <code><a href="check_results.html">check_r
 <p>The key <code>ignore</code> MAY list folders at the top level, such as <code>archive/</code>,
 that no rule reads: their files give no finding, not even a WARN. Use it
 for old work that nothing runs. A final <code>/</code> changes nothing. An entry
-MUST be one folder at the top level that the house layout does not name,
-so it cannot be <code>manuscript/</code>, <code>background/</code>, <code>adhoc/</code> or a folder of a
-version. A folder that does not exist is no error. The locked rules still
+MUST be one folder at the top level that the house layout of the set does
+not name, so it cannot be <code>manuscript/</code>, <code>background/</code>, <code>adhoc/</code> or a
+folder of a version. From the set <code>house_2026_11_26</code>, it cannot be
+<code>guidelines/</code> either. A folder that does not exist is no error. The locked rules still
 read an ignored folder, so a tracked file with <code>gitexclude</code> in its name
 fails there too. The first line of the report counts the ignored
 folders.</p>
 <p>This <code>pbn.yml</code> changes two rules, allows three paths and ignores one
 folder:</p>
-<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_20</span></span>
+<p></p><div class="sourceCode yaml"><pre><code><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a><span class="fu">extends</span><span class="kw">:</span><span class="at"> house_2026_11_25</span></span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">rules</span><span class="kw">:</span></span>
 <span id="cb1-3"><a href="#cb1-3" tabindex="-1"></a><span class="at">  </span><span class="fu">cyclomatic_complexity</span><span class="kw">:</span><span class="at"> </span><span class="kw">{</span><span class="fu">limit</span><span class="kw">:</span><span class="at"> </span><span class="dv">25</span><span class="kw">}</span></span>
 <span id="cb1-4"><a href="#cb1-4" tabindex="-1"></a><span class="at">  </span><span class="fu">unknown_path</span><span class="kw">:</span><span class="at"> </span><span class="ch">off</span></span>
@@ -451,7 +570,7 @@ of the house layout, is there twice, or is a file.</p></li>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">home</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span>, <span class="st">"pbn_check_example"</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/files2.html" class="external-link">dir.create</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_functions"</span><span class="op">)</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_20"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"extends: house_2026_11_25"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"pbn.yml"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span></span></span>
 <span class="r-in"><span>  <span class="st">'pbn::initialize_project(version = "v01", home = ".", folders = c(main = "x"))'</span>,</span></span>
 <span class="r-in"><span>  <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"v01_run.R"</span><span class="op">)</span></span></span>
@@ -459,7 +578,7 @@ of the house layout, is there twice, or is a file.</p></li>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="st">"# A fake project"</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"README.md"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/writeLines.html" class="external-link">writeLines</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"# Changelog"</span>, <span class="st">""</span>, <span class="st">"## v01"</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/file.path.html" class="external-link">file.path</a></span><span class="op">(</span><span class="va">home</span>, <span class="st">"CHANGELOG.md"</span><span class="op">)</span><span class="op">)</span></span></span>
 <span class="r-in"><span><span class="fu">pbn</span><span class="fu">::</span><span class="fu">check_project</span><span class="op">(</span><span class="va">home</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_20, 0 overrides, 0 allowed paths (pbn.yml)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Rules: house_2026_11_25, 0 overrides, 0 allowed paths (pbn.yml)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  lower_case_names  no capital letter in a name</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  run_script_initialises  every vNN_run.R calls pbn::initialize_project() with its own version</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  version_items_complete  every vNN_run.R has a vNN_functions/, and the reverse</span>
@@ -484,10 +603,13 @@ of the house layout, is there twice, or is a file.</p></li>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_local_assign  no .R file calls local, assign, delayedAssign, assignInNamespace or assignInMyNamespace, or uses &lt;&lt;- or -&gt;&gt;</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_escape_hatches  no run script or functions folder calls suppressWarnings(), suppressMessages(), try(), tryCatch() or withCallingHandlers()</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_absolute_paths  no .R file has an absolute path or a file.path() from a string, outside the arguments of pbn::initialize_project()</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_plot_title  no .R file gives a figure a title</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_plot_subtitle  no .R file gives a figure a subtitle</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> PASS  no_plot_caption  no .R file gives a figure a caption</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  blocks_list  blocks, when a functions folder has it, is a list of named functions in vNN_functions/blocks.R, and no other code uses a name of that file</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  real_results_are_fake  no real results on the disk come from fake real data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> PASS  unknown_path  the house layout names every top-level path</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> 27 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> 30 PASS, 0 WARN, 0 FAIL, 0 OFF</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/unlink.html" class="external-link">unlink</a></span><span class="op">(</span><span class="va">home</span>, recursive <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
 </code></pre></div>

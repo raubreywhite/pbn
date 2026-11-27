@@ -13,7 +13,7 @@ difference."><meta property="og:image" content="https://www.rwhite.no/pbn/logo.p
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -82,7 +82,10 @@ takes the version and the paths of the server from the last
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>Run the project as normal first, so that <code>&lt;version&gt;_results/real/</code> holds
-its real results. Write the file with <code><a href="to_one_file.html">to_one_file()</a></code>, and call
+its real results. In a one-file project, that folder is
+<code>&lt;version&gt;_results/fake/</code>, see the section The folder fake/ of
+<code><a href="initialize_project.html">initialize_project()</a></code>. The run of the file writes <code>real/</code> of its
+temporary project folder, as on the server. Write the file with <code><a href="to_one_file.html">to_one_file()</a></code>, and call
 <code><a href="initialize_project.html">initialize_project()</a></code> again in this R session, with <code>one_file_home</code> and
 <code>one_file_folders</code>.</p>
 <p><code>check_one_file()</code> then does these steps:</p><ol><li><p>It makes the lines of <code><a href="to_one_file.html">to_one_file()</a></code> in memory, with the code of the
@@ -101,10 +104,15 @@ prints FAIL also when the project has no such file.</p></li>
 checked for ASCII, for a parse and for a left-out function before the
 first full run.</p></li>
 <li><p>It compares <code>manifest$source_md5</code> of the real results with the md5 of
-the files of the project now, without <code>&lt;version&gt;_functions/blocks.R</code>.
+the files of the project now, without the files that the manifest
+leaves out, see <code>source_md5</code> of <code><a href="save_results.html">save_results()</a></code>.
 When they differ, the results of the project are older than its code.
 It prints FAIL with the changed files and says to run
 <code>&lt;version&gt;_run.R</code> again. It runs nothing.</p></li>
+<li><p>It reads <code>manifest$failed_fake_checks</code> of the real results. When it
+names a fake scenario with a failed assertion, it prints FAIL with the
+scenario and its <code>check.csv</code>, as <code><a href="read_results.html">read_results()</a></code> does. It runs
+nothing.</p></li>
 <li><p>It makes a temporary folder with an empty project folder, and a copy of
 each folder of the project with all its files. The empty project folder
 stands for the server, where there is no functions folder and no
@@ -122,17 +130,26 @@ session attaches no package of the run script. It compares what
 <code><a href="show_blocks.html">show_block()</a></code> prints for each page of each block, as text, without
 the line <code>FAKE REAL DATA</code>. A block that stops on either results, or
 that prints other text, is a FAIL that names the block.</p></li>
-</ol><p>Four fields of the manifest MAY differ, and the comparison leaves them
+</ol><p>Five fields of the manifest MAY differ, and the comparison leaves them
 out:</p><ul><li><p><code>run_date</code>, the date of the run.</p></li>
 <li><p><code>packages</code>, the loaded packages, because the new R session loads other
 packages than the R session of the normal run.</p></li>
 <li><p>the column <code>from_cache</code> of <code>data_cache</code>, because the copy has no cache.</p></li>
 <li><p><code>fake_real_data</code>, because the file never runs on fake real data. See
 <code><a href="initialize_project.html">initialize_project()</a></code>.</p></li>
-</ul><p>The comparison also leaves <code>&lt;version&gt;_functions/blocks.R</code> out of
-<code>source_md5</code>, also for results of an older pbn that hold it. Every other
-element MUST be identical, also <code>source_md5</code>, <code>data_files</code> and
-<code>cache_key</code>. So the results do not depend on the place of the project
+<li><p><code>failed_fake_checks</code>, because the file runs no fake scenario. Step 4
+checks it on the real results of the project.</p></li>
+</ul><p>The comparison also leaves <code>&lt;version&gt;_functions/blocks.R</code> and
+<code>&lt;version&gt;_functions/formatters.R</code> out of <code>source_md5</code>, also for results
+of an older pbn that hold them. Every other
+element MUST be the same, also <code>source_md5</code>, <code>data_files</code> and
+<code>cache_key</code>. Two doubles are the same when they differ by at most
+<code>sqrt(.Machine$double.eps)</code>, about 1.5e-8, of the larger absolute value.
+That is the default tolerance of <code><a href="https://rdrr.io/r/base/all.equal.html" class="external-link">all.equal()</a></code>. Below that size, the limit
+is that absolute difference. The same model in two R sessions MAY differ
+in the last digits, and no printed number shows it. Every other value
+MUST be identical, also a double with a class, such as a <code>Date</code> or a
+<code>POSIXct</code>. The attributes MUST be identical too, in any order. So the results do not depend on the place of the project
 and of its folders. The copies keep the modification times of the files,
 with <code>file.copy(copy.date = TRUE)</code>. That is why <code>data_files</code> and the cache
 key agree. pbn reads no content of a data file, so a copy with new times
@@ -158,6 +175,7 @@ and kept its size and its modification time is not seen.</p></li>
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, section "Running on an air-gapped server".</p>
 <p>Other one file:
+<code><a href="export_blocks.html">export_blocks()</a></code>,
 <code><a href="show_blocks.html">show_blocks()</a></code>,
 <code><a href="to_one_file.html">to_one_file()</a></code></p></div>
     </div>

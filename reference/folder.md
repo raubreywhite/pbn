@@ -32,7 +32,8 @@ The path of the folder, or of the path inside it, one string. A folder
 that existed at
 [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
 has its normalised path with `/`, and another folder has the path as
-`folders` gave it.
+`folders` gave it. Neither has a final `/` or `\`, but a root such as
+`"N:/"` keeps it.
 
 ## Details
 
@@ -68,7 +69,7 @@ Other project setup:
 ``` r
 home <- file.path(tempdir(), "pbn_folder_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines("CFG <- list()", file.path(home, "v01_functions", "_cfg.R"))
 pbn::initialize_project(
   "v01",
@@ -77,11 +78,11 @@ pbn::initialize_project(
   env = new.env()
 )
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmplyudvS/pbn_folder_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp7A8O6t/pbn_folder_example/v01_functions into 
 pbn::folder("lookup")
-#> [1] "/tmp/RtmplyudvS/pbn_folder_example/codes"
+#> [1] "/tmp/Rtmp7A8O6t/pbn_folder_example/codes"
 pbn::folder("main", "sub", "d.csv")
-#> [1] "/tmp/RtmplyudvS/pbn_folder_example/data/sub/d.csv"
+#> [1] "/tmp/Rtmp7A8O6t/pbn_folder_example/data/sub/d.csv"
 
 unlink(home, recursive = TRUE)
 ```

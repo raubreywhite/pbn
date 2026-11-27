@@ -11,7 +11,7 @@ numbers leave a server only as a screenshot."><meta property="og:image" content=
 
     <a class="navbar-brand me-2" href="../index.html">pbn</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.11</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">2026.12.12</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,18 +95,31 @@ fits one screenshot.</p></dd>
     <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
     <p><code>show_blocks()</code>: invisibly, a data.frame with the columns
 <code>block</code>, <code>name</code>, <code>rows</code>, <code>pages</code> and <code>error</code>. <code>show_block()</code>: invisibly,
-the whole value of the block function.</p>
+the whole value of the block function, or of the formatter for a
+<code><a href="block.html">block()</a></code>.</p>
     </div>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The project declares the blocks in its functions folder, as one object
-<code>blocks</code>. It is a named list of functions of <code>results</code>, in the order of
-the manuscript. The name of a block is its place in the manuscript, for
-example <code>"Table 1"</code> or <code>"Results para 1: exclusions"</code>. Each function gets
-the real results as <code><a href="read_results.html">read_results()</a></code> returns them. It returns a
-data.frame, or a character vector that prints as one line for each
-element. The function formats the numbers for the manuscript, and
+<code>blocks</code>. It is a named list of blocks, in the order of the manuscript.
+Each block is a function of <code>results</code>, or a <code><a href="block.html">block()</a></code> with such a
+function and a formatter. The rule set <code>house_2026_11_26</code> and the newer
+sets need a <code><a href="block.html">block()</a></code> for each block. The name of a block is its place in the manuscript, for
+example <code>"Table 1"</code> or <code>"Results para 1: exclusions"</code>. In
+<code>show_block()</code>, each function gets the real results as <code><a href="read_results.html">read_results()</a></code>
+returns them. <code><a href="save_results.html">save_results()</a></code> also calls each function on simulation 1
+of every scenario of the run, and writes the values to
+<code>&lt;version&gt;_results/&lt;scenario&gt;/blocks.qs2</code>. So a block MUST work on the
+results of each fake scenario too. A function returns a data.frame, or a
+character vector that prints as one line for each element. The function
+formats the numbers for the manuscript, and
 <code>show_block()</code> prints the table as the function returns it.</p>
+<p>A <code><a href="block.html">block()</a></code> returns numbers, and <code>blocks.qs2</code> holds that raw value.
+<code>show_block()</code> and <code>show_blocks()</code> call the formatter of the block on
+the raw value at each call, and print the formatted value. A formatter
+that returns a data.table prints as a data.table. A raw value with a
+formatted number in a label cell, see <code><a href="block.html">block()</a></code>, stops both functions,
+and the error names the block, the column and the cell.</p>
 <p></p><div class="sourceCode r"><pre><code><span><span class="va">blocks</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span></span>
 <span>  <span class="st">"Table 1"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="va">results</span><span class="op">$</span><span class="va">table1</span>,</span>
 <span>  <span class="st">"Results para 1: exclusions"</span> <span class="op">=</span> <span class="kw">function</span><span class="op">(</span><span class="va">results</span><span class="op">)</span> <span class="va">results</span><span class="op">$</span><span class="va">exclusions</span></span>
@@ -137,8 +150,15 @@ the number, the name, the rows and the pages. For a function that stops,
 it prints the error in the place of the rows, and goes on.</p>
 <p><code>show_block()</code> prints these lines:</p><ol><li><p>the number and the name of the block,</p></li>
 <li><p>the page, for example <code>page 2 of 4, rows 36 to 70 of 140</code>,</p></li>
-<li><p>the rows of the page.</p></li>
-</ol><p>Real results MAY come from fake real data, see <code>fake_real_data</code> of
+<li><p>the version and the date of the real run, for example
+<code>v01, run 2026-11-26</code>, or <code>v01, run an unknown date</code> when the manifest
+has no <code>run_date</code>,</p></li>
+<li><p>the rows of the page,</p></li>
+<li><p>a warning that names the block and the width of its widest line, only
+when a printed line of the page is more than 270 characters wide.</p></li>
+</ol><p>So a screenshot shows its version and its run date. The version line
+comes after the page line, so the first two lines keep their place.</p>
+<p>Real results MAY come from fake real data, see <code>fake_real_data</code> of
 <code><a href="initialize_project.html">initialize_project()</a></code>. Then <code>show_block()</code> prints the line
 <code>FAKE REAL DATA</code> between the first two lines. <code>show_blocks()</code> prints it
 under its first line.</p>
@@ -154,6 +174,7 @@ that a block function sets or adds does not stay.</p>
     <div class="dont-index"><p><code><a href="../articles/pbn.html">vignette("pbn")</a></code>, section "Running on an air-gapped server".</p>
 <p>Other one file:
 <code><a href="check_one_file.html">check_one_file()</a></code>,
+<code><a href="export_blocks.html">export_blocks()</a></code>,
 <code><a href="to_one_file.html">to_one_file()</a></code></p></div>
     </div>
 

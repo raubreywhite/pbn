@@ -129,8 +129,13 @@ The `manifest` is a list with these elements:
 
   Otherwise `source_md5` holds it, also when the rule `blocks_list` of
   [`check_project()`](https://www.rwhite.no/pbn/reference/check_project.md)
-  is `warn` or `off`. A change of a blocks file of that shape thus keeps
-  the results current.
+  is `warn` or `off`. From the rule set `house_2026_11_26`,
+  [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
+  also leaves out `<version>_functions/formatters.R`, the formatters of
+  [`block()`](https://www.rwhite.no/pbn/reference/block.md), under the
+  same conditions. Its only shape is a name assigned to `function(...)`,
+  and only `blocks.R` MAY use its names. A change of a blocks file of
+  that shape thus keeps the results current.
   [`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md)
   computes the md5 before it sources the files. The cache key of
   [`add_data()`](https://www.rwhite.no/pbn/reference/add_data.md) holds
@@ -286,6 +291,29 @@ step that fails:
     [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
     stops on them until the assertions pass.
 
+7.  When the functions folder defines `blocks`, see
+    [`show_block()`](https://www.rwhite.no/pbn/reference/show_blocks.md),
+    it calls each block function on the results of each scenario of
+    `scenarios`. It reads them with
+    [`read_results()`](https://www.rwhite.no/pbn/reference/read_results.md)
+    and `sim = 1`. So for a scenario with 2 or more simulations, a block
+    gets simulation 1, and not the stacked results. It writes the values
+    of a scenario to `<version>_results/<scenario>/blocks.qs2`, a named
+    list with one value for each block, in the order of `blocks`. It
+    calls every block on every scenario before it writes a file. A block
+    fails on an error of its function, or on a value that is not a
+    data.frame or a character vector. A
+    [`block()`](https://www.rwhite.no/pbn/reference/block.md) fails on a
+    raw value that breaks the rule of
+    [`block()`](https://www.rwhite.no/pbn/reference/block.md), and
+    `blocks.qs2` holds its raw value. This step does not call the
+    formatter. At the first failure, it stops and writes no
+    `blocks.qs2`. The error is
+    `block <k> "<name>" failed on scenario <s>: <error>`. So a block
+    MUST work on the results of each fake scenario too. Without
+    `blocks`, this step writes nothing. The run log of step 5 does not
+    record this step.
+
 ## The run log
 
 [`run_plan()`](https://www.rwhite.no/pbn/reference/run_plan.md) replaces
@@ -405,8 +433,12 @@ history again.
 
 git gets the results of each scenario as one file, `results.qs2`, and
 never the results of each simulation. These are the files of
-`<version>_results/<scenario>/`:
+`<version>_results/<scenario>/`. In a one-file project, the folder of
+`"real"` is `<version>_results/fake/`, see the section The folder fake/
+of
+[`initialize_project()`](https://www.rwhite.no/pbn/reference/initialize_project.md):
 
+    blocks.qs2                 the values of the blocks, on simulation 1
     check.csv                  the assertions of expect_<scenario>()
     results.qs2                the results, stacked for more than 1 simulation
     results_gitexclude.qs2     the kinds of `gitexclude`, stacked the same way
@@ -428,6 +460,13 @@ Before it writes a scenario, `save_results()` deletes each file in its
 simulation of an earlier run stays, for example after `sims` became
 smaller. For a scenario that now has 1 simulation, it deletes the
 folder.
+
+Before it writes a scenario, `save_results()` also deletes its
+`blocks.qs2`. So a call that stops before step 7 leaves no values of the
+blocks of an earlier run beside the new results. A block gets the
+results with the kinds of `gitexclude`. So a block that shows rows for
+each person writes them into `blocks.qs2`. The line `*gitexclude*` of
+`.gitignore` does not keep that file out of git.
 
 `save_results()` stops when a file or a folder that it deletes is still
 there afterwards, for example because another program holds it open on
@@ -521,7 +560,7 @@ Other results:
 home <- file.path(tempdir(), "pbn_save_example")
 dir.create(file.path(home, "v01_functions"), recursive = TRUE)
 dir.create(file.path(home, "data"))
-writeLines("extends: house_2026_11_20", file.path(home, "pbn.yml"))
+writeLines("extends: house_2026_11_25", file.path(home, "pbn.yml"))
 writeLines("# The run script.", file.path(home, "v01_run.R"))
 writeLines(
   c(
@@ -536,7 +575,7 @@ writeLines(
 env <- new.env()
 pbn::initialize_project("v01", home, c(main = file.path(home, "data")), env = env)
 #> You are NOT sourcing into .GlobalEnv. All functions will be sourced into an environment that is returned from this function.
-#> Sourcing all code inside /tmp/RtmplyudvS/pbn_save_example/v01_functions into 
+#> Sourcing all code inside /tmp/Rtmp7A8O6t/pbn_save_example/v01_functions into 
 
 scenarios <- pbn::scenarios(env$CFG)
 p <- plnr::Plan$new()

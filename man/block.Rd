@@ -41,8 +41,9 @@ element of \code{blocks}:
 
 The raw value MUST hold numbers as numbers. A character or factor column
 holds labels only. No cell of such a column MAY match \verb{[0-9][.,][0-9]},
-\verb{[0-9]\%}, \verb{[0-9] \\(} or \verb{[=<>] ?[0-9]}. Each of these patterns is a
-formatted number, such as \code{0.80}, \verb{68.7\%}, \verb{3 (} and \code{n = 3}.
+\verb{[0-9]\%}, \verb{[0-9] \\(} or \verb{\\b[nNpP] ?[=<>] ?[0-9]}. Each of these patterns
+is a formatted number, such as \code{0.80}, \verb{68.7\%}, \verb{3 (} and \code{n = 3}. A
+comparison in a label, such as \verb{Education < 16 years}, passes.
 \code{\link[=save_results]{save_results()}}, \code{\link[=update_blocks]{update_blocks()}}, \code{\link[=show_blocks]{show_blocks()}}, \code{\link[=show_block]{show_block()}} and
 \code{\link[=txt]{txt()}} stop on such a cell. The error names the block, the column and
 the first cell that matches. The check reads the value only, so a block

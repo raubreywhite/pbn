@@ -178,7 +178,7 @@ test_that("raw_value_problem() names the column, the row and the first cell with
     level = factor(c("a", "b", "c"))
   )
   expect_null(raw_value_problem(ok))
-  cells <- c("0.80", "1,037", "68%", "3 (", "n = 3", "p<0.001", "> 5")
+  cells <- c("0.80", "1,037", "68%", "3 (", "n = 3", "p<0.001")
   for (cell in cells) {
     x <- data.frame(group = c("all", cell), n = 1:2)
     expect_identical(
@@ -202,6 +202,27 @@ test_that("raw_value_problem() names the column, the row and the first cell with
     "returned an object of the class character",
     fixed = TRUE
   )
+})
+
+test_that("raw_value_problem() passes a comparison in a label, and stops on n, N or p before =, < or >", {
+  for (cell in c("Education < 16 years", "Age >= 35", "> 5")) {
+    expect_null(
+      raw_value_problem(data.frame(group = c("all", cell), n = 1:2)),
+      info = cell
+    )
+  }
+  for (cell in c("n = 3", "N=12", "p < 0.001", "p=0.04", "p < 1", "P=1")) {
+    expect_identical(
+      raw_value_problem(data.frame(group = c("all", cell), n = 1:2)),
+      paste0(
+        "holds a formatted number in the column group, row 2: \"",
+        cell,
+        "\". A block of pbn::block() returns numbers, and its formatter ",
+        "formats them"
+      ),
+      info = cell
+    )
+  }
 })
 
 test_that("find_formatter() takes the project formatter of the environment first, then the house one, and stops on an unknown name", {

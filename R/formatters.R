@@ -27,8 +27,9 @@
 #'
 #' The raw value MUST hold numbers as numbers. A character or factor column
 #' holds labels only. No cell of such a column MAY match `[0-9][.,][0-9]`,
-#' `[0-9]%`, `[0-9] \(` or `[=<>] ?[0-9]`. Each of these patterns is a
-#' formatted number, such as `0.80`, `68.7%`, `3 (` and `n = 3`.
+#' `[0-9]%`, `[0-9] \(` or `\b[nNpP] ?[=<>] ?[0-9]`. Each of these patterns
+#' is a formatted number, such as `0.80`, `68.7%`, `3 (` and `n = 3`. A
+#' comparison in a label, such as `Education < 16 years`, passes.
 #' [save_results()], [update_blocks()], [show_blocks()], [show_block()] and
 #' [txt()] stop on such a cell. The error names the block, the column and
 #' the first cell that matches. The check reads the value only, so a block
@@ -371,7 +372,7 @@ formatted_number_patterns <- c(
   "[0-9][.,][0-9]",
   "[0-9]%",
   "[0-9] \\(",
-  "[=<>] ?[0-9]"
+  "\\b[nNpP] ?[=<>] ?[0-9]"
 )
 
 # What is wrong with the raw value `value` of a pbn_block, as the end of a

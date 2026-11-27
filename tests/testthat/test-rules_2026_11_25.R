@@ -60,7 +60,7 @@ figure_pass_lines <- c(
   "}"
 )
 
-test_that("house_2026_11_25 is house_2026_11_20 with three new rules at fail, and create_project() names it", {
+test_that("house_2026_11_25 is house_2026_11_20 with three new rules at fail, and a new pbn.yml and create_project() name the newest set", {
   old <- read_house_set("house_2026_11_20")
   new <- read_house_set("house_2026_11_25")
   expect_identical(new[names(old)], old)

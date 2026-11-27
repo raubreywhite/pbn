@@ -410,7 +410,7 @@ rule_manual_has_supplement <- function(path) {
     sprintf(
       paste0(
         "%s: there is no supplement manuscript/manual/vMM_<INITIALS>_si.docx ",
-        "with MM at or below %s"
+        "of any initials with MM at or below %s"
       ),
       bad,
       substr(basename(bad), 2, 3)

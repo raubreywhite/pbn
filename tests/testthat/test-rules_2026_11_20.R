@@ -58,7 +58,7 @@ add_run <- function(home, version) {
   return(invisible(home))
 }
 
-test_that("house_2026_11_20 is house_2026_11_19 with three new rules at fail, and a new pbn.yml names it", {
+test_that("house_2026_11_20 is house_2026_11_19 with three new rules at fail, and a new pbn.yml and create_project() name the newest set", {
   old <- read_house_set("house_2026_11_19")
   new <- read_house_set("house_2026_11_20")
   expect_identical(new[names(old)], old)

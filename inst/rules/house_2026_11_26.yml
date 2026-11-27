@@ -81,7 +81,7 @@ built_has_run: fail
 manual_not_ahead: fail
 
 # Each manuscript/manual/vNN_<INITIALS>.docx has a supplement
-# vMM_<INITIALS>_si.docx with MM at or below NN, whatever its initials.
+# vMM_<INITIALS>_si.docx of any initials with MM at or below NN.
 manual_has_supplement: fail
 
 # Each manuscript/manual/vNN_<INITIALS>_si.docx has vNN_<INITIALS>.docx.

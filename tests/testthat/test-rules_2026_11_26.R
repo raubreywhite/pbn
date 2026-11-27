@@ -959,7 +959,8 @@ test_that("manual_has_supplement fails a main manual file with no _si file at or
           "manual_has_supplement",
           paste0(
             "manuscript/manual/v01_AB.docx: there is no supplement ",
-            "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01"
+            "manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM ",
+            "at or below 01"
           )
         ),
         paste(
@@ -1008,7 +1009,8 @@ test_that("v02_AB.docx, v02_AB_si.docx and v03_CD.docx pass both rules, because 
           "manual_has_supplement",
           paste0(
             "manuscript/manual/v01_CD.docx: there is no supplement ",
-            "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01"
+            "manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM ",
+            "at or below 01"
           )
         ),
         paste(
@@ -1033,7 +1035,8 @@ test_that("manual_si_has_main fails v02_AB_si.docx beside v03_AB.docx without v0
       detail = c(
         paste(
           "every manuscript/manual/vNN_<INITIALS>.docx has a supplement",
-          "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below NN"
+          "manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM at",
+          "or below NN"
         ),
         with_fix(
           "manual_si_has_main",
@@ -1116,7 +1119,8 @@ test_that("rules: manual_has_supplement: off gives OFF, and an allow entry of th
         "manual_has_supplement",
         paste0(
           "manuscript/manual/v01_AB.docx: there is no supplement ",
-          "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below 01 ",
+          "manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM ",
+          "at or below 01 ",
           "(allowed)"
         )
       )

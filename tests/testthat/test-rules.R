@@ -109,12 +109,15 @@ test_that("the bytes of each shipped set are pinned", {
   # house_2026_11_19 got the rules readme_and_changelog, changelog_with_code
   # and comment_share in pbn 2026.11.28, hours after its release and before
   # a project used it. The maintainer approved that change of its md5.
+  # house_2026_11_26 got the words "of any initials" in the comment of
+  # manual_has_supplement. The maintainer approved that change of its md5
+  # on 2026-11-26.
   pinned <- c(
     house_2026_11_17 = "ac42b7368bc90e2735bf4cb47e4a8e0e",
     house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097",
     house_2026_11_20 = "66615d03431f9ae95a8102a200d81831",
     house_2026_11_25 = "91998c756abbf55915449ce3b14892a2",
-    house_2026_11_26 = "6626bd848ef9ffccdbc23f7ab3f07597"
+    house_2026_11_26 = "382e8b0470122a169de81319d346d31c"
   )
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")

@@ -936,7 +936,8 @@ project_rules <- function() {
       rule_manual_has_supplement,
       paste(
         "every manuscript/manual/vNN_<INITIALS>.docx has a supplement",
-        "manuscript/manual/vMM_<INITIALS>_si.docx with MM at or below NN"
+        "manuscript/manual/vMM_<INITIALS>_si.docx of any initials with MM at",
+        "or below NN"
       ),
       paste(
         "add the supplement manuscript/manual/vNN_<INITIALS>_si.docx, or",

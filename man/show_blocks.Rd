@@ -124,6 +124,7 @@ that a block function sets or adds does not stay.
 
 Other one file:
 \code{\link[=check_one_file]{check_one_file()}},
+\code{\link[=export_blocks]{export_blocks()}},
 \code{\link[=to_one_file]{to_one_file()}}
 }
 \concept{one file}

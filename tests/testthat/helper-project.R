@@ -232,6 +232,7 @@ rules_2026_11_25 <- c("no_plot_title", "no_plot_subtitle", "no_plot_caption")
 
 # The rules that the set house_2026_11_26 adds to house_2026_11_25.
 rules_2026_11_26 <- c(
+  "built_reads_source",
   "manual_has_supplement",
   "manual_si_has_main",
   "guidelines_valid",

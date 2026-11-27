@@ -375,7 +375,7 @@ tagged_strings <- function(home, version, items) {
     }
     if (!name %in% names(saved)) {
       stop(
-        file.path(scenario_dir(version, "real", home), blocks_qs2_file),
+        blocks_source_file(version, home),
         " holds no block \"",
         name,
         "\". Write it again with pbn::update_blocks().",
@@ -390,19 +390,11 @@ tagged_strings <- function(home, version, items) {
   return(out)
 }
 
-# The raw values of the real blocks.qs2 of `version` in `home`. Stops when
-# the file is missing.
+# The raw values of the blocks of `version` in `home`, from
+# blocks_source(), which read_blocks() and txt() use too. Stops when the
+# file is missing.
 read_real_blocks <- function(home, version) {
-  file <- file.path(scenario_dir(version, "real", home), blocks_qs2_file)
-  if (!file.exists(file)) {
-    stop(
-      "There is no ",
-      file,
-      ". Write it with pbn::update_blocks() or with a run.",
-      call. = FALSE
-    )
-  }
-  return(qs2::qs_read(file))
+  return(blocks_source(version, home)$values)
 }
 
 # Each string of the formatted value `value`: each element of a character
@@ -508,7 +500,7 @@ checklist_lines <- function(rows, first, files, home, version) {
       " and ",
       version,
       "_results/",
-      basename(scenario_dir(version, "real", home)),
+      basename(dirname(blocks_source_file(version, home))),
       "/blocks.qs2."
     ),
     "",

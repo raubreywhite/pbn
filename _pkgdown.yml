@@ -70,6 +70,7 @@ reference:
     - to_one_file
     - check_one_file
     - show_blocks
+    - export_blocks
 
 - title: "Checks of the layout"
   contents:

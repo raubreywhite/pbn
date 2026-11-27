@@ -136,6 +136,7 @@ paths of the server by design.
 
 Other one file:
 \code{\link[=check_one_file]{check_one_file()}},
+\code{\link[=export_blocks]{export_blocks()}},
 \code{\link[=show_blocks]{show_blocks()}}
 }
 \concept{one file}

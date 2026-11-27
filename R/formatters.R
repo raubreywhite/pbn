@@ -100,12 +100,13 @@ block <- function(fn, format, items = character(0)) {
 #'   vector or a data.frame with one column.
 #' @inheritParams show_blocks
 #' @details
-#' `txt()` reads the raw value from
-#' `<home>/<version>_results/real/blocks.qs2`, which [save_results()] and
-#' [update_blocks()] write. In a one-file project, it reads `fake/` in the
-#' place of `real/`, see the section The folder fake/ of
-#' [initialize_project()]. It formats the value at each call, so a change of
-#' a formatter needs no new `blocks.qs2`.
+#' `txt()` reads the raw value as [read_blocks()] does:
+#' `<home>/<version>_results/real/blocks.qs2` when it exists, which
+#' [save_results()], [update_blocks()] and [import_blocks()] write. In a
+#' one-file project without that file, it reads `fake/` with a warning, see
+#' the section The folder fake/ of [initialize_project()]. It formats the
+#' value at each call, so a change of a formatter needs no new
+#' `blocks.qs2`.
 #'
 #' After [initialize_project()] of `version` and `home` in this R session,
 #' `txt()` takes the block from that session. Else it reads
@@ -130,19 +131,9 @@ txt <- function(name, row = 1, col = NULL, version = NULL, home = NULL) {
   }
   where <- txt_where(version, home)
   found <- txt_block(name, where$version, where$home)
-  file <- file.path(
-    scenario_dir(where$version, "real", where$home),
-    blocks_qs2_file
-  )
-  if (!file.exists(file)) {
-    stop(
-      "There is no ",
-      file,
-      ". Write it with pbn::update_blocks() or with a run.",
-      call. = FALSE
-    )
-  }
-  saved <- qs2::qs_read(file)
+  from <- blocks_source(where$version, where$home)
+  file <- from$file
+  saved <- from$values
   if (!name %in% names(saved)) {
     stop(
       file,

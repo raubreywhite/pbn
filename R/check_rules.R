@@ -17,16 +17,19 @@ pbn_exports <- c(
   "end_unless_real",
   "expect_biased",
   "expect_recovers",
+  "export_blocks",
   "folder",
   "freeze_version",
   "get_argset",
   "get_data",
+  "import_blocks",
   "initialize_project",
   "keep_exclusions",
   "make_checklists",
   "make_outputs",
   "new_version",
   "progress",
+  "read_blocks",
   "read_results",
   "render_run",
   "run_plan",
@@ -49,9 +52,12 @@ pbn_exports <- c(
 new_exports <- c(
   block = "house_2026_11_26",
   create_project = "house_2026_11_19",
+  export_blocks = "house_2026_11_26",
   freeze_version = "house_2026_11_19",
+  import_blocks = "house_2026_11_26",
   make_checklists = "house_2026_11_26",
   new_version = "house_2026_11_19",
+  read_blocks = "house_2026_11_26",
   table1_styles = "house_2026_11_20",
   txt = "house_2026_11_26",
   update_blocks = "house_2026_11_26",
@@ -890,6 +896,21 @@ project_rules <- function() {
       paste(
         "read the version of the folder, as in read_results(\"vNN\"), or move",
         "the file to the folder of the version that it reads"
+      )
+    ),
+    built_reads_source = list(
+      rule_built_reads_source,
+      paste(
+        "every manuscript in manuscript/built/vNN/ reads the numbers of its",
+        "source: an imported vNN_results/real/blocks.qs2 of real pages with",
+        "read_blocks() or txt() in a one-file version, and no read_blocks()",
+        "in another version"
+      ),
+      paste(
+        "in a one-file version, read the numbers with pbn::read_blocks() or",
+        "pbn::txt() after pbn::import_blocks() of the pages of the server,",
+        "and keep a manuscript on fake numbers in manuscript/draft/; in",
+        "another version, read them with pbn::read_results() or pbn::txt()"
       )
     ),
     built_has_run = list(

@@ -24,8 +24,8 @@
 #'
 #' The rules, with their level in the set `house_2026_11_26`, are below.
 #' The set `house_2026_11_25` has the same rules at the same levels, without
-#' `manual_has_supplement`, `manual_si_has_main`, `guidelines_valid` and
-#' `guidelines_covered`. The set `house_2026_11_20`
+#' `built_reads_source`, `manual_has_supplement`, `manual_si_has_main`,
+#' `guidelines_valid` and `guidelines_covered`. The set `house_2026_11_20`
 #' also does not have `no_plot_title`, `no_plot_subtitle` and
 #' `no_plot_caption`. The set
 #' `house_2026_11_19` also does not have `built_reads_own_version`,
@@ -122,7 +122,19 @@
 #'   `manuscript_reads_real` does, and it fails a file that R cannot parse.
 #'   It does not read a file in `manuscript/built/` outside a folder `vNN/`,
 #'   or a file of another language, such as `.py`. The detail lists each
-#'   call that fails.
+#'   call that fails. From the set `house_2026_11_26`, the rule also reads
+#'   each `txt()` call and each [read_blocks()] call.
+#' - `built_reads_source` (FAIL): a file in `manuscript/built/vNN/` does not
+#'   read the numbers of its source. A version is one-file when its
+#'   `vNN_run.R` gives `one_file_home` in a top-level call
+#'   `pbn::initialize_project()`. pbn parses the run script and runs
+#'   nothing. In a one-file version, a file fails without a
+#'   `read_blocks()` or `txt()` call, and on a `read_results()` call. Each
+#'   file there also fails while `vNN_results/real/blocks.qs2` does not
+#'   exist, or has the attribute `pbn_fake` of [import_blocks()], because
+#'   the numbers are then fake. In another version, a file fails on a
+#'   `read_blocks()` call. The rule reads the code as `manuscript_reads_real`
+#'   does. It does not read a file outside a folder `vNN/`.
 #' - `built_has_run` (FAIL): a folder `manuscript/built/vNN/` has no
 #'   `vNN_run.R` at the top level. In a git repository, an empty folder is
 #'   not in the list of files, so the rule does not see it. The detail is

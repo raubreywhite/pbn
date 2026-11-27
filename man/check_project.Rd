@@ -39,8 +39,8 @@ files \verb{~$*}, and everything in \verb{.git/} or \verb{.Rproj.user/}.
 
 The rules, with their level in the set \code{house_2026_11_26}, are below.
 The set \code{house_2026_11_25} has the same rules at the same levels, without
-\code{manual_has_supplement}, \code{manual_si_has_main}, \code{guidelines_valid} and
-\code{guidelines_covered}. The set \code{house_2026_11_20}
+\code{built_reads_source}, \code{manual_has_supplement}, \code{manual_si_has_main},
+\code{guidelines_valid} and \code{guidelines_covered}. The set \code{house_2026_11_20}
 also does not have \code{no_plot_title}, \code{no_plot_subtitle} and
 \code{no_plot_caption}. The set
 \code{house_2026_11_19} also does not have \code{built_reads_own_version},
@@ -140,7 +140,19 @@ and a call without \code{version} fail too. The rule reads the code as
 \code{manuscript_reads_real} does, and it fails a file that R cannot parse.
 It does not read a file in \verb{manuscript/built/} outside a folder \verb{vNN/},
 or a file of another language, such as \code{.py}. The detail lists each
-call that fails.
+call that fails. From the set \code{house_2026_11_26}, the rule also reads
+each \code{txt()} call and each \code{\link[=read_blocks]{read_blocks()}} call.
+\item \code{built_reads_source} (FAIL): a file in \verb{manuscript/built/vNN/} does not
+read the numbers of its source. A version is one-file when its
+\code{vNN_run.R} gives \code{one_file_home} in a top-level call
+\code{pbn::initialize_project()}. pbn parses the run script and runs
+nothing. In a one-file version, a file fails without a
+\code{read_blocks()} or \code{txt()} call, and on a \code{read_results()} call. Each
+file there also fails while \code{vNN_results/real/blocks.qs2} does not
+exist, or has the attribute \code{pbn_fake} of \code{\link[=import_blocks]{import_blocks()}}, because
+the numbers are then fake. In another version, a file fails on a
+\code{read_blocks()} call. The rule reads the code as \code{manuscript_reads_real}
+does. It does not read a file outside a folder \verb{vNN/}.
 \item \code{built_has_run} (FAIL): a folder \verb{manuscript/built/vNN/} has no
 \code{vNN_run.R} at the top level. In a git repository, an empty folder is
 not in the list of files, so the rule does not see it. The detail is

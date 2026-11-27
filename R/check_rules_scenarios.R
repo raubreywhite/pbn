@@ -130,8 +130,8 @@ version_number <- function(x) {
 # The rule built_reads_own_version: each read_results() call of a file in
 # manuscript/built/vNN/ has the version argument "vNN", the string. A
 # variable, another string and a call without the version fail.
-# From the rule set house_2026_11_26 of `set`, each pbn::txt() call has the
-# version argument "vNN" too.
+# From the rule set house_2026_11_26 of `set`, each pbn::txt() and each
+# pbn::read_blocks() call has the version argument "vNN" too.
 rule_built_reads_own_version <- function(path, set = "house_2026_11_17") {
   rule <- "built_reads_own_version"
   files <- manuscript_files(path)
@@ -148,8 +148,13 @@ rule_built_reads_own_version <- function(path, set = "house_2026_11_17") {
     versions <- lapply(calls, read_version)
     if (needs_pbn_blocks(set)) {
       texts <- find_calls(exprs, is_txt_call)
-      calls <- c(calls, texts)
-      versions <- c(versions, lapply(texts, txt_version))
+      reads <- find_calls(exprs, is_read_blocks_call)
+      calls <- c(calls, texts, reads)
+      versions <- c(
+        versions,
+        lapply(texts, txt_version),
+        lapply(reads, read_blocks_version)
+      )
     }
     reads_own <- vapply(
       versions,
@@ -179,6 +184,113 @@ rule_built_reads_own_version <- function(path, set = "house_2026_11_17") {
     }
   }
   return(bind_rows(out))
+}
+
+# The rule built_reads_source, from the set house_2026_11_26: each file in
+# manuscript/built/vNN/ reads the numbers of the source of vNN. In a
+# one-file version, see is_one_file_version(), that is read_blocks() or
+# txt() of the real blocks.qs2 that import_blocks() wrote from real pages.
+# So a file there fails without a read_blocks() or txt() call, on a
+# read_results() call, on a missing vNN_results/real/blocks.qs2, and on one
+# with the attribute pbn_fake. In another version, a file fails on a
+# read_blocks() call.
+rule_built_reads_source <- function(path) {
+  rule <- "built_reads_source"
+  files <- manuscript_files(path)
+  files <- files[grepl(built_version_pattern, files)]
+  out <- list()
+  for (f in files) {
+    exprs <- manuscript_code(file.path(path, f))
+    if (is.null(exprs)) {
+      out[[f]] <- project_row(rule, "FAIL", f, paste0(f, ": R cannot parse it"))
+      next
+    }
+    found <- source_faults(exprs, sub(built_version_pattern, "\\1", f), path)
+    if (length(found) > 0) {
+      out[[f]] <- project_row(
+        rule,
+        "FAIL",
+        f,
+        paste0(f, ": ", paste(found, collapse = "; "))
+      )
+    }
+  }
+  return(bind_rows(out))
+}
+
+# The faults of built_reads_source in the code `exprs` of a manuscript of
+# the version `version` of the project in `path`.
+source_faults <- function(exprs, version, path) {
+  if (!is_one_file_version(version, path)) {
+    reads <- find_calls(exprs, is_read_blocks_call)
+    if (length(reads) == 0) {
+      return(character(0))
+    }
+    return(paste0(
+      version,
+      " is not a one-file version, so a manuscript reads read_results(), ",
+      "and these calls do not: ",
+      deparse_calls(reads)
+    ))
+  }
+  found <- character(0)
+  reads <- find_calls(exprs, is_read_results_call)
+  if (length(reads) > 0) {
+    found <- paste0(
+      version,
+      " is a one-file version, so a manuscript reads read_blocks() or ",
+      "txt(), and these calls do not: ",
+      deparse_calls(reads)
+    )
+  }
+  uses <- c(
+    find_calls(exprs, is_read_blocks_call),
+    find_calls(exprs, is_txt_call)
+  )
+  if (length(uses) == 0) {
+    found <- c(found, "it calls neither read_blocks() nor txt()")
+  }
+  return(c(found, real_blocks_fault(version, path)))
+}
+
+# The fault of built_reads_source for vNN_results/real/blocks.qs2 of the
+# version `version` in `path`: it is missing, or it has the attribute
+# pbn_fake of import_blocks(). NULL for a file of real pages.
+real_blocks_fault <- function(version, path) {
+  real <- file.path(paste0(version, "_results"), "real", blocks_qs2_file)
+  if (!file.exists(file.path(path, real))) {
+    return(paste0(
+      "there is no ",
+      real,
+      ", so the numbers of ",
+      version,
+      " are fake and the manuscript is a draft"
+    ))
+  }
+  saved <- tryCatch(
+    qs2::qs_read(file.path(path, real)),
+    error = function(e) return(NULL)
+  )
+  if (isTRUE(attr(saved, "pbn_fake"))) {
+    return(paste0(
+      real,
+      " comes from the pages of fake data of pbn::export_blocks(), so the ",
+      "numbers of ",
+      version,
+      " are fake and the manuscript is a draft"
+    ))
+  }
+  return(NULL)
+}
+
+# The calls `calls`, each deparsed on one line, and joined by "; ".
+deparse_calls <- function(calls) {
+  text <- vapply(
+    calls,
+    function(cl) return(paste(deparse(cl), collapse = " ")),
+    character(1)
+  )
+  return(paste(unique(text), collapse = "; "))
 }
 
 # The version argument of one read_results() call, or NULL when the call has
@@ -404,6 +516,31 @@ is_txt_call <- function(cl) {
       identical(f[[2]], quote(pbn)) &&
       identical(f[[3]], quote(txt))
   )
+}
+
+# TRUE when `cl` is a call of read_blocks() or pbn::read_blocks().
+is_read_blocks_call <- function(cl) {
+  f <- cl[[1]]
+  if (identical(f, quote(read_blocks))) {
+    return(TRUE)
+  }
+  return(
+    is.call(f) &&
+      length(f) == 3 &&
+      as.character(f[[1]]) %in% c("::", ":::") &&
+      identical(f[[2]], quote(pbn)) &&
+      identical(f[[3]], quote(read_blocks))
+  )
+}
+
+# The version argument of one read_blocks() call, or NULL when the call has
+# none or R cannot match it to read_blocks().
+read_blocks_version <- function(cl) {
+  matched <- tryCatch(
+    match.call(read_blocks, cl),
+    error = function(e) return(NULL)
+  )
+  return(matched[["version"]])
 }
 
 # The version argument of one txt() call, or NULL when the call has none or

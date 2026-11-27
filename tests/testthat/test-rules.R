@@ -114,7 +114,7 @@ test_that("the bytes of each shipped set are pinned", {
     house_2026_11_19 = "37f18daf1accecb9c35963a69d2b6097",
     house_2026_11_20 = "66615d03431f9ae95a8102a200d81831",
     house_2026_11_25 = "91998c756abbf55915449ce3b14892a2",
-    house_2026_11_26 = "0e99f2419501c901beb3ebb452529864"
+    house_2026_11_26 = "6626bd848ef9ffccdbc23f7ab3f07597"
   )
   folder <- system.file("rules", package = "pbn")
   files <- list.files(folder, pattern = "\\.yml$")

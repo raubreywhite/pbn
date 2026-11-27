@@ -1,6 +1,7 @@
 # The house rules of pbn::check_project(), the set house_2026_11_26. It is
-# the set house_2026_11_25 with four new rules: manual_has_supplement,
-# manual_si_has_main, guidelines_valid and guidelines_covered. A project
+# the set house_2026_11_25 with five new rules: built_reads_source,
+# manual_has_supplement, manual_si_has_main, guidelines_valid and
+# guidelines_covered. A project
 # keeps its reporting checklists in the folder guidelines/, one YAML file per
 # guideline, and the house layout names that folder.
 #
@@ -64,6 +65,13 @@ manuscript_reads_real: fail
 
 # Each read_results() call in manuscript/built/vNN/ reads the version vNN.
 built_reads_own_version: fail
+
+# Each file in manuscript/built/vNN/ of a one-file version calls
+# read_blocks() or txt(), and no read_results(). It fails while
+# vNN_results/real/blocks.qs2 of pbn::import_blocks() is missing or comes
+# from pages of fake data. In another version, no file there calls
+# read_blocks().
+built_reads_source: fail
 
 # Each folder manuscript/built/vNN/ has a vNN_run.R.
 built_has_run: fail

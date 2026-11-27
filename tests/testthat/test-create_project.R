@@ -135,7 +135,9 @@ test_that("the AGENTS.md template holds the rules for an agent", {
       ),
       paste(
         "- `vNN_results/real/` holds only the real results that come back",
-        "from the server. Do not write into it."
+        "from the server. In a one-file project, that is",
+        "`export_blocks.txt`, which a person saves, and the `blocks.qs2` that",
+        "`pbn::import_blocks()` writes from it. Write nothing else into it."
       ),
       "",
       "## Manuscripts",
@@ -164,7 +166,16 @@ test_that("the AGENTS.md template holds the rules for an agent", {
         "- `verify()` then fails on `manual_not_ahead` until a person starts",
         "the next run version. Do not start it; ask."
       ),
-      "- A built manuscript reads `read_results()` of its own version only."
+      paste(
+        "- A built manuscript reads its own version only. In a one-file",
+        "project it reads `pbn::read_blocks()` or `pbn::txt()`, and in",
+        "another project `read_results()` or `pbn::txt()`."
+      ),
+      paste(
+        "- A one-file project has fake numbers until `pbn::import_blocks()`",
+        "writes `vNN_results/real/blocks.qs2` from real pages. Until then,",
+        "save its manuscript in `manuscript/draft/`."
+      )
     )
   )
 })

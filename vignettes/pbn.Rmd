@@ -437,7 +437,7 @@ files <- list.files(file.path(home, "v01_results"), recursive = TRUE)
 unique(sub("sim_[0-9]{4}", "sim_<kkkk>", files))
 ```
 
-This project is a one-file project: `v01_run.R` gives `one_file_home`, see "Running on an air-gapped server". So the scenario `real` of this computer is in `v01_results/fake/`, and its manifest has `fake_real_data = TRUE`. `v01_results/real/` holds only the real results that come back from the server, and no function of pbn writes there. In a project that is not one-file, `real` is in `v01_results/real/`. `save_results()`, `read_results()` and `make_outputs()` find the folder themselves.
+This project is a one-file project: `v01_run.R` gives `one_file_home`, see "Running on an air-gapped server". So the scenario `real` of this computer is in `v01_results/fake/`, and its manifest has `fake_real_data = TRUE`. `v01_results/real/` holds only the real results that come back from the server. Only `pbn::import_blocks()` writes there, see "Running on an air-gapped server". In a project that is not one-file, `real` is in `v01_results/real/`. `save_results()`, `read_results()` and `make_outputs()` find the folder themselves.
 
 `fake/` stands in for the real results. It is not one of the fake scenarios, which have planted effects and an `expect_` function, so `pbn::scenarios()` refuses the name `fake`.
 
@@ -1185,6 +1185,7 @@ The file of `to_one_file()` never holds `fake_real_data`, and `check_one_file()`
 2. Type `pbn::show_blocks()` for the index of the blocks.
 3. Type `pbn::show_block(k)` for block `k`, and `pbn::show_block(k, page = 2)` for its page 2.
 4. Take a screenshot of each page.
+5. Type `pbn::export_blocks()` for the numbers of a built manuscript, and take a screenshot of each of its pages.
 
 These are the index and block 1 of this project:
 
@@ -1194,6 +1195,47 @@ pbn::show_block(1)
 ```
 
 A page has 35 rows. `pbn::show_block()` reads the real results from the disk at each call, and it stops where `read_results()` stops.
+
+### Back from the server
+
+`pbn::export_blocks()` prints the raw value of each block as the R code of `dput()`, in pages of at most 35 lines. A number keeps 17 significant digits. Each page starts with a header line with the version, the run date, the block, the page and an md5 of the text lines of the page. This computer has fake real data, so each header line also ends with the token `fake`:
+
+```{r}
+pages <- utils::capture.output(pbn::export_blocks())
+cat(utils::head(pages, 6), sep = "\n")
+```
+
+On this computer, write the text of the screenshots into `v01_results/real/export_blocks.txt`. `pbn::import_blocks()` checks the md5 of each page, and writes `v01_results/real/blocks.qs2`:
+
+```{r, include = FALSE}
+dir.create(file.path(home, "v01_results", "real"))
+```
+
+```{r}
+writeLines(pages, file.path(home, "v01_results", "real", "export_blocks.txt"))
+pbn::import_blocks("v01", home = home)
+```
+
+It stops on a page with one wrong character, and the error names the block and the page. It also stops on a missing page. Import only the pages of `export_blocks()`, because `import_blocks()` runs the file as R code.
+
+The pages had the token `fake`, so `import_blocks()` gives the list the attribute `pbn_fake = TRUE`:
+
+```{r}
+attr(qs2::qs_read(file.path(home, "v01_results", "real", "blocks.qs2")), "pbn_fake")
+```
+
+A built manuscript of a one-file project reads the raw values with `pbn::read_blocks("v01")` or `pbn::txt()`. After an import of the pages of the server, they are the values of the run there, at full precision. Here they are the values of `fake/`, because this computer ran the export.
+
+```{r, include = FALSE}
+saved <- qs2::qs_read(file.path(home, "v01_results", "real", "blocks.qs2"))
+attr(saved, "pbn_fake") <- NULL
+stopifnot(identical(saved, qs2::qs_read(file.path(home, "v01_results", "fake", "blocks.qs2"))))
+unlink(file.path(home, "v01_results", "real"), recursive = TRUE)
+```
+
+Without `real/blocks.qs2`, `read_blocks()` and `txt()` return the values of `fake/blocks.qs2` with a warning that the numbers are fake. A document that knitr renders, such as a `.qmd`, then starts with the line **FAKE DATA**. The same holds for a `real/blocks.qs2` with `pbn_fake = TRUE`. This vignette starts with that line, because its chunks call `pbn::txt()` on fake numbers.
+
+In a one-file version, the rule `built_reads_source` of the set `house_2026_11_26` fails each file in `manuscript/built/v01/` while those numbers are fake. So a manuscript on fake numbers stays a draft in `manuscript/draft/`. The rule also fails a file there without a call of `read_blocks()` or `txt()`, and a `read_results()` call. In a version that is not one-file, it fails a `read_blocks()` call.
 
 ## What pbn does not do yet
 

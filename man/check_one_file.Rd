@@ -117,6 +117,7 @@ and kept its size and its modification time is not seen.
 \code{vignette("pbn")}, section "Running on an air-gapped server".
 
 Other one file:
+\code{\link[=export_blocks]{export_blocks()}},
 \code{\link[=show_blocks]{show_blocks()}},
 \code{\link[=to_one_file]{to_one_file()}}
 }

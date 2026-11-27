@@ -114,7 +114,7 @@ test_that("the checklist fixtures are the files of the methods repository", {
   )
 })
 
-test_that("house_2026_11_26 is house_2026_11_25 with manual_has_supplement, manual_si_has_main and guidelines_valid at fail and guidelines_covered at warn, and a new pbn.yml names it", {
+test_that("house_2026_11_26 is house_2026_11_25 with built_reads_source, manual_has_supplement, manual_si_has_main and guidelines_valid at fail and guidelines_covered at warn, and a new pbn.yml names it", {
   old <- read_house_set("house_2026_11_25")
   new <- read_house_set("house_2026_11_26")
   expect_identical(new[names(old)], old)
@@ -133,6 +133,7 @@ test_that("house_2026_11_26 is house_2026_11_25 with manual_has_supplement, manu
       character(1)
     ),
     c(
+      built_reads_source = "fail",
       manual_has_supplement = "fail",
       manual_si_has_main = "fail",
       guidelines_valid = "fail",

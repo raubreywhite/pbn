@@ -18,7 +18,7 @@ This project uses the R package pbn. Before you change any code, read how to use
 
 - In a one-file project, the run on this computer writes the scenario `real` to `vNN_results/fake/`. A one-file project is one whose `vNN_run.R` gives `one_file_home` to `pbn::initialize_project()`.
 - `fake/` stands in for the real results, and its numbers are fake. It is not one of the fake scenarios, which have planted effects.
-- `vNN_results/real/` holds only the real results that come back from the server. Do not write into it.
+- `vNN_results/real/` holds only the real results that come back from the server. In a one-file project, that is `export_blocks.txt`, which a person saves, and the `blocks.qs2` that `pbn::import_blocks()` writes from it. Write nothing else into it.
 
 ## Manuscripts
 
@@ -27,4 +27,5 @@ This project uses the R package pbn. Before you change any code, read how to use
 - Never edit or overwrite a file that is already in `manuscript/manual/` or `manuscript/built/`. Save a new file.
 - Add a `## v(NN+1)` section to `CHANGELOG.md` with the file name, who edited it, the version it starts from, and what changed.
 - `verify()` then fails on `manual_not_ahead` until a person starts the next run version. Do not start it; ask.
-- A built manuscript reads `read_results()` of its own version only.
+- A built manuscript reads its own version only. In a one-file project it reads `pbn::read_blocks()` or `pbn::txt()`, and in another project `read_results()` or `pbn::txt()`.
+- A one-file project has fake numbers until `pbn::import_blocks()` writes `vNN_results/real/blocks.qs2` from real pages. Until then, save its manuscript in `manuscript/draft/`.

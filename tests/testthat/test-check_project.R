@@ -1048,6 +1048,7 @@ test_that("each WARN and FAIL of check_project ends with the fix of its rule, an
     manual_manuscript_names = "rename it to vNN_<INITIALS>.docx, for example v01_AB.docx, or vNN_<INITIALS>_<suffix>.docx, for example v01_AB_si.docx",
     manuscript_reads_real = "remove the argument scenario from the call",
     built_reads_own_version = "read the version of the folder, as in read_results(\"vNN\"), or move the file to the folder of the version that it reads",
+    built_reads_source = "in a one-file version, read the numbers with pbn::read_blocks() or pbn::txt() after pbn::import_blocks() of the pages of the server, and keep a manuscript on fake numbers in manuscript/draft/; in another version, read them with pbn::read_results() or pbn::txt()",
     built_has_run = "move the folder to the version of the run that it reads, or create the run script of the version",
     manual_not_ahead = "start the next run version with the call of pbn::new_version() in the detail",
     manual_has_supplement = "add the supplement manuscript/manual/vNN_<INITIALS>_si.docx, or turn the rule off with the line manual_has_supplement: off under rules: in pbn.yml",

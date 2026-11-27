@@ -473,17 +473,44 @@ one_file_checklist_project <- function(env = parent.frame()) {
   return(home)
 }
 
-test_that("txt() of a one-file project reads fake/blocks.qs2, not real/", {
+test_that("txt() of a one-file project reads real/blocks.qs2 when it exists, and fake/ with a warning when it does not", {
   local_clean_state()
   home <- one_file_checklist_project()
-  expect_identical(txt("Sample", version = "v01", home = home), "1,037 (68.7%)")
+  expect_identical(txt("Sample", version = "v01", home = home), "1 (50.0%)")
+  unlink(file.path(home, "v01_results", "real", "blocks.qs2"))
+  expect_warning(
+    got <- txt("Sample", version = "v01", home = home),
+    "The numbers of v01 are fake",
+    fixed = TRUE
+  )
+  expect_identical(got, "1,037 (68.7%)")
 })
 
-test_that("make_checklists() of a one-file project reads fake/blocks.qs2, not real/", {
+test_that("make_checklists() of a one-file project reads real/blocks.qs2 when it exists, and fake/ with a warning when it does not", {
   local_clean_state()
   home <- one_file_checklist_project()
   out <- NULL
   expect_no_error(out <- make_checklists("v01", home = home))
+  expect_identical(
+    unname(startsWith(statuses(out), "numbers missing: ")),
+    c(TRUE, TRUE, FALSE)
+  )
+  expect_identical(
+    unname(statuses(out)[2]),
+    "numbers missing: 1 (50.0%)"
+  )
+  lines <- readLines(file.path(home, "manuscript/built/v01/checklist_mini.md"))
+  expect_true(any(grepl(
+    "Blocks: v01_functions/blocks.R and v01_results/real/blocks.qs2.",
+    lines,
+    fixed = TRUE
+  )))
+  unlink(file.path(home, "v01_results", "real", "blocks.qs2"))
+  expect_warning(
+    out <- make_checklists("v01", home = home),
+    "The numbers of v01 are fake",
+    fixed = TRUE
+  )
   expect_identical(
     statuses(out),
     c("1" = "numbers found", "2" = "numbers found", "3" = "to fill")

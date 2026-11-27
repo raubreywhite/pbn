@@ -30,12 +30,13 @@ real \code{blocks.qs2} of the version. A manuscript calls it inline, for
 example \code{`r pbn::txt("Results para 1: effect", version = "v02")`}.
 }
 \details{
-\code{txt()} reads the raw value from
-\verb{<home>/<version>_results/real/blocks.qs2}, which \code{\link[=save_results]{save_results()}} and
-\code{\link[=update_blocks]{update_blocks()}} write. In a one-file project, it reads \verb{fake/} in the
-place of \verb{real/}, see the section The folder fake/ of
-\code{\link[=initialize_project]{initialize_project()}}. It formats the value at each call, so a change of
-a formatter needs no new \code{blocks.qs2}.
+\code{txt()} reads the raw value as \code{\link[=read_blocks]{read_blocks()}} does:
+\verb{<home>/<version>_results/real/blocks.qs2} when it exists, which
+\code{\link[=save_results]{save_results()}}, \code{\link[=update_blocks]{update_blocks()}} and \code{\link[=import_blocks]{import_blocks()}} write. In a
+one-file project without that file, it reads \verb{fake/} with a warning, see
+the section The folder fake/ of \code{\link[=initialize_project]{initialize_project()}}. It formats the
+value at each call, so a change of a formatter needs no new
+\code{blocks.qs2}.
 
 After \code{\link[=initialize_project]{initialize_project()}} of \code{version} and \code{home} in this R session,
 \code{txt()} takes the block from that session. Else it reads

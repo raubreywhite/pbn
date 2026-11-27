@@ -31,6 +31,8 @@
 - Behaviour change: `initialize_project()` drops a final `/` or `\` of `home` and of each path of `folders`, `one_file_home` and `one_file_folders`. So pbn builds no path with `//`, such as `N:/project//v05_results`. A root such as `N:/` or `/` stays as it is. A file of `to_one_file()` with a final `/` in a path of the server is then older than the run script for `check_one_file()`. Run `to_one_file()` again.
 - `check_one_file()` refuses real results whose `manifest$failed_fake_checks` names a fake scenario with a failed assertion. It names the scenario and its `check.csv`, and runs nothing. The comparison then leaves `failed_fake_checks` out. Before, a project without blocks got the FAIL of a manifest difference only.
 - Behaviour change: a project formatter sees `CFG` and the functions of the functions folder in `show_block()`, `txt()` and `make_checklists()`, as in the file of `to_one_file()`. Before, only that file gave it more than the base environment. Without a session, `txt()` evaluates the top-level assignments of the functions folder and runs no other top-level call.
+- Fix: `show_block()` and `show_blocks()` read `formatters.R` only when a block is a `pbn::block()`. Before, a project on an older set with plain blocks stopped when its `formatters.R` held other top-level code.
+- Fix: in a project that is not one-file, a run with `fake_real_data = TRUE` gives `real/blocks.qs2` the attribute `pbn_fake = TRUE`, also through `update_blocks()`. So `read_blocks()` and `txt()` treat its values as fake, and a rendered document gets the line **FAKE DATA**.
 
 # pbn 2026.12.11
 

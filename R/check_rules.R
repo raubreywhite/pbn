@@ -758,7 +758,7 @@ layout_patterns <- function(set = utils::tail(house_sets(), 1)) {
     "^\\.git$",
     "^pbn\\.yml$",
     if (set_is_from(set, "house_2026_11_19")) frozen_pattern,
-    if (set_is_from(set, "2026_11_26")) "^guidelines$"
+    if (set_is_from(set, "house_2026_11_26")) "^guidelines$"
   ))
 }
 

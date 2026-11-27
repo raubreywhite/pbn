@@ -445,6 +445,34 @@ test_that("a rendered .Rmd that reads only real values shows no FAKE DATA", {
   expect_true("Text." %in% out)
 })
 
+test_that("a run with fake_real_data = TRUE in a project that is not one-file marks real/blocks.qs2 fake, and a rendered .Rmd shows FAKE DATA", {
+  skip_if_not(rmarkdown::pandoc_available())
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Rows\" = function(results) data.frame(n = nrow(results$models))",
+      ")"
+    )
+  )
+  run <- save_run(p, only = c("real", "known"), fake_real_data = TRUE)
+  expect_false(inherits(run$err, "error"))
+  real <- results_path(p, "real", "blocks.qs2")
+  expect_true(isTRUE(attr(qs2::qs_read(real), "pbn_fake")))
+  # A fake scenario has no fake_real_data in its manifest, and no mark.
+  known <- qs2::qs_read(results_path(p, "known", "blocks.qs2"))
+  expect_null(attr(known, "pbn_fake"))
+  expect_true(isTRUE(attr(read_blocks("v01", home = p$home), "pbn_fake")))
+  out <- render_md(p, read_line(p))
+  expect_identical(out[nzchar(out)][1], "**FAKE DATA**")
+  # update_blocks() writes the mark too.
+  unlink(real)
+  utils::capture.output(update_blocks())
+  expect_true(isTRUE(attr(qs2::qs_read(real), "pbn_fake")))
+})
+
 # The project of local_project() on the set house_2026_11_26, with the
 # manuscript manuscript/built/v01/paper.qmd of the lines `qmd`.
 rule_project <- function(qmd, one_file = TRUE, env = parent.frame()) {

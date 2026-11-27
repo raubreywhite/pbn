@@ -362,6 +362,33 @@ test_that("a formatter that returns a data.table prints through show_block() wit
   expect_true(data.table::is.data.table(value))
 })
 
+test_that("under an older set, show_block() of plain blocks does not read formatters.R, so that file MAY hold other top-level code", {
+  p <- local_project()
+  write_lines(
+    p$home,
+    "v01_functions/blocks.R",
+    c(
+      "blocks <- list(",
+      "  \"Rows\" = function(results) data.frame(n = nrow(results$models))",
+      ")"
+    )
+  )
+  write_lines(
+    p$home,
+    "v01_functions/formatters.R",
+    c("x <- 1", "cat(\"hi\\n\")")
+  )
+  utils::capture.output(run <- save_run(p, only = c("real", "known")))
+  expect_false(inherits(run$err, "error"))
+  got <- tryCatch(
+    utils::capture.output(show_block(1)),
+    error = function(e) return(conditionMessage(e))
+  )
+  # The same page without formatters.R.
+  unlink(file.path(p$home, "v01_functions", "formatters.R"))
+  expect_identical(got, utils::capture.output(show_block(1)))
+})
+
 test_that("show_block prints the formatted value of a pbn::block(), and show_blocks stops on a raw value with a formatted number and names the block, the column and the cell", {
   p <- local_project()
   write_lines(p$home, "pbn.yml", "extends: house_2026_11_26")

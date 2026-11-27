@@ -304,12 +304,11 @@ blocks_context <- function(version, home) {
   return(list(
     blocks = blocks,
     results = results,
-    formatters = formatters_of(
-      home,
-      version,
-      state$env,
-      isTRUE(state$generated)
-    ),
+    # Only a pbn::block() has a formatter. Under an older set, formatters.R
+    # is an ordinary file of the functions folder and MAY hold other code.
+    formatters = if (any(vapply(blocks, is_pbn_block, logical(1)))) {
+      formatters_of(home, version, state$env, isTRUE(state$generated))
+    },
     version = version,
     run_date = if (is_one_string(run_date)) run_date else "an unknown date",
     fake_real_data = isTRUE(results$manifest$fake_real_data)
@@ -363,12 +362,28 @@ save_blocks <- function(scenarios) {
     }
   }
   for (s in scenarios) {
-    qs2::qs_save(
-      values[[s]],
-      file.path(scenario_dir(state, s), blocks_qs2_file)
-    )
+    dir <- scenario_dir(state, s)
+    # In a project that is not one-file, fake real data writes real/, and
+    # the mark tells read_blocks() and txt() that the values are fake. In a
+    # one-file project the folder is fake/, which they read as fake anyway.
+    if (identical(basename(dir), "real") && fake_real_data_of(state, s)) {
+      attr(values[[s]], "pbn_fake") <- TRUE
+    }
+    qs2::qs_save(values[[s]], file.path(dir, blocks_qs2_file))
   }
   return(invisible(NULL))
+}
+
+# TRUE when the manifest of the results of the scenario `s` of the project
+# `state` has fake_real_data TRUE.
+fake_real_data_of <- function(state, s) {
+  m <- results_manifest(scenario_dir(state, s))
+  return(isTRUE(m[["fake_real_data"]]))
+}
+
+# TRUE when the block `b` is a pbn::block().
+is_pbn_block <- function(b) {
+  return(inherits(b, "pbn_block"))
 }
 
 # Stops when `blocks` is not a named list of functions with names that come
